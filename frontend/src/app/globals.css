@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
+  
+  --color-brand-amber: #D97706;
+  --color-brand-amber-hover: #B45309;
+  --color-brand-amber-active: #92400E;
+  --color-brand-orange: #EA580C;
+  --color-brand-navy: #0F172A;
+  --color-brand-navy-dark: #020617;
+  --color-brand-emerald: #10B981;
+  --color-brand-emerald-dark: #059669;
+  --color-brand-sky: #38BDF8;
+  --color-brand-sky-dark: #0284C7;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-slate-50 text-slate-900;
+  }
+}
