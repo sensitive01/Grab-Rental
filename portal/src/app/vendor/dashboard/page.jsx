@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import StatusBadge from "@/components/ui/StatusBadge";
+import NumberPlate from "@/components/ui/NumberPlate";
 import { AreaLineChart, DonutChart, BarChart } from "@/components/ui/Charts";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import Toast from "@/components/ui/Toast";
@@ -118,16 +119,16 @@ export default function VendorDashboard() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="grid grid-cols-2 gap-2.5 w-full sm:flex sm:w-auto items-center">
             <Link
               href="/vendor/bookings/requests"
-              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+              className="px-3 sm:px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 text-center"
             >
-              <Sparkles className="w-4 h-4" /> View Requests ({requests.length})
+              <Sparkles className="w-4 h-4 shrink-0" /> View Requests ({requests.length})
             </Link>
             <Link
               href="/vendor/vehicles/add"
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors border border-slate-700"
+              className="px-3 sm:px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors border border-slate-700 flex items-center justify-center text-center"
             >
               + Add Vehicle
             </Link>
@@ -136,7 +137,7 @@ export default function VendorDashboard() {
       </div>
 
       {/* 6 Key Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <StatCard
           title="Total Vehicles"
           value={mockVehicles.length}
@@ -218,7 +219,7 @@ export default function VendorDashboard() {
             </p>
           </div>
 
-          <DonutChart data={donutData} size={170} />
+          <DonutChart data={donutData} size={150} />
 
           <Link
             href="/vendor/vehicles/availability"
@@ -383,7 +384,7 @@ export default function VendorDashboard() {
       </div>
 
       {/* Section: Recent Bookings Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
           <div>
             <h3 className="text-base font-black text-slate-900 tracking-tight">
@@ -395,14 +396,54 @@ export default function VendorDashboard() {
           </div>
           <Link
             href="/vendor/bookings"
-            className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+            className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 self-start sm:self-auto"
           >
             All Bookings <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        {/* Mobile View: Responsive Booking Cards (< md) */}
+        <div className="grid grid-cols-1 gap-3 md:hidden">
+          {mockBookings.slice(0, 5).map((b) => (
+            <div
+              key={b.id}
+              className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2.5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-black text-xs text-slate-900">#{b.id}</span>
+                  <StatusBadge status={b.status} />
+                </div>
+                <span className="text-xs font-black text-slate-900">{formatINR(b.vendorNet)}</span>
+              </div>
+
+              <div className="text-xs space-y-1">
+                <p className="font-bold text-slate-900 truncate">{b.customer.name}</p>
+                <p className="text-slate-600 flex items-center gap-1 text-[11px]">
+                  <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="truncate">{b.pickup} ➔ {b.drop}</span>
+                </p>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  {b.vehicleNumber} · {b.driverName}
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Net Payout</span>
+                <Link
+                  href={`/vendor/bookings/${b.id}`}
+                  className="font-bold text-amber-600 hover:text-amber-700 inline-flex items-center gap-1"
+                >
+                  Details <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop View: Full Data Table (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[700px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th className="py-3 px-4">Booking ID</th>
@@ -428,9 +469,9 @@ export default function VendorDashboard() {
                     <p className="font-semibold text-slate-800">{b.pickup}</p>
                     <p className="text-slate-400">➔ {b.drop}</p>
                   </td>
-                  <td className="py-3.5 px-4">
-                    <p className="font-semibold text-slate-800">{b.vehicleNumber}</p>
-                    <p className="text-[11px] text-slate-500">{b.driverName}</p>
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    <NumberPlate number={b.vehicleNumber} />
+                    <p className="text-[11px] text-slate-500 mt-0.5">{b.driverName}</p>
                   </td>
                   <td className="py-3.5 px-4">
                     <StatusBadge status={b.status} />

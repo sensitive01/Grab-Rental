@@ -19,6 +19,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
+import NumberPlate from "@/components/ui/NumberPlate";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import Toast from "@/components/ui/Toast";
@@ -90,18 +91,20 @@ export default function VendorVehiclesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="grid grid-cols-2 gap-2.5 w-full sm:flex sm:w-auto items-center">
           <Link
             href="/vendor/vehicles/availability"
-            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+            className="px-3 sm:px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 text-center"
           >
-            <Calendar className="w-4 h-4 text-amber-500" /> Availability Calendar
+            <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="truncate">Availability</span>
           </Link>
           <Link
             href="/vendor/vehicles/add"
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+            className="px-3 sm:px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 text-center"
           >
-            <Plus className="w-4 h-4" /> Add Vehicle
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="truncate">Add Vehicle</span>
           </Link>
         </div>
       </div>
@@ -123,15 +126,15 @@ export default function VendorVehiclesPage() {
           </div>
 
           {/* Type Dropdown */}
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 w-full md:w-auto">
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+              className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
             >
               {vehicleTypes.map((t) => (
                 <option key={t} value={t.toLowerCase()}>
-                  {t === "All" ? "All Vehicle Types" : t}
+                  {t === "All" ? "All Types" : t}
                 </option>
               ))}
             </select>
@@ -139,7 +142,7 @@ export default function VendorVehiclesPage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+              className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
             >
               {statusList.map((s) => (
                 <option key={s} value={s.toLowerCase()}>
@@ -151,9 +154,9 @@ export default function VendorVehiclesPage() {
         </div>
 
         {/* Quick status pill counters */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-            Quick Filter:
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs overflow-x-auto no-scrollbar pb-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+            Quick:
           </span>
           {["All", "Available", "Booked", "On Trip", "Maintenance"].map((st) => {
             const count = st === "All" 
@@ -164,7 +167,7 @@ export default function VendorVehiclesPage() {
               <button
                 key={st}
                 onClick={() => setSelectedStatus(st.toLowerCase())}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
                   isSelected
                     ? "bg-slate-900 text-white"
                     : "bg-slate-100 hover:bg-slate-200 text-slate-600"
@@ -177,7 +180,7 @@ export default function VendorVehiclesPage() {
         </div>
       </div>
 
-      {/* Vehicle Data Table */}
+      {/* Vehicle Data Table & Mobile Cards */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
         {filteredVehicles.length === 0 ? (
           <div className="p-12 text-center space-y-3">
@@ -198,122 +201,198 @@ export default function VendorVehiclesPage() {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Vehicle</th>
-                  <th className="py-3.5 px-4">Number</th>
-                  <th className="py-3.5 px-4">Category</th>
-                  <th className="py-3.5 px-4">Capacity</th>
-                  <th className="py-3.5 px-4">Fuel & AC</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Assigned Driver</th>
-                  <th className="py-3.5 px-4">Current Hub / Location</th>
-                  <th className="py-3.5 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredVehicles.map((v) => (
-                  <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-600">
-                          <Car className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <Link 
-                            href={`/vendor/vehicles/${v.id}`}
-                            className="font-bold text-slate-900 hover:text-amber-600 transition-colors"
-                          >
-                            {v.model}
-                          </Link>
-                          <p className="text-[11px] text-slate-400">{v.year} Model · {v.odometer}</p>
-                        </div>
+          <>
+            {/* Mobile View: Vehicle Cards (< md) */}
+            <div className="p-3.5 space-y-3 md:hidden divide-y divide-slate-100">
+              {filteredVehicles.map((v) => (
+                <div key={v.id} className="pt-3 first:pt-0 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center shrink-0 text-amber-600">
+                        <Car className="w-5 h-5" />
                       </div>
-                    </td>
-
-                    <td className="py-4 px-4 font-black text-slate-900 font-mono tracking-tight">
-                      <span className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200">
-                        {v.vehicleNumber}
-                      </span>
-                    </td>
-
-                    <td className="py-4 px-4 font-semibold text-slate-700">
-                      {v.type}
-                    </td>
-
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
-                        <Users className="w-3.5 h-3.5 text-slate-400" /> {v.seatingCapacity} Seater
-                      </span>
-                    </td>
-
-                    <td className="py-4 px-4 text-slate-600">
-                      <p className="font-semibold">{v.fuelType}</p>
-                      <p className="text-[11px] text-slate-400">{v.acType}</p>
-                    </td>
-
-                    <td className="py-4 px-4">
-                      <StatusBadge status={v.status} />
-                    </td>
-
-                    <td className="py-4 px-4">
-                      {v.driverName && v.driverName !== "Unassigned" ? (
-                        <div>
-                          <p className="font-bold text-slate-900">{v.driverName}</p>
-                          <p className="text-[11px] text-slate-400">{v.driverPhone}</p>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 italic">Unassigned</span>
-                      )}
-                    </td>
-
-                    <td className="py-4 px-4 text-slate-600 max-w-[180px] truncate">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{v.currentLocation}</span>
-                      </span>
-                    </td>
-
-                    <td className="py-4 px-4">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <Link
+                      <div>
+                        <Link 
                           href={`/vendor/vehicles/${v.id}`}
-                          title="View Details"
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+                          className="font-black text-slate-900 hover:text-amber-600 transition-colors text-sm block"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          {v.model}
                         </Link>
-                        <Link
-                          href={`/vendor/vehicles/${v.id}/edit`}
-                          title="Edit Vehicle"
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </Link>
-                        <Link
-                          href={`/vendor/vehicles/availability`}
-                          title="Block Dates"
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-600 transition-colors"
-                        >
-                          <Calendar className="w-3.5 h-3.5" />
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => setVehicleToDelete(v)}
-                          title="Delete Vehicle"
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-2 mt-1">
+                          <NumberPlate number={v.vehicleNumber} />
+                          <span className="text-[11px] text-slate-400 font-medium">{v.year} Model</span>
+                        </div>
                       </div>
-                    </td>
+                    </div>
+                    <StatusBadge status={v.status} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl">
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Type & Capacity</p>
+                      <p className="font-semibold text-slate-800 mt-0.5">{v.type} · {v.seatingCapacity} Seats</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Assigned Driver</p>
+                      <p className="font-semibold text-slate-800 mt-0.5 truncate">
+                        {v.driverName && v.driverName !== "Unassigned" ? v.driverName : "Unassigned"}
+                      </p>
+                    </div>
+                    <div className="col-span-2 text-[11px] text-slate-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span className="truncate">{v.currentLocation}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <Link
+                      href={`/vendor/vehicles/${v.id}`}
+                      className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold text-center"
+                    >
+                      Details
+                    </Link>
+                    <Link
+                      href={`/vendor/vehicles/${v.id}/edit`}
+                      className="flex-1 py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold text-center"
+                    >
+                      Edit
+                    </Link>
+                    <Link
+                      href={`/vendor/vehicles/availability`}
+                      className="p-2 rounded-xl border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-600"
+                      title="Availability"
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setVehicleToDelete(v)}
+                      className="p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop View: Full 9-Column Table (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[850px]">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3.5 px-4 whitespace-nowrap">Vehicle</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Plate Number</th>
+                    <th className="py-3.5 px-4">Category</th>
+                    <th className="py-3.5 px-4">Capacity</th>
+                    <th className="py-3.5 px-4">Fuel & AC</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Assigned Driver</th>
+                    <th className="py-3.5 px-4">Current Hub / Location</th>
+                    <th className="py-3.5 px-4 text-center">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredVehicles.map((v) => (
+                    <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-600">
+                            <Car className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <Link 
+                              href={`/vendor/vehicles/${v.id}`}
+                              className="font-bold text-slate-900 hover:text-amber-600 transition-colors"
+                            >
+                              {v.model}
+                            </Link>
+                            <p className="text-[11px] text-slate-400">{v.year} Model · {v.odometer}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-4 whitespace-nowrap">
+                        <NumberPlate number={v.vehicleNumber} />
+                      </td>
+
+                      <td className="py-4 px-4 font-semibold text-slate-700">
+                        {v.type}
+                      </td>
+
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
+                          <Users className="w-3.5 h-3.5 text-slate-400" /> {v.seatingCapacity} Seater
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-4 text-slate-600">
+                        <p className="font-semibold">{v.fuelType}</p>
+                        <p className="text-[11px] text-slate-400">{v.acType}</p>
+                      </td>
+
+                      <td className="py-4 px-4">
+                        <StatusBadge status={v.status} />
+                      </td>
+
+                      <td className="py-4 px-4">
+                        {v.driverName && v.driverName !== "Unassigned" ? (
+                          <div>
+                            <p className="font-bold text-slate-900">{v.driverName}</p>
+                            <p className="text-[11px] text-slate-400">{v.driverPhone}</p>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Unassigned</span>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-4 text-slate-600 max-w-[180px] truncate">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{v.currentLocation}</span>
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-4">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Link
+                            href={`/vendor/vehicles/${v.id}`}
+                            title="View Details"
+                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Link>
+                          <Link
+                            href={`/vendor/vehicles/${v.id}/edit`}
+                            title="Edit Vehicle"
+                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </Link>
+                          <Link
+                            href={`/vendor/vehicles/availability`}
+                            title="Block Dates"
+                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-600 transition-colors"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => setVehicleToDelete(v)}
+                            title="Delete Vehicle"
+                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

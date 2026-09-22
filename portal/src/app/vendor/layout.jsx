@@ -13,9 +13,9 @@ export default function VendorLayout({ children }) {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content Area */}
-      <div className="lg:pl-64 flex flex-col flex-1 min-w-0">
+      <div className="lg:pl-72 flex flex-col flex-1 min-w-0 max-w-full overflow-x-hidden">
         <TopNavbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 min-w-0 max-w-full">
           {children}
         </main>
       </div>

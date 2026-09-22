@@ -56,7 +56,7 @@ export default function VendorEarningsPage() {
       </div>
 
       {/* 5 Financial Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         <StatCard
           title="Total Lifetime Net"
           value={formatINR(mockEarningsData.totalEarnings)}

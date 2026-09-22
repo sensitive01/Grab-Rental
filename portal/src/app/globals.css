@@ -1,8 +1,29 @@
 @import "tailwindcss";
 
+@theme {
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.2 / 0.8125);
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: calc(1.35 / 0.9375);
+  --text-base: 1.0625rem;
+  --text-base--line-height: calc(1.5 / 1.0625);
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: calc(1.75 / 1.1875);
+  --text-xl: 1.35rem;
+  --text-xl--line-height: calc(1.75 / 1.35);
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: calc(2 / 1.625);
+  --text-3xl: 2rem;
+  --text-3xl--line-height: calc(2.25 / 2);
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+}
+
+html {
+  font-size: 17px;
 }
 
 body {
@@ -13,14 +34,46 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle custom scrollbar for data tables and sidebars */
+/* Scaled micro-typography across vendor pages for enhanced readability */
+.text-\[9px\] {
+  font-size: 11px !important;
+  line-height: 15px !important;
+}
+
+.text-\[10px\] {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.text-\[11px\] {
+  font-size: 13.5px !important;
+  line-height: 18px !important;
+}
+
+/* Hide scrollbar utility for clean sidebars and carousels */
+.no-scrollbar::-webkit-scrollbar,
+aside nav::-webkit-scrollbar,
+aside::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+aside nav,
+aside {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+/* Subtle custom scrollbar for data tables */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -31,3 +84,4 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+

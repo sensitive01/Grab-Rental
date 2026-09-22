@@ -9,6 +9,7 @@ import {
   User, 
   LogOut, 
   Lock, 
+  HelpCircle, 
   ChevronDown, 
   ExternalLink,
   ShieldCheck,
@@ -20,36 +21,65 @@ import { mockNotifications } from "@/lib/mockData";
 export default function TopNavbar({ onMenuClick }) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs">
+    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-3.5 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs">
       
       {/* Left: Mobile Menu Button & Search */}
-      <div className="flex items-center gap-3 sm:gap-4 flex-1">
+      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 mr-2">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          className="lg:hidden min-w-[40px] min-h-[40px] p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center shrink-0"
           aria-label="Toggle Sidebar"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Global Search */}
+        {/* Global Search for Desktop */}
         <div className="relative max-w-md w-full hidden sm:block">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Search vehicles (TN-38...), bookings (#BK...), or chauffeurs..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
           />
         </div>
+
+        {/* Mobile Search Input Overlay (Expandable) */}
+        {mobileSearchOpen && (
+          <div className="absolute inset-x-0 top-0 h-16 bg-white z-50 px-3.5 flex items-center gap-2 border-b border-slate-200 shadow-md sm:hidden animate-in fade-in duration-100">
+            <Search className="w-4 h-4 text-amber-500 shrink-0" />
+            <input
+              type="text"
+              autoFocus
+              placeholder="Search vehicles, bookings, chauffeurs..."
+              className="flex-1 py-2 px-1 text-xs text-slate-900 placeholder-slate-400 bg-transparent focus:outline-hidden"
+            />
+            <button
+              onClick={() => setMobileSearchOpen(false)}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100"
+            >
+              Close
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Right: Role Badge, Notifications & Profile */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      {/* Right: Search Icon (Mobile), Role Badge, Notifications & Profile */}
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         
+        {/* Mobile Search Trigger Button */}
+        <button
+          onClick={() => setMobileSearchOpen(true)}
+          className="sm:hidden min-w-[40px] min-h-[40px] p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center"
+          aria-label="Open Search"
+        >
+          <Search className="w-4.5 h-4.5" />
+        </button>
+
         {/* Role Badge */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-black uppercase tracking-wider">
+        <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-black uppercase tracking-wider shrink-0">
           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
           Vendor Partner
         </div>
@@ -61,11 +91,11 @@ export default function TopNavbar({ onMenuClick }) {
               setNotificationsOpen(!notificationsOpen);
               setUserDropdownOpen(false);
             }}
-            className="relative p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+            className="relative min-w-[40px] min-h-[40px] p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center"
             aria-label="Notifications"
           >
-            <Bell className="w-4 h-4" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center">
+            <Bell className="w-4.5 h-4.5" />
+            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center">
               2
             </span>
           </button>
@@ -73,10 +103,10 @@ export default function TopNavbar({ onMenuClick }) {
           {notificationsOpen && (
             <>
               <div
-                className="fixed inset-0 z-30"
+                className="fixed inset-0 z-30 bg-slate-950/20 backdrop-blur-2xs"
                 onClick={() => setNotificationsOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 p-3 space-y-2 animate-in zoom-in-95 duration-150">
+              <div className="fixed left-3 right-3 top-16 mt-1.5 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 w-auto sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 p-3.5 space-y-2.5 animate-in zoom-in-95 duration-150">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
                   <span className="text-xs font-black text-slate-900">Notifications</span>
                   <Link
@@ -118,25 +148,25 @@ export default function TopNavbar({ onMenuClick }) {
               setUserDropdownOpen(!userDropdownOpen);
               setNotificationsOpen(false);
             }}
-            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200"
+            className="flex items-center gap-2 p-1 sm:p-1.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 cursor-pointer shrink-0 min-h-[40px]"
           >
-            <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-xs">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-xs shrink-0">
               KK
             </div>
             <div className="hidden md:block text-left">
               <p className="text-xs font-black text-slate-900 leading-tight">Rajesh Kannan</p>
               <p className="text-[10px] text-slate-500 font-medium">Kaveri Travels</p>
             </div>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block shrink-0" />
           </button>
 
           {userDropdownOpen && (
             <>
               <div
-                className="fixed inset-0 z-30"
+                className="fixed inset-0 z-30 bg-slate-950/20 backdrop-blur-2xs"
                 onClick={() => setUserDropdownOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 py-2 text-xs divide-y divide-slate-100 animate-in zoom-in-95 duration-150">
+              <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-[260px] sm:w-60 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 py-2 text-xs divide-y divide-slate-100 animate-in zoom-in-95 duration-150">
                 <div className="px-4 py-2.5">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Signed in as</p>
                   <p className="font-bold text-slate-900 truncate">partner@kaveritravels.in</p>
@@ -156,6 +186,13 @@ export default function TopNavbar({ onMenuClick }) {
                     className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 font-semibold"
                   >
                     <Lock className="w-4 h-4 text-slate-400" /> Security Settings
+                  </Link>
+                  <Link
+                    href="/vendor/support"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 font-semibold"
+                  >
+                    <HelpCircle className="w-4 h-4 text-amber-500" /> Partner Helpline (24/7)
                   </Link>
                 </div>
                 <div className="pt-1">

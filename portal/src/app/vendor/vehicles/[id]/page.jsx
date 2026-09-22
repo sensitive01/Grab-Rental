@@ -19,6 +19,7 @@ import {
   Sparkles
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
+import NumberPlate from "@/components/ui/NumberPlate";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { mockVehicles, mockBookings } from "@/lib/mockData";
 import { formatINR } from "@/lib/utils";
@@ -51,9 +52,10 @@ export default function VehicleDetailsPage({ params }) {
             </h1>
             <StatusBadge status={vehicle.status} />
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-mono">
-            Registration: {vehicle.vehicleNumber} · Asset ID: {vehicle.id}
-          </p>
+          <div className="flex items-center gap-2.5 pt-1">
+            <NumberPlate number={vehicle.vehicleNumber} />
+            <span className="text-xs text-slate-400 font-medium">Asset ID: {vehicle.id}</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -94,9 +96,7 @@ export default function VehicleDetailsPage({ params }) {
             <div className="p-5 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <span className="font-bold text-slate-500">Plate Number</span>
-                <span className="font-mono font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                  {vehicle.vehicleNumber}
-                </span>
+                <NumberPlate number={vehicle.vehicleNumber} />
               </div>
 
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">

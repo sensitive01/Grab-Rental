@@ -54,7 +54,7 @@ export default function AddDriverPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
@@ -86,225 +86,325 @@ export default function AddDriverPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        {/* Personal & Contact Details */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center font-bold">
-              <Users className="w-4 h-4" />
+        {/* Left 2 Columns: Driver Information */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Card 1: Personal & Contact Details */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+              <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center font-bold shrink-0">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-slate-900">Personal & Contact Information</h2>
+                <p className="text-xs text-slate-500">Driver identity and emergency communication</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-black text-slate-900">Personal & Contact Information</h2>
-              <p className="text-xs text-slate-500">Driver identity and emergency communication</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+              
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Full Legal Name *</label>
+                <input
+                  type="text"
+                  required
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="e.g. Ramesh Kumar"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Primary Mobile Number *</label>
+                <input
+                  type="text"
+                  required
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="+91 98450 12345"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Email Address (Optional)</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="driver@example.com"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="font-bold text-slate-700">Residential Address *</label>
+                <input
+                  type="text"
+                  required
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="House number, Street, City & Pincode"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Date of Birth</label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={formData.dob}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Blood Group</label>
+                <select
+                  name="bloodGroup"
+                  value={formData.bloodGroup}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                >
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="font-bold text-slate-700">Emergency Contact (Relation & Phone) *</label>
+                <input
+                  type="text"
+                  required
+                  name="emergencyContact"
+                  value={formData.emergencyContact}
+                  onChange={handleChange}
+                  placeholder="e.g. Spouse / Brother (+91 98450 00000)"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-            
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Full Legal Name *</label>
-              <input
-                type="text"
-                required
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="e.g. Ramesh Kumar"
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
+          {/* Card 2: License Particulars & Experience */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-slate-900">Commercial License Particulars</h2>
+                <p className="text-xs text-slate-500">Transport authority badges and driving history</p>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Primary Mobile Number *</label>
-              <input
-                type="text"
-                required
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+91 98450 12345"
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Driving License Number *</label>
+                <input
+                  type="text"
+                  required
+                  name="licenseNumber"
+                  value={formData.licenseNumber}
+                  onChange={handleChange}
+                  placeholder="e.g. TN-38-2018-0001234"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">License Expiry Date *</label>
+                <input
+                  type="date"
+                  required
+                  name="licenseExpiry"
+                  value={formData.licenseExpiry}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Driving Experience (Years) *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max="45"
+                  name="experienceYears"
+                  value={formData.experienceYears}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="font-bold text-slate-700">Primary Assigned Fleet Asset</label>
+                <select
+                  name="assignedVehicleId"
+                  value={formData.assignedVehicleId}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                >
+                  <option value="">-- No Vehicle Assigned (Floating Chauffeur) --</option>
+                  {mockVehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.model} ({v.vehicleNumber}) - {v.type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Email Address</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="driver@company.in"
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
-            </div>
+            {/* Upload License Document Box */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
+                <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+                <p className="font-bold text-slate-800 text-xs">Driving License Document Copy</p>
+                <p className="text-[11px] text-slate-400">Front & Back (PDF or JPG)</p>
+                <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  Upload License File
+                </span>
+              </div>
 
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Date of Birth *</label>
-              <input
-                type="date"
-                required
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
+              <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
+                <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+                <p className="font-bold text-slate-800 text-xs">Driver Photo for Badge</p>
+                <p className="text-[11px] text-slate-400">Passport style portrait</p>
+                <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  Upload Photo
+                </span>
+              </div>
             </div>
-
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Driving Experience (Years) *</label>
-              <input
-                type="number"
-                required
-                min="1"
-                max="40"
-                name="experienceYears"
-                value={formData.experienceYears}
-                onChange={handleChange}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Blood Group</label>
-              <select
-                name="bloodGroup"
-                value={formData.bloodGroup}
-                onChange={handleChange}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              >
-                <option value="O+">O Positive (O+)</option>
-                <option value="A+">A Positive (A+)</option>
-                <option value="B+">B Positive (B+)</option>
-                <option value="AB+">AB Positive (AB+)</option>
-                <option value="O-">O Negative (O-)</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-2">
-              <label className="font-bold text-slate-700">Residential Address *</label>
-              <input
-                type="text"
-                required
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Emergency Contact Name & Phone *</label>
-              <input
-                type="text"
-                required
-                name="emergencyContact"
-                value={formData.emergencyContact}
-                onChange={handleChange}
-                placeholder="Spouse / Parent (+91...)"
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
-            </div>
-
           </div>
+
         </div>
 
-        {/* Professional License & Vehicle Assignment */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-black text-slate-900">Commercial License & Fleet Assignment</h2>
-              <p className="text-xs text-slate-500">Commercial transport endorsement and vehicle pairing</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-            
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Driving License Number *</label>
-              <input
-                type="text"
-                required
-                name="licenseNumber"
-                value={formData.licenseNumber}
-                onChange={handleChange}
-                placeholder="TN38 20180004521"
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">License Expiry Date *</label>
-              <input
-                type="date"
-                required
-                name="licenseExpiry"
-                value={formData.licenseExpiry}
-                onChange={handleChange}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Assign to Vehicle</label>
-              <select
-                name="assignedVehicleId"
-                value={formData.assignedVehicleId}
-                onChange={handleChange}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-              >
-                <option value="">-- Leave Unassigned --</option>
-                {mockVehicles.map(v => (
-                  <option key={v.id} value={v.id}>
-                    {v.model} ({v.vehicleNumber})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-          </div>
-
-          {/* Upload License Document Box */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
-              <Upload className="w-6 h-6 text-slate-400 mx-auto" />
-              <p className="font-bold text-slate-800 text-xs">Driving License Document Copy</p>
-              <p className="text-[11px] text-slate-400">Front & Back (PDF or JPG)</p>
-              <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                Upload License File
+        {/* Right 1 Column: Side Space Panels */}
+        <div className="space-y-6 lg:sticky lg:top-20">
+          
+          {/* Side Card 1: Live Driver ID Badge Preview */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Chauffeur Badge</h3>
+              </div>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                {formData.status}
               </span>
             </div>
 
-            <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
-              <Upload className="w-6 h-6 text-slate-400 mx-auto" />
-              <p className="font-bold text-slate-800 text-xs">Driver Photo for Badge</p>
-              <p className="text-[11px] text-slate-400">Passport style portrait</p>
-              <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                Upload Photo
-              </span>
+            <div className="space-y-3">
+              <div className="p-4 rounded-2xl bg-slate-900 text-white flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-lg shrink-0">
+                  {(formData.name || "D").charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-black text-sm text-white truncate">
+                    {formData.name || "Driver Name"}
+                  </h4>
+                  <p className="text-xs text-amber-400 font-medium truncate">
+                    {formData.phone || "+91 XXXXX XXXXX"}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                    {formData.licenseNumber || "License Pending"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
+                  <p className="text-[10px] text-slate-400 font-medium">Experience</p>
+                  <p className="font-bold text-slate-800">{formData.experienceYears} Years</p>
+                </div>
+
+                <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
+                  <p className="text-[10px] text-slate-400 font-medium">Blood Group</p>
+                  <p className="font-bold text-slate-800">{formData.bloodGroup}</p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 text-xs space-y-1">
+                <div className="flex items-center justify-between text-slate-600">
+                  <span className="text-slate-400">License Valid Till:</span>
+                  <span className="font-semibold text-slate-800">{formData.licenseExpiry || "Pending"}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span className="text-slate-400">Assigned Vehicle:</span>
+                  <span className="font-semibold text-slate-800 truncate max-w-[140px]">
+                    {formData.assignedVehicleId
+                      ? mockVehicles.find(v => v.id === formData.assignedVehicleId)?.vehicleNumber || "Assigned"
+                      : "Floating"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Submit */}
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <Link
-            href="/vendor/drivers"
-            className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
-          >
-            {loading ? "Adding Chauffeur..." : "Save & Activate Chauffeur"}
-          </button>
+          {/* Side Card 2: Registration Controls */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+              Registration Controls
+            </h3>
+
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 active:scale-98 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {loading ? "Adding Chauffeur..." : "Save & Activate Chauffeur"}
+              </button>
+
+              <Link
+                href="/vendor/drivers"
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
+              >
+                Cancel & Return
+              </Link>
+            </div>
+          </div>
+
+          {/* Side Card 3: Verification Guidelines */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3 text-xs">
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+              Driver Compliance
+            </h3>
+            <ul className="space-y-2 text-slate-600">
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span>Commercial badge endorsement</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span>Police verification record copy</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span>Medical fitness & eye test report</span>
+              </li>
+            </ul>
+          </div>
+
         </div>
 
       </form>

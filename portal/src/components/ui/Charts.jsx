@@ -2,29 +2,31 @@
 
 import { useState } from "react";
 
-export function AreaLineChart({ data, height = 220, strokeColor = "#f59e0b", fillColor = "#fef3c7" }) {
+export function AreaLineChart({ data, height = 230, strokeColor = "#f59e0b", fillColor = "#fef3c7" }) {
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
   if (!data || data.length === 0) return null;
 
   const paddingX = 40;
-  const paddingY = 30;
+  const paddingTop = 20;
+  const paddingBottom = 42;
   const width = 600;
+  const plotHeight = height - paddingTop - paddingBottom;
 
   const maxValue = Math.max(...data.map(d => d.value)) * 1.15 || 100;
   const minValue = 0;
 
   const points = data.map((d, index) => {
     const x = paddingX + (index / (data.length - 1)) * (width - paddingX * 2);
-    const y = height - paddingY - ((d.value - minValue) / (maxValue - minValue)) * (height - paddingY * 2);
+    const y = height - paddingBottom - ((d.value - minValue) / (maxValue - minValue)) * plotHeight;
     return { x, y, label: d.label, value: d.value, subtitle: d.subtitle };
   });
 
   const pathD = points.reduce((acc, p, i) => `${acc} ${i === 0 ? "M" : "L"} ${p.x} ${p.y}`, "");
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`;
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${height - paddingBottom} L ${points[0].x} ${height - paddingBottom} Z`;
 
   return (
-    <div className="relative w-full overflow-hidden select-none">
+    <div className="relative w-full overflow-hidden select-none pb-1">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
         <defs>
           <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
@@ -35,7 +37,7 @@ export function AreaLineChart({ data, height = 220, strokeColor = "#f59e0b", fil
 
         {/* Horizontal grid lines */}
         {[0, 0.33, 0.66, 1].map((ratio, i) => {
-          const y = height - paddingY - ratio * (height - paddingY * 2);
+          const y = height - paddingBottom - ratio * plotHeight;
           return (
             <line
               key={i}
@@ -72,9 +74,9 @@ export function AreaLineChart({ data, height = 220, strokeColor = "#f59e0b", fil
             {/* X Axis Labels */}
             <text
               x={p.x}
-              y={height - 10}
+              y={height - 14}
               textAnchor="middle"
-              className="text-[11px] font-bold fill-slate-400"
+              className="text-[12px] font-bold fill-slate-400"
             >
               {p.label}
             </text>
@@ -156,20 +158,20 @@ export function BarChart({ data, height = 200, barColor = "#0284c7" }) {
   );
 }
 
-export function DonutChart({ data, size = 180 }) {
+export function DonutChart({ data, size = 150 }) {
   if (!data || data.length === 0) return null;
 
   const total = data.reduce((acc, curr) => acc + curr.value, 0) || 1;
   let accumulatedAngle = 0;
 
-  const radius = 70;
-  const strokeWidth = 24;
+  const radius = 56;
+  const strokeWidth = 20;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-6 justify-center">
-      <div className="relative" style={{ width: size, height: size }}>
+    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 justify-center py-1">
+      <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
           {data.map((item, idx) => {
             const strokeDasharray = `${(item.value / total) * circumference} ${circumference}`;
@@ -199,13 +201,13 @@ export function DonutChart({ data, size = 180 }) {
       </div>
 
       {/* Legend */}
-      <div className="space-y-2 text-xs">
+      <div className="space-y-2 text-xs w-full max-w-[210px]">
         {data.map((item, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-            <span className="font-semibold text-slate-600">{item.label}:</span>
-            <span className="font-black text-slate-900 ml-auto pl-2">{item.value}</span>
-            <span className="text-slate-400 text-[10px]">({Math.round((item.value / total) * 100)}%)</span>
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+            <span className="font-semibold text-slate-600 truncate">{item.label}:</span>
+            <span className="font-black text-slate-900 ml-auto pl-2 shrink-0">{item.value}</span>
+            <span className="text-slate-400 text-[10px] shrink-0">({Math.round((item.value / total) * 100)}%)</span>
           </div>
         ))}
       </div>

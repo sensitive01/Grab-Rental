@@ -12,10 +12,6 @@ import {
   TrendingUp, 
   CreditCard, 
   FileText, 
-  Bell, 
-  User, 
-  Lock, 
-  HelpCircle, 
   LogOut, 
   ChevronDown, 
   ChevronRight,
@@ -62,24 +58,24 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-950 text-slate-300 border-r border-slate-800 flex flex-col transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-slate-950 text-slate-300 border-r border-slate-800 flex flex-col transition-transform duration-200 ease-in-out lg:translate-x-0 no-scrollbar ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-950">
-          <Link href="/vendor/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-base shadow-md shadow-amber-500/20">
+          <Link href="/vendor/dashboard" className="flex items-center gap-3 min-w-0">
+            <div className="w-8.5 h-8.5 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-base shadow-md shadow-amber-500/20 shrink-0">
               G
             </div>
-            <div className="flex flex-col">
-              <span className="font-black text-sm tracking-tight text-white flex items-center gap-1.5">
+            <div className="flex flex-col min-w-0">
+              <span className="font-black text-sm tracking-tight text-white flex items-center gap-1.5 whitespace-nowrap">
                 GRAB RENTALS
-                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 leading-none shrink-0">
                   VENDOR
                 </span>
               </span>
-              <span className="text-[10px] text-slate-400 font-medium truncate max-w-[140px]">
+              <span className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">
                 Kaveri Fleet & Travels
               </span>
             </div>
@@ -95,13 +91,13 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* Scrollable Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 text-xs font-semibold">
+        <nav className="flex-1 overflow-y-auto no-scrollbar px-3.5 py-4 space-y-1.5 text-sm font-semibold">
           
           {/* Main: Dashboard */}
           <Link
             href="/vendor/dashboard"
             onClick={() => onClose && onClose()}
-            className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
               isActive("/vendor/dashboard")
                 ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
                 : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -114,7 +110,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </Link>
 
           {/* Section: Fleet Assets */}
-          <div className="pt-3 pb-1 px-3 text-[10px] font-black uppercase tracking-wider text-slate-500">
+          <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
             Fleet Management
           </div>
 
@@ -123,7 +119,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <button
               type="button"
               onClick={() => setVehiclesOpen(!vehiclesOpen)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
                 pathname.startsWith("/vendor/vehicles")
                   ? "bg-slate-900 text-white"
                   : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -141,7 +137,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </button>
 
             {vehiclesOpen && (
-              <div className="pl-9 pr-2 py-1 space-y-1 text-[11px]">
+              <div className="pl-10 pr-2 py-1 space-y-1 text-xs">
                 <Link
                   href="/vendor/vehicles"
                   onClick={() => onClose && onClose()}
@@ -184,7 +180,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <button
               type="button"
               onClick={() => setDriversOpen(!driversOpen)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
                 pathname.startsWith("/vendor/drivers")
                   ? "bg-slate-900 text-white"
                   : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -202,7 +198,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </button>
 
             {driversOpen && (
-              <div className="pl-9 pr-2 py-1 space-y-1 text-[11px]">
+              <div className="pl-10 pr-2 py-1 space-y-1 text-xs">
                 <Link
                   href="/vendor/drivers"
                   onClick={() => onClose && onClose()}
@@ -230,7 +226,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* Section: Bookings & Operations */}
-          <div className="pt-3 pb-1 px-3 text-[10px] font-black uppercase tracking-wider text-slate-500">
+          <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
             Bookings & Dispatch
           </div>
 
@@ -239,7 +235,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <button
               type="button"
               onClick={() => setBookingsOpen(!bookingsOpen)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
                 pathname.startsWith("/vendor/bookings")
                   ? "bg-slate-900 text-white"
                   : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -262,7 +258,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </button>
 
             {bookingsOpen && (
-              <div className="pl-9 pr-2 py-1 space-y-1 text-[11px]">
+              <div className="pl-10 pr-2 py-1 space-y-1 text-xs">
                 <Link
                   href="/vendor/bookings"
                   onClick={() => onClose && onClose()}
@@ -314,12 +310,12 @@ export default function Sidebar({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* Trips Submenu */}
+          {/* Trips Tracking Submenu */}
           <div>
             <button
               type="button"
               onClick={() => setTripsOpen(!tripsOpen)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
                 pathname.startsWith("/vendor/trips")
                   ? "bg-slate-900 text-white"
                   : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -337,7 +333,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </button>
 
             {tripsOpen && (
-              <div className="pl-9 pr-2 py-1 space-y-1 text-[11px]">
+              <div className="pl-10 pr-2 py-1 space-y-1 text-xs">
                 <Link
                   href="/vendor/trips/active"
                   onClick={() => onClose && onClose()}
@@ -348,7 +344,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   }`}
                 >
                   <span>Active Live Trips</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 </Link>
                 <Link
                   href="/vendor/trips/completed"
@@ -366,14 +362,14 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* Section: Finance & Documents */}
-          <div className="pt-3 pb-1 px-3 text-[10px] font-black uppercase tracking-wider text-slate-500">
+          <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
             Finance & Compliance
           </div>
 
           <Link
             href="/vendor/earnings"
             onClick={() => onClose && onClose()}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all ${
+            className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all ${
               pathname === "/vendor/earnings"
                 ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
                 : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -386,7 +382,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <Link
             href="/vendor/payments"
             onClick={() => onClose && onClose()}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all ${
+            className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all ${
               pathname === "/vendor/payments"
                 ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
                 : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -399,7 +395,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <Link
             href="/vendor/documents"
             onClick={() => onClose && onClose()}
-            className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
               pathname === "/vendor/documents"
                 ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
                 : "text-slate-300 hover:bg-slate-900 hover:text-white"
@@ -409,85 +405,29 @@ export default function Sidebar({ isOpen, onClose }) {
               <FileText className="w-4 h-4 text-amber-400" />
               <span>Documents & Expiries</span>
             </div>
-            <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px] font-black">
-              3 Alerts
+            <span
+              className={`px-1.5 py-0.2 rounded-full font-black text-[10px] min-w-[18px] text-center ${
+                pathname === "/vendor/documents"
+                  ? "bg-slate-950 text-amber-400"
+                  : "bg-amber-500 text-slate-950"
+              }`}
+            >
+              3
             </span>
-          </Link>
-
-          <Link
-            href="/vendor/notifications"
-            onClick={() => onClose && onClose()}
-            className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
-              pathname === "/vendor/notifications"
-                ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
-                : "text-slate-300 hover:bg-slate-900 hover:text-white"
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <Bell className="w-4 h-4 text-amber-400" />
-              <span>Notifications</span>
-            </div>
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
-              2
-            </span>
-          </Link>
-
-          {/* Section: Account */}
-          <div className="pt-3 pb-1 px-3 text-[10px] font-black uppercase tracking-wider text-slate-500">
-            Account & Support
-          </div>
-
-          <Link
-            href="/vendor/profile"
-            onClick={() => onClose && onClose()}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all ${
-              pathname === "/vendor/profile"
-                ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
-                : "text-slate-300 hover:bg-slate-900 hover:text-white"
-            }`}
-          >
-            <User className="w-4 h-4 text-slate-400" />
-            <span>Business Profile</span>
-          </Link>
-
-          <Link
-            href="/vendor/change-password"
-            onClick={() => onClose && onClose()}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all ${
-              pathname === "/vendor/change-password"
-                ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
-                : "text-slate-300 hover:bg-slate-900 hover:text-white"
-            }`}
-          >
-            <Lock className="w-4 h-4 text-slate-400" />
-            <span>Security & Password</span>
-          </Link>
-
-          <Link
-            href="/vendor/support"
-            onClick={() => onClose && onClose()}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all ${
-              pathname === "/vendor/support"
-                ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
-                : "text-slate-300 hover:bg-slate-900 hover:text-white"
-            }`}
-          >
-            <HelpCircle className="w-4 h-4 text-slate-400" />
-            <span>Partner Helpline (24/7)</span>
           </Link>
 
         </nav>
 
         {/* Footer User Card */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/80">
-          <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs shrink-0">
+        <div className="p-3.5 border-t border-slate-800 bg-slate-950/80">
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-sm shrink-0">
                 RK
               </div>
               <div className="truncate">
-                <p className="text-xs font-bold text-white truncate">Rajesh Kannan</p>
-                <p className="text-[10px] text-slate-400 truncate">Fleet Partner</p>
+                <p className="text-sm font-bold text-white truncate">Rajesh Kannan</p>
+                <p className="text-xs text-slate-400 truncate">Fleet Partner</p>
               </div>
             </div>
             <Link
