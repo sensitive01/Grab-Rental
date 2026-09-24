@@ -1,0 +1,1 @@
+export { NumberPlate } from "./Card";
