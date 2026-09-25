@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -11,33 +11,60 @@ import {
   CheckCircle2, 
   AlertCircle,
   Calendar,
-  Sparkles
+  Sparkles,
+  Loader2,
+  Image as ImageIcon
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
 import NumberPlate from "@/components/ui/NumberPlate";
+import { axiosClient } from "@/lib/axiosClient";
+import { uploadSignedToCloudinary } from "@/lib/cloudinary";
 
 export default function AddVehiclePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
+  const [toast, setToast] = useState(null); // { message, type }
+
+  // File input refs
+  const photoInputRef = useRef(null);
+  const rcInputRef = useRef(null);
+  const insuranceInputRef = useRef(null);
+
+  // Upload progress states
+  const [uploading, setUploading] = useState({
+    photo: false,
+    rc: false,
+    insurance: false
+  });
+
+  // Local file previews / names
+  const [fileDetails, setFileDetails] = useState({
+    photoPreview: null,
+    photoName: "",
+    rcName: "",
+    insuranceName: ""
+  });
 
   const [formData, setFormData] = useState({
     vehicleType: "SUV",
-    vehicleModel: "Toyota Innova Crysta 2.4 GX",
-    vehicleNumber: "TN-38-XY-9900",
-    registrationNumber: "TN382024009900",
+    vehicleModel: "",
+    vehicleNumber: "",
+    registrationNumber: "",
     seatingCapacity: 7,
     fuelType: "Diesel",
     acType: "Dual AC",
-    year: 2024,
-    insuranceExpiry: "2027-04-30",
-    permitExpiry: "2027-02-28",
-    fitnessExpiry: "2027-08-15",
-    dailyRate: 3600,
-    perKmRate: 16,
-    status: "Available",
-    currentLocation: "Peelamedu Hub, Coimbatore"
+    year: new Date().getFullYear(),
+    insuranceExpiry: "",
+    permitExpiry: "",
+    fitnessExpiry: "",
+    dailyRate: "",
+    perKmRate: "",
+    currentLocation: "",
+    imageUrl: "",
+    rcDocumentUrl: "",
+    insuranceDocumentUrl: "",
+    permitDocumentUrl: ""
   });
 
   const handleChange = (e) => {
@@ -45,25 +72,137 @@ export default function AddVehiclePage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleFileUpload = async (type, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Set local preview if it's an image
+    if (type === "photo") {
+      const localUrl = URL.createObjectURL(file);
+      setFileDetails((prev) => ({ ...prev, photoPreview: localUrl, photoName: file.name }));
+    } else if (type === "rc") {
+      setFileDetails((prev) => ({ ...prev, rcName: file.name }));
+    } else if (type === "insurance") {
+      setFileDetails((prev) => ({ ...prev, insuranceName: file.name }));
+    }
+
+    setUploading((prev) => ({ ...prev, [type]: true }));
+
+    try {
+      const folder = type === "photo" ? "grabrentals/vehicles" : "grabrentals/documents";
+      const uploadedUrl = await uploadSignedToCloudinary(file, folder);
+
+      if (uploadedUrl) {
+        if (type === "photo") {
+          setFormData((prev) => ({ ...prev, imageUrl: uploadedUrl }));
+        } else if (type === "rc") {
+          setFormData((prev) => ({ ...prev, rcDocumentUrl: uploadedUrl }));
+        } else if (type === "insurance") {
+          setFormData((prev) => ({ ...prev, insuranceDocumentUrl: uploadedUrl }));
+        }
+        setToast({ message: `${type.toUpperCase()} file uploaded securely!`, type: "success" });
+      }
+    } catch (err) {
+      console.error(`Failed to upload ${type}:`, err);
+      setToast({ message: `Upload failed: ${err.message || "Could not reach storage"}`, type: "error" });
+    } finally {
+      setUploading((prev) => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setToast(null);
 
-    setTimeout(() => {
+    // Client-side required field validations
+    if (!formData.vehicleModel?.trim()) {
+      setToast({ message: "Please enter Vehicle Make & Model", type: "error" });
       setLoading(false);
-      setToastMessage("Vehicle successfully registered and added to fleet!");
-      setTimeout(() => {
-        router.push("/vendor/vehicles");
-      }, 1000);
-    }, 800);
+      return;
+    }
+
+    if (!formData.vehicleNumber?.trim()) {
+      setToast({ message: "Please enter Vehicle Plate Number (e.g. TN-38-XY-9900)", type: "error" });
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.dailyRate || Number(formData.dailyRate) <= 0) {
+      setToast({ message: "Please enter a Daily Base Rate (₹) greater than 0", type: "error" });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        vehicleType: formData.vehicleType,
+        vehicleModel: formData.vehicleModel.trim(),
+        vehicleNumber: formData.vehicleNumber.trim().toUpperCase(),
+        registrationNumber: formData.registrationNumber?.trim() ? formData.registrationNumber.trim().toUpperCase() : null,
+        seatingCapacity: Number(formData.seatingCapacity) || 4,
+        fuelType: formData.fuelType || "Diesel",
+        acType: formData.acType || "Dual AC",
+        year: Number(formData.year) || new Date().getFullYear(),
+        insuranceExpiry: formData.insuranceExpiry || null,
+        permitExpiry: formData.permitExpiry || null,
+        fitnessExpiry: formData.fitnessExpiry || null,
+        dailyRate: Number(formData.dailyRate),
+        perKmRate: Number(formData.perKmRate || 0),
+        currentLocation: formData.currentLocation?.trim() || "Deployment Hub",
+        imageUrl: formData.imageUrl || null,
+        rcDocumentUrl: formData.rcDocumentUrl || null,
+        insuranceDocumentUrl: formData.insuranceDocumentUrl || null,
+        permitDocumentUrl: formData.permitDocumentUrl || null
+      };
+
+      const res = await axiosClient.post("/api/fleet/vehicles", payload);
+
+      if (res.data?.success) {
+        setToast({
+          message: `Vehicle ${payload.vehicleNumber} registered successfully!`,
+          type: "success"
+        });
+        setTimeout(() => {
+          router.push("/vendor/vehicles");
+        }, 1200);
+      } else {
+        setToast({
+          message: res.data?.message || "Failed to register vehicle",
+          type: "error"
+        });
+      }
+    } catch (err) {
+      console.error("Vehicle registration error:", err);
+      let errMsg = err.response?.data?.message || err.message || "Failed to register vehicle";
+      
+      // Extract specific field errors if backend returned a validation map
+      if (err.response?.data?.data && typeof err.response.data.data === "object") {
+        const errorList = Object.values(err.response.data.data).filter(Boolean);
+        if (errorList.length > 0) {
+          errMsg = errorList.join(" • ");
+        }
+      }
+      
+      setToast({
+        message: errMsg,
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       
       {/* Toast */}
-      {toastMessage && (
-        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
       )}
 
       {/* Header & Breadcrumbs */}
@@ -152,10 +291,9 @@ export default function AddVehiclePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Registration Number (RTO) *</label>
+                <label className="font-bold text-slate-700">Registration Number (RTO)</label>
                 <input
                   type="text"
-                  required
                   name="registrationNumber"
                   value={formData.registrationNumber}
                   onChange={handleChange}
@@ -214,7 +352,7 @@ export default function AddVehiclePage() {
                 <label className="font-bold text-slate-700">Manufacturing Year *</label>
                 <input
                   type="number"
-                  min="2015"
+                  min="2010"
                   max="2026"
                   name="year"
                   value={formData.year}
@@ -252,10 +390,9 @@ export default function AddVehiclePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Tourist Permit Expiry (AITP) *</label>
+                <label className="font-bold text-slate-700">Tourist Permit Expiry (AITP)</label>
                 <input
                   type="date"
-                  required
                   name="permitExpiry"
                   value={formData.permitExpiry}
                   onChange={handleChange}
@@ -264,10 +401,9 @@ export default function AddVehiclePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Fitness Certificate (FC) Expiry *</label>
+                <label className="font-bold text-slate-700">Fitness Certificate (FC) Expiry</label>
                 <input
                   type="date"
-                  required
                   name="fitnessExpiry"
                   value={formData.fitnessExpiry}
                   onChange={handleChange}
@@ -296,7 +432,7 @@ export default function AddVehiclePage() {
                   type="number"
                   required
                   min="500"
-                  step="100"
+                  step="50"
                   name="dailyRate"
                   value={formData.dailyRate}
                   onChange={handleChange}
@@ -310,7 +446,7 @@ export default function AddVehiclePage() {
                 <input
                   type="number"
                   required
-                  min="8"
+                  min="5"
                   step="1"
                   name="perKmRate"
                   value={formData.perKmRate}
@@ -343,39 +479,117 @@ export default function AddVehiclePage() {
               </div>
               <div>
                 <h2 className="text-sm font-black text-slate-900">Document Uploads & Fleet Photos</h2>
-                <p className="text-xs text-slate-500">Upload PDF or JPG documents for platform verification</p>
+                <p className="text-xs text-slate-500">Securely uploaded to Cloudinary CDN for platform verification</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               
               {/* RC Upload Box */}
-              <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
-                <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+              <input 
+                type="file" 
+                ref={rcInputRef} 
+                onChange={(e) => handleFileUpload("rc", e)}
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden" 
+              />
+              <div 
+                onClick={() => !uploading.rc && rcInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors ${
+                  formData.rcDocumentUrl 
+                    ? "border-emerald-500 bg-emerald-50/30" 
+                    : "border-slate-200 hover:border-amber-400 bg-slate-50/50"
+                }`}
+              >
+                {uploading.rc ? (
+                  <Loader2 className="w-6 h-6 text-amber-500 mx-auto animate-spin" />
+                ) : formData.rcDocumentUrl ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
+                ) : (
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+                )}
                 <p className="font-bold text-slate-800">Vehicle RC Copy</p>
-                <p className="text-[11px] text-slate-400">PDF, JPG up to 5MB</p>
-                <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Browse File
+                <p className="text-[11px] text-slate-400 truncate max-w-[180px] mx-auto">
+                  {fileDetails.rcName || "PDF, JPG up to 10MB"}
+                </p>
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  formData.rcDocumentUrl
+                    ? "text-emerald-700 bg-emerald-100 border-emerald-300"
+                    : "text-amber-600 bg-amber-50 border-amber-200"
+                }`}>
+                  {uploading.rc ? "Uploading..." : formData.rcDocumentUrl ? "Uploaded" : "Browse File"}
                 </span>
               </div>
 
               {/* Insurance Upload Box */}
-              <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
-                <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+              <input 
+                type="file" 
+                ref={insuranceInputRef} 
+                onChange={(e) => handleFileUpload("insurance", e)}
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden" 
+              />
+              <div 
+                onClick={() => !uploading.insurance && insuranceInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors ${
+                  formData.insuranceDocumentUrl 
+                    ? "border-emerald-500 bg-emerald-50/30" 
+                    : "border-slate-200 hover:border-amber-400 bg-slate-50/50"
+                }`}
+              >
+                {uploading.insurance ? (
+                  <Loader2 className="w-6 h-6 text-amber-500 mx-auto animate-spin" />
+                ) : formData.insuranceDocumentUrl ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
+                ) : (
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+                )}
                 <p className="font-bold text-slate-800">Insurance Certificate</p>
-                <p className="text-[11px] text-slate-400">PDF, JPG up to 5MB</p>
-                <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Browse File
+                <p className="text-[11px] text-slate-400 truncate max-w-[180px] mx-auto">
+                  {fileDetails.insuranceName || "PDF, JPG up to 10MB"}
+                </p>
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  formData.insuranceDocumentUrl
+                    ? "text-emerald-700 bg-emerald-100 border-emerald-300"
+                    : "text-amber-600 bg-amber-50 border-amber-200"
+                }`}>
+                  {uploading.insurance ? "Uploading..." : formData.insuranceDocumentUrl ? "Uploaded" : "Browse File"}
                 </span>
               </div>
 
               {/* Photos Upload Box */}
-              <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
-                <Upload className="w-6 h-6 text-slate-400 mx-auto" />
-                <p className="font-bold text-slate-800">Vehicle Exterior Photos</p>
-                <p className="text-[11px] text-slate-400">Front, Side, Interior</p>
-                <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Upload 3 Photos
+              <input 
+                type="file" 
+                ref={photoInputRef} 
+                onChange={(e) => handleFileUpload("photo", e)}
+                accept="image/*"
+                className="hidden" 
+              />
+              <div 
+                onClick={() => !uploading.photo && photoInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors ${
+                  formData.imageUrl 
+                    ? "border-emerald-500 bg-emerald-50/30" 
+                    : "border-slate-200 hover:border-amber-400 bg-slate-50/50"
+                }`}
+              >
+                {uploading.photo ? (
+                  <Loader2 className="w-6 h-6 text-amber-500 mx-auto animate-spin" />
+                ) : formData.imageUrl ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
+                ) : (
+                  <ImageIcon className="w-6 h-6 text-slate-400 mx-auto" />
+                )}
+                <p className="font-bold text-slate-800">Vehicle Exterior Photo</p>
+                <p className="text-[11px] text-slate-400 truncate max-w-[180px] mx-auto">
+                  {fileDetails.photoName || "PNG, JPG for Preview"}
+                </p>
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  formData.imageUrl
+                    ? "text-emerald-700 bg-emerald-100 border-emerald-300"
+                    : "text-amber-600 bg-amber-50 border-amber-200"
+                }`}>
+                  {uploading.photo ? "Uploading..." : formData.imageUrl ? "Photo Uploaded" : "Upload Photo"}
                 </span>
               </div>
 
@@ -400,18 +614,32 @@ export default function AddVehiclePage() {
             </div>
 
             <div className="space-y-3">
+              {/* Photo Banner if available */}
+              {(fileDetails.photoPreview || formData.imageUrl) && (
+                <div className="relative h-36 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <img 
+                    src={fileDetails.photoPreview || formData.imageUrl} 
+                    alt="Vehicle preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-2 left-2 text-[10px] font-bold bg-slate-900/80 text-white px-2 py-0.5 rounded-md backdrop-blur-xs">
+                    Live Photo
+                  </span>
+                </div>
+              )}
+
               <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2">
                 <div className="flex items-center justify-between">
-                  <NumberPlate number={formData.vehicleNumber || "TN-38-XY-9900"} />
+                  <NumberPlate number={formData.vehicleNumber || "TN-00-XX-0000"} />
                   <span className="text-[10px] text-slate-400 font-bold">
                     {formData.year} Model
                   </span>
                 </div>
                 <h4 className="text-sm font-black tracking-tight line-clamp-1">
-                  {formData.vehicleModel || "Vehicle Model"}
+                  {formData.vehicleModel || "Vehicle Make & Model"}
                 </h4>
                 <p className="text-xs text-slate-400">
-                  {formData.currentLocation}
+                  {formData.currentLocation || "Base Hub / Operational City"}
                 </p>
               </div>
 
@@ -445,7 +673,7 @@ export default function AddVehiclePage() {
                   <span className="text-base">🏷️</span>
                   <div>
                     <p className="text-[10px] text-slate-400">Daily Rate</p>
-                    <p className="font-bold text-amber-600">₹{Number(formData.dailyRate).toLocaleString("en-IN")}</p>
+                    <p className="font-bold text-amber-600">₹{Number(formData.dailyRate || 0).toLocaleString("en-IN")}</p>
                   </div>
                 </div>
               </div>
@@ -474,12 +702,12 @@ export default function AddVehiclePage() {
             <div className="space-y-3">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploading.photo || uploading.rc || uploading.insurance}
                 className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 active:scale-98 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
-                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Registering Vehicle...
                   </>
                 ) : (

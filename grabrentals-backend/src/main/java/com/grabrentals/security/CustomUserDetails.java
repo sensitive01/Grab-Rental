@@ -3,6 +3,7 @@ package com.grabrentals.security;
 import com.grabrentals.user.entity.Role;
 import com.grabrentals.user.entity.User;
 import com.grabrentals.user.entity.UserStatus;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,9 +22,11 @@ public class CustomUserDetails implements UserDetails {
     private final String name;
     private final String email;
     private final String phone;
+    @Getter(AccessLevel.NONE)
     private final String password;
     private final Role role;
     private final UserStatus status;
+    @Getter(AccessLevel.NONE)
     private final Collection<? extends GrantedAuthority> authorities;
 
     public static CustomUserDetails build(User user) {

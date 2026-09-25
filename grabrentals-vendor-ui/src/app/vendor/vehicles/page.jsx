@@ -1,61 +1,319 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { 
   Car, 
   Plus, 
-  Search, 
-  Filter, 
   Eye, 
   Edit3, 
   Calendar, 
   Trash2, 
-  Fuel, 
   Users, 
   MapPin, 
-  Sparkles,
-  CheckCircle2,
-  AlertCircle
+  Filter
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import Toast from "@/components/ui/Toast";
-import { mockVehicles } from "@/lib/mockData";
+import DataTable from "@/components/ui/DataTable";
 import { formatINR } from "@/lib/utils";
+import { axiosClient } from "@/lib/axiosClient";
 
 export default function VendorVehiclesPage() {
-  const [vehicles, setVehicles] = useState(mockVehicles);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [vehicleToDelete, setVehicleToDelete] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Filters
-  const filteredVehicles = vehicles.filter((v) => {
-    const matchesSearch = 
-      v.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (v.driverName && v.driverName.toLowerCase().includes(searchQuery.toLowerCase()));
+  const fetchVehicles = async () => {
+    try {
+      const [vehiclesRes, driversRes] = await Promise.all([
+        axiosClient.get("/api/fleet/vehicles"),
+        axiosClient.get("/api/fleet/drivers").catch(() => ({ data: { data: [] } }))
+      ]);
 
-    const matchesType = selectedType === "all" || v.type.toLowerCase() === selectedType.toLowerCase();
-    const matchesStatus = selectedStatus === "all" || v.status.toLowerCase() === selectedStatus.toLowerCase();
+      const drivers = Array.isArray(driversRes.data?.data) ? driversRes.data.data : [];
 
-    return matchesSearch && matchesType && matchesStatus;
-  });
+      if (vehiclesRes.data?.success && Array.isArray(vehiclesRes.data?.data)) {
+        const beVehicles = vehiclesRes.data.data.map((v) => {
+          const matchedDriver = drivers.find((d) => d.assignedVehicleId === v.id);
+          const resolvedDriverName = v.assignedDriverName || matchedDriver?.name || "Unassigned";
+          const resolvedDriverPhone = v.assignedDriverPhone || matchedDriver?.phone || "";
+          const resolvedDriverId = v.assignedDriverId || matchedDriver?.id || null;
 
-  const handleDeleteVehicle = () => {
+          return {
+            id: v.id,
+            model: v.model,
+            vehicleNumber: v.vehicleNumber,
+            type: v.vehicleType || "SUV",
+            category: v.vehicleType || "SUV",
+            seatingCapacity: v.seatingCapacity,
+            fuelType: v.fuelType || "Diesel",
+            transmission: "Manual",
+            acType: v.acType || "Dual AC",
+            year: v.year || 2024,
+            status: v.status === "AVAILABLE" ? "Available" : v.status === "BOOKED" ? "Booked" : v.status === "ON_TRIP" ? "On Trip" : "Maintenance",
+            currentLocation: v.currentLocation || "Deployment Hub",
+            driverName: resolvedDriverName,
+            driverPhone: resolvedDriverPhone,
+            assignedDriverId: resolvedDriverId,
+            dailyRate: v.dailyRate || 3500,
+            perKmRate: v.perKmRate || 15,
+            insuranceExpiry: v.insuranceExpiry,
+            permitExpiry: v.permitExpiry,
+            fitnessExpiry: v.fitnessExpiry,
+            image: v.imageUrl || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=60"
+          };
+        });
+        setVehicles(beVehicles);
+      }
+    } catch (err) {
+      console.warn("Using default fleet vehicles:", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  // Filter by Type & Status dropdowns/pills
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((v) => {
+      const matchesType = selectedType === "all" || v.type.toLowerCase() === selectedType.toLowerCase();
+      const matchesStatus = selectedStatus === "all" || v.status.toLowerCase() === selectedStatus.toLowerCase();
+      return matchesType && matchesStatus;
+    });
+  }, [vehicles, selectedType, selectedStatus]);
+
+  const handleDeleteVehicle = async () => {
     if (!vehicleToDelete) return;
-    setVehicles(vehicles.filter((v) => v.id !== vehicleToDelete.id));
-    setToastMessage(`Vehicle ${vehicleToDelete.vehicleNumber} (${vehicleToDelete.model}) was removed.`);
-    setVehicleToDelete(null);
+    try {
+      if (typeof vehicleToDelete.id === "string" && vehicleToDelete.id.length > 20) {
+        await axiosClient.delete(`/api/fleet/vehicles/${vehicleToDelete.id}`);
+      }
+      setVehicles((prev) => prev.filter((v) => v.id !== vehicleToDelete.id));
+      setToastMessage(`Vehicle ${vehicleToDelete.vehicleNumber} (${vehicleToDelete.model}) was removed.`);
+    } catch (err) {
+      console.error("Failed to delete vehicle:", err);
+      setToastMessage(`Failed to delete vehicle: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setVehicleToDelete(null);
+    }
   };
 
   const vehicleTypes = ["All", "Sedan", "SUV", "Van", "Tempo Traveller", "Bus"];
   const statusList = ["All", "Available", "Booked", "On Trip", "Maintenance"];
+
+  // Table Column Definitions
+  const columns = useMemo(() => [
+    {
+      key: "model",
+      label: "Vehicle",
+      sortable: true,
+      render: (v) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-600">
+            <Car className="w-5 h-5" />
+          </div>
+          <div>
+            <Link 
+              href={`/vendor/vehicles/${v.id}`}
+              className="font-bold text-slate-900 hover:text-amber-600 transition-colors"
+            >
+              {v.model}
+            </Link>
+            <p className="text-[11px] text-slate-400">{v.year} Model</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: "vehicleNumber",
+      label: "Plate Number",
+      sortable: true,
+      className: "whitespace-nowrap",
+      render: (v) => <NumberPlate number={v.vehicleNumber} />
+    },
+    {
+      key: "type",
+      label: "Category",
+      sortable: true,
+      className: "font-semibold text-slate-700"
+    },
+    {
+      key: "seatingCapacity",
+      label: "Capacity",
+      sortable: true,
+      sortValue: (v) => Number(v.seatingCapacity) || 0,
+      render: (v) => (
+        <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
+          <Users className="w-3.5 h-3.5 text-slate-400" /> {v.seatingCapacity} Seater
+        </span>
+      )
+    },
+    {
+      key: "fuelType",
+      label: "Fuel & AC",
+      sortable: true,
+      render: (v) => (
+        <div>
+          <p className="font-semibold text-slate-700">{v.fuelType}</p>
+          <p className="text-[11px] text-slate-400">{v.acType}</p>
+        </div>
+      )
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (v) => <StatusBadge status={v.status} />
+    },
+    {
+      key: "driverName",
+      label: "Assigned Driver",
+      sortable: true,
+      render: (v) => (
+        v.driverName && v.driverName !== "Unassigned" ? (
+          <div>
+            <p className="font-bold text-slate-900">{v.driverName}</p>
+            <p className="text-[11px] text-slate-400">{v.driverPhone}</p>
+          </div>
+        ) : (
+          <span className="text-slate-400 italic">Unassigned</span>
+        )
+      )
+    },
+    {
+      key: "currentLocation",
+      label: "Current Hub / Location",
+      sortable: true,
+      render: (v) => (
+        <span className="flex items-center gap-1 text-slate-600 max-w-[180px] truncate">
+          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="truncate">{v.currentLocation}</span>
+        </span>
+      )
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      align: "center",
+      sortable: false,
+      render: (v) => (
+        <div className="flex items-center justify-center gap-1.5">
+          <Link
+            href={`/vendor/vehicles/${v.id}`}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+            title="View Details"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href={`/vendor/vehicles/${v.id}/edit`}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+            title="Edit Asset"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href={`/vendor/vehicles/availability`}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-600 transition-colors"
+            title="Availability Calendar"
+          >
+            <Calendar className="w-3.5 h-3.5" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => setVehicleToDelete(v)}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors"
+            title="Delete Vehicle"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )
+    }
+  ], []);
+
+  // Mobile Card Renderer
+  const renderMobileCard = (v) => (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center shrink-0 text-amber-600">
+            <Car className="w-5 h-5" />
+          </div>
+          <div>
+            <Link 
+              href={`/vendor/vehicles/${v.id}`}
+              className="font-black text-slate-900 hover:text-amber-600 transition-colors text-sm block"
+            >
+              {v.model}
+            </Link>
+            <div className="flex items-center gap-2 mt-1">
+              <NumberPlate number={v.vehicleNumber} />
+              <span className="text-[11px] text-slate-400 font-medium">{v.year} Model</span>
+            </div>
+          </div>
+        </div>
+        <StatusBadge status={v.status} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl">
+        <div>
+          <p className="text-[10px] text-slate-400 font-bold uppercase">Type & Capacity</p>
+          <p className="font-semibold text-slate-800 mt-0.5">{v.type} · {v.seatingCapacity} Seats</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-slate-400 font-bold uppercase">Assigned Driver</p>
+          <p className="font-semibold text-slate-800 mt-0.5 truncate">
+            {v.driverName && v.driverName !== "Unassigned" ? v.driverName : "Unassigned"}
+          </p>
+        </div>
+        <div className="col-span-2 text-[11px] text-slate-500 flex items-center gap-1">
+          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+          <span className="truncate">{v.currentLocation}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <Link
+          href={`/vendor/vehicles/${v.id}`}
+          className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold text-center"
+        >
+          Details
+        </Link>
+        <Link
+          href={`/vendor/vehicles/${v.id}/edit`}
+          className="flex-1 py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold text-center"
+        >
+          Edit
+        </Link>
+        <Link
+          href={`/vendor/vehicles/availability`}
+          className="p-2 rounded-xl border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-600"
+          title="Availability"
+        >
+          <Calendar className="w-4 h-4" />
+        </Link>
+        <button
+          type="button"
+          onClick={() => setVehicleToDelete(v)}
+          className="p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400"
+          title="Delete"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -83,7 +341,7 @@ export default function VendorVehiclesPage() {
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             Fleet Vehicle Management
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
-              {vehicles.length} Assets
+              {loading ? "..." : `${vehicles.length} Assets`}
             </span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
@@ -109,40 +367,68 @@ export default function VendorVehiclesPage() {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by model, registration (TN-38...), or assigned driver..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-amber-500"
-            />
-          </div>
-
-          {/* Type Dropdown */}
-          <div className="grid grid-cols-2 gap-2 w-full md:w-auto">
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+      {/* Quick Status Pills */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-2xs flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 pl-1">
+          Quick Filter:
+        </span>
+        {["All", "Available", "Booked", "On Trip", "Maintenance"].map((st) => {
+          const count = loading
+            ? "-"
+            : st === "All" 
+              ? vehicles.length 
+              : vehicles.filter(v => v.status.toLowerCase() === st.toLowerCase()).length;
+          const isSelected = selectedStatus === st.toLowerCase();
+          return (
+            <button
+              key={st}
+              onClick={() => setSelectedStatus(st.toLowerCase())}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                isSelected
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+              }`}
             >
-              {vehicleTypes.map((t) => (
-                <option key={t} value={t.toLowerCase()}>
-                  {t === "All" ? "All Types" : t}
-                </option>
-              ))}
-            </select>
+              {st} ({count})
+            </button>
+          );
+        })}
+      </div>
 
+      {/* Main Vehicles DataTable */}
+      <DataTable
+        columns={columns}
+        data={filteredVehicles}
+        keyField="id"
+        loading={loading}
+        defaultPageSize={10}
+        pageSizeOptions={[5, 10, 25, 50]}
+        searchPlaceholder="Search model, plate (TN-38...), driver, hub..."
+        searchKeys={["model", "vehicleNumber", "driverName", "type", "currentLocation"]}
+        exportFileName="GrabRentals_Fleet_Vehicles"
+        emptyTitle="No Fleet Vehicles Found"
+        emptyDescription="No vehicles matched your search filters. Try adjusting your query or click 'Add Vehicle' above."
+        renderMobileCard={renderMobileCard}
+        filters={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-slate-500">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="py-1 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs focus:outline-hidden cursor-pointer"
+              >
+                {vehicleTypes.map((t) => (
+                  <option key={t} value={t.toLowerCase()}>
+                    {t === "All" ? "All Categories" : t}
+                  </option>
+                ))}
+              </select>
+            </div>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+              className="py-1 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs focus:outline-hidden cursor-pointer"
             >
               {statusList.map((s) => (
                 <option key={s} value={s.toLowerCase()}>
@@ -151,250 +437,8 @@ export default function VendorVehiclesPage() {
               ))}
             </select>
           </div>
-        </div>
-
-        {/* Quick status pill counters */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs overflow-x-auto no-scrollbar pb-1">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
-            Quick:
-          </span>
-          {["All", "Available", "Booked", "On Trip", "Maintenance"].map((st) => {
-            const count = st === "All" 
-              ? vehicles.length 
-              : vehicles.filter(v => v.status.toLowerCase() === st.toLowerCase()).length;
-            const isSelected = selectedStatus === st.toLowerCase();
-            return (
-              <button
-                key={st}
-                onClick={() => setSelectedStatus(st.toLowerCase())}
-                className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-                  isSelected
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
-              >
-                {st} ({count})
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Vehicle Data Table & Mobile Cards */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-        {filteredVehicles.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <Car className="w-12 h-12 text-slate-300 mx-auto" />
-            <h3 className="text-base font-black text-slate-800">No Vehicles Found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No vehicles matched your search filters. Try adjusting your query or add a new vehicle to your fleet.
-            </p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedType("all");
-                setSelectedStatus("all");
-              }}
-              className="text-xs font-bold text-amber-600 hover:underline"
-            >
-              Clear all filters
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Mobile View: Vehicle Cards (< md) */}
-            <div className="p-3.5 space-y-3 md:hidden divide-y divide-slate-100">
-              {filteredVehicles.map((v) => (
-                <div key={v.id} className="pt-3 first:pt-0 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center shrink-0 text-amber-600">
-                        <Car className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <Link 
-                          href={`/vendor/vehicles/${v.id}`}
-                          className="font-black text-slate-900 hover:text-amber-600 transition-colors text-sm block"
-                        >
-                          {v.model}
-                        </Link>
-                        <div className="flex items-center gap-2 mt-1">
-                          <NumberPlate number={v.vehicleNumber} />
-                          <span className="text-[11px] text-slate-400 font-medium">{v.year} Model</span>
-                        </div>
-                      </div>
-                    </div>
-                    <StatusBadge status={v.status} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl">
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">Type & Capacity</p>
-                      <p className="font-semibold text-slate-800 mt-0.5">{v.type} · {v.seatingCapacity} Seats</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">Assigned Driver</p>
-                      <p className="font-semibold text-slate-800 mt-0.5 truncate">
-                        {v.driverName && v.driverName !== "Unassigned" ? v.driverName : "Unassigned"}
-                      </p>
-                    </div>
-                    <div className="col-span-2 text-[11px] text-slate-500 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate">{v.currentLocation}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <Link
-                      href={`/vendor/vehicles/${v.id}`}
-                      className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold text-center"
-                    >
-                      Details
-                    </Link>
-                    <Link
-                      href={`/vendor/vehicles/${v.id}/edit`}
-                      className="flex-1 py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold text-center"
-                    >
-                      Edit
-                    </Link>
-                    <Link
-                      href={`/vendor/vehicles/availability`}
-                      className="p-2 rounded-xl border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-600"
-                      title="Availability"
-                    >
-                      <Calendar className="w-4 h-4" />
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => setVehicleToDelete(v)}
-                      className="p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop View: Full 9-Column Table (>= md) */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[850px]">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-3.5 px-4 whitespace-nowrap">Vehicle</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">Plate Number</th>
-                    <th className="py-3.5 px-4">Category</th>
-                    <th className="py-3.5 px-4">Capacity</th>
-                    <th className="py-3.5 px-4">Fuel & AC</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4">Assigned Driver</th>
-                    <th className="py-3.5 px-4">Current Hub / Location</th>
-                    <th className="py-3.5 px-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredVehicles.map((v) => (
-                    <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-600">
-                            <Car className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <Link 
-                              href={`/vendor/vehicles/${v.id}`}
-                              className="font-bold text-slate-900 hover:text-amber-600 transition-colors"
-                            >
-                              {v.model}
-                            </Link>
-                            <p className="text-[11px] text-slate-400">{v.year} Model · {v.odometer}</p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <NumberPlate number={v.vehicleNumber} />
-                      </td>
-
-                      <td className="py-4 px-4 font-semibold text-slate-700">
-                        {v.type}
-                      </td>
-
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
-                          <Users className="w-3.5 h-3.5 text-slate-400" /> {v.seatingCapacity} Seater
-                        </span>
-                      </td>
-
-                      <td className="py-4 px-4 text-slate-600">
-                        <p className="font-semibold">{v.fuelType}</p>
-                        <p className="text-[11px] text-slate-400">{v.acType}</p>
-                      </td>
-
-                      <td className="py-4 px-4">
-                        <StatusBadge status={v.status} />
-                      </td>
-
-                      <td className="py-4 px-4">
-                        {v.driverName && v.driverName !== "Unassigned" ? (
-                          <div>
-                            <p className="font-bold text-slate-900">{v.driverName}</p>
-                            <p className="text-[11px] text-slate-400">{v.driverPhone}</p>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic">Unassigned</span>
-                        )}
-                      </td>
-
-                      <td className="py-4 px-4 text-slate-600 max-w-[180px] truncate">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{v.currentLocation}</span>
-                        </span>
-                      </td>
-
-                      <td className="py-4 px-4">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <Link
-                            href={`/vendor/vehicles/${v.id}`}
-                            title="View Details"
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </Link>
-                          <Link
-                            href={`/vendor/vehicles/${v.id}/edit`}
-                            title="Edit Vehicle"
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </Link>
-                          <Link
-                            href={`/vendor/vehicles/availability`}
-                            title="Block Dates"
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-600 transition-colors"
-                          >
-                            <Calendar className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => setVehicleToDelete(v)}
-                            title="Delete Vehicle"
-                            className="p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </div>
+        }
+      />
 
     </div>
   );

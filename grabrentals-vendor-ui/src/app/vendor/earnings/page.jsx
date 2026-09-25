@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { 
   TrendingUp, 
@@ -15,6 +15,7 @@ import {
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatCard from "@/components/ui/StatCard";
 import StatusBadge from "@/components/ui/StatusBadge";
+import DataTable from "@/components/ui/DataTable";
 import { AreaLineChart, BarChart } from "@/components/ui/Charts";
 import { mockEarningsData, mockBookings } from "@/lib/mockData";
 import { formatINR } from "@/lib/utils";
@@ -30,6 +31,80 @@ export default function VendorEarningsPage() {
     label: v.model.split(" ")[0] + " (" + v.model.split("(")[1],
     value: v.earnings
   }));
+
+  const columns = useMemo(() => [
+    {
+      key: "id",
+      label: "Booking ID",
+      sortable: true,
+      render: (b) => (
+        <Link href={`/vendor/bookings/${b.id}`} className="text-amber-600 hover:underline font-mono font-bold">
+          #{b.id}
+        </Link>
+      )
+    },
+    {
+      key: "pickupDate",
+      label: "Trip Date",
+      sortable: true,
+      className: "text-slate-600"
+    },
+    {
+      key: "customer.name",
+      label: "Customer & Route",
+      sortable: true,
+      render: (b) => (
+        <div>
+          <p className="font-bold text-slate-900">{b.customer?.name}</p>
+          <p className="text-[11px] text-slate-500">{b.pickup} ➔ {b.drop}</p>
+        </div>
+      )
+    },
+    {
+      key: "estimatedAmount",
+      label: "Gross Fare",
+      align: "right",
+      sortable: true,
+      sortValue: (b) => Number(b.estimatedAmount) || 0,
+      render: (b) => (
+        <span className="font-semibold text-slate-700">
+          {formatINR(b.estimatedAmount)}
+        </span>
+      )
+    },
+    {
+      key: "platformFee",
+      label: "Platform Fee (15%)",
+      align: "right",
+      sortable: true,
+      sortValue: (b) => Number(b.platformFee) || 0,
+      render: (b) => (
+        <span className="font-medium text-rose-600">
+          -{formatINR(b.platformFee)}
+        </span>
+      )
+    },
+    {
+      key: "vendorNet",
+      label: "Net Payout",
+      align: "right",
+      sortable: true,
+      sortValue: (b) => Number(b.vendorNet) || 0,
+      render: (b) => (
+        <span className="font-black text-slate-900 text-sm">
+          {formatINR(b.vendorNet)}
+        </span>
+      )
+    },
+    {
+      key: "status",
+      label: "Payout Status",
+      sortable: true,
+      render: (b) => (
+        <StatusBadge status={b.status === "Completed" ? "Paid" : b.status === "Cancelled" ? "Failed" : "Processing"} />
+      )
+    }
+  ], []);
 
   return (
     <div className="space-y-6">
@@ -48,139 +123,112 @@ export default function VendorEarningsPage() {
           </div>
           <Link
             href="/vendor/payments"
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5 self-start sm:self-auto"
+            className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 self-start sm:self-auto shrink-0"
           >
-            <CreditCard className="w-4 h-4" /> View Payout Batches
+            <CreditCard className="w-4 h-4 text-amber-400" />
+            View Payout Batches
           </Link>
         </div>
       </div>
 
-      {/* 5 Financial Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+      {/* KPI Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Lifetime Net"
-          value={formatINR(mockEarningsData.totalEarnings)}
-          trend="+18.4%"
-          trendPositive={true}
-          subtitle="After 15% platform commission"
+          title="Total Gross Revenue"
+          value={formatINR(mockEarningsData.totalRevenue)}
+          change="+18.4% this month"
+          trend="up"
+          icon={TrendingUp}
         />
         <StatCard
-          title="This Month (Sep)"
-          value={formatINR(mockEarningsData.thisMonth)}
-          subtitle="35 Completed Trips"
+          title="Net Transferred"
+          value={formatINR(mockEarningsData.netEarnings)}
+          subtitle="Direct deposit to bank"
+          icon={CreditCard}
         />
         <StatCard
-          title="This Week"
-          value={formatINR(mockEarningsData.thisWeek)}
-          subtitle="Current payout cycle"
-        />
-        <StatCard
-          title="Pending Payout"
+          title="Pending Next Settlement"
           value={formatINR(mockEarningsData.pendingPayout)}
-          subtitle="Scheduled this Friday"
+          subtitle="Releasing next Friday"
+          icon={Calendar}
         />
         <StatCard
-          title="Paid & Settled"
-          value={formatINR(mockEarningsData.paidAmount)}
-          subtitle="Direct bank transfers"
+          title="Average Booking Net"
+          value={formatINR(mockEarningsData.averagePerBooking)}
+          subtitle="Across 34 total rides"
+          icon={TrendingUp}
         />
       </div>
 
-      {/* Charts Grid */}
+      {/* Analytics Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Chart 1: Monthly Net Revenue */}
+        {/* Monthly Earnings Trend */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-black text-slate-900">Monthly Net Revenue (₹ INR)</h2>
-              <p className="text-xs text-slate-500">Net vendor earnings past 6 months</p>
+              <h2 className="text-base font-black text-slate-900 tracking-tight">
+                Net Monthly Earnings Trend
+              </h2>
+              <p className="text-xs text-slate-400">Past 6 months payout volume in INR</p>
             </div>
-            <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
-              Avg ₹94,500 / mo
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              +24% H2 Growth
             </span>
           </div>
 
-          <AreaLineChart data={chartData} height={210} strokeColor="#f59e0b" />
+          <AreaLineChart
+            data={chartData}
+            height={200}
+            color="#f59e0b"
+          />
         </div>
 
-        {/* Chart 2: Vehicle Revenue Contribution */}
+        {/* Earnings Breakdown by Vehicle */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-black text-slate-900">Vehicle Revenue Contribution</h2>
-              <p className="text-xs text-slate-500">Earnings breakdown by vehicle model</p>
+              <h2 className="text-base font-black text-slate-900 tracking-tight">
+                Revenue by Fleet Vehicle
+              </h2>
+              <p className="text-xs text-slate-400">Total net earnings generated per asset</p>
             </div>
-            <span className="text-xs font-bold text-slate-500">Lifetime Revenue</span>
           </div>
 
-          <BarChart data={vehicleBarData} height={190} barColor="#0284c7" />
+          <BarChart
+            data={vehicleBarData}
+            height={200}
+            color="#3b82f6"
+          />
         </div>
 
       </div>
 
-      {/* Trip Payout Transactions Ledger */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+      {/* Trip Payout Transactions DataTable */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
           <div>
-            <h3 className="text-base font-black text-slate-900 tracking-tight">
+            <h2 className="text-base font-black text-slate-900 tracking-tight">
               Trip Settlement Ledger
-            </h3>
+            </h2>
             <p className="text-xs text-slate-500">
               Trip-by-trip commission deductions and net payout breakdown
             </p>
           </div>
-          <button
-            onClick={() => alert("Downloading CSV statement...")}
-            className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 self-start sm:self-auto"
-          >
-            <Download className="w-3.5 h-3.5" /> Export Excel / CSV
-          </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-3.5 px-4">Booking ID</th>
-                <th className="py-3.5 px-4">Trip Date</th>
-                <th className="py-3.5 px-4">Customer & Route</th>
-                <th className="py-3.5 px-4 text-right">Gross Fare</th>
-                <th className="py-3.5 px-4 text-right text-rose-600">Platform Fee (15%)</th>
-                <th className="py-3.5 px-4 text-right">Net Payout</th>
-                <th className="py-3.5 px-4">Payout Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {mockBookings.map((b) => (
-                <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-4 font-black font-mono text-slate-900">
-                    <Link href={`/vendor/bookings/${b.id}`} className="text-amber-600 hover:underline">
-                      #{b.id}
-                    </Link>
-                  </td>
-                  <td className="py-4 px-4 text-slate-600">{b.pickupDate}</td>
-                  <td className="py-4 px-4">
-                    <p className="font-bold text-slate-900">{b.customer.name}</p>
-                    <p className="text-[11px] text-slate-500">{b.pickup} ➔ {b.drop}</p>
-                  </td>
-                  <td className="py-4 px-4 text-right font-medium text-slate-700">
-                    {formatINR(b.estimatedAmount)}
-                  </td>
-                  <td className="py-4 px-4 text-right font-medium text-rose-600">
-                    -{formatINR(b.platformFee)}
-                  </td>
-                  <td className="py-4 px-4 text-right font-black text-slate-900">
-                    {formatINR(b.vendorNet)}
-                  </td>
-                  <td className="py-4 px-4">
-                    <StatusBadge status={b.status === "Completed" ? "Paid" : b.status === "Cancelled" ? "Failed" : "Processing"} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          data={mockBookings}
+          keyField="id"
+          defaultPageSize={10}
+          pageSizeOptions={[5, 10, 25, 50]}
+          searchPlaceholder="Search booking ID, customer, route..."
+          searchKeys={["id", "customer.name", "pickup", "drop", "status"]}
+          exportFileName="GrabRentals_Trip_Settlements"
+          emptyTitle="No Settlements Found"
+          emptyDescription="No settlements match your search query."
+        />
       </div>
 
     </div>

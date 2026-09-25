@@ -106,6 +106,81 @@ export const adminApi = {
     }
   },
 
+  async updateUser(id, updateData) {
+    try {
+      let response;
+      try {
+        response = await axiosClient.put(`/api/admin/users/${id}`, updateData);
+      } catch (err) {
+        if (err.response?.status === 405) {
+          response = await axiosClient.patch(`/api/admin/users/${id}`, updateData);
+        } else {
+          throw err;
+        }
+      }
+      const updated = response.data?.data;
+
+      if (updated && typeof window !== "undefined") {
+        try {
+          const cached = this.getCachedUsers();
+          const next = cached.map((u) => (u.id === id ? { ...u, ...updated } : u));
+          localStorage.setItem(DB_USERS_CACHE_KEY, JSON.stringify(next));
+
+          this.logSecurityEvent({
+            userId: updated.email || String(id),
+            userName: updated.name || "User",
+            userRole: updated.role || "MEMBER",
+            event: "USER_UPDATED",
+            status: "SUCCESS",
+            details: `Updated details for ${updated.name} (${updated.email})`,
+          });
+        } catch {}
+      }
+
+      return {
+        success: true,
+        source: "backend",
+        message: response.data?.message || "User updated successfully",
+        data: updated,
+      };
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message;
+      throw new Error(msg);
+    }
+  },
+
+  async deleteUser(id) {
+    try {
+      const response = await axiosClient.delete(`/api/admin/users/${id}`);
+
+      if (typeof window !== "undefined") {
+        try {
+          const cached = this.getCachedUsers();
+          const next = cached.filter((u) => u.id !== id);
+          localStorage.setItem(DB_USERS_CACHE_KEY, JSON.stringify(next));
+
+          this.logSecurityEvent({
+            userId: String(id),
+            userName: "User",
+            userRole: "MEMBER",
+            event: "USER_DELETED",
+            status: "WARNING",
+            details: `Admin deleted user account (${id})`,
+          });
+        } catch {}
+      }
+
+      return {
+        success: true,
+        source: "backend",
+        message: response.data?.message || "User deleted successfully",
+      };
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message;
+      throw new Error(msg);
+    }
+  },
+
   async getUserById(id) {
     try {
       const response = await axiosClient.get(`/api/admin/users/${id}`);

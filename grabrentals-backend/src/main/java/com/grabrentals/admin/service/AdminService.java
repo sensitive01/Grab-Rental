@@ -23,8 +23,11 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final com.grabrentals.fleet.repository.FleetProfileRepository fleetProfileRepository;
+    private final com.grabrentals.fleet.repository.VehicleRepository vehicleRepository;
+    private final com.grabrentals.fleet.repository.DriverRepository driverRepository;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final com.grabrentals.security.CustomUserDetailsService userDetailsService;
     private final com.grabrentals.audit.service.AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
@@ -59,6 +62,116 @@ public class AdminService {
                     .build());
         } catch (Exception ignored) {}
         return response;
+    }
+
+    @Transactional
+    public UserResponse updateUser(UUID id, com.grabrentals.admin.dto.UpdateUserRequest request) {
+        User user = userService.getUserEntityById(id);
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            user.setName(request.getName().trim());
+        }
+
+        if (request.getPhone() != null && !request.getPhone().isBlank() && !request.getPhone().equals(user.getPhone())) {
+            String newPhone = request.getPhone().trim();
+            userRepository.findByPhone(newPhone).ifPresent(existing -> {
+                if (!existing.getId().equals(id)) {
+                    throw new IllegalArgumentException("Phone number already in use by another user: " + newPhone);
+                }
+            });
+            user.setPhone(newPhone);
+        }
+
+        if (request.getBusinessName() != null) {
+            user.setBusinessName(request.getBusinessName().trim());
+        }
+
+        if (request.getStatus() != null) {
+            user.setStatus(request.getStatus());
+        }
+
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            if (request.getPassword().length() < 8) {
+                throw new IllegalArgumentException("Password must be at least 8 characters");
+            }
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        User saved = userRepository.save(user);
+
+        if (saved.getRole() == Role.FLEET || saved.getRole() == Role.VENDOR) {
+            fleetProfileRepository.findByUserId(saved.getId()).ifPresent(fp -> {
+                if (saved.getBusinessName() != null) {
+                    fp.setCompanyName(saved.getBusinessName());
+                }
+                fp.setContactPerson(saved.getName());
+                fleetProfileRepository.save(fp);
+            });
+        }
+
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_UPDATED")
+                    .userId(saved.getEmail())
+                    .userName(saved.getName())
+                    .userRole(saved.getRole() != null ? saved.getRole().name() : "USER")
+                    .status("SUCCESS")
+                    .details("Admin updated user profile for " + saved.getEmail())
+                    .build());
+        } catch (Exception ignored) {}
+
+        return UserResponse.fromEntity(saved);
+    }
+
+    @Transactional
+    public void deleteUser(UUID id) {
+        User user = userService.getUserEntityById(id);
+
+        if (user.getRole() == Role.ADMIN) {
+            throw new IllegalArgumentException("System administrator accounts cannot be deleted");
+        }
+
+        // 1. Delete associated drivers if any
+        List<com.grabrentals.fleet.entity.Driver> drivers = driverRepository.findByUserIdOrderByCreatedAtDesc(id);
+        if (drivers != null && !drivers.isEmpty()) {
+            driverRepository.deleteAll(drivers);
+        }
+
+        // 2. Delete associated vehicles if any
+        List<com.grabrentals.fleet.entity.Vehicle> vehicles = vehicleRepository.findByUserIdOrderByCreatedAtDesc(id);
+        if (vehicles != null && !vehicles.isEmpty()) {
+            vehicleRepository.deleteAll(vehicles);
+        }
+
+        // 3. Delete fleet profile if any
+        fleetProfileRepository.findByUserId(id).ifPresent(fleetProfileRepository::delete);
+
+        // 4. Delete user entity
+        userRepository.delete(user);
+
+        // 5. Evict security cache
+        try {
+            userDetailsService.evictUser(user.getEmail());
+            userDetailsService.evictUser(user.getPhone());
+        } catch (Exception ignored) {}
+
+        // 6. Record audit log
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_DELETED")
+                    .userId(user.getEmail())
+                    .userName(user.getName())
+                    .userRole(user.getRole() != null ? user.getRole().name() : "USER")
+                    .status("WARNING")
+                    .details("Admin permanently deleted user account: " + user.getEmail())
+                    .build());
+        } catch (Exception ignored) {}
     }
 
     @Transactional

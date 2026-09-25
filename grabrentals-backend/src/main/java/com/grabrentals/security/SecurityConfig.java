@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/register/customer", "/api/auth/register/fleet", "/api/auth/login", "/api/auth/otp/**").permitAll()
                 // Role-based endpoints
                 .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
-                .requestMatchers("/api/fleet/**").hasRole("FLEET")
+                .requestMatchers("/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")
                 .requestMatchers("/api/operations/**").hasRole("OPERATIONS")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Currently authenticated user info

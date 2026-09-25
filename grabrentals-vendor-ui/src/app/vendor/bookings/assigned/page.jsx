@@ -1,16 +1,97 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
-import { CalendarCheck, MapPin, ChevronRight, Car, User } from "lucide-react";
+import { ChevronRight, Eye } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
+import NumberPlate from "@/components/ui/NumberPlate";
+import DataTable from "@/components/ui/DataTable";
 import { mockBookings } from "@/lib/mockData";
-import { formatINR } from "@/lib/utils";
 
 export default function AssignedBookingsPage() {
-  const assignedTrips = mockBookings.filter(
-    b => b.status.toLowerCase() === "assigned" || b.status.toLowerCase() === "confirmed"
-  );
+  const assignedTrips = useMemo(() => {
+    return mockBookings.filter(
+      b => b.status.toLowerCase() === "assigned" || b.status.toLowerCase() === "confirmed"
+    );
+  }, []);
+
+  const columns = useMemo(() => [
+    {
+      key: "id",
+      label: "Booking ID",
+      sortable: true,
+      render: (b) => (
+        <Link 
+          href={`/vendor/bookings/${b.id}`}
+          className="text-amber-600 hover:text-amber-700 font-mono font-bold"
+        >
+          #{b.id}
+        </Link>
+      )
+    },
+    {
+      key: "customer.name",
+      label: "Customer",
+      sortable: true,
+      className: "font-semibold text-slate-900"
+    },
+    {
+      key: "vehicleNumber",
+      label: "Allocated Vehicle",
+      sortable: true,
+      render: (b) => <NumberPlate number={b.vehicleNumber} />
+    },
+    {
+      key: "driverName",
+      label: "Assigned Chauffeur",
+      sortable: true,
+      render: (b) => (
+        <div>
+          <p className="font-bold text-slate-800">{b.driverName}</p>
+          <p className="text-[11px] text-slate-400">{b.driverPhone}</p>
+        </div>
+      )
+    },
+    {
+      key: "pickupDate",
+      label: "Pickup Date",
+      sortable: true,
+      className: "font-semibold text-slate-800"
+    },
+    {
+      key: "route",
+      label: "Route",
+      sortable: true,
+      sortValue: (b) => `${b.pickup} ${b.drop}`,
+      render: (b) => (
+        <span className="text-slate-600 truncate max-w-[200px] block">
+          {b.pickup} ➔ {b.drop}
+        </span>
+      )
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (b) => <StatusBadge status={b.status} />
+    },
+    {
+      key: "actions",
+      label: "Action",
+      align: "center",
+      sortable: false,
+      render: (b) => (
+        <Link
+          href={`/vendor/bookings/${b.id}`}
+          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors inline-flex items-center gap-1 font-bold text-xs"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>View</span>
+        </Link>
+      )
+    }
+  ], []);
 
   return (
     <div className="space-y-6">
@@ -29,59 +110,18 @@ export default function AssignedBookingsPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-3.5 px-4">Booking ID</th>
-                <th className="py-3.5 px-4">Customer</th>
-                <th className="py-3.5 px-4">Allocated Vehicle</th>
-                <th className="py-3.5 px-4">Assigned Chauffeur</th>
-                <th className="py-3.5 px-4">Pickup Date</th>
-                <th className="py-3.5 px-4">Route</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {assignedTrips.map(b => (
-                <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-4 font-black font-mono text-slate-900">
-                    #{b.id}
-                  </td>
-                  <td className="py-4 px-4 font-semibold text-slate-900">
-                    {b.customer.name}
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="font-mono font-bold text-slate-800">{b.vehicleNumber}</span>
-                  </td>
-                  <td className="py-4 px-4 font-medium text-slate-700">
-                    {b.driverName} ({b.driverPhone})
-                  </td>
-                  <td className="py-4 px-4 font-semibold text-slate-900">
-                    {b.pickupDate}
-                  </td>
-                  <td className="py-4 px-4 text-slate-600">
-                    {b.pickup} ➔ {b.drop}
-                  </td>
-                  <td className="py-4 px-4">
-                    <StatusBadge status={b.status} />
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    <Link
-                      href={`/vendor/bookings/${b.id}`}
-                      className="inline-flex items-center gap-1 font-bold text-amber-600 hover:text-amber-700"
-                    >
-                      View <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={assignedTrips}
+        keyField="id"
+        defaultPageSize={10}
+        pageSizeOptions={[5, 10, 25, 50]}
+        searchPlaceholder="Search assigned bookings..."
+        searchKeys={["id", "customer.name", "vehicleNumber", "driverName", "pickup", "drop"]}
+        exportFileName="GrabRentals_Assigned_Bookings"
+        emptyTitle="No Assigned Bookings"
+        emptyDescription="There are currently no bookings scheduled with allocated fleet assets."
+      />
     </div>
   );
 }

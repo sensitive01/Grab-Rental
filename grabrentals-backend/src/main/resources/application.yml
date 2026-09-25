@@ -38,3 +38,8 @@ app:
       email: ${DEFAULT_ADMIN_EMAIL:admin@grabrentals.com}
       password: ${DEFAULT_ADMIN_PASSWORD:admin123}
       phone: ${DEFAULT_ADMIN_PHONE:+919876543211}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
+    api-key: ${CLOUDINARY_API_KEY:demo}
+    api-secret: ${CLOUDINARY_API_SECRET:demo}
+

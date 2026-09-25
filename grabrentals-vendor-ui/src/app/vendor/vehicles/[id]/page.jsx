@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -14,25 +14,113 @@ import {
   MapPin, 
   Clock, 
   AlertTriangle,
-  CheckCircle2,
-  ChevronRight,
-  Sparkles
+  CheckCircle2, 
+  ChevronRight, 
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  Phone
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
-import { mockVehicles, mockBookings } from "@/lib/mockData";
+import DataTable from "@/components/ui/DataTable";
+import { axiosClient } from "@/lib/axiosClient";
 import { formatINR } from "@/lib/utils";
 
 export default function VehicleDetailsPage({ params }) {
   const unwrappedParams = use(params);
-  const vehicleId = unwrappedParams?.id || "VH-101";
+  const vehicleId = unwrappedParams?.id;
 
-  const vehicle = mockVehicles.find((v) => v.id === vehicleId) || mockVehicles[0];
+  const [vehicle, setVehicle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const vehicleTrips = mockBookings.filter(
-    (b) => b.vehicleId === vehicle.id || b.vehicleNumber === vehicle.vehicleNumber
-  );
+  useEffect(() => {
+    async function fetchVehicle() {
+      if (!vehicleId) return;
+      try {
+        setLoading(true);
+        setError(null);
+        const [res, driversRes] = await Promise.all([
+          axiosClient.get(`/api/fleet/vehicles/${vehicleId}`),
+          axiosClient.get("/api/fleet/drivers").catch(() => ({ data: { data: [] } }))
+        ]);
+
+        if (res.data?.success && res.data.data) {
+          const v = res.data.data;
+          const drivers = Array.isArray(driversRes.data?.data) ? driversRes.data.data : [];
+          const matchedDriver = drivers.find((d) => d.assignedVehicleId === v.id);
+
+          setVehicle({
+            id: v.id,
+            model: v.model,
+            vehicleNumber: v.vehicleNumber,
+            type: v.vehicleType || "SUV",
+            category: v.vehicleType || "SUV",
+            seatingCapacity: v.seatingCapacity,
+            fuelType: v.fuelType || "Diesel",
+            transmission: "Manual",
+            acType: v.acType || "Dual AC",
+            year: v.year || 2024,
+            odometer: "18,400 KM",
+            status: v.status === "AVAILABLE" ? "Available" : v.status === "BOOKED" ? "Booked" : v.status === "ON_TRIP" ? "On Trip" : "Maintenance",
+            currentLocation: v.currentLocation || "Deployment Hub",
+            driverName: v.assignedDriverName || matchedDriver?.name || "Unassigned",
+            driverPhone: v.assignedDriverPhone || matchedDriver?.phone || "",
+            assignedDriverId: v.assignedDriverId || matchedDriver?.id || null,
+            dailyRate: v.dailyRate || 3500,
+            perKmRate: v.perKmRate || 15,
+            insuranceExpiry: v.insuranceExpiry || "Pending",
+            permitExpiry: v.permitExpiry || "Pending",
+            fitnessExpiry: v.fitnessExpiry || "Pending",
+            image: v.imageUrl || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=60",
+            rcDocumentUrl: v.rcDocumentUrl,
+            insuranceDocumentUrl: v.insuranceDocumentUrl,
+            permitDocumentUrl: v.permitDocumentUrl,
+          });
+        } else {
+          setError("Vehicle asset details not found.");
+        }
+      } catch (err) {
+        console.error("Failed to load vehicle details:", err);
+        setError(err.response?.data?.message || "Failed to load vehicle details");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchVehicle();
+  }, [vehicleId]);
+
+  if (loading) {
+    return (
+      <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+        <p className="text-xs font-semibold">Loading vehicle particulars from fleet database...</p>
+      </div>
+    );
+  }
+
+  if (error || !vehicle) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-slate-900">Vehicle Not Found</h2>
+        <p className="text-xs text-slate-500">{error || "Could not retrieve the requested asset."}</p>
+        <Link
+          href="/vendor/vehicles"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs"
+        >
+          <ArrowLeft className="w-4 h-4" /> Return to Fleet
+        </Link>
+      </div>
+    );
+  }
+
+  const vehicleTrips = [];
 
   return (
     <div className="space-y-6">
@@ -54,11 +142,17 @@ export default function VehicleDetailsPage({ params }) {
           </div>
           <div className="flex items-center gap-2.5 pt-1">
             <NumberPlate number={vehicle.vehicleNumber} />
-            <span className="text-xs text-slate-400 font-medium">Asset ID: {vehicle.id}</span>
+            <span className="text-xs text-slate-400 font-mono">ID: {vehicle.id}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Link
+            href="/vendor/vehicles"
+            className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+          >
+            <ArrowLeft className="w-4 h-4 text-slate-500" /> All Vehicles
+          </Link>
           <Link
             href={`/vendor/vehicles/${vehicle.id}/edit`}
             className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
@@ -74,7 +168,6 @@ export default function VehicleDetailsPage({ params }) {
         </div>
       </div>
 
-      {/* Grid Layout: Vehicle Card & Specs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Column: Visual Card & Driver */}
@@ -108,8 +201,8 @@ export default function VehicleDetailsPage({ params }) {
               </div>
 
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="font-bold text-slate-500">Odometer Reading</span>
-                <span className="font-bold text-slate-900">{vehicle.odometer}</span>
+                <span className="font-bold text-slate-500">Model Year</span>
+                <span className="font-bold text-slate-900">{vehicle.year}</span>
               </div>
 
               <div className="flex items-center justify-between">
@@ -129,25 +222,43 @@ export default function VehicleDetailsPage({ params }) {
                 href="/vendor/drivers"
                 className="text-[11px] font-bold text-amber-600 hover:underline"
               >
-                Reassign
+                Manage Roster ↗
               </Link>
             </div>
 
             {vehicle.driverName && vehicle.driverName !== "Unassigned" ? (
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0">
-                  {vehicle.driverName.charAt(0)}
+                  {vehicle.driverName.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-xs space-y-0.5">
-                  <p className="font-black text-slate-900">{vehicle.driverName}</p>
-                  <p className="text-slate-500 font-medium">{vehicle.driverPhone}</p>
-                  <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                    Verified Chauffeur
+                  <Link 
+                    href={vehicle.assignedDriverId ? `/vendor/drivers/${vehicle.assignedDriverId}` : "/vendor/drivers"}
+                    className="font-black text-slate-900 hover:text-amber-600 transition-colors block"
+                  >
+                    {vehicle.driverName}
+                  </Link>
+                  {vehicle.driverPhone && (
+                    <a href={`tel:${vehicle.driverPhone}`} className="text-amber-600 font-bold flex items-center gap-1">
+                      <Phone className="w-3 h-3" />
+                      {vehicle.driverPhone}
+                    </a>
+                  )}
+                  <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                    Dedicated Chauffeur
                   </span>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic">No permanent driver assigned.</p>
+              <div className="text-center py-4 space-y-2">
+                <p className="text-xs text-slate-400 italic">No permanent driver assigned.</p>
+                <Link
+                  href="/vendor/drivers"
+                  className="inline-block px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-700 font-bold text-xs hover:bg-amber-500/20"
+                >
+                  Assign Chauffeur
+                </Link>
+              </div>
             )}
           </div>
 
@@ -179,8 +290,8 @@ export default function VehicleDetailsPage({ params }) {
               </div>
 
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Transmission</span>
-                <p className="text-sm font-black text-slate-900">{vehicle.transmission}</p>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Per KM Rate</span>
+                <p className="text-sm font-black text-slate-900">₹{vehicle.perKmRate} / km</p>
               </div>
             </div>
           </div>
@@ -207,7 +318,7 @@ export default function VehicleDetailsPage({ params }) {
                 </div>
                 <p className="text-xs font-black text-slate-900">{vehicle.insuranceExpiry}</p>
                 <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                  Policy Active
+                  Policy Status
                 </span>
               </div>
 
@@ -218,7 +329,7 @@ export default function VehicleDetailsPage({ params }) {
                 </div>
                 <p className="text-xs font-black text-slate-900">{vehicle.permitExpiry}</p>
                 <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                  Valid Interstate
+                  Permit Status
                 </span>
               </div>
 
@@ -229,48 +340,73 @@ export default function VehicleDetailsPage({ params }) {
                 </div>
                 <p className="text-xs font-black text-slate-900">{vehicle.fitnessExpiry}</p>
                 <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                  RTO Certified
+                  Fitness Status
                 </span>
               </div>
             </div>
           </div>
 
           {/* Booking History Table */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-black text-slate-900 tracking-tight pb-2 border-b border-slate-100">
+          <div className="space-y-3">
+            <h2 className="text-sm font-black text-slate-900 tracking-tight px-1">
               Assigned Trips History
             </h2>
 
-            {vehicleTrips.length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-4 text-center">
-                No recent trips registered for this vehicle.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px]">
-                      <th className="py-2.5">Trip ID</th>
-                      <th className="py-2.5">Customer</th>
-                      <th className="py-2.5">Route</th>
-                      <th className="py-2.5">Status</th>
-                      <th className="py-2.5 text-right">Net Share</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {vehicleTrips.map((t) => (
-                      <tr key={t.id} className="hover:bg-slate-50">
-                        <td className="py-3 font-black text-slate-900">#{t.id}</td>
-                        <td className="py-3 font-semibold text-slate-800">{t.customer.name}</td>
-                        <td className="py-3 text-slate-600">{t.pickup} ➔ {t.drop}</td>
-                        <td className="py-3"><StatusBadge status={t.status} /></td>
-                        <td className="py-3 text-right font-black text-slate-900">{formatINR(t.vendorNet)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <DataTable
+              columns={[
+                {
+                  key: "id",
+                  label: "Trip ID",
+                  sortable: true,
+                  render: (t) => (
+                    <span className="font-mono font-black text-slate-900">#{t.id}</span>
+                  )
+                },
+                {
+                  key: "customer.name",
+                  label: "Customer",
+                  sortable: true,
+                  className: "font-semibold text-slate-800"
+                },
+                {
+                  key: "route",
+                  label: "Route",
+                  sortable: true,
+                  sortValue: (t) => `${t.pickup} ${t.drop}`,
+                  render: (t) => (
+                    <span className="text-slate-600 truncate max-w-[200px] block">
+                      {t.pickup} ➔ {t.drop}
+                    </span>
+                  )
+                },
+                {
+                  key: "status",
+                  label: "Status",
+                  sortable: true,
+                  render: (t) => <StatusBadge status={t.status} />
+                },
+                {
+                  key: "vendorNet",
+                  label: "Net Share",
+                  align: "right",
+                  sortable: true,
+                  sortValue: (t) => Number(t.vendorNet) || 0,
+                  render: (t) => (
+                    <span className="font-black text-slate-900">
+                      {formatINR(t.vendorNet)}
+                    </span>
+                  )
+                }
+              ]}
+              data={vehicleTrips}
+              keyField="id"
+              defaultPageSize={5}
+              pageSizeOptions={[5, 10, 20]}
+              searchPlaceholder="Search trip history..."
+              searchKeys={["id", "customer.name", "pickup", "drop"]}
+              emptyTitle="No Trips Found"
+              emptyDescription="No recent trips registered for this vehicle."
+            />
           </div>
 
         </div>

@@ -46,6 +46,8 @@ import {
   ChevronsRight,
   Filter,
   Search,
+  Edit3,
+  Trash2,
 } from "lucide-react";
 
 function SortableHeader({ columnKey, label, currentSort, onSort, align = "left", className = "" }) {
@@ -173,6 +175,98 @@ export default function AdminUsersDirectoryPage() {
       setModalError(err.message || "Failed to create user. Please check credentials.");
     } finally {
       setSubmittingUser(false);
+    }
+  };
+
+  // Edit User Modal State
+  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+  const [editModalError, setEditModalError] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    phone: "",
+    businessName: "",
+    role: "FLEET",
+    status: "ACTIVE",
+    password: "",
+  });
+
+  const handleOpenEditUser = (user) => {
+    setEditingUser(user);
+    setEditModalError(null);
+    setEditFormData({
+      name: user.name || "",
+      phone: user.phone || "",
+      businessName: user.businessName || "",
+      role: user.role === "VENDOR" ? "FLEET" : (user.role || "FLEET"),
+      status: user.status || "ACTIVE",
+      password: "",
+    });
+    setIsEditUserModalOpen(true);
+  };
+
+  const handleSaveEditUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditModalError(null);
+
+    if (!editFormData.name.trim()) {
+      setEditModalError("Full Name is required");
+      return;
+    }
+
+    setSubmittingEdit(true);
+    try {
+      const res = await adminApi.updateUser(editingUser.id, {
+        name: editFormData.name.trim(),
+        phone: editFormData.phone.trim(),
+        businessName: editFormData.businessName?.trim() || null,
+        role: editFormData.role,
+        status: editFormData.status,
+        password: editFormData.password ? editFormData.password.trim() : undefined,
+      });
+
+      if (res.success && res.data) {
+        setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...res.data } : u)));
+        setIsEditUserModalOpen(false);
+        setToast({
+          type: "success",
+          message: `User ${editFormData.name} details updated successfully!`,
+        });
+      }
+    } catch (err) {
+      setEditModalError(err.message || "Failed to update user profile.");
+    } finally {
+      setSubmittingEdit(false);
+    }
+  };
+
+  // Delete User State & Handler
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(false);
+  const [deleteModalError, setDeleteModalError] = useState("");
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setDeletingUser(true);
+    setDeleteModalError("");
+    try {
+      const res = await adminApi.deleteUser(userToDelete.id);
+      if (!res.success) {
+        setDeleteModalError(res.error || "Failed to delete user account.");
+      } else {
+        setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+        setUserToDelete(null);
+        setToast({
+          type: "success",
+          message: `User ${userToDelete.name || userToDelete.email} permanently deleted.`,
+        });
+      }
+    } catch (err) {
+      setDeleteModalError(err.message || "Failed to delete user.");
+    } finally {
+      setDeletingUser(false);
     }
   };
 
@@ -688,16 +782,41 @@ export default function AdminUsersDirectoryPage() {
 
                     {/* Actions */}
                     <TableCell className="text-right">
-                      {u.role !== "ADMIN" && (
+                      <div className="flex items-center justify-end gap-1.5">
                         <Button
                           size="xs"
-                          variant={isActive ? "danger" : "emerald"}
-                          icon={isActive ? UserX : UserCheck}
-                          onClick={() => handleToggleStatus(u.id, u.status)}
+                          variant="secondary"
+                          icon={Edit3}
+                          onClick={() => handleOpenEditUser(u)}
                         >
-                          {isActive ? "Block" : "Activate"}
+                          Edit
                         </Button>
-                      )}
+                        {u.role !== "ADMIN" && (
+                          <>
+                            <Button
+                              size="xs"
+                              variant={isActive ? "danger" : "emerald"}
+                              icon={isActive ? UserX : UserCheck}
+                              onClick={() => handleToggleStatus(u.id, u.status)}
+                            >
+                              {isActive ? "Block" : "Activate"}
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              icon={Trash2}
+                              onClick={() => {
+                                setDeleteModalError("");
+                                setUserToDelete(u);
+                              }}
+                              className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                              title="Delete User"
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -959,6 +1078,194 @@ export default function AdminUsersDirectoryPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={isEditUserModalOpen}
+        onClose={() => setIsEditUserModalOpen(false)}
+        title={`Edit User: ${editingUser?.name || "Account"}`}
+        subtitle={`Update profile information, status, or credentials for ${editingUser?.email}`}
+        size="lg"
+      >
+        <form onSubmit={handleSaveEditUser} className="space-y-4">
+          {editModalError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-700">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <div className="font-medium">{editModalError}</div>
+            </div>
+          )}
+
+          {/* Read-only Identity / Email banner */}
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-slate-400" />
+              <span className="font-mono font-bold text-slate-800">{editingUser?.email}</span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+              Primary Login ID (Fixed)
+            </span>
+          </div>
+
+          {/* Form Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Full Name"
+              required
+              placeholder="e.g. Anand Kumar"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+            />
+            <Input
+              label="Phone Number"
+              placeholder="+91 98400 12345"
+              value={editFormData.phone}
+              onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="System Role"
+              value={editFormData.role}
+              onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+              options={[
+                { value: "FLEET", label: "Vendor (Fleet Partner)" },
+                { value: "OPERATIONS", label: "Operations Staff" },
+                { value: "CUSTOMER", label: "Customer" },
+                { value: "ADMIN", label: "System Administrator" },
+              ]}
+              helperText="Controls access privileges and portal routing"
+            />
+
+            <Select
+              label="Account Status"
+              value={editFormData.status}
+              onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+              options={[
+                { value: "ACTIVE", label: "ACTIVE (Normal Access)" },
+                { value: "BLOCKED", label: "BLOCKED (Access Denied)" },
+                { value: "PENDING_APPROVAL", label: "PENDING_APPROVAL (Under Review)" },
+              ]}
+              helperText="Operational state in PostgreSQL database"
+            />
+          </div>
+
+          {(editFormData.role === "FLEET" || editFormData.role === "VENDOR") && (
+            <Input
+              label="Agency / Vendor Business Name"
+              placeholder="e.g. Royal Travels & Vendor Services"
+              value={editFormData.businessName}
+              onChange={(e) => setEditFormData({ ...editFormData, businessName: e.target.value })}
+              helperText="Company name displayed on fleet listings and duty slips"
+            />
+          )}
+
+          <Input
+            label="Reset Password (optional)"
+            type="password"
+            placeholder="Leave blank to keep current password"
+            value={editFormData.password}
+            onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+            helperText="Enter a new password (min. 8 chars) only if resetting user login"
+          />
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsEditUserModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={submittingEdit}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete User Confirmation Modal */}
+      <Modal
+        isOpen={!!userToDelete}
+        onClose={() => !deletingUser && setUserToDelete(null)}
+        title="Delete User Account"
+        description="Permanently remove this user and their associated data from PostgreSQL."
+        size="md"
+      >
+        <div className="space-y-4">
+          {deleteModalError && (
+            <div className="p-3 text-xs bg-rose-50 text-rose-700 border border-rose-200 rounded-lg flex items-center justify-between">
+              <span>{deleteModalError}</span>
+              <button
+                type="button"
+                onClick={() => setDeleteModalError("")}
+                className="text-rose-500 hover:text-rose-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="p-3.5 bg-rose-50/60 rounded-xl border border-rose-100 flex items-start gap-3">
+            <div className="p-2 bg-rose-100 rounded-lg text-rose-700 shrink-0">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div className="text-xs text-rose-900 leading-relaxed">
+              <p className="font-semibold text-rose-950 mb-1">
+                Are you sure you want to permanently delete this user?
+              </p>
+              <p>
+                This action is <span className="font-bold underline">irreversible</span>. It will completely delete{" "}
+                <span className="font-semibold text-rose-950">{userToDelete?.name}</span> (
+                <span className="font-mono text-rose-950">{userToDelete?.email}</span>) and cascade-remove any associated records (fleet profiles, assigned vehicles, and drivers).
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-1.5">
+            <div className="flex justify-between">
+              <span className="text-slate-500">User ID:</span>
+              <span className="font-mono font-medium text-slate-800">{userToDelete?.id}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Role:</span>
+              <span className="font-semibold text-slate-800">{userToDelete?.role}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Current Status:</span>
+              <span className="font-medium text-slate-800">{userToDelete?.status}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={deletingUser}
+              onClick={() => setUserToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              icon={Trash2}
+              isLoading={deletingUser}
+              onClick={handleDeleteUser}
+            >
+              Delete User Permanently
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

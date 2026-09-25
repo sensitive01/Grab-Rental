@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Car, 
@@ -24,6 +24,7 @@ import NumberPlate from "@/components/ui/NumberPlate";
 import { AreaLineChart, DonutChart, BarChart } from "@/components/ui/Charts";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import Toast from "@/components/ui/Toast";
+import DataTable from "@/components/ui/DataTable";
 import { 
   currentVendor, 
   mockVehicles, 
@@ -33,17 +34,45 @@ import {
   mockPayments 
 } from "@/lib/mockData";
 import { formatINR } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
+import { axiosClient } from "@/lib/axiosClient";
 
 export default function VendorDashboard() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(true);
   const [requests, setRequests] = useState(mockBookingRequests);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionType, setActionType] = useState(null); // "accept" | "reject"
   const [toastMessage, setToastMessage] = useState(null);
 
-  const availableCount = mockVehicles.filter(v => v.status === "Available").length;
-  const onTripCount = mockVehicles.filter(v => v.status === "On Trip").length;
-  const bookedCount = mockVehicles.filter(v => v.status === "Booked").length;
-  const maintCount = mockVehicles.filter(v => v.status === "Maintenance").length;
+  useEffect(() => {
+    setCurrentUser(getCurrentUser());
+
+    const fetchVehicles = async () => {
+      try {
+        const res = await axiosClient.get("/api/fleet/vehicles");
+        if (res.data?.success && Array.isArray(res.data?.data)) {
+          setVehicles(res.data.data);
+        } else {
+          setVehicles(mockVehicles);
+        }
+      } catch (err) {
+        console.warn("Could not fetch vehicles from backend:", err.message);
+        setVehicles(mockVehicles);
+      } finally {
+        setLoadingVehicles(false);
+      }
+    };
+
+    fetchVehicles();
+  }, []);
+
+  const totalVehiclesCount = vehicles.length;
+  const availableCount = vehicles.filter(v => (v.status || "").toLowerCase() === "available").length;
+  const onTripCount = vehicles.filter(v => (v.status || "").toLowerCase().includes("trip")).length;
+  const bookedCount = vehicles.filter(v => (v.status || "").toLowerCase() === "booked").length;
+  const maintCount = vehicles.filter(v => (v.status || "").toLowerCase().includes("maint")).length;
 
   const donutData = [
     { label: "Available", value: availableCount, color: "#10b981" },
@@ -109,13 +138,15 @@ export default function VendorDashboard() {
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 uppercase tracking-wider">
                 Active Partner Hub
               </span>
-              <span className="text-xs text-slate-400 font-medium">Vendor ID: {currentVendor.id}</span>
+              <span className="text-xs text-slate-400 font-medium">
+                Vendor ID: {currentUser?.id ? `VND-${currentUser.id.slice(0, 6).toUpperCase()}` : currentVendor.id}
+              </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Welcome back, {currentVendor.ownerName}
+              Welcome back, {currentUser?.name || currentVendor.ownerName}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-              {currentVendor.businessName} · Coimbatore Hub. You have <strong className="text-amber-400">{requests.length} new booking requests</strong> awaiting your approval today.
+              {currentUser?.businessName || currentVendor.businessName} · {currentUser?.email || "Vendor Partner"}. You have <strong className="text-amber-400">{requests.length} new booking requests</strong> awaiting your approval today.
             </p>
           </div>
 
@@ -140,14 +171,14 @@ export default function VendorDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <StatCard
           title="Total Vehicles"
-          value={mockVehicles.length}
+          value={loadingVehicles ? "..." : totalVehiclesCount}
           subtitle="Cars, Vans & Buses"
           icon={Car}
           iconColor="text-blue-600 bg-blue-50 border-blue-100"
         />
         <StatCard
           title="Available"
-          value={availableCount}
+          value={loadingVehicles ? "..." : availableCount}
           subtitle="Ready for dispatch"
           icon={CheckCircle2}
           iconColor="text-emerald-600 bg-emerald-50 border-emerald-100"
@@ -383,9 +414,9 @@ export default function VendorDashboard() {
 
       </div>
 
-      {/* Section: Recent Bookings Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+      {/* Section: Recent Bookings DataTable */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
           <div>
             <h3 className="text-base font-black text-slate-900 tracking-tight">
               Recent Bookings Ledger
@@ -402,96 +433,94 @@ export default function VendorDashboard() {
           </Link>
         </div>
 
-        {/* Mobile View: Responsive Booking Cards (< md) */}
-        <div className="grid grid-cols-1 gap-3 md:hidden">
-          {mockBookings.slice(0, 5).map((b) => (
-            <div
-              key={b.id}
-              className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2.5"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-black text-xs text-slate-900">#{b.id}</span>
-                  <StatusBadge status={b.status} />
+        <DataTable
+          columns={[
+            {
+              key: "id",
+              label: "Booking ID",
+              sortable: true,
+              render: (b) => (
+                <Link href={`/vendor/bookings/${b.id}`} className="font-mono font-bold text-amber-600 hover:underline">
+                  #{b.id}
+                </Link>
+              )
+            },
+            {
+              key: "customer.name",
+              label: "Customer",
+              sortable: true,
+              render: (b) => (
+                <div>
+                  <p className="font-bold text-slate-900">{b.customer?.name}</p>
+                  <p className="text-[11px] text-slate-400">{b.customer?.phone}</p>
                 </div>
-                <span className="text-xs font-black text-slate-900">{formatINR(b.vendorNet)}</span>
-              </div>
-
-              <div className="text-xs space-y-1">
-                <p className="font-bold text-slate-900 truncate">{b.customer.name}</p>
-                <p className="text-slate-600 flex items-center gap-1 text-[11px]">
-                  <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                  <span className="truncate">{b.pickup} ➔ {b.drop}</span>
-                </p>
-                <p className="text-[11px] text-slate-400 font-medium">
-                  {b.vehicleNumber} · {b.driverName}
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Net Payout</span>
+              )
+            },
+            {
+              key: "route",
+              label: "Route",
+              sortable: true,
+              sortValue: (b) => `${b.pickup} ${b.drop}`,
+              render: (b) => (
+                <span className="text-slate-600 truncate max-w-[200px] block">
+                  {b.pickup} ➔ {b.drop}
+                </span>
+              )
+            },
+            {
+              key: "vehicleNumber",
+              label: "Vehicle & Driver",
+              sortable: true,
+              render: (b) => (
+                <div className="whitespace-nowrap">
+                  <NumberPlate number={b.vehicleNumber} />
+                  <p className="text-[11px] text-slate-500 mt-0.5">{b.driverName}</p>
+                </div>
+              )
+            },
+            {
+              key: "status",
+              label: "Status",
+              sortable: true,
+              render: (b) => <StatusBadge status={b.status} />
+            },
+            {
+              key: "vendorNet",
+              label: "Net Payout",
+              align: "right",
+              sortable: true,
+              sortValue: (b) => Number(b.vendorNet) || 0,
+              render: (b) => (
+                <span className="font-black text-slate-900">
+                  {formatINR(b.vendorNet)}
+                </span>
+              )
+            },
+            {
+              key: "actions",
+              label: "Action",
+              align: "center",
+              sortable: false,
+              render: (b) => (
                 <Link
                   href={`/vendor/bookings/${b.id}`}
-                  className="font-bold text-amber-600 hover:text-amber-700 inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-1 font-bold text-amber-600 hover:text-amber-700 text-xs"
                 >
-                  Details <ChevronRight className="w-3 h-3" />
+                  View <ChevronRight className="w-3 h-3" />
                 </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Desktop View: Full Data Table (>= md) */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[700px]">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-3 px-4">Booking ID</th>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Route</th>
-                <th className="py-3 px-4">Vehicle & Driver</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Net Payout</th>
-                <th className="py-3 px-4 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {mockBookings.slice(0, 5).map((b) => (
-                <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3.5 px-4 font-black text-slate-900">
-                    #{b.id}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <p className="font-bold text-slate-900">{b.customer.name}</p>
-                    <p className="text-[11px] text-slate-400">{b.customer.phone}</p>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <p className="font-semibold text-slate-800">{b.pickup}</p>
-                    <p className="text-slate-400">➔ {b.drop}</p>
-                  </td>
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <NumberPlate number={b.vehicleNumber} />
-                    <p className="text-[11px] text-slate-500 mt-0.5">{b.driverName}</p>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <StatusBadge status={b.status} />
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-black text-slate-900">
-                    {formatINR(b.vendorNet)}
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <Link
-                      href={`/vendor/bookings/${b.id}`}
-                      className="inline-flex items-center gap-1 font-bold text-amber-600 hover:text-amber-700"
-                    >
-                      View <ChevronRight className="w-3 h-3" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              )
+            }
+          ]}
+          data={mockBookings}
+          keyField="id"
+          defaultPageSize={5}
+          pageSizeOptions={[5, 10, 20]}
+          searchPlaceholder="Search recent trips..."
+          searchKeys={["id", "customer.name", "pickup", "drop", "vehicleNumber", "driverName"]}
+          exportFileName="GrabRentals_Recent_Trips"
+          emptyTitle="No Bookings Found"
+          emptyDescription="There are no recent trips to display."
+        />
       </div>
 
     </div>

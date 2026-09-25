@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -9,55 +9,200 @@ import {
   Upload, 
   CheckCircle2, 
   ShieldCheck, 
-  FileText 
+  FileText,
+  Loader2,
+  Image as ImageIcon,
+  AlertCircle
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
-import { mockVehicles } from "@/lib/mockData";
+import { axiosClient } from "@/lib/axiosClient";
+import { uploadSignedToCloudinary } from "@/lib/cloudinary";
 
 export default function AddDriverPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
+  const [toast, setToast] = useState(null); // { message, type }
+
+  // Vendor's real vehicles from backend
+  const [vehicles, setVehicles] = useState([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(true);
+
+  // File upload states
+  const licenseDocRef = useRef(null);
+  const photoInputRef = useRef(null);
+
+  const [uploading, setUploading] = useState({
+    licenseDoc: false,
+    photo: false,
+  });
+
+  const [fileDetails, setFileDetails] = useState({
+    licenseDocName: "",
+    photoName: "",
+    photoPreview: null,
+  });
 
   const [formData, setFormData] = useState({
-    name: "Senthil Nathan",
-    phone: "+91 98421 99880",
-    email: "senthil.n@kaveritravels.in",
-    address: "24, Anna Nagar, Peelamedu, Coimbatore - 641004",
-    licenseNumber: "TN38 20180004521",
-    licenseExpiry: "2033-05-20",
-    dob: "1990-04-18",
-    experienceYears: 9,
-    emergencyContact: "Vimala (+91 98421 99889)",
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    licenseNumber: "",
+    licenseExpiry: "",
+    dob: "",
+    experienceYears: "",
+    emergencyContact: "",
     bloodGroup: "B+",
     assignedVehicleId: "",
-    status: "Available"
+    status: "AVAILABLE",
+    licenseDocumentUrl: "",
+    photoUrl: "",
   });
+
+  // Fetch real vendor fleet vehicles for assignment
+  useEffect(() => {
+    async function fetchVehicles() {
+      try {
+        const res = await axiosClient.get("/api/fleet/vehicles");
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          setVehicles(res.data.data);
+        }
+      } catch (err) {
+        console.warn("Could not fetch fleet vehicles:", err);
+      } finally {
+        setLoadingVehicles(false);
+      }
+    }
+    fetchVehicles();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleFileUpload = async (type, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (type === "photo") {
+      const localPreview = URL.createObjectURL(file);
+      setFileDetails((prev) => ({ ...prev, photoPreview: localPreview, photoName: file.name }));
+    } else if (type === "licenseDoc") {
+      setFileDetails((prev) => ({ ...prev, licenseDocName: file.name }));
+    }
+
+    setUploading((prev) => ({ ...prev, [type]: true }));
+
+    try {
+      const folder = type === "photo" ? "grabrentals/drivers/photos" : "grabrentals/drivers/documents";
+      const uploadedUrl = await uploadSignedToCloudinary(file, folder);
+
+      if (uploadedUrl) {
+        if (type === "photo") {
+          setFormData((prev) => ({ ...prev, photoUrl: uploadedUrl }));
+        } else if (type === "licenseDoc") {
+          setFormData((prev) => ({ ...prev, licenseDocumentUrl: uploadedUrl }));
+        }
+        setToast({ message: `${type === "photo" ? "Driver photo" : "License copy"} uploaded successfully!`, type: "success" });
+      }
+    } catch (err) {
+      console.error(`Upload error for ${type}:`, err);
+      setToast({ message: `Upload failed: ${err.message || "Could not reach storage"}`, type: "error" });
+    } finally {
+      setUploading((prev) => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setToast(null);
+
+    // Client-side validations
+    if (!formData.name?.trim()) {
+      setToast({ message: "Please enter the driver's full legal name", type: "error" });
+      return;
+    }
+
+    if (!formData.phone?.trim()) {
+      setToast({ message: "Please enter a primary mobile number", type: "error" });
+      return;
+    }
+
+    if (!formData.address?.trim()) {
+      setToast({ message: "Please enter the residential address", type: "error" });
+      return;
+    }
+
+    if (!formData.emergencyContact?.trim()) {
+      setToast({ message: "Please enter an emergency contact with relation & phone", type: "error" });
+      return;
+    }
+
+    if (!formData.licenseNumber?.trim()) {
+      setToast({ message: "Please enter the commercial driving license number", type: "error" });
+      return;
+    }
+
+    if (!formData.licenseExpiry) {
+      setToast({ message: "Please specify the driving license expiry date", type: "error" });
+      return;
+    }
+
+    if (formData.experienceYears === "" || Number(formData.experienceYears) < 0) {
+      setToast({ message: "Please enter driving experience in years", type: "error" });
+      return;
+    }
+
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email?.trim() || null,
+        address: formData.address.trim(),
+        dob: formData.dob || null,
+        bloodGroup: formData.bloodGroup || "B+",
+        emergencyContact: formData.emergencyContact.trim(),
+        licenseNumber: formData.licenseNumber.trim().toUpperCase(),
+        licenseExpiry: formData.licenseExpiry,
+        experienceYears: Number(formData.experienceYears) || 0,
+        assignedVehicleId: formData.assignedVehicleId || null,
+        status: formData.status || "AVAILABLE",
+        licenseDocumentUrl: formData.licenseDocumentUrl || null,
+        photoUrl: formData.photoUrl || null,
+      };
+
+      const res = await axiosClient.post("/api/fleet/drivers", payload);
+
+      if (res.data?.success) {
+        setToast({ message: "Chauffeur added to roster successfully!", type: "success" });
+        setTimeout(() => {
+          router.push("/vendor/drivers");
+        }, 1200);
+      }
+    } catch (err) {
+      console.error("Failed to add driver:", err);
+      const serverMessage = err.response?.data?.message || err.message || "Failed to register chauffeur";
+      setToast({ message: serverMessage, type: "error" });
+    } finally {
       setLoading(false);
-      setToastMessage("Chauffeur added to roster successfully!");
-      setTimeout(() => {
-        router.push("/vendor/drivers");
-      }, 1000);
-    }, 800);
+    }
   };
+
+  const selectedVehicleObj = vehicles.find((v) => v.id === formData.assignedVehicleId);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       
-      {toastMessage && (
-        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
       )}
 
       {/* Header & Breadcrumbs */}
@@ -224,7 +369,7 @@ export default function AddDriverPage() {
                   name="licenseNumber"
                   value={formData.licenseNumber}
                   onChange={handleChange}
-                  placeholder="e.g. TN-38-2018-0001234"
+                  placeholder="e.g. TN38 20180004521"
                   className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
                 />
               </div>
@@ -246,11 +391,12 @@ export default function AddDriverPage() {
                 <input
                   type="number"
                   required
-                  min="1"
-                  max="45"
+                  min="0"
+                  max="50"
                   name="experienceYears"
                   value={formData.experienceYears}
                   onChange={handleChange}
+                  placeholder="e.g. 5"
                   className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
                 />
               </div>
@@ -264,35 +410,100 @@ export default function AddDriverPage() {
                   className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
                 >
                   <option value="">-- No Vehicle Assigned (Floating Chauffeur) --</option>
-                  {mockVehicles.map((v) => (
+                  {vehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.model} ({v.vehicleNumber}) - {v.type}
+                      {v.model} ({v.vehicleNumber}) - {v.vehicleType}
                     </option>
                   ))}
                 </select>
+                {loadingVehicles && (
+                  <p className="text-[11px] text-slate-400">Loading your fleet vehicles...</p>
+                )}
               </div>
 
             </div>
 
             {/* Upload License Document Box */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
-                <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+              
+              {/* License Document Upload */}
+              <div 
+                onClick={() => licenseDocRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors ${
+                  formData.licenseDocumentUrl 
+                    ? "border-emerald-300 bg-emerald-50/40" 
+                    : "border-slate-200 hover:border-amber-400 bg-slate-50/50"
+                }`}
+              >
+                <input 
+                  type="file" 
+                  ref={licenseDocRef} 
+                  className="hidden" 
+                  accept="image/*,application/pdf"
+                  onChange={(e) => handleFileUpload("licenseDoc", e)}
+                />
+                
+                {uploading.licenseDoc ? (
+                  <Loader2 className="w-6 h-6 text-amber-500 mx-auto animate-spin" />
+                ) : formData.licenseDocumentUrl ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
+                ) : (
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+                )}
+
                 <p className="font-bold text-slate-800 text-xs">Driving License Document Copy</p>
-                <p className="text-[11px] text-slate-400">Front & Back (PDF or JPG)</p>
-                <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Upload License File
+                <p className="text-[11px] text-slate-400">
+                  {fileDetails.licenseDocName || "Front & Back (PDF or JPG)"}
+                </p>
+
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  formData.licenseDocumentUrl 
+                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                    : "text-amber-600 bg-amber-50 border-amber-200"
+                }`}>
+                  {uploading.licenseDoc ? "Uploading to Cloud..." : formData.licenseDocumentUrl ? "Document Uploaded ✓" : "Upload License File"}
                 </span>
               </div>
 
-              <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
-                <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+              {/* Driver Photo Upload */}
+              <div 
+                onClick={() => photoInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors ${
+                  formData.photoUrl 
+                    ? "border-emerald-300 bg-emerald-50/40" 
+                    : "border-slate-200 hover:border-amber-400 bg-slate-50/50"
+                }`}
+              >
+                <input 
+                  type="file" 
+                  ref={photoInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload("photo", e)}
+                />
+
+                {uploading.photo ? (
+                  <Loader2 className="w-6 h-6 text-amber-500 mx-auto animate-spin" />
+                ) : formData.photoUrl ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
+                ) : (
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+                )}
+
                 <p className="font-bold text-slate-800 text-xs">Driver Photo for Badge</p>
-                <p className="text-[11px] text-slate-400">Passport style portrait</p>
-                <span className="inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Upload Photo
+                <p className="text-[11px] text-slate-400">
+                  {fileDetails.photoName || "Passport style portrait"}
+                </p>
+
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  formData.photoUrl 
+                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                    : "text-amber-600 bg-amber-50 border-amber-200"
+                }`}>
+                  {uploading.photo ? "Uploading Photo..." : formData.photoUrl ? "Photo Uploaded ✓" : "Upload Photo"}
                 </span>
               </div>
+
             </div>
           </div>
 
@@ -315,9 +526,17 @@ export default function AddDriverPage() {
 
             <div className="space-y-3">
               <div className="p-4 rounded-2xl bg-slate-900 text-white flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-lg shrink-0">
-                  {(formData.name || "D").charAt(0)}
-                </div>
+                {formData.photoUrl || fileDetails.photoPreview ? (
+                  <img
+                    src={formData.photoUrl || fileDetails.photoPreview}
+                    alt={formData.name || "Chauffeur"}
+                    className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-400 shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-lg shrink-0">
+                    {(formData.name || "D").charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="min-w-0">
                   <h4 className="font-black text-sm text-white truncate">
                     {formData.name || "Driver Name"}
@@ -334,7 +553,9 @@ export default function AddDriverPage() {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
                   <p className="text-[10px] text-slate-400 font-medium">Experience</p>
-                  <p className="font-bold text-slate-800">{formData.experienceYears} Years</p>
+                  <p className="font-bold text-slate-800">
+                    {formData.experienceYears !== "" ? `${formData.experienceYears} Years` : "—"}
+                  </p>
                 </div>
 
                 <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
@@ -351,8 +572,8 @@ export default function AddDriverPage() {
                 <div className="flex items-center justify-between text-slate-600">
                   <span className="text-slate-400">Assigned Vehicle:</span>
                   <span className="font-semibold text-slate-800 truncate max-w-[140px]">
-                    {formData.assignedVehicleId
-                      ? mockVehicles.find(v => v.id === formData.assignedVehicleId)?.vehicleNumber || "Assigned"
+                    {selectedVehicleObj
+                      ? `${selectedVehicleObj.model} (${selectedVehicleObj.vehicleNumber})`
                       : "Floating"}
                   </span>
                 </div>
@@ -369,10 +590,17 @@ export default function AddDriverPage() {
             <div className="space-y-3">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploading.photo || uploading.licenseDoc}
                 className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 active:scale-98 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
-                {loading ? "Adding Chauffeur..." : "Save & Activate Chauffeur"}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Saving Chauffeur...</span>
+                  </>
+                ) : (
+                  "Save & Activate Chauffeur"
+                )}
               </button>
 
               <Link

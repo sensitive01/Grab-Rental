@@ -1,20 +1,93 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { 
   CreditCard, 
   Download, 
-  CheckCircle2, 
-  Clock, 
-  FileText, 
-  ShieldCheck 
+  FileText 
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
+import DataTable from "@/components/ui/DataTable";
 import { mockPayments, currentVendor } from "@/lib/mockData";
 import { formatINR } from "@/lib/utils";
 
 export default function VendorPaymentsPage() {
+  const columns = useMemo(() => [
+    {
+      key: "id",
+      label: "Payout ID",
+      sortable: true,
+      className: "font-mono font-black text-slate-900"
+    },
+    {
+      key: "period",
+      label: "Billing Cycle",
+      sortable: true,
+      render: (p) => (
+        <div>
+          <p className="font-semibold text-slate-800">{p.period}</p>
+          <span className="block text-[11px] text-slate-400 font-normal">
+            {p.tripsIncluded} Trips Included
+          </span>
+        </div>
+      )
+    },
+    {
+      key: "paymentDate",
+      label: "Settlement Date",
+      sortable: true,
+      className: "text-slate-700"
+    },
+    {
+      key: "paymentMethod",
+      label: "Transfer Method",
+      sortable: true,
+      className: "text-slate-700"
+    },
+    {
+      key: "referenceId",
+      label: "Bank UTR / Ref",
+      sortable: true,
+      className: "font-mono text-slate-600 text-[11px]"
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (p) => <StatusBadge status={p.status} />
+    },
+    {
+      key: "amount",
+      label: "Net Amount",
+      align: "right",
+      sortable: true,
+      sortValue: (p) => Number(p.amount) || 0,
+      render: (p) => (
+        <span className="font-black text-slate-900 text-sm">
+          {formatINR(p.amount)}
+        </span>
+      )
+    },
+    {
+      key: "invoice",
+      label: "Tax Invoice",
+      align: "center",
+      sortable: false,
+      render: (p) => (
+        <button
+          type="button"
+          onClick={() => alert(`Downloading GST Tax Invoice for payout batch ${p.payoutBatch || p.id}...`)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+        >
+          <Download className="w-3.5 h-3.5 text-amber-500" />
+          <span>Invoice PDF</span>
+        </button>
+      )
+    }
+  ], []);
+
   return (
     <div className="space-y-6">
       
@@ -63,62 +136,19 @@ export default function VendorPaymentsPage() {
         </Link>
       </div>
 
-      {/* Payout Batches Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-sm font-black text-slate-900 tracking-tight">
-            Payout Settlement Batches
-          </h2>
-          <span className="text-xs text-slate-400 font-medium">Auto-settled weekly on Fridays</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-3.5 px-4">Payout ID</th>
-                <th className="py-3.5 px-4">Billing Cycle</th>
-                <th className="py-3.5 px-4">Settlement Date</th>
-                <th className="py-3.5 px-4">Transfer Method</th>
-                <th className="py-3.5 px-4">Bank UTR / Ref</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4 text-right">Net Amount</th>
-                <th className="py-3.5 px-4 text-center">Tax Invoice</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {mockPayments.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-4 font-black font-mono text-slate-900">
-                    {p.id}
-                  </td>
-                  <td className="py-4 px-4 font-semibold text-slate-800">
-                    {p.period}
-                    <span className="block text-[11px] text-slate-400 font-normal">
-                      {p.tripsIncluded} Trips Included
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-slate-700">{p.paymentDate}</td>
-                  <td className="py-4 px-4 text-slate-700">{p.paymentMethod}</td>
-                  <td className="py-4 px-4 font-mono text-slate-600 text-[11px]">{p.referenceId}</td>
-                  <td className="py-4 px-4"><StatusBadge status={p.status} /></td>
-                  <td className="py-4 px-4 text-right font-black text-slate-900 text-sm">
-                    {formatINR(p.amount)}
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    <button
-                      onClick={() => alert(`Downloading GST Tax Invoice for payout batch ${p.payoutBatch}...`)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5 text-slate-400" /> Invoice PDF
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Payout Batches DataTable */}
+      <DataTable
+        columns={columns}
+        data={mockPayments}
+        keyField="id"
+        defaultPageSize={10}
+        pageSizeOptions={[5, 10, 25, 50]}
+        searchPlaceholder="Search payout ID, period, UTR reference..."
+        searchKeys={["id", "period", "referenceId", "paymentDate", "status"]}
+        exportFileName="GrabRentals_Payout_Batches"
+        emptyTitle="No Payout Records Found"
+        emptyDescription="Settlement records will appear here after your first weekly payment cycle."
+      />
 
     </div>
   );

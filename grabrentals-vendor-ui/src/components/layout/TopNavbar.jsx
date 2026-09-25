@@ -97,11 +97,6 @@ export default function TopNavbar({ onMenuClick }) {
           <Search className="w-4.5 h-4.5" />
         </button>
 
-        {/* Role Badge */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-black uppercase tracking-wider shrink-0">
-          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-          Vendor Partner
-        </div>
 
         {/* Notifications Popover */}
         <div className="relative">

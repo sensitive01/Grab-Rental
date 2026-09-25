@@ -163,7 +163,7 @@ export default function Sidebar({ isOpen, onClose }) {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  All Vehicles (7)
+                  All Vehicles
                 </Link>
                 <Link
                   href="/vendor/vehicles/add"
@@ -224,7 +224,7 @@ export default function Sidebar({ isOpen, onClose }) {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  All Chauffeurs (6)
+                  All Chauffeurs
                 </Link>
                 <Link
                   href="/vendor/drivers/add"

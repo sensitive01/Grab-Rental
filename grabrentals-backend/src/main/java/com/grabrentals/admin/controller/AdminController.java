@@ -50,6 +50,23 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User status updated successfully", updated));
     }
 
+    @RequestMapping(value = "/users/{id}", method = {RequestMethod.PUT, RequestMethod.PATCH})
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.grabrentals.admin.dto.UpdateUserRequest request
+    ) {
+        UserResponse updated = adminService.updateUser(id, request);
+        return ResponseEntity.ok(ApiResponse.success("User updated successfully", updated));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable UUID id
+    ) {
+        adminService.deleteUser(id);
+        return ResponseEntity.ok(ApiResponse.success("User deleted successfully", null));
+    }
+
     @PostMapping("/users/operations")
     public ResponseEntity<ApiResponse<UserResponse>> createOperationsUser(
             @Valid @RequestBody CreateOperationsUserRequest request
