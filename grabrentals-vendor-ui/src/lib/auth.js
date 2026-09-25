@@ -6,33 +6,6 @@ const SESSION_KEY = "grabrentals_vendor_session";
 const TOKEN_KEY = "grabrentals_vendor_token";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export const DEMO_VENDORS = [
-  {
-    email: "operations@royaltravelschennai.in",
-    password: "fleet123",
-    name: "K. Subramanian",
-    company: "Royal Travels Chennai",
-    role: "FLEET",
-    tag: "Database Verified",
-  },
-  {
-    email: "ops@bangaloreexpress.in",
-    password: "fleet123",
-    name: "Manjunath Gowda",
-    company: "Bangalore Express Transports",
-    role: "FLEET",
-    tag: "Database Verified",
-  },
-  {
-    email: "partner@kaveritravels.in",
-    password: "password123",
-    name: "Rajesh Kannan",
-    company: "Kaveri Travels",
-    role: "FLEET",
-    tag: "Demo Fallback",
-  },
-];
-
 export function getAuthToken() {
   if (typeof window === "undefined") return null;
   try {
@@ -81,7 +54,6 @@ export async function login(email, password) {
     return { success: false, error: "Please enter both email and password." };
   }
 
-  // 1. Authenticate with Spring Boot backend via Axios
   try {
     const res = await axios.post(
       `${API_BASE_URL}/api/auth/login`,
@@ -97,7 +69,7 @@ export async function login(email, password) {
       const userObj = {
         id: beUser.id,
         email: beUser.email,
-        name: beUser.name || "Fleet Partner",
+        name: beUser.name || "Vendor Partner",
         businessName: beUser.businessName || "Vendor Operations",
         role: role,
         token: token,
@@ -118,8 +90,12 @@ export async function login(email, password) {
         redirectUrl: "/vendor/dashboard",
       };
     }
+
+    return {
+      success: false,
+      error: res.data?.message || "Login failed. Please check your credentials.",
+    };
   } catch (err) {
-    // If backend returns an explicit error response (e.g., 401 Invalid Credentials, 403 Account Blocked)
     if (err.response?.data?.message) {
       return {
         success: false,
@@ -127,42 +103,9 @@ export async function login(email, password) {
       };
     }
 
-    console.warn("Backend login connection failed, checking local demo credentials:", err.message);
-  }
-
-  // 2. Fallback to local demo vendor credentials if backend was offline
-  const demoMatch = DEMO_VENDORS.find(
-    (v) => v.email.toLowerCase() === cleanEmail && v.password === cleanPass
-  );
-
-  if (demoMatch) {
-    const userObj = {
-      id: "demo-vendor-" + Date.now(),
-      email: demoMatch.email,
-      name: demoMatch.name,
-      businessName: demoMatch.company,
-      role: demoMatch.role,
-      token: "demo-jwt-token-vendor",
-      source: "local-demo",
-      loginTime: new Date().toISOString(),
-    };
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
-      localStorage.setItem(TOKEN_KEY, userObj.token);
-      localStorage.setItem("grab_portal_role", "vendor");
-      localStorage.setItem("grab_portal_email", userObj.email);
-    }
-
     return {
-      success: true,
-      user: userObj,
-      redirectUrl: "/vendor/dashboard",
+      success: false,
+      error: "Unable to connect to the authentication server. Please check your network and backend status.",
     };
   }
-
-  return {
-    success: false,
-    error: "Invalid email or password. Please verify your credentials.",
-  };
 }

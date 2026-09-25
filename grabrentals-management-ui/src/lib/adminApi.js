@@ -82,6 +82,18 @@ export const adminApi = {
         status: newStatus,
       });
 
+      const data = response.data.data;
+      if (data) {
+        this.logSecurityEvent({
+          userId: data.email || String(id),
+          userName: data.name || "User",
+          userRole: data.role || "MEMBER",
+          event: "USER_STATUS_CHANGE",
+          status: newStatus === "BLOCKED" ? "WARNING" : "SUCCESS",
+          details: `Account status updated to ${newStatus}`,
+        });
+      }
+
       return {
         success: true,
         source: "backend",
@@ -98,6 +110,79 @@ export const adminApi = {
     try {
       const response = await axiosClient.get(`/api/admin/users/${id}`);
       return { success: true, source: "backend", data: response.data.data };
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message;
+      throw new Error(msg);
+    }
+  },
+
+  async createUser(userData) {
+    try {
+      const { role, name, email, phone, password, businessName, hubLocation } = userData;
+      let endpoint = "/api/admin/users/vendor";
+      let payload = {
+        name,
+        email,
+        phone,
+        password,
+        businessName: businessName || `${name} Travels`,
+        status: "ACTIVE",
+      };
+
+      if (role === "OPERATIONS") {
+        endpoint = "/api/admin/users/operations";
+        payload = {
+          name,
+          email,
+          phone,
+          password,
+          hubLocation: hubLocation || businessName || "Central Dispatch Hub",
+        };
+      } else if (role === "CUSTOMER") {
+        endpoint = "/api/auth/register/customer";
+        payload = {
+          name,
+          email,
+          phone,
+          password,
+        };
+      }
+
+      let response;
+      try {
+        response = await axiosClient.post(endpoint, payload);
+      } catch (err) {
+        if (endpoint === "/api/admin/users/vendor" && (err.response?.status === 404 || err.response?.status === 405)) {
+          response = await axiosClient.post("/api/admin/users/fleet", payload);
+        } else {
+          throw err;
+        }
+      }
+      const created = response.data?.data;
+
+      if (created && typeof window !== "undefined") {
+        try {
+          const cached = this.getCachedUsers();
+          const updated = [created, ...cached.filter((u) => u.id !== created.id)];
+          localStorage.setItem(DB_USERS_CACHE_KEY, JSON.stringify(updated));
+
+          this.logSecurityEvent({
+            userId: created.email || email,
+            userName: created.name || name,
+            userRole: created.role || role,
+            event: "USER_PROVISIONED",
+            status: "SUCCESS",
+            details: `Provisioned new ${created.role || role} account for ${created.name || name} (${created.email || email})`,
+          });
+        } catch {}
+      }
+
+      return {
+        success: true,
+        source: "backend",
+        message: response.data?.message || "User created successfully",
+        data: created,
+      };
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
       throw new Error(msg);
@@ -297,8 +382,107 @@ export const adminApi = {
     return createApiResponse(c, "Complaint ticket updated");
   },
 
-  async getAuditLogs() {
-    await simulateLatency();
-    return createApiResponse(logs);
+  async getAuditLogs(category) {
+    try {
+      const response = await axiosClient.get("/api/admin/audit-logs", {
+        params: category ? { category } : {},
+      });
+      return {
+        success: true,
+        source: "backend",
+        data: response.data?.data || [],
+      };
+    } catch (err) {
+      console.error("Backend error for getAuditLogs:", err);
+      return {
+        success: false,
+        error: err.response?.data?.message || err.message,
+        data: [],
+      };
+    }
+  },
+
+  async getSecurityAuditLogs() {
+    try {
+      const response = await axiosClient.get("/api/admin/audit-logs", {
+        params: { category: "SECURITY" },
+      });
+      return {
+        success: true,
+        source: "backend",
+        data: response.data?.data || [],
+      };
+    } catch (err) {
+      console.error("Backend error for getSecurityAuditLogs:", err);
+      return {
+        success: false,
+        error: err.response?.data?.message || err.message,
+        data: [],
+      };
+    }
+  },
+
+  async getActivityLogs() {
+    try {
+      const response = await axiosClient.get("/api/admin/audit-logs", {
+        params: { category: "ACTIVITY" },
+      });
+      return {
+        success: true,
+        source: "backend",
+        data: response.data?.data || [],
+      };
+    } catch (err) {
+      console.error("Backend error for getActivityLogs:", err);
+      return {
+        success: false,
+        error: err.response?.data?.message || err.message,
+        data: [],
+      };
+    }
+  },
+
+  async logSecurityEvent(entry) {
+    try {
+      const payload = {
+        category: "SECURITY",
+        event: entry.event || "SECURITY_ACTION",
+        userId: entry.userId,
+        userName: entry.userName,
+        userRole: entry.userRole,
+        ipAddress: entry.ipAddress || (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1"),
+        device: entry.device || (typeof navigator !== "undefined" ? navigator.userAgent : "Browser Client"),
+        status: entry.status || "SUCCESS",
+        details: entry.details,
+      };
+      const response = await axiosClient.post("/api/admin/audit-logs", payload);
+      return response.data?.data;
+    } catch (err) {
+      console.error("Failed to record security event in backend:", err);
+      return null;
+    }
+  },
+
+  async logActivityEvent(entry) {
+    try {
+      const payload = {
+        category: "ACTIVITY",
+        event: entry.actionCode || entry.event || "PLATFORM_ACTION",
+        userId: entry.operatorId || entry.userId,
+        userName: entry.operatorName || entry.userName,
+        userRole: entry.operatorRole || entry.userRole,
+        module: entry.module,
+        targetEntity: entry.targetEntity,
+        ipAddress: entry.ipAddress || (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1"),
+        device: entry.device || (typeof navigator !== "undefined" ? navigator.userAgent : "Browser Client"),
+        status: entry.status || "SUCCESS",
+        details: entry.details,
+      };
+      const response = await axiosClient.post("/api/admin/audit-logs", payload);
+      return response.data?.data;
+    } catch (err) {
+      console.error("Failed to record activity event in backend:", err);
+      return null;
+    }
   },
 };

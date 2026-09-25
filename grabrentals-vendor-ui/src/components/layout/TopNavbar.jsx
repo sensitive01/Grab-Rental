@@ -189,7 +189,7 @@ export default function TopNavbar({ onMenuClick }) {
                 <div className="px-4 py-2.5">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Signed in as</p>
                   <p className="font-bold text-slate-900 truncate">{displayEmail}</p>
-                  <p className="text-[10px] text-amber-700 font-bold mt-0.5">Role: FLEET PARTNER</p>
+                  <p className="text-[10px] text-amber-700 font-bold mt-0.5">Role: VENDOR PARTNER</p>
                 </div>
                 <div className="py-1">
                   <Link

@@ -25,6 +25,7 @@ public class AdminService {
     private final com.grabrentals.fleet.repository.FleetProfileRepository fleetProfileRepository;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final com.grabrentals.audit.service.AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
@@ -45,7 +46,19 @@ public class AdminService {
 
     @Transactional
     public UserResponse updateUserStatus(UUID id, UserStatus newStatus) {
-        return userService.updateUserStatus(id, newStatus);
+        UserResponse response = userService.updateUserStatus(id, newStatus);
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_STATUS_CHANGE")
+                    .userId(response.getEmail())
+                    .userName(response.getName())
+                    .userRole(response.getRole() != null ? response.getRole().name() : "USER")
+                    .status(newStatus == UserStatus.BLOCKED ? "WARNING" : "SUCCESS")
+                    .details("Account status changed to " + newStatus)
+                    .build());
+        } catch (Exception ignored) {}
+        return response;
     }
 
     @Transactional
@@ -68,11 +81,24 @@ public class AdminService {
                 .build();
 
         User saved = userRepository.save(user);
+
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_PROVISIONED")
+                    .userId(saved.getEmail())
+                    .userName(saved.getName())
+                    .userRole(Role.OPERATIONS.name())
+                    .status("SUCCESS")
+                    .details("Admin provisioned new operations staff account: " + saved.getEmail())
+                    .build());
+        } catch (Exception ignored) {}
+
         return UserResponse.fromEntity(saved);
     }
 
     @Transactional
-    public UserResponse createFleetUser(CreateFleetUserRequest request) {
+    public UserResponse createVendorUser(com.grabrentals.admin.dto.CreateVendorUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
             throw new EmailAlreadyExistsException("Email already in use: " + request.getEmail());
         }
@@ -99,6 +125,66 @@ public class AdminService {
                 .contactPerson(request.getName().trim())
                 .build();
         fleetProfileRepository.save(fleetProfile);
+
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_PROVISIONED")
+                    .userId(saved.getEmail())
+                    .userName(saved.getName())
+                    .userRole("VENDOR")
+                    .status("SUCCESS")
+                    .details("Admin provisioned new vendor account (" + request.getBusinessName() + "): " + saved.getEmail())
+                    .build());
+        } catch (Exception ignored) {}
+
+        return UserResponse.fromEntity(saved);
+    }
+
+    @Transactional
+    public UserResponse createFleetUser(CreateFleetUserRequest request) {
+        return createVendorUser(com.grabrentals.admin.dto.CreateVendorUserRequest.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .password(request.getPassword())
+                .businessName(request.getBusinessName())
+                .status(request.getStatus())
+                .build());
+    }
+
+    @Transactional
+    public UserResponse createCustomerUser(com.grabrentals.auth.dto.CustomerRegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
+            throw new EmailAlreadyExistsException("Email already in use: " + request.getEmail());
+        }
+
+        if (userRepository.existsByPhone(request.getPhone().trim())) {
+            throw new IllegalArgumentException("Phone number already in use: " + request.getPhone());
+        }
+
+        User user = User.builder()
+                .name(request.getName().trim())
+                .email(request.getEmail().toLowerCase().trim())
+                .phone(request.getPhone().trim())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(Role.CUSTOMER)
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        User saved = userRepository.save(user);
+
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_PROVISIONED")
+                    .userId(saved.getEmail())
+                    .userName(saved.getName())
+                    .userRole(Role.CUSTOMER.name())
+                    .status("SUCCESS")
+                    .details("Admin provisioned customer account: " + saved.getEmail())
+                    .build());
+        } catch (Exception ignored) {}
 
         return UserResponse.fromEntity(saved);
     }

@@ -22,6 +22,7 @@ import java.util.UUID;
 public class AdminController {
 
     private final AdminService adminService;
+    private final com.grabrentals.audit.service.AuditLogService auditLogService;
 
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<Map<String, String>>> getDashboard() {
@@ -58,12 +59,38 @@ public class AdminController {
                 .body(ApiResponse.success("Operations user created successfully", created));
     }
 
-    @PostMapping("/users/fleet")
-    public ResponseEntity<ApiResponse<UserResponse>> createFleetUser(
-            @Valid @RequestBody CreateFleetUserRequest request
+    @PostMapping({"/users/vendor", "/users/fleet"})
+    public ResponseEntity<ApiResponse<UserResponse>> createVendorUser(
+            @Valid @RequestBody com.grabrentals.admin.dto.CreateVendorUserRequest request
     ) {
-        UserResponse created = adminService.createFleetUser(request);
+        UserResponse created = adminService.createVendorUser(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Fleet user created successfully", created));
+                .body(ApiResponse.success("Vendor user created successfully", created));
+    }
+
+    @PostMapping("/users/customer")
+    public ResponseEntity<ApiResponse<UserResponse>> createCustomerUser(
+            @Valid @RequestBody com.grabrentals.auth.dto.CustomerRegisterRequest request
+    ) {
+        UserResponse created = adminService.createCustomerUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Customer user created successfully", created));
+    }
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<ApiResponse<List<com.grabrentals.audit.dto.AuditLogResponse>>> getAuditLogs(
+            @RequestParam(required = false) String category
+    ) {
+        List<com.grabrentals.audit.dto.AuditLogResponse> logs = auditLogService.getAuditLogs(category);
+        return ResponseEntity.ok(ApiResponse.success("Audit logs retrieved successfully", logs));
+    }
+
+    @PostMapping("/audit-logs")
+    public ResponseEntity<ApiResponse<com.grabrentals.audit.dto.AuditLogResponse>> createAuditLog(
+            @Valid @RequestBody com.grabrentals.audit.dto.CreateAuditLogRequest request
+    ) {
+        com.grabrentals.audit.dto.AuditLogResponse created = auditLogService.logEvent(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Audit log recorded successfully", created));
     }
 }

@@ -94,7 +94,7 @@ function LoginContent() {
             Vendor Partner Sign In
           </h2>
           <p className="text-xs text-slate-400">
-            Enter your fleet account credentials to access your vendor dashboard.
+            Enter your vendor account credentials to access your vendor dashboard.
           </p>
         </div>
 
@@ -112,7 +112,7 @@ function LoginContent() {
           
           <div className="space-y-1.5">
             <label className="block font-bold text-slate-300">
-              Fleet Email Address
+              Vendor Email Address
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -135,7 +135,7 @@ function LoginContent() {
               <button
                 type="button"
                 className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
-                onClick={() => alert("Please contact Grab Rentals Fleet Operations at +91 98400 99887 for password assistance.")}
+                onClick={() => alert("Please contact Grab Rentals Vendor Operations at +91 98400 99887 for password assistance.")}
               >
                 Need help?
               </button>

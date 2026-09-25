@@ -25,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final OtpService otpService;
+    private final com.grabrentals.audit.service.AuditLogService auditLogService;
 
     @Transactional
     public SendOtpResponse sendOtp(SendOtpRequest request) {
@@ -71,6 +72,18 @@ public class AuthService {
 
         String token = jwtService.generateToken(user);
 
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("LOGIN_SUCCESS")
+                    .userId(user.getPhone())
+                    .userName(user.getName())
+                    .userRole(user.getRole() != null ? user.getRole().name() : "CUSTOMER")
+                    .status("SUCCESS")
+                    .details("Customer authenticated via OTP verification")
+                    .build());
+        } catch (Exception ignored) {}
+
         return LoginResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
@@ -110,6 +123,18 @@ public class AuthService {
                 .build();
         customerProfileRepository.save(profile);
 
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_PROVISIONED")
+                    .userId(savedUser.getEmail())
+                    .userName(savedUser.getName())
+                    .userRole(Role.CUSTOMER.name())
+                    .status("SUCCESS")
+                    .details("New customer self-registered account")
+                    .build());
+        } catch (Exception ignored) {}
+
         return UserResponse.fromEntity(savedUser);
     }
 
@@ -142,19 +167,53 @@ public class AuthService {
                 .build();
         fleetProfileRepository.save(fleetProfile);
 
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("USER_PROVISIONED")
+                    .userId(savedUser.getEmail())
+                    .userName(savedUser.getName())
+                    .userRole(Role.FLEET.name())
+                    .status("WARNING")
+                    .details("Vendor registered company account (PENDING admin review): " + request.getBusinessName())
+                    .build());
+        } catch (Exception ignored) {}
+
         return UserResponse.fromEntity(savedUser);
     }
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+        String normalizedEmail = request.getEmail().toLowerCase().trim();
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            try {
+                auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                        .category("SECURITY")
+                        .event("LOGIN_FAILED")
+                        .userId(normalizedEmail)
+                        .userName(user != null ? user.getName() : "Unknown Identity")
+                        .userRole(user != null && user.getRole() != null ? user.getRole().name() : "UNKNOWN")
+                        .status("FAILED")
+                        .details("Failed login attempt with invalid credentials")
+                        .build());
+            } catch (Exception ignored) {}
             throw new InvalidCredentialsException("Invalid credentials");
         }
 
         if (user.getStatus() == UserStatus.BLOCKED) {
+            try {
+                auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                        .category("SECURITY")
+                        .event("LOGIN_FAILED")
+                        .userId(user.getEmail())
+                        .userName(user.getName())
+                        .userRole(user.getRole() != null ? user.getRole().name() : "USER")
+                        .status("FAILED")
+                        .details("Blocked account attempted to log in")
+                        .build());
+            } catch (Exception ignored) {}
             throw new AccountBlockedException("Your account has been blocked. Please contact support.");
         }
 
@@ -167,6 +226,18 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(user);
+
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("LOGIN_SUCCESS")
+                    .userId(user.getEmail())
+                    .userName(user.getName())
+                    .userRole(user.getRole() != null ? user.getRole().name() : "USER")
+                    .status("SUCCESS")
+                    .details("User successfully authenticated session via credentials")
+                    .build());
+        } catch (Exception ignored) {}
 
         return LoginResponse.builder()
                 .accessToken(token)

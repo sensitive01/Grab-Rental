@@ -27,7 +27,9 @@ public class CustomUserDetails implements UserDetails {
     private final Collection<? extends GrantedAuthority> authorities;
 
     public static CustomUserDetails build(User user) {
-        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        List<GrantedAuthority> authorities = (user.getRole() == Role.FLEET || user.getRole() == Role.VENDOR)
+                ? List.of(new SimpleGrantedAuthority("ROLE_FLEET"), new SimpleGrantedAuthority("ROLE_VENDOR"))
+                : List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
         return new CustomUserDetails(
                 user.getId(),
                 user.getName(),
