@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Car, 
@@ -16,119 +16,155 @@ import {
   ShieldCheck, 
   ChevronRight, 
   KeyRound, 
-  UserCheck,
-  RotateCcw,
-  Headphones,
-  Star
+  UserCheck, 
+  RotateCcw, 
+  Headphones, 
+  Star,
+  Loader2
 } from "lucide-react";
+import { customerApi } from "@/lib/customerApi";
+import { isAuthenticated, getCurrentUser } from "@/lib/auth";
 
 export default function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState("all");
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
-  const bookings = [
-    {
-      id: "GR-84920",
-      type: "outstation",
-      tripType: "One-Way Outstation",
-      from: "Indiranagar, Bengaluru",
-      to: "Mysore Palace Area, Mysuru",
-      distance: "145 km",
-      date: "Tomorrow, 22 Sep 2026",
-      time: "06:30 AM",
-      car: "Toyota Innova Crysta",
-      carType: "SUV • 6+1 Seater",
-      status: "upcoming",
-      statusLabel: "Confirmed • Driver Assigned",
-      statusColor: "bg-blue-50 text-blue-700 border-blue-200",
-      driver: {
-        name: "Ramesh Kumar",
-        phone: "+91 98450 12345",
-        rating: "4.9",
-        plate: "KA 01 MJ 4521"
-      },
-      otp: "4829",
-      totalFare: "₹5,950",
-      paidAmount: "₹1,190",
-      dueAmount: "₹4,760",
-      paymentStatus: "Advance Paid (20%)"
-    },
-    {
-      id: "GR-84210",
-      type: "airport",
-      tripType: "Airport Transfer",
-      from: "Whitefield Tech Park, Bengaluru",
-      to: "Kempegowda Int'l Airport (BLR)",
-      distance: "42 km",
-      date: "Today, 21 Sep 2026",
-      time: "03:45 PM",
-      car: "Maruti Dzire Prime",
-      carType: "Sedan • 4+1 Seater",
-      status: "ongoing",
-      statusLabel: "Chauffeur En Route",
-      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200 animate-pulse",
-      driver: {
-        name: "Suresh Gowda",
-        phone: "+91 97312 67890",
-        rating: "4.8",
-        plate: "KA 04 AB 8892"
-      },
-      otp: "1923",
-      totalFare: "₹1,450",
-      paidAmount: "₹1,450",
-      dueAmount: "₹0",
-      paymentStatus: "Fully Paid"
-    },
-    {
-      id: "GR-79104",
-      type: "outstation",
-      tripType: "Round-Trip Outstation",
-      from: "Koramangala, Bengaluru",
-      to: "Madikeri, Coorg, Karnataka",
-      distance: "540 km",
-      date: "14 Sep 2026",
-      time: "05:00 AM",
-      car: "Maruti Ertiga Hybrid",
-      carType: "MUV • 6 Seater",
-      status: "completed",
-      statusLabel: "Trip Completed",
-      statusColor: "bg-slate-100 text-slate-700 border-slate-200",
-      driver: {
-        name: "Anand M",
-        phone: "+91 99001 22334",
-        rating: "5.0",
-        plate: "KA 05 MN 3311"
-      },
-      totalFare: "₹11,400",
-      paidAmount: "₹11,400",
-      dueAmount: "₹0",
-      paymentStatus: "Paid in Full"
-    },
-    {
-      id: "GR-76521",
-      type: "local",
-      tripType: "Local Hourly Rental (8hr / 80km)",
-      from: "Jayanagar, Bengaluru",
-      to: "Multiple City Stops",
-      distance: "80 km",
-      date: "28 Aug 2026",
-      time: "09:30 AM",
-      car: "Hyundai Aura Sedan",
-      carType: "Sedan • 4 Seater",
-      status: "completed",
-      statusLabel: "Trip Completed",
-      statusColor: "bg-slate-100 text-slate-700 border-slate-200",
-      driver: {
-        name: "Manjunath K",
-        phone: "+91 94481 99882",
-        rating: "4.9",
-        plate: "KA 02 HK 6401"
-      },
-      totalFare: "₹2,650",
-      paidAmount: "₹2,650",
-      dueAmount: "₹0",
-      paymentStatus: "Paid in Full"
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadCustomerBookings() {
+      try {
+        const currentUser = getCurrentUser();
+        setUser(currentUser);
+
+        let liveBookings = [];
+
+        // 1. Fetch real bookings from backend if authenticated
+        if (isAuthenticated()) {
+          try {
+            const res = await customerApi.getBookings();
+            if (res && res.data && Array.isArray(res.data)) {
+              liveBookings = res.data;
+            }
+          } catch (err) {
+            console.warn("[Dashboard] Could not fetch backend customer bookings:", err);
+          }
+        }
+
+        // 2. Check recently confirmed booking from sessionStorage if available
+        if (typeof window !== "undefined") {
+          try {
+            const stored = sessionStorage.getItem("grab_confirmed_booking");
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              const exists = liveBookings.some(
+                b => (b.bookingReference && b.bookingReference === parsed.bookingReference) || (b.id && b.id === parsed.id)
+              );
+              if (!exists) {
+                liveBookings.unshift(parsed);
+              }
+            }
+          } catch (err) {
+            console.warn("[Dashboard] Error reading sessionStorage booking:", err);
+          }
+        }
+
+        // 3. Map into presentation format
+        const formatted = liveBookings.map(b => formatBookingItem(b));
+
+        if (!isCancelled) {
+          setBookings(formatted);
+        }
+      } catch (err) {
+        console.error("[Dashboard] Error loading bookings:", err);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
     }
-  ];
+
+    loadCustomerBookings();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  function formatBookingItem(b) {
+    const rawStatus = (b.status || "PENDING").toUpperCase();
+    
+    let tabCategory = "upcoming";
+    let statusLabel = "Booking Received • Assigning Chauffeur";
+    let statusColor = "bg-blue-50 text-blue-700 border-blue-200";
+
+    if (rawStatus === "COMPLETED") {
+      tabCategory = "completed";
+      statusLabel = "Trip Completed";
+      statusColor = "bg-slate-100 text-slate-700 border-slate-200";
+    } else if (rawStatus === "CANCELLED") {
+      tabCategory = "cancelled";
+      statusLabel = "Trip Cancelled";
+      statusColor = "bg-rose-50 text-rose-700 border-rose-200";
+    } else if (rawStatus === "ON_THE_WAY" || rawStatus === "IN_TRANSIT") {
+      tabCategory = "ongoing";
+      statusLabel = rawStatus === "IN_TRANSIT" ? "Trip In Progress" : "Chauffeur En Route";
+      statusColor = "bg-emerald-50 text-emerald-700 border-emerald-200 animate-pulse";
+    } else if (rawStatus === "CONFIRMED" || b.driverName) {
+      tabCategory = "upcoming";
+      statusLabel = "Confirmed • Driver Assigned";
+      statusColor = "bg-blue-50 text-blue-700 border-blue-200";
+    }
+
+    // Format Date & Time
+    let dateStr = "Upcoming Trip";
+    let timeStr = "Scheduled";
+    if (b.pickupDateTime) {
+      try {
+        const dt = new Date(b.pickupDateTime);
+        if (!isNaN(dt.getTime())) {
+          dateStr = dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+          timeStr = dt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+        }
+      } catch {
+        // keep fallback
+      }
+    }
+
+    const total = Number(b.totalFare || 0);
+    const advance = Number(b.advancePaid || 0);
+    const due = Number(b.dueAmount != null ? b.dueAmount : Math.max(0, total - advance));
+
+    return {
+      id: b.bookingReference || b.id || "GR-REF",
+      rawId: b.id,
+      tripType: (b.tripType || "ONE_WAY").replace(/_/g, " "),
+      from: b.pickupAddress || b.pickupCity || "Pickup Location",
+      to: b.dropAddress || b.dropCity || "Destination",
+      distance: b.distance ? `${b.distance} km` : "Direct Outstation",
+      date: dateStr,
+      time: timeStr,
+      car: b.vehicleModel || `${b.vehicleCategory || "Sedan"} Cab`,
+      carType: b.vehicleType || `${b.vehicleCategory || "Outstation"} • AC`,
+      status: tabCategory,
+      rawStatus,
+      statusLabel,
+      statusColor,
+      driver: b.driverName ? {
+        name: b.driverName,
+        phone: b.driverPhone || "+91 Chauffeur On-Duty",
+        rating: "4.9",
+        plate: b.vehicleNumber || "Verified Commercial Cab"
+      } : null,
+      otp: b.rideOtp || null,
+      totalFare: `₹${total.toLocaleString()}`,
+      paidAmount: `₹${advance.toLocaleString()}`,
+      dueAmount: `₹${due.toLocaleString()}`,
+      paymentStatus: b.paymentStatus === "FULL_PAID" ? "Fully Paid" : b.paymentStatus === "ADVANCE_PAID" ? "Advance Paid (20%)" : "Payment Pending"
+    };
+  }
 
   const filteredBookings = bookings.filter((b) => {
     if (activeTab === "all") return true;
@@ -142,13 +178,7 @@ export default function CustomerDashboard() {
         {/* Welcome Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
-                Customer Portal
-              </span>
-              <span className="text-xs text-slate-400 font-medium">Logged in via Phone OTP</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               My Trips & Bookings
             </h1>
             <p className="text-sm text-slate-500 mt-1">
@@ -185,7 +215,7 @@ export default function CustomerDashboard() {
             { id: "ongoing", label: "Ongoing", count: bookings.filter(b => b.status === "ongoing").length },
             { id: "upcoming", label: "Upcoming", count: bookings.filter(b => b.status === "upcoming").length },
             { id: "completed", label: "Completed", count: bookings.filter(b => b.status === "completed").length },
-            { id: "cancelled", label: "Cancelled", count: 0 }
+            { id: "cancelled", label: "Cancelled", count: bookings.filter(b => b.status === "cancelled").length }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -207,26 +237,45 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Bookings List */}
-        {filteredBookings.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
-            <Calendar className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-800">No trips found</h3>
-            <p className="text-xs text-slate-500">There are no bookings matching the selected tab.</p>
+        {loading ? (
+          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
+            <Loader2 className="w-8 h-8 text-amber-600 animate-spin mx-auto" />
+            <p className="text-sm font-bold text-slate-700">Loading your real-time bookings...</p>
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <Calendar className="w-7 h-7" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-extrabold text-slate-900">No bookings found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                {activeTab === "all" 
+                  ? "You have not made any bookings yet. Ready to travel? Book your first outstation cab now!"
+                  : `There are currently no ${activeTab} trips in your account.`}
+              </p>
+            </div>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-600/20"
+            >
+              <Car className="w-4 h-4" /> Book a Ride Now
+            </Link>
           </div>
         ) : (
           <div className="space-y-5">
             {filteredBookings.map((booking) => (
               <div 
                 key={booking.id}
-                className="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow overflow-hidden"
               >
                 {/* Header Bar */}
                 <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200">
+                    <span className="text-xs font-mono font-black text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200">
                       {booking.id}
                     </span>
-                    <span className="text-xs font-semibold text-slate-500">{booking.tripType}</span>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{booking.tripType}</span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -271,17 +320,21 @@ export default function CustomerDashboard() {
                       <p className="text-[11px] text-slate-500">{booking.carType}</p>
                     </div>
 
-                    {booking.driver && (
+                    {booking.driver ? (
                       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
                             <UserCheck className="w-3.5 h-3.5 text-emerald-600" /> {booking.driver.name}
                           </span>
-                          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded">
+                          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
                             ★ {booking.driver.rating}
                           </span>
                         </div>
                         <p className="text-[10px] font-mono text-slate-500">{booking.driver.plate}</p>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-slate-50/60 border border-dashed border-slate-200 text-[11px] font-medium text-slate-500">
+                        Chauffeur details will be shared 2 hours before departure.
                       </div>
                     )}
 
@@ -301,7 +354,7 @@ export default function CustomerDashboard() {
                       <div className="text-xl font-black text-slate-900">{booking.totalFare}</div>
                       <span className="text-[11px] font-bold text-emerald-600">{booking.paymentStatus}</span>
                       {booking.dueAmount !== "₹0" && (
-                        <p className="text-[11px] text-slate-500 mt-0.5">₹{booking.dueAmount.replace("₹", "")} due to driver</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{booking.dueAmount} due to driver</p>
                       )}
                     </div>
 

@@ -74,8 +74,8 @@ export default function EditDriverPage({ params }) {
 
         // Fetch driver & vehicles in parallel
         const [driverRes, vehiclesRes] = await Promise.all([
-          axiosClient.get(`/api/fleet/drivers/${driverId}`),
-          axiosClient.get("/api/fleet/vehicles")
+          axiosClient.get(`/api/vendor/drivers/${driverId}`),
+          axiosClient.get("/api/vendor/vehicles")
         ]);
 
         if (driverRes.data?.success && driverRes.data.data) {
@@ -222,7 +222,7 @@ export default function EditDriverPage({ params }) {
         photoUrl: formData.photoUrl || null,
       };
 
-      const res = await axiosClient.put(`/api/fleet/drivers/${driverId}`, payload);
+      const res = await axiosClient.put(`/api/vendor/drivers/${driverId}`, payload);
 
       if (res.data?.success) {
         setToast({ message: "Chauffeur details updated successfully!", type: "success" });

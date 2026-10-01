@@ -37,7 +37,7 @@ export default function DriverDetailsPage({ params }) {
       try {
         setLoading(true);
         setError(null);
-        const res = await axiosClient.get(`/api/fleet/drivers/${driverId}`);
+        const res = await axiosClient.get(`/api/vendor/drivers/${driverId}`);
         if (res.data?.success && res.data.data) {
           setDriver(res.data.data);
         } else {

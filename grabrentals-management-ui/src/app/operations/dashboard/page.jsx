@@ -7,6 +7,7 @@ import { formatINR, getStatusStyle } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import {
   Car,
@@ -72,6 +73,23 @@ export default function OperationsDashboard() {
     }
     loadData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Operations Command Center"
+          subtitle="Real-time dispatch control, vehicle assignments, and trip monitoring"
+          breadcrumbs={[{ label: "Operations" }, { label: "Dashboard" }]}
+        />
+        <LoadingAnimation
+          title="Loading Operations Command Center..."
+          subtitle="Aggregating live dispatch KPIs, active trip telematics, and fleet rosters..."
+          icon={Car}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,26 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { initialBookings } from "@/lib/mockData";
+import { operationsApi } from "@/lib/operationsApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, SearchInput } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { formatINR, getStatusStyle } from "@/lib/utils";
-import { Eye, Download } from "lucide-react";
+import { Eye } from "lucide-react";
 
 export default function AdminMasterBookingsPage() {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const filtered = initialBookings.filter((b) => {
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await operationsApi.getBookings();
+        setBookings(res.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const filtered = bookings.filter((b) => {
     const q = search.toLowerCase();
     return (
       !search ||
-      b.id.toLowerCase().includes(q) ||
-      b.customerName.toLowerCase().includes(q) ||
-      b.pickupLocation.toLowerCase().includes(q) ||
-      b.dropLocation.toLowerCase().includes(q)
+      (b.id && b.id.toLowerCase().includes(q)) ||
+      (b.customerName && b.customerName.toLowerCase().includes(q)) ||
+      (b.pickupLocation && b.pickupLocation.toLowerCase().includes(q)) ||
+      (b.dropLocation && b.dropLocation.toLowerCase().includes(q))
     );
   });
 
@@ -58,55 +75,70 @@ export default function AdminMasterBookingsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((b) => {
-              const statusStyle = getStatusStyle(b.status);
-              return (
-                <TableRow key={b.id}>
-                  <TableCell>
-                    <span className="font-mono font-bold text-xs text-slate-900">{b.id}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-bold text-xs text-slate-900">{b.customerName}</div>
-                    <div className="text-[11px] text-slate-500">{b.customerEmail}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs font-medium text-slate-800">{b.pickupLocation} ➔ {b.dropLocation}</div>
-                    <div className="text-[11px] text-slate-500">{b.startDate}</div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs font-semibold text-slate-800">{b.vendorName || "In-House Fleet"}</span>
-                  </TableCell>
-                  <TableCell>
-                    {b.assignedVehicleNumber ? (
-                      <div className="space-y-1">
-                        <NumberPlate registrationNumber={b.assignedVehicleNumber} />
-                        <div className="text-[10px] text-slate-500">{b.assignedDriverName}</div>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-amber-600 font-medium italic">Unallocated</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-bold text-xs text-slate-900">{formatINR(b.fare)}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}>
-                      {statusStyle.label}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link href={`/admin/bookings/${b.id}`}>
-                      <Button size="xs" variant="secondary" icon={Eye}>
-                        Audit
-                      </Button>
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12">
+                  <LoadingAnimation inline title="Loading master booking ledger..." />
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                  No bookings found in database.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((b) => {
+                const statusStyle = getStatusStyle(b.status);
+                return (
+                  <TableRow key={b.id}>
+                    <TableCell>
+                      <span className="font-mono font-bold text-xs text-slate-900">{b.id}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-bold text-xs text-slate-900">{b.customerName}</div>
+                      <div className="text-[11px] text-slate-500">{b.customerPhone || b.customerEmail || ""}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs font-medium text-slate-800">{b.pickupLocation} ➔ {b.dropLocation}</div>
+                      <div className="text-[11px] text-slate-500">{b.startDate}</div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs font-semibold text-slate-800">{b.vendorName || "In-House Fleet"}</span>
+                    </TableCell>
+                    <TableCell>
+                      {b.assignedVehicleNumber ? (
+                        <div className="space-y-1">
+                          <NumberPlate registrationNumber={b.assignedVehicleNumber} />
+                          <div className="text-[10px] text-slate-500">{b.assignedDriverName}</div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-amber-600 font-medium italic">Unallocated</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-bold text-xs text-slate-900">{formatINR(b.fare || b.totalFare || 0)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}>
+                        {statusStyle.label}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link href={`/admin/bookings/${b.id}`}>
+                        <Button size="xs" variant="secondary" icon={Eye}>
+                          Audit
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </Card>
     </div>
   );
 }
+

@@ -156,7 +156,7 @@ export default function AddVehiclePage() {
         permitDocumentUrl: formData.permitDocumentUrl || null
       };
 
-      const res = await axiosClient.post("/api/fleet/vehicles", payload);
+      const res = await axiosClient.post("/api/vendor/vehicles", payload);
 
       if (res.data?.success) {
         setToast({

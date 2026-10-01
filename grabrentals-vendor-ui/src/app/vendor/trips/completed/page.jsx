@@ -1,19 +1,29 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { ChevronRight, Eye } from "lucide-react";
+import { ChevronRight, Eye, Loader2 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import DataTable from "@/components/ui/DataTable";
-import { mockBookings } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
 
 export default function CompletedTripsPage() {
-  const completedTrips = useMemo(() => {
-    return mockBookings.filter(b => b.status.toLowerCase() === "completed");
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    vendorApi.getBookings()
+      .then(res => setBookings(res || []))
+      .catch(err => console.error("Failed to fetch completed trips:", err))
+      .finally(() => setLoading(false));
   }, []);
+
+  const completedTrips = useMemo(() => {
+    return bookings.filter(b => (b.status || "").toLowerCase() === "completed");
+  }, [bookings]);
 
   const columns = useMemo(() => [
     {
@@ -25,7 +35,7 @@ export default function CompletedTripsPage() {
           href={`/vendor/bookings/${b.id}`}
           className="text-amber-600 hover:text-amber-700 font-mono font-bold"
         >
-          #{b.id}
+          #{b.bookingReference || b.id}
         </Link>
       )
     },
@@ -48,7 +58,7 @@ export default function CompletedTripsPage() {
     },
     {
       key: "pickupDate",
-      label: "Date Completed",
+      label: "Trip Date",
       sortable: true,
       className: "font-semibold text-slate-700"
     },
@@ -64,20 +74,14 @@ export default function CompletedTripsPage() {
       )
     },
     {
-      key: "status",
-      label: "Status",
-      sortable: true,
-      render: (b) => <StatusBadge status={b.status} />
-    },
-    {
       key: "vendorNet",
-      label: "Net Settled",
+      label: "Payout Settled",
       align: "right",
       sortable: true,
       sortValue: (b) => Number(b.vendorNet) || 0,
       render: (b) => (
-        <span className="font-black text-emerald-600 text-sm">
-          {formatINR(b.vendorNet)}
+        <span className="font-black text-emerald-600">
+          {formatINR(b.vendorNet || b.totalFare)}
         </span>
       )
     },
@@ -85,21 +89,43 @@ export default function CompletedTripsPage() {
       key: "actions",
       label: "Action",
       align: "center",
-      sortable: false,
       render: (b) => (
         <Link
           href={`/vendor/bookings/${b.id}`}
-          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors inline-flex items-center gap-1 font-bold text-xs"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors inline-block"
         >
-          <Eye className="w-3.5 h-3.5" />
-          <span>View</span>
+          <Eye className="w-4 h-4" />
         </Link>
       )
     }
   ], []);
 
+  const renderMobileCard = (b) => (
+    <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="font-mono font-bold text-amber-600">#{b.bookingReference || b.id}</span>
+        <span className="font-black text-emerald-600">{formatINR(b.vendorNet || b.totalFare)}</span>
+      </div>
+      <div className="text-xs space-y-1">
+        <p className="font-bold text-slate-900">{b.customer?.name}</p>
+        <p className="text-slate-600">{b.pickup} ➔ {b.drop}</p>
+      </div>
+      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+        <NumberPlate number={b.vehicleNumber} />
+        <Link
+          href={`/vendor/bookings/${b.id}`}
+          className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+        >
+          Details <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
+      
+      {/* Header & Breadcrumbs */}
       <div className="space-y-1">
         <Breadcrumbs
           items={[
@@ -107,11 +133,14 @@ export default function CompletedTripsPage() {
             { label: "Completed Trips" }
           ]}
         />
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          Completed Trips Archive
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+          Completed Trips History
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+            {completedTrips.length} Fulfilled
+          </span>
         </h1>
         <p className="text-xs sm:text-sm text-slate-500">
-          Historical record of successfully executed chauffeur rentals and settled earnings.
+          Archive of completed customer journeys and settled partner earnings.
         </p>
       </div>
 
@@ -120,13 +149,15 @@ export default function CompletedTripsPage() {
         data={completedTrips}
         keyField="id"
         defaultPageSize={10}
-        pageSizeOptions={[5, 10, 25, 50]}
+        pageSizeOptions={[5, 10, 20]}
         searchPlaceholder="Search completed trips..."
-        searchKeys={["id", "customer.name", "vehicleNumber", "driverName", "pickup", "drop"]}
+        searchKeys={["id", "bookingReference", "customer.name", "pickup", "drop", "vehicleNumber", "driverName"]}
         exportFileName="GrabRentals_Completed_Trips"
         emptyTitle="No Completed Trips"
-        emptyDescription="There are currently no completed trips in your archive."
+        emptyDescription="Trips fulfilled by your fleet will appear here once passenger dropoff is completed."
+        renderMobileCard={renderMobileCard}
       />
+
     </div>
   );
 }

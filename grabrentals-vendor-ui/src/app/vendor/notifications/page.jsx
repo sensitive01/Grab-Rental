@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Bell, 
@@ -10,17 +10,36 @@ import {
   CreditCard, 
   AlertTriangle, 
   CheckCircle2, 
-  Clock,
-  ChevronRight
+  Clock, 
+  ChevronRight,
+  Loader2 
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
-import { mockNotifications } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 
 export default function VendorNotificationsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [toastMessage, setToastMessage] = useState(null);
+
+  const fetchNotifs = async () => {
+    try {
+      setLoading(true);
+      const list = await vendorApi.getNotifications();
+      setNotifications(list || []);
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifs();
+  }, []);
 
   const filteredNotifs = notifications.filter(
     n => selectedCategory === "all" || n.category === selectedCategory
@@ -108,7 +127,12 @@ export default function VendorNotificationsPage() {
 
       {/* Notifications List */}
       <div className="space-y-3">
-        {filteredNotifs.length === 0 ? (
+        {loading ? (
+          <div className="py-20 text-center space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-amber-500" />
+            <p className="text-xs text-slate-500 font-medium">Checking live alerts...</p>
+          </div>
+        ) : filteredNotifs.length === 0 ? (
           <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
             <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
             <h3 className="text-base font-black text-slate-900">Feed is Empty</h3>

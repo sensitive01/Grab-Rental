@@ -1,59 +1,125 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
   Car, 
   CheckCircle2, 
-  Calendar 
+  Calendar,
+  Loader2 
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
 import NumberPlate from "@/components/ui/NumberPlate";
-import { mockVehicles } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 
 export default function EditVehiclePage({ params }) {
   const router = useRouter();
   const unwrappedParams = use(params);
-  const vehicleId = unwrappedParams?.id || "VH-101";
+  const vehicleId = unwrappedParams?.id;
 
-  const vehicle = mockVehicles.find((v) => v.id === vehicleId) || mockVehicles[0];
-
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [vehicle, setVehicle] = useState(null);
 
   const [formData, setFormData] = useState({
-    vehicleType: vehicle.type,
-    vehicleModel: vehicle.model,
-    vehicleNumber: vehicle.vehicleNumber,
-    seatingCapacity: vehicle.seatingCapacity,
-    fuelType: vehicle.fuelType,
-    acType: vehicle.acType,
-    status: vehicle.status,
-    currentLocation: vehicle.currentLocation,
-    dailyRate: vehicle.dailyRate,
-    perKmRate: vehicle.perKmRate
+    vehicleType: "SUV",
+    vehicleModel: "",
+    vehicleNumber: "",
+    registrationNumber: "",
+    seatingCapacity: 4,
+    fuelType: "Diesel",
+    acType: "Dual AC",
+    status: "AVAILABLE",
+    currentLocation: "",
+    dailyRate: 3500,
+    perKmRate: 15,
+    year: 2024
   });
+
+  useEffect(() => {
+    if (!vehicleId) return;
+    const fetchVehicle = async () => {
+      try {
+        setInitialLoading(true);
+        const data = await vendorApi.getVehicleById(vehicleId);
+        if (data) {
+          setVehicle(data);
+          setFormData({
+            vehicleType: data.vehicleType || "SUV",
+            vehicleModel: data.model || "",
+            vehicleNumber: data.vehicleNumber || "",
+            registrationNumber: data.registrationNumber || data.vehicleNumber || "",
+            seatingCapacity: data.seatingCapacity || 4,
+            fuelType: data.fuelType || "Diesel",
+            acType: data.acType || "Dual AC",
+            status: data.status || "AVAILABLE",
+            currentLocation: data.currentLocation || "",
+            dailyRate: data.dailyRate || 3500,
+            perKmRate: data.perKmRate || 15,
+            year: data.year || 2024
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load vehicle for edit:", err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchVehicle();
+  }, [vehicleId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      setToastMessage("Vehicle details updated successfully!");
+    try {
+      await vendorApi.updateVehicle(vehicleId, {
+        ...formData,
+        seatingCapacity: Number(formData.seatingCapacity),
+        dailyRate: Number(formData.dailyRate),
+        perKmRate: Number(formData.perKmRate)
+      });
+      setToastMessage("Vehicle details updated successfully in backend!");
       setTimeout(() => {
-        router.push(`/vendor/vehicles/${vehicle.id}`);
+        router.push("/vendor/vehicles");
       }, 900);
-    }, 600);
+    } catch (err) {
+      console.error("Failed to update vehicle:", err);
+      setToastMessage(err.response?.data?.message || "Failed to update vehicle.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="py-24 text-center space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-amber-500" />
+        <p className="text-xs text-slate-500 font-medium">Loading vehicle details from registry...</p>
+      </div>
+    );
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="py-20 text-center space-y-4 max-w-md mx-auto">
+        <h2 className="text-lg font-black text-slate-900">Vehicle Not Found</h2>
+        <p className="text-xs text-slate-500">Could not find vehicle particulars for ID {vehicleId}.</p>
+        <Link href="/vendor/vehicles" className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold inline-block">
+          Return to Fleet
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -68,7 +134,7 @@ export default function EditVehiclePage({ params }) {
           <Breadcrumbs
             items={[
               { label: "Vehicles", href: "/vendor/vehicles" },
-              { label: vehicle.vehicleNumber, href: `/vendor/vehicles/${vehicle.id}` },
+              { label: vehicle.vehicleNumber, href: `/vendor/vehicles` },
               { label: "Edit" }
             ]}
           />
@@ -76,14 +142,14 @@ export default function EditVehiclePage({ params }) {
             Edit Vehicle: {vehicle.vehicleNumber}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Update rate card, operational status, or hub location.
+            Update rate card, operational status, or depot location.
           </p>
         </div>
         <Link
-          href={`/vendor/vehicles/${vehicle.id}`}
+          href="/vendor/vehicles"
           className="self-start sm:self-auto px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Details
+          <ArrowLeft className="w-4 h-4" /> Back to Vehicles
         </Link>
       </div>
 
@@ -133,11 +199,11 @@ export default function EditVehiclePage({ params }) {
                     onChange={handleChange}
                     className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
                   >
-                    <option value="Available">Available for Dispatch</option>
-                    <option value="Booked">Booked</option>
-                    <option value="On Trip">On Active Trip</option>
-                    <option value="Maintenance">Under Scheduled Maintenance</option>
-                    <option value="Inactive">Temporarily Inactive</option>
+                    <option value="AVAILABLE">Available for Dispatch</option>
+                    <option value="BOOKED">Booked</option>
+                    <option value="ON_TRIP">On Active Trip</option>
+                    <option value="MAINTENANCE">Under Scheduled Maintenance</option>
+                    <option value="INACTIVE">Temporarily Inactive</option>
                   </select>
                 </div>
 
@@ -184,9 +250,9 @@ export default function EditVehiclePage({ params }) {
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Live Preview</span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  formData.status === 'Available' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                  formData.status === 'On Trip' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                  formData.status === 'Booked' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                  formData.status === 'AVAILABLE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                  formData.status === 'ON_TRIP' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                  formData.status === 'BOOKED' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
                   'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}>
                   {formData.status}
@@ -218,7 +284,7 @@ export default function EditVehiclePage({ params }) {
                 </div>
 
                 <div className="text-[11px] text-slate-500 flex items-center gap-1.5 pt-1">
-                  <span className="font-semibold text-slate-700">Stationed at:</span> {formData.currentLocation || "Not assigned"}
+                  <span className="font-semibold text-slate-700">Stationed at:</span> {formData.currentLocation || "Depot Main Hub"}
                 </div>
               </div>
             </div>
@@ -239,7 +305,7 @@ export default function EditVehiclePage({ params }) {
                 {loading ? "Saving Changes..." : "Save Vehicle Changes"}
               </button>
               <Link
-                href={`/vendor/vehicles/${vehicle.id}`}
+                href="/vendor/vehicles"
                 className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-center text-center"
               >
                 Cancel

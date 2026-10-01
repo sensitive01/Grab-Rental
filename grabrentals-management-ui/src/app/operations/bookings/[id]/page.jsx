@@ -111,16 +111,16 @@ export default function BookingDetailPage({ params }) {
                 </Button>
               </Link>
             )}
-            {booking.status === "ASSIGNED" && (
+            {["ASSIGNED", "ASSIGNED_TO_VENDOR", "CONFIRMED"].includes(booking.status) && (
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handleStatusChange("EN_ROUTE")}
+                onClick={() => handleStatusChange("IN_TRANSIT")}
               >
-                Mark Dispatched (En Route)
+                Mark Dispatched (In Transit)
               </Button>
             )}
-            {booking.status === "EN_ROUTE" && (
+            {["EN_ROUTE", "ON_THE_WAY", "IN_TRANSIT", "CONFIRMED"].includes(booking.status) && (
               <Button
                 variant="emerald"
                 size="sm"

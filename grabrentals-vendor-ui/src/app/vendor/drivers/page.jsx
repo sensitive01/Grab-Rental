@@ -30,7 +30,7 @@ export default function VendorDriversPage() {
   const fetchDrivers = async () => {
     try {
       setLoading(true);
-      const res = await axiosClient.get("/api/fleet/drivers");
+      const res = await axiosClient.get("/api/vendor/drivers");
       if (res.data?.success && Array.isArray(res.data.data)) {
         setDrivers(res.data.data);
       }
@@ -54,7 +54,7 @@ export default function VendorDriversPage() {
   const handleDeleteDriver = async () => {
     if (!driverToDelete) return;
     try {
-      await axiosClient.delete(`/api/fleet/drivers/${driverToDelete.id}`);
+      await axiosClient.delete(`/api/vendor/drivers/${driverToDelete.id}`);
       setDrivers(prev => prev.filter(d => d.id !== driverToDelete.id));
       setToastMessage(`Chauffeur ${driverToDelete.name} was removed from your roster.`);
     } catch (err) {

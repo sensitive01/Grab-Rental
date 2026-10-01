@@ -50,15 +50,24 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> {
+                headers.frameOptions(frame -> frame.deny());
+                headers.contentTypeOptions(org.springframework.security.config.Customizer.withDefaults());
+                headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
+                headers.referrerPolicy(referrer -> referrer.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
+                headers.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; frame-ancestors 'none'; object-src 'none';"));
+            })
             .authorizeHttpRequests(auth -> auth
                 // Allow CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Public auth endpoints
-                .requestMatchers(HttpMethod.POST, "/api/auth/register/customer", "/api/auth/register/fleet", "/api/auth/login", "/api/auth/otp/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register/customer", "/api/auth/register/vendor", "/api/auth/register/fleet", "/api/auth/login", "/api/auth/otp/**").permitAll()
+                // Public vehicle search & catalog
+                .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
                 // Role-based endpoints
                 .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
-                .requestMatchers("/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")
-                .requestMatchers("/api/operations/**").hasRole("OPERATIONS")
+                .requestMatchers("/api/vendor/**", "/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")
+                .requestMatchers("/api/operations/**").hasAnyRole("OPERATIONS", "ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Currently authenticated user info
                 .requestMatchers("/api/auth/me").authenticated()

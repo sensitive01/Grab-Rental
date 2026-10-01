@@ -93,6 +93,24 @@ export default function TripTrackingDetailPage({ params }) {
         ]}
         action={
           <div className="flex items-center gap-2">
+            {booking.status !== "COMPLETED" && (
+              <Button
+                variant="emerald"
+                size="sm"
+                icon={CheckCircle2}
+                onClick={async () => {
+                  try {
+                    await operationsApi.updateTripStatus(id, "COMPLETED");
+                    setBooking({ ...booking, status: "COMPLETED" });
+                    setToast({ type: "success", message: "Trip successfully marked as COMPLETED" });
+                  } catch {
+                    setToast({ type: "error", message: "Failed to complete trip" });
+                  }
+                }}
+              >
+                Complete Trip
+              </Button>
+            )}
             <Button variant="secondary" size="sm" icon={Printer} onClick={() => window.print()}>
               Print Waybill
             </Button>

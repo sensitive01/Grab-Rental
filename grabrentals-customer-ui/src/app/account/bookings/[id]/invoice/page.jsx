@@ -1,18 +1,103 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, Download, CheckCircle2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Printer, Download, CheckCircle2, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
+import { customerApi } from "@/lib/customerApi";
 
 export default function BookingInvoicePage({ params }) {
   const unwrappedParams = use(params);
-  const bookingId = unwrappedParams?.id || "GR-84920";
+  const bookingId = unwrappedParams?.id || "";
+
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function fetchBookingDetails() {
+      if (!bookingId) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        let data = null;
+        try {
+          const res = await customerApi.getBookingById(bookingId);
+          if (res?.data) data = res.data;
+        } catch {
+          const pub = await customerApi.getPublicBooking(bookingId);
+          if (pub?.data) data = pub.data;
+        }
+
+        if (!isCancelled && data) {
+          setBooking(data);
+        }
+      } catch (err) {
+        console.warn("[Invoice] Error fetching booking for invoice:", err);
+        if (!isCancelled) {
+          setError("Could not load invoice data for this booking.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchBookingDetails();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [bookingId]);
 
   const handlePrint = () => {
     if (typeof window !== "undefined") {
       window.print();
     }
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-8 h-8 text-amber-600 animate-spin mx-auto" />
+          <p className="text-slate-600 font-bold text-sm">Generating your tax invoice...</p>
+        </div>
+      </main>
+    );
+  }
+
+  const bRef = booking?.bookingReference || bookingId || "GR-INVOICE";
+  const invNumber = `INV-${bRef.replace(/[^A-Za-z0-9]/g, "")}`;
+  const totalFare = Number(booking?.totalFare || 4500);
+  const advancePaid = Number(booking?.advancePaid || 0);
+  const balanceDue = Number(booking?.dueAmount != null ? booking.dueAmount : Math.max(0, totalFare - advancePaid));
+
+  const taxableSubtotal = Math.round(totalFare / 1.05);
+  const totalGst = totalFare - taxableSubtotal;
+  const cgst = (totalGst / 2).toFixed(2);
+  const sgst = (totalGst / 2).toFixed(2);
+
+  let pickupDateStr = "Scheduled Trip";
+  if (booking?.pickupDateTime) {
+    try {
+      const dt = new Date(booking.pickupDateTime);
+      if (!isNaN(dt.getTime())) {
+        pickupDateStr = dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      }
+    } catch {
+      // keep fallback
+    }
+  }
+
+  const invoiceDateStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <main className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 print:p-0 print:bg-white">
@@ -60,10 +145,10 @@ export default function BookingInvoicePage({ params }) {
 
             <div className="sm:text-right space-y-1">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tax Invoice</span>
-              <h2 className="text-xl font-black font-mono text-slate-900">INV-2026-84920</h2>
+              <h2 className="text-xl font-black font-mono text-slate-900">{invNumber}</h2>
               <div className="text-xs text-slate-600 pt-1 space-y-0.5">
-                <p><span className="text-slate-400">Invoice Date:</span> 21 Sep 2026</p>
-                <p><span className="text-slate-400">Booking Ref:</span> <span className="font-mono font-bold">{bookingId}</span></p>
+                <p><span className="text-slate-400">Invoice Date:</span> {invoiceDateStr}</p>
+                <p><span className="text-slate-400">Booking Ref:</span> <span className="font-mono font-bold">{bRef}</span></p>
                 <p><span className="text-slate-400">Place of Supply:</span> Karnataka (29)</p>
               </div>
             </div>
@@ -73,18 +158,18 @@ export default function BookingInvoicePage({ params }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 rounded-2xl bg-slate-50 border border-slate-200/80">
             <div className="space-y-1">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Billed To (Customer)</span>
-              <h3 className="text-sm font-black text-slate-900">Anand Vardhan</h3>
-              <p className="text-xs text-slate-600">+91 98765 43210</p>
-              <p className="text-xs text-slate-600">anand.v@example.com</p>
-              <p className="text-xs text-slate-500">Indiranagar, Bengaluru, Karnataka</p>
+              <h3 className="text-sm font-black text-slate-900">{booking?.passengerName || booking?.customerName || "Valued Passenger"}</h3>
+              <p className="text-xs text-slate-600">{booking?.passengerPhone || booking?.customerPhone || "+91 Contact on File"}</p>
+              <p className="text-xs text-slate-600">{booking?.customerEmail || "customer@grabrental.in"}</p>
+              <p className="text-xs text-slate-500">{booking?.pickupAddress || "Verified Customer Address"}</p>
             </div>
 
             <div className="space-y-1 sm:border-l sm:border-slate-200 sm:pl-6">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Service Itinerary</span>
-              <h4 className="text-sm font-extrabold text-slate-900">Bengaluru ➔ Mysuru (One-Way)</h4>
-              <p className="text-xs text-slate-600">Vehicle: Toyota Innova Crysta (6+1 Seater)</p>
-              <p className="text-xs text-slate-600">Registration: <span className="font-mono font-bold">KA 01 MJ 4521</span></p>
-              <p className="text-xs text-slate-500">Pickup: 22 Sep 2026, 06:30 AM</p>
+              <h4 className="text-sm font-extrabold text-slate-900">{booking?.pickupCity || "Origin"} ➔ {booking?.dropCity || "Destination"} ({(booking?.tripType || "ONE_WAY").replace(/_/g, " ")})</h4>
+              <p className="text-xs text-slate-600">Vehicle: {booking?.vehicleModel || booking?.vehicleCategory || "AC Chauffeur Fleet"}</p>
+              <p className="text-xs text-slate-600">Registration: <span className="font-mono font-bold">{booking?.vehicleNumber || "Verified Commercial Cab"}</span></p>
+              <p className="text-xs text-slate-500">Departure: {pickupDateStr}</p>
             </div>
           </div>
 
@@ -105,30 +190,30 @@ export default function BookingInvoicePage({ params }) {
                 <tr>
                   <td className="py-3.5 px-2 font-bold text-slate-400">1</td>
                   <td className="py-3.5 px-3">
-                    <p className="font-bold text-slate-900">Intercity Passenger Car Rental Service</p>
-                    <span className="text-[11px] text-slate-400">One-way Outstation AC Cab (Bengaluru to Mysuru)</span>
+                    <p className="font-bold text-slate-900">Intercity Chauffeur Passenger Car Rental Service</p>
+                    <span className="text-[11px] text-slate-400">{booking?.pickupCity} to {booking?.dropCity} Commercial Transport</span>
                   </td>
                   <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
-                  <td className="py-3.5 px-3 text-center">145 Km</td>
-                  <td className="py-3.5 px-3 text-right font-mono">₹5,200.00</td>
-                  <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹5,200.00</td>
+                  <td className="py-3.5 px-3 text-center">1 Trip</td>
+                  <td className="py-3.5 px-3 text-right font-mono">₹{taxableSubtotal.toLocaleString()}.00</td>
+                  <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹{taxableSubtotal.toLocaleString()}.00</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-2 font-bold text-slate-400">2</td>
                   <td className="py-3.5 px-3">
-                    <p className="font-bold text-slate-900">Chauffeur Day Allowance & Batta</p>
-                    <span className="text-[11px] text-slate-400">Highway certified driver service fee</span>
+                    <p className="font-bold text-slate-900">Chauffeur Day Allowance & Highway Duty</p>
+                    <span className="text-[11px] text-slate-400">Verified commercial chauffeur service included</span>
                   </td>
                   <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
-                  <td className="py-3.5 px-3 text-center">1 Day</td>
-                  <td className="py-3.5 px-3 text-right font-mono">₹450.00</td>
-                  <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹450.00</td>
+                  <td className="py-3.5 px-3 text-center">Included</td>
+                  <td className="py-3.5 px-3 text-right font-mono">₹0.00</td>
+                  <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹0.00</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-2 font-bold text-slate-400">3</td>
                   <td className="py-3.5 px-3">
-                    <p className="font-bold text-slate-900">Highway Express Tolls & State Tax</p>
-                    <span className="text-[11px] text-slate-400">Bangalore-Mysore Expressway FASTag</span>
+                    <p className="font-bold text-slate-900">Highway Express Tolls & State Passenger Tax</p>
+                    <span className="text-[11px] text-slate-400">FASTag & Intercity permits</span>
                   </td>
                   <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
                   <td className="py-3.5 px-3 text-center">Included</td>
@@ -143,42 +228,42 @@ export default function BookingInvoicePage({ params }) {
           <div className="flex flex-col sm:flex-row justify-between gap-6 pt-4 border-t-2 border-slate-200">
             <div className="text-xs text-slate-500 space-y-1.5 max-w-sm">
               <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Payment Summary & Method</p>
-              <p>• Advance paid: ₹1,190.00 via UPI (TXN ID: <span className="font-mono">UPI-99214732</span>)</p>
-              <p>• Balance payable: ₹4,760.00 directly to chauffeur via Cash or UPI upon destination arrival.</p>
+              <p>• Advance paid: ₹{advancePaid.toLocaleString()}.00 ({booking?.paymentStatus || "Advance Paid"})</p>
+              {balanceDue > 0 ? (
+                <p>• Balance payable: ₹{balanceDue.toLocaleString()}.00 directly to chauffeur via Cash or UPI upon destination arrival.</p>
+              ) : (
+                <p>• Fully paid online. Zero cash required during journey.</p>
+              )}
               <p className="text-[10px] text-slate-400 pt-2">This is a computer-generated tax invoice and requires no physical signature under the IT Act.</p>
             </div>
 
             <div className="w-full sm:w-72 space-y-2 text-xs font-semibold text-slate-600">
               <div className="flex justify-between">
                 <span>Subtotal (Taxable Value)</span>
-                <span className="font-mono text-slate-900">₹5,650.00</span>
+                <span className="font-mono text-slate-900">₹{taxableSubtotal.toLocaleString()}.00</span>
               </div>
               <div className="flex justify-between">
                 <span>CGST (2.5%)</span>
-                <span className="font-mono text-slate-900">₹141.25</span>
+                <span className="font-mono text-slate-900">₹{cgst}</span>
               </div>
               <div className="flex justify-between">
                 <span>SGST (2.5%)</span>
-                <span className="font-mono text-slate-900">₹141.25</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Round Off</span>
-                <span className="font-mono text-slate-900">+ ₹17.50</span>
+                <span className="font-mono text-slate-900">₹{sgst}</span>
               </div>
 
               <div className="flex justify-between items-center pt-3 border-t-2 border-slate-900 text-sm font-black text-slate-900">
                 <span>Total Amount</span>
-                <span className="text-base font-mono">₹5,950.00</span>
+                <span className="text-base font-mono">₹{totalFare.toLocaleString()}.00</span>
               </div>
 
               <div className="flex justify-between text-xs text-emerald-700 font-bold pt-1">
                 <span>Advance Paid Online</span>
-                <span className="font-mono">- ₹1,190.00</span>
+                <span className="font-mono">- ₹{advancePaid.toLocaleString()}.00</span>
               </div>
 
               <div className="flex justify-between items-center text-xs font-black text-amber-700 pt-2 border-t border-dashed border-slate-300">
                 <span>Balance to Driver</span>
-                <span className="text-sm font-mono">₹4,760.00</span>
+                <span className="text-sm font-mono">₹{balanceDue.toLocaleString()}.00</span>
               </div>
             </div>
           </div>

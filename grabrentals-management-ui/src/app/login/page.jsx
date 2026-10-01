@@ -26,10 +26,16 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
 
-  // If already logged in, redirect directly to their dashboard
+  // If already logged in, redirect directly to target or dashboard
   useEffect(() => {
     const user = getCurrentUser();
     if (user) {
+      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const redirectParam = params?.get("redirect");
+      if (redirectParam && redirectParam.startsWith("/")) {
+        router.replace(redirectParam);
+        return;
+      }
       if (user.role === "ADMIN") {
         router.replace("/admin/dashboard");
       } else {
@@ -48,7 +54,9 @@ export default function LoginPage() {
       setIsLoading(false);
 
       if (result && result.success) {
-        window.location.href = result.redirectUrl;
+        const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const redirectParam = params?.get("redirect");
+        window.location.href = redirectParam || result.redirectUrl;
       } else {
         setErrorMessage(result?.error || "Invalid email or password. Please verify credentials.");
       }

@@ -27,11 +27,11 @@ public class AuthController {
                 .body(ApiResponse.success("Customer registered successfully", response));
     }
 
-    @PostMapping("/register/fleet")
-    public ResponseEntity<ApiResponse<UserResponse>> registerFleet(@Valid @RequestBody FleetRegisterRequest request) {
-        UserResponse response = authService.registerFleet(request);
+    @PostMapping({"/register/vendor", "/register/fleet"})
+    public ResponseEntity<ApiResponse<UserResponse>> registerVendor(@Valid @RequestBody com.grabrentals.auth.dto.VendorRegisterRequest request) {
+        UserResponse response = authService.registerVendor(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Fleet registered successfully. Account is pending admin approval.", response));
+                .body(ApiResponse.success("Vendor registered successfully. Account is pending admin approval.", response));
     }
 
     @PostMapping("/otp/send")
@@ -41,15 +41,23 @@ public class AuthController {
     }
 
     @PostMapping("/otp/verify")
-    public ResponseEntity<ApiResponse<LoginResponse>> verifyOtp(@Valid @RequestBody com.grabrentals.auth.dto.VerifyOtpRequest request) {
-        LoginResponse response = authService.verifyOtp(request);
-        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));
+    public ResponseEntity<ApiResponse<LoginResponse>> verifyOtp(
+            @Valid @RequestBody com.grabrentals.auth.dto.VerifyOtpRequest request,
+            jakarta.servlet.http.HttpServletResponse response
+    ) {
+        LoginResponse loginResponse = authService.verifyOtp(request);
+        attachAuthCookie(response, loginResponse.getAccessToken());
+        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", loginResponse));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletResponse response
+    ) {
+        LoginResponse loginResponse = authService.login(request);
+        attachAuthCookie(response, loginResponse.getAccessToken());
+        return ResponseEntity.ok(ApiResponse.success("Login successful", loginResponse));
     }
 
     @GetMapping("/me")
@@ -57,4 +65,38 @@ public class AuthController {
         UserResponse response = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success("Current user profile retrieved successfully", response));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            jakarta.servlet.http.HttpServletRequest request,
+            jakarta.servlet.http.HttpServletResponse response
+    ) {
+        authService.logout(request);
+        clearAuthCookie(response);
+        return ResponseEntity.ok(ApiResponse.success("Successfully logged out and session revoked", null));
+    }
+
+    private void attachAuthCookie(jakarta.servlet.http.HttpServletResponse response, String token) {
+        if (token == null) return;
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("grab_access_token", token)
+                .httpOnly(true)
+                .secure(false) // Localhost compatible; automatically secure in HTTPS proxy
+                .path("/")
+                .maxAge(java.time.Duration.ofHours(24))
+                .sameSite("Lax")
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private void clearAuthCookie(jakarta.servlet.http.HttpServletResponse response) {
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("grab_access_token", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
+    }
 }
+

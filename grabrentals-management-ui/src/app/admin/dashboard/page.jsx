@@ -5,6 +5,7 @@ import Link from "next/link";
 import { adminApi } from "@/lib/adminApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge } from "@/components/ui/Card";
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { Button } from "@/components/ui/Button";
 import { formatINR } from "@/lib/utils";
 import {
@@ -85,6 +86,23 @@ export default function AdminDashboardPage() {
     }
     load();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Admin Executive Dashboard"
+          subtitle="Platform-wide governance, revenue performance, vendor ecosystem, and fleet capacity"
+          breadcrumbs={[{ label: "Admin" }, { label: "Executive Dashboard" }]}
+        />
+        <LoadingAnimation
+          title="Loading Executive Dashboard..."
+          subtitle="Compiling platform metrics, revenue streams, and partner analytics..."
+          icon={ShieldCheck}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

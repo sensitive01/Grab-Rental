@@ -73,7 +73,10 @@ export function getStatusStyle(status) {
         label: norm.replace("_", " "),
       };
     case "ASSIGNED":
+    case "ASSIGNED_TO_VENDOR":
     case "DISPATCHED":
+    case "ON_THE_WAY":
+    case "IN_TRANSIT":
     case "ARRIVED":
     case "IN_PROGRESS":
       return {

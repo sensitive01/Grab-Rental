@@ -21,7 +21,7 @@ export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehic
 
   try {
     const isDriver = folder.includes("drivers");
-    const targetUrl = endpoint || (isDriver ? "/api/fleet/drivers/upload" : "/api/fleet/vehicles/upload");
+    const targetUrl = endpoint || (isDriver ? "/api/vendor/drivers/upload" : "/api/vendor/vehicles/upload");
     const preset = customPreset || (isDriver ? CLOUDINARY_CONFIG.driversPreset : CLOUDINARY_CONFIG.vehiclesPreset);
 
     const formData = new FormData();

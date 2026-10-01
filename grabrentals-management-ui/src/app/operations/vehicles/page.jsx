@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { operationsApi } from "@/lib/operationsApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { Button } from "@/components/ui/Button";
 import {
   Table,
@@ -92,8 +93,8 @@ export default function OperationsVehiclesPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  Loading fleet roster...
+                <TableCell colSpan={7} className="py-12">
+                  <LoadingAnimation inline title="Loading fleet vehicles from database..." />
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (

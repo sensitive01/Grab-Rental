@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -10,28 +10,156 @@ import {
   Clock, 
   ShieldCheck, 
   Phone, 
-  MessageSquare, 
   Share2, 
   FileText, 
-  AlertTriangle, 
   KeyRound, 
   UserCheck, 
-  Navigation, 
   Check, 
   Copy,
-  Info
+  AlertCircle,
+  Loader2,
+  XCircle
 } from "lucide-react";
+import { customerApi } from "@/lib/customerApi";
+
+function formatDateTime(isoString) {
+  if (!isoString) return { dateStr: "Scheduled", timeStr: "" };
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return { dateStr: isoString, timeStr: "" };
+    return {
+      dateStr: d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }),
+      timeStr: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+    };
+  } catch {
+    return { dateStr: isoString, timeStr: "" };
+  }
+}
 
 export default function TripDetailsTrackingPage({ params }) {
   const unwrappedParams = use(params);
-  const bookingId = unwrappedParams?.id || "GR-84920";
+  const bookingId = unwrappedParams?.id || "";
+  
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [copiedOtp, setCopiedOtp] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
-  const handleCopyOtp = () => {
-    navigator.clipboard.writeText("4829");
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function fetchBooking() {
+      if (!bookingId) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await customerApi.getBookingById(bookingId);
+        if (!isCancelled && res?.data) {
+          setBooking(res.data);
+        }
+      } catch (err) {
+        console.warn("Error fetching booking by ID:", err);
+        // Try fallback to session cache if same reference
+        if (typeof window !== "undefined") {
+          try {
+            const cached = sessionStorage.getItem("grab_confirmed_booking");
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed.bookingReference === bookingId || parsed.id === bookingId) {
+                setBooking(parsed);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch {}
+        }
+        if (!isCancelled) {
+          setError(err.response?.data?.message || "Booking details could not be retrieved.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchBooking();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [bookingId]);
+
+  const handleCopyOtp = (otp) => {
+    if (!otp) return;
+    navigator.clipboard.writeText(otp);
     setCopiedOtp(true);
     setTimeout(() => setCopiedOtp(false), 2000);
   };
+
+  const handleCancelBooking = async () => {
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    setCancelling(true);
+    try {
+      const res = await customerApi.cancelBooking(bookingId);
+      if (res?.data) {
+        setBooking(res.data);
+      }
+      alert("Booking has been cancelled.");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to cancel booking.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-8 h-8 text-amber-600 animate-spin mx-auto" />
+          <p className="text-slate-600 font-bold text-sm">Loading trip tracking details...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !booking) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-16 px-4">
+        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-4 shadow-sm">
+          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+          <h2 className="text-lg font-black text-slate-900">Booking Not Found</h2>
+          <p className="text-xs text-slate-500">{error || `Reference ${bookingId} not found in your account.`}</p>
+          <Link
+            href="/dashboard"
+            className="inline-block py-2.5 px-6 rounded-xl bg-slate-900 text-white font-bold text-xs uppercase tracking-wider"
+          >
+            Back to My Bookings
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const { dateStr, timeStr } = formatDateTime(booking.pickupDateTime);
+  const totalFare = Number(booking.totalFare || 0);
+  const advancePaid = Number(booking.advancePaid || 0);
+  const dueAmount = totalFare > advancePaid ? totalFare - advancePaid : 0;
+  const isCancelledState = booking.status === "CANCELLED";
+
+  // Determine stepper state from booking.status
+  const statusStepMap = {
+    PENDING_ALLOCATION: 1,
+    REASSIGN_REQUIRED: 1,
+    ASSIGNED_TO_VENDOR: 2,
+    CONFIRMED: 3,
+    IN_TRANSIT: 4,
+    COMPLETED: 5,
+    CANCELLED: 0
+  };
+  const currentStep = statusStepMap[booking.status] || 1;
 
   return (
     <main className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-10">
@@ -48,14 +176,17 @@ export default function TripDetailsTrackingPage({ params }) {
 
           <div className="flex items-center gap-3">
             <Link
-              href={`/account/bookings/${bookingId}/invoice`}
+              href={`/account/bookings/${booking.bookingReference || booking.id}/invoice`}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs"
             >
               <FileText className="w-3.5 h-3.5 text-slate-500" /> View Invoice
             </Link>
             <button 
-              onClick={() => alert("Trip tracking link copied to clipboard!")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Trip tracking link copied to clipboard!");
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5 text-slate-500" /> Share Trip
             </button>
@@ -63,252 +194,216 @@ export default function TripDetailsTrackingPage({ params }) {
         </div>
 
         {/* Status Header Banner */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 to-emerald-500"></div>
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className={`absolute top-0 left-0 right-0 h-1.5 ${isCancelledState ? "bg-rose-500" : "bg-gradient-to-r from-amber-500 to-emerald-500"}`}></div>
           
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="text-xs font-mono font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                {bookingId}
+                {booking.bookingReference || booking.id}
               </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold animate-pulse">
-                ● Chauffeur En Route
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
+                isCancelledState 
+                  ? "bg-rose-50 border border-rose-200 text-rose-700" 
+                  : "bg-emerald-50 border border-emerald-200 text-emerald-700 animate-pulse"
+              }`}>
+                ● {booking.status}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
-              Bengaluru ➔ Mysuru
+              {booking.pickupCity} ➔ {booking.dropCity}
             </h1>
-            <p className="text-xs text-slate-500">
-              One-Way Premium Outstation • Pickup: Tomorrow at 06:30 AM
+            <p className="text-xs text-slate-500 font-medium">
+              {booking.tripType === "ROUND_TRIP" ? "Round Trip" : "One-Way"} • Scheduled for {dateStr} at {timeStr}
             </p>
           </div>
 
-          {/* Ride OTP Box */}
-          <div className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border border-amber-300/80 rounded-2xl p-4 flex items-center gap-4 shrink-0">
-            <div className="w-11 h-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
-              <KeyRound className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Start Ride OTP</span>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-black font-mono text-slate-900 tracking-widest">4829</span>
-                <button 
-                  onClick={handleCopyOtp}
-                  className="p-1 text-slate-400 hover:text-slate-800 transition-colors"
-                  title="Copy OTP"
-                >
-                  {copiedOtp ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                </button>
+          {/* Ride OTP Box if confirmed */}
+          {booking.rideOtp && !isCancelledState && (
+            <div className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border border-amber-300/80 rounded-2xl p-4 flex items-center gap-4 shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                <KeyRound className="w-5 h-5" />
               </div>
-              <span className="text-[10px] text-slate-500">Share with chauffeur at pickup</span>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Boarding Ride OTP</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black font-mono text-slate-900 tracking-widest">{booking.rideOtp}</span>
+                  <button 
+                    onClick={() => handleCopyOtp(booking.rideOtp)}
+                    className="p-1 text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+                    title="Copy OTP"
+                  >
+                    {copiedOtp ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500">Share with chauffeur at boarding</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Stepper Timeline */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-          <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider mb-6">
-            Live Trip Progress
-          </h2>
+        {!isCancelledState && (
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
+            <h2 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-6">
+              Live Trip Progression
+            </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 relative">
-            {[
-              { label: "Booked", time: "21 Sep, 12:30 PM", done: true, current: false },
-              { label: "Chauffeur Assigned", time: "21 Sep, 02:00 PM", done: true, current: false },
-              { label: "Chauffeur En Route", time: "Est. Arrival 06:15 AM", done: true, current: true },
-              { label: "Trip In Transit", time: "~3h 15m duration", done: false, current: false },
-              { label: "Trip Completed", time: "Drop off & Receipt", done: false, current: false },
-            ].map((step, idx) => (
-              <div key={idx} className="flex sm:flex-col items-center sm:text-center gap-3 sm:gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                  step.current
-                    ? "bg-amber-500 text-slate-950 ring-4 ring-amber-100"
-                    : step.done 
-                    ? "bg-emerald-600 text-white" 
-                    : "bg-slate-100 text-slate-400 border border-slate-200"
-                }`}>
-                  {step.done ? "✓" : idx + 1}
-                </div>
-                <div className="sm:mt-1">
-                  <h4 className={`text-xs font-extrabold ${step.current ? "text-amber-700 font-black" : "text-slate-900"}`}>
-                    {step.label}
-                  </h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{step.time}</p>
-                </div>
-              </div>
-            ))}
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 relative">
+              {[
+                { stepNum: 1, label: "Booking Placed", desc: "Order recorded" },
+                { stepNum: 2, label: "Vendor Dispatched", desc: "Assigned to vendor" },
+                { stepNum: 3, label: "Ride Confirmed", desc: "Driver & OTP issued" },
+                { stepNum: 4, label: "In Transit", desc: "On-road telemetry" },
+                { stepNum: 5, label: "Completed", desc: "Drop-off & invoice" },
+              ].map((s) => {
+                const isDone = currentStep > s.stepNum || (currentStep === s.stepNum && currentStep === 5);
+                const isCurrent = currentStep === s.stepNum && currentStep !== 5;
+
+                return (
+                  <div key={s.stepNum} className="flex sm:flex-col items-center sm:text-center gap-3 sm:gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                      isCurrent
+                        ? "bg-amber-500 text-slate-950 ring-4 ring-amber-100"
+                        : isDone
+                        ? "bg-emerald-600 text-white" 
+                        : "bg-slate-100 text-slate-400 border border-slate-200"
+                    }`}>
+                      {isDone ? "✓" : s.stepNum}
+                    </div>
+                    <div>
+                      <h4 className={`text-xs font-extrabold ${isCurrent ? "text-amber-700" : "text-slate-900"}`}>
+                        {s.label}
+                      </h4>
+                      <p className="text-[10px] text-slate-400">{s.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* 2-Column Grid: Chauffeur Details & Route Map */}
+        {/* 2-Column Grid: Details & Fare */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* Left Column: Assigned Chauffeur & Vehicle */}
-          <div className="lg:col-span-6 space-y-6">
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                  Assigned Chauffeur
-                </h3>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                  Verified Driver
-                </span>
-              </div>
+          {/* Left: Chauffeur & Vehicle */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                Assigned Asset & Chauffeur
+              </h3>
 
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-xl shadow-sm">
-                  RK
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vehicle</span>
+                  <h4 className="text-xs font-extrabold text-slate-900">
+                    {booking.assignedVehicle ? `${booking.assignedVehicle.model} (${booking.assignedVehicle.vehicleNumber})` : booking.vehicleCategory}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">Commercial Outstation Cab</p>
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-base font-extrabold text-slate-900">Ramesh Kumar</h4>
-                  <p className="text-xs text-slate-500">Highway & Intercity Specialist • 8 Yrs Exp</p>
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                    <span className="text-amber-500">★ 4.9</span>
-                    <span>• 1,240+ completed trips</span>
-                  </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chauffeur</span>
+                  <h4 className="text-xs font-extrabold text-slate-900">
+                    {booking.assignedDriver ? booking.assignedDriver.name : "Allocating via Operations"}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    {booking.assignedDriver?.phone || "Phone shared before pickup"}
+                  </p>
                 </div>
               </div>
 
-              {/* Call / Message CTAs */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <a
-                  href="tel:+919845012345"
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all"
-                >
-                  <Phone className="w-3.5 h-3.5 text-emerald-400" /> Call Driver
-                </a>
-                <a
-                  href="https://wa.me/919845012345"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all"
-                >
-                  <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> WhatsApp
-                </a>
-              </div>
-
-              {/* Vehicle Specs */}
-              <div className="pt-4 border-t border-slate-100 space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vehicle Details</span>
-                <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              {/* Route specifics */}
+              <div className="pt-2 space-y-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <h5 className="text-xs font-extrabold text-slate-900">Toyota Innova Crysta (Pearl White)</h5>
-                    <p className="text-[11px] text-slate-500">Dual AC • Clean Interiors • Luggage Roof Carrier</p>
+                    <span className="font-bold text-slate-400 text-[10px] uppercase">Pickup Point</span>
+                    <p className="font-bold text-slate-800">{booking.pickupAddress}</p>
                   </div>
-                  <span className="text-xs font-mono font-black text-slate-900 bg-white border border-slate-300 px-2.5 py-1 rounded-lg">
-                    KA 01 MJ 4521
-                  </span>
+                </div>
+
+                {booking.stops && (
+                  booking.stops.split(/[|,]/).map((s) => s.trim()).filter(Boolean).map((stop, sIdx, arr) => (
+                    <div key={sIdx} className="flex items-start gap-2.5 bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60">
+                      <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-amber-700 text-[10px] uppercase">
+                          Intermediate Halt {arr.length > 1 ? `#${sIdx + 1}` : ""}
+                        </span>
+                        <p className="font-bold text-slate-900">{stop}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-400 text-[10px] uppercase">Drop Destination</span>
+                    <p className="font-bold text-slate-800">{booking.dropAddress}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Safety & SOS Card */}
-            <div className="bg-red-50/60 border border-red-200 rounded-3xl p-5 flex items-center justify-between gap-4">
-              <div className="space-y-0.5">
-                <h4 className="text-xs font-extrabold text-red-900 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-red-600" /> 24x7 Safety & SOS Helpline
-                </h4>
-                <p className="text-[11px] text-red-700">Need immediate help during your journey?</p>
+            {/* Cancel booking option if still pending or assigned */}
+            {!isCancelledState && booking.status !== "COMPLETED" && booking.status !== "IN_TRANSIT" && (
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Need to cancel your ride?</h4>
+                  <p className="text-[11px] text-slate-500">Free cancellation available prior to chauffeur departure.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelBooking}
+                  disabled={cancelling}
+                  className="px-4 py-2 rounded-xl border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs font-bold cursor-pointer disabled:opacity-50"
+                >
+                  {cancelling ? "Cancelling..." : "Cancel Trip"}
+                </button>
               </div>
-              <a
-                href="tel:112"
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-wide shrink-0 transition-colors shadow-xs"
-              >
-                Emergency SOS
-              </a>
-            </div>
+            )}
+
           </div>
 
-          {/* Right Column: Route & Fare Breakdown */}
-          <div className="lg:col-span-6 space-y-6">
-            
-            {/* Route Timeline */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-100">
-                Route Itinerary
+          {/* Right: Payment Breakdown */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                Financial Summary
               </h3>
 
-              <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                <div className="relative">
-                  <span className="absolute -left-6 top-1 w-4 h-4 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-emerald-50"></span>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pickup Address</span>
-                    <p className="text-xs font-bold text-slate-900 mt-0.5">#45, 12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru</p>
-                    <span className="text-[11px] text-slate-500">Scheduled: 22 Sep 2026, 06:30 AM</span>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <span className="absolute -left-6 top-1 w-4 h-4 rounded-full border-2 border-amber-400 bg-white ring-4 ring-amber-50"></span>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">En-route Stop (Optional)</span>
-                    <p className="text-xs font-bold text-slate-900 mt-0.5">Kamat Lokaruchi / Expressway Rest Stop</p>
-                    <span className="text-[11px] text-slate-500">Driver coordinated breakfast halt (20 mins)</span>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <span className="absolute -left-6 top-1 w-4 h-4 rounded-full border-2 border-slate-900 bg-white ring-4 ring-slate-100"></span>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Drop Location</span>
-                    <p className="text-xs font-bold text-slate-900 mt-0.5">Mysore Palace South Gate, Mysuru, Karnataka</p>
-                    <span className="text-[11px] text-slate-500">Est. Drop: 09:45 AM (~145 km)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Fare Breakdown Card */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-100">
-                Payment & Billing Details
-              </h3>
-
-              <div className="space-y-2 text-xs font-semibold text-slate-600">
-                <div className="flex justify-between">
-                  <span>Base Outstation Fare (145 km)</span>
-                  <span className="text-slate-900">₹5,200</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Driver Chauffeur Allowance</span>
-                  <span className="text-slate-900">₹450</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tolls & Highway Expressway Taxes</span>
-                  <span className="text-emerald-700 font-bold">Included</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>GST (5%)</span>
-                  <span className="text-slate-900">₹300</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/70 space-y-2 pt-3">
+              <div className="space-y-2.5 text-xs text-slate-600">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-extrabold text-slate-900">Total Invoice Amount</span>
-                  <span className="text-base font-black text-slate-900">₹5,950</span>
+                  <span>Total Booking Amount</span>
+                  <span className="font-bold text-slate-900">₹{totalFare.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs text-emerald-700 font-bold">
-                  <span>Online Advance Paid (UPI)</span>
-                  <span>- ₹1,190</span>
+                <div className="flex justify-between items-center text-emerald-700 font-bold">
+                  <span>Advance Received</span>
+                  <span>✓ ₹{advancePaid.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-amber-200 text-xs font-extrabold text-slate-900">
-                  <span>Balance Payable to Chauffeur</span>
-                  <span className="text-base text-amber-700">₹4,760</span>
+                <div className="flex justify-between items-center text-slate-500">
+                  <span>Payment Status</span>
+                  <span className="font-mono uppercase text-[11px] font-bold">{booking.paymentStatus}</span>
                 </div>
+                {dueAmount > 0 && (
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-sm font-black text-slate-900">
+                    <span>Payable to Driver</span>
+                    <span className="text-amber-700">₹{dueAmount.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="text-center pt-1">
-                <Link
-                  href={`/account/bookings/${bookingId}/invoice`}
-                  className="text-xs font-bold text-amber-700 hover:text-amber-800 underline inline-flex items-center gap-1"
-                >
-                  <FileText className="w-3.5 h-3.5" /> Download Official GST Tax Invoice
-                </Link>
+              <div className="p-3 rounded-2xl bg-slate-50 text-[11px] text-slate-500 space-y-1">
+                <div className="flex items-center gap-1 font-bold text-slate-700">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Official Tax Invoice
+                </div>
+                <p>Includes GST, state passenger permits, and driver trip allowance.</p>
               </div>
-
             </div>
-
           </div>
 
         </div>

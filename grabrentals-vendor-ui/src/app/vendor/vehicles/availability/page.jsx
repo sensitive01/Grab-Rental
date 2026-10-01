@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Calendar as CalendarIcon, 
@@ -11,20 +11,35 @@ import {
   Unlock, 
   CheckCircle2, 
   AlertCircle,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Toast from "@/components/ui/Toast";
-import { mockVehicles } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 
 export default function VehicleAvailabilityPage() {
-  const [selectedVehicleId, setSelectedVehicleId] = useState(mockVehicles[0].id);
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [toastMessage, setToastMessage] = useState(null);
 
-  const selectedVehicle = mockVehicles.find(v => v.id === selectedVehicleId) || mockVehicles[0];
+  useEffect(() => {
+    vendorApi.getVehicles()
+      .then(res => {
+        const vList = res || [];
+        setVehicles(vList);
+        if (vList.length > 0) {
+          setSelectedVehicleId(vList[0].id);
+        }
+      })
+      .catch(err => console.error("Failed to fetch vehicles for availability:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  // Calendar dates mock state for September 2026
+  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId) || vehicles[0];
+
   const [dateStatuses, setDateStatuses] = useState({
     15: "Completed",
     16: "Completed",
@@ -47,16 +62,16 @@ export default function VehicleAvailabilityPage() {
   const toggleBlockDate = (day) => {
     const current = dateStatuses[day] || "Available";
     if (current === "Booked" || current === "On Trip") {
-      setToastMessage(`Day ${day} Sep is currently assigned to a customer booking and cannot be blocked.`);
+      setToastMessage(`Day ${day} is currently assigned to a customer booking and cannot be blocked.`);
       return;
     }
 
     if (current === "Maintenance") {
       setDateStatuses(prev => ({ ...prev, [day]: "Available" }));
-      setToastMessage(`Day ${day} Sep unblocked and marked Available for ${selectedVehicle.vehicleNumber}!`);
+      setToastMessage(`Day ${day} unblocked and marked Available for ${selectedVehicle?.vehicleNumber || "vehicle"}!`);
     } else {
       setDateStatuses(prev => ({ ...prev, [day]: "Maintenance" }));
-      setToastMessage(`Day ${day} Sep blocked for maintenance / private use.`);
+      setToastMessage(`Day ${day} blocked for vehicle maintenance / private use.`);
     }
   };
 
@@ -76,6 +91,41 @@ export default function VehicleAvailabilityPage() {
   };
 
   const days = Array.from({ length: 30 }, (_, i) => i + 1);
+
+  if (loading) {
+    return (
+      <div className="py-24 text-center space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-amber-500" />
+        <p className="text-xs text-slate-500 font-medium">Loading vehicle availability calendar...</p>
+      </div>
+    );
+  }
+
+  if (vehicles.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs
+          items={[
+            { label: "Vehicles", href: "/vendor/vehicles" },
+            { label: "Availability Calendar" }
+          ]}
+        />
+        <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 max-w-lg mx-auto">
+          <Car className="w-12 h-12 text-slate-300 mx-auto" />
+          <h2 className="text-lg font-black text-slate-900">No Vehicles in Fleet</h2>
+          <p className="text-xs text-slate-500">
+            Please register your commercial vehicles before configuring availability windows.
+          </p>
+          <Link
+            href="/vendor/vehicles/add"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase"
+          >
+            + Add First Vehicle
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -97,7 +147,7 @@ export default function VehicleAvailabilityPage() {
             Fleet Availability Calendar
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Block vehicle dates for internal service, periodic maintenance, or view booked windows.
+            Block vehicle dates for periodic maintenance, or view reserved customer windows.
           </p>
         </div>
 
@@ -111,7 +161,7 @@ export default function VehicleAvailabilityPage() {
             onChange={(e) => setSelectedVehicleId(e.target.value)}
             className="py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 shadow-2xs"
           >
-            {mockVehicles.map((v) => (
+            {vehicles.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.model} ({v.vehicleNumber})
               </option>
@@ -131,10 +181,10 @@ export default function VehicleAvailabilityPage() {
             </div>
             <div>
               <h2 className="text-base font-black text-slate-900">
-                September 2026
+                Current Booking Cycle
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Showing schedule for <strong className="text-slate-900">{selectedVehicle.model}</strong> ({selectedVehicle.vehicleNumber})
+                Schedule for <strong className="text-slate-900">{selectedVehicle?.model}</strong> ({selectedVehicle?.vehicleNumber})
               </p>
             </div>
           </div>
@@ -163,7 +213,6 @@ export default function VehicleAvailabilityPage() {
         {/* Calendar Grid */}
         <div className="space-y-2">
           
-          {/* Day of Week Headers */}
           <div className="grid grid-cols-7 gap-2 text-center text-xs font-black uppercase tracking-wider text-slate-400 py-1">
             <span>Sun</span>
             <span>Mon</span>
@@ -174,16 +223,13 @@ export default function VehicleAvailabilityPage() {
             <span>Sat</span>
           </div>
 
-          {/* Calendar Day Tiles */}
           <div className="grid grid-cols-7 gap-2">
-            
-            {/* Empty offset days for Tue 1st Sep 2026 */}
             <div className="h-20 sm:h-24 rounded-2xl bg-slate-50/50 border border-transparent"></div>
             <div className="h-20 sm:h-24 rounded-2xl bg-slate-50/50 border border-transparent"></div>
 
             {days.map((day) => {
               const status = dateStatuses[day] || "Available";
-              const isToday = day === 21;
+              const isToday = day === 28;
               const colorClass = getDayColor(status);
 
               return (
@@ -223,7 +269,7 @@ export default function VehicleAvailabilityPage() {
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>Click on any <strong>Available</strong> date to block it for servicing or driver rest. Dates booked by customers cannot be modified.</span>
+            <span>Click on any <strong>Available</strong> date to block it for servicing or chauffeur leave. Dates reserved by customers are protected.</span>
           </div>
           <Link
             href="/vendor/bookings"

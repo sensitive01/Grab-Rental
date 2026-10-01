@@ -43,8 +43,8 @@ export default function VehicleDetailsPage({ params }) {
         setLoading(true);
         setError(null);
         const [res, driversRes] = await Promise.all([
-          axiosClient.get(`/api/fleet/vehicles/${vehicleId}`),
-          axiosClient.get("/api/fleet/drivers").catch(() => ({ data: { data: [] } }))
+          axiosClient.get(`/api/vendor/vehicles/${vehicleId}`),
+          axiosClient.get("/api/vendor/drivers").catch(() => ({ data: { data: [] } }))
         ]);
 
         if (res.data?.success && res.data.data) {

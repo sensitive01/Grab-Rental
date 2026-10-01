@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Loader2
 } from "lucide-react";
-import { login } from "@/lib/auth";
+import { login, isAuthenticated } from "@/lib/auth";
 
 function LoginContent() {
   const router = useRouter();
@@ -24,6 +24,15 @@ function LoginContent() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // If already logged in, redirect directly to vendor dashboard
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const redirectUrl = params?.get("redirect") || "/vendor/dashboard";
+      router.replace(redirectUrl);
+    }
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,7 +56,9 @@ function LoginContent() {
       const result = await login(trimmedEmail, password);
 
       if (result.success) {
-        router.push(result.redirectUrl || "/vendor/dashboard");
+        const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const redirectParam = params?.get("redirect");
+        router.push(redirectParam || result.redirectUrl || "/vendor/dashboard");
       } else {
         setError(result.error || "Authentication failed. Please verify your credentials.");
         setLoading(false);

@@ -75,7 +75,7 @@ public class AuthIntegrationTest {
     @Test
     @DisplayName("2. Fleet registration creates user with FLEET role and PENDING status")
     void testFleetRegistrationPendingStatus() throws Exception {
-        FleetRegisterRequest request = FleetRegisterRequest.builder()
+        com.grabrentals.auth.dto.VendorRegisterRequest request = com.grabrentals.auth.dto.VendorRegisterRequest.builder()
                 .name("Bob Transports")
                 .email("bob@transports.com")
                 .phone("+919988776644")

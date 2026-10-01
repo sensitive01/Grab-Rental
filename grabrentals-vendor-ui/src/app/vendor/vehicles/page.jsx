@@ -33,8 +33,8 @@ export default function VendorVehiclesPage() {
   const fetchVehicles = async () => {
     try {
       const [vehiclesRes, driversRes] = await Promise.all([
-        axiosClient.get("/api/fleet/vehicles"),
-        axiosClient.get("/api/fleet/drivers").catch(() => ({ data: { data: [] } }))
+        axiosClient.get("/api/vendor/vehicles"),
+        axiosClient.get("/api/vendor/drivers").catch(() => ({ data: { data: [] } }))
       ]);
 
       const drivers = Array.isArray(driversRes.data?.data) ? driversRes.data.data : [];
@@ -96,7 +96,7 @@ export default function VendorVehiclesPage() {
     if (!vehicleToDelete) return;
     try {
       if (typeof vehicleToDelete.id === "string" && vehicleToDelete.id.length > 20) {
-        await axiosClient.delete(`/api/fleet/vehicles/${vehicleToDelete.id}`);
+        await axiosClient.delete(`/api/vendor/vehicles/${vehicleToDelete.id}`);
       }
       setVehicles((prev) => prev.filter((v) => v.id !== vehicleToDelete.id));
       setToastMessage(`Vehicle ${vehicleToDelete.vehicleNumber} (${vehicleToDelete.model}) was removed.`);

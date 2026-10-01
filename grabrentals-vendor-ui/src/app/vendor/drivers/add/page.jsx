@@ -64,7 +64,7 @@ export default function AddDriverPage() {
   useEffect(() => {
     async function fetchVehicles() {
       try {
-        const res = await axiosClient.get("/api/fleet/vehicles");
+        const res = await axiosClient.get("/api/vendor/vehicles");
         if (res.data?.success && Array.isArray(res.data.data)) {
           setVehicles(res.data.data);
         }
@@ -175,7 +175,7 @@ export default function AddDriverPage() {
         photoUrl: formData.photoUrl || null,
       };
 
-      const res = await axiosClient.post("/api/fleet/drivers", payload);
+      const res = await axiosClient.post("/api/vendor/drivers", payload);
 
       if (res.data?.success) {
         setToast({ message: "Chauffeur added to roster successfully!", type: "success" });

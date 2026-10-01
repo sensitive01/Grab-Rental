@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Building2, 
@@ -12,46 +12,94 @@ import {
   ShieldCheck, 
   FileText, 
   CheckCircle2, 
-  Save 
+  Save,
+  Loader2 
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
-import { currentVendor } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 
 export default function VendorProfilePage() {
   const [toastMessage, setToastMessage] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const [vendorData, setVendorData] = useState({
-    businessName: currentVendor.businessName,
-    tradeName: currentVendor.tradeName,
-    ownerName: currentVendor.ownerName,
-    email: currentVendor.email,
-    phone: currentVendor.phone,
-    altPhone: currentVendor.altPhone,
-    address: currentVendor.address,
-    gstin: currentVendor.gstin,
-    pan: currentVendor.pan,
-    bankName: currentVendor.bankDetails.bankName,
-    accountNumber: currentVendor.bankDetails.accountNumber,
-    ifsc: currentVendor.bankDetails.ifsc,
-    branch: currentVendor.bankDetails.branch
+    businessName: "",
+    tradeName: "",
+    ownerName: "",
+    contactPerson: "",
+    email: "",
+    phone: "",
+    altPhone: "",
+    address: "",
+    gstin: "",
+    pan: "",
+    bankName: "",
+    accountNumber: "",
+    ifsc: "",
+    branch: "",
+    fleetSize: 0
   });
+
+  useEffect(() => {
+    vendorApi.getProfile()
+      .then(res => {
+        if (res) {
+          setVendorData({
+            businessName: res.businessName || "",
+            tradeName: res.tradeName || res.businessName || "",
+            ownerName: res.ownerName || "",
+            contactPerson: res.contactPerson || res.ownerName || "",
+            email: res.email || "",
+            phone: res.phone || "",
+            altPhone: res.altPhone || "",
+            address: res.address || "",
+            gstin: res.gstin || "",
+            pan: res.pan || "",
+            bankName: res.bankName || "",
+            accountNumber: res.accountNumber || "",
+            ifsc: res.ifsc || "",
+            branch: res.branch || "",
+            fleetSize: res.fleetSize || 0
+          });
+        }
+      })
+      .catch(err => console.error("Failed to load vendor profile:", err))
+      .finally(() => setInitialLoading(false));
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setVendorData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const updated = await vendorApi.updateProfile(vendorData);
+      if (updated) {
+        setVendorData(prev => ({ ...prev, ...updated }));
+      }
+      setToastMessage("Business profile updated successfully in platform registry!");
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      setToastMessage(err.response?.data?.message || "Failed to save profile changes.");
+    } finally {
       setLoading(false);
-      setToastMessage("Business profile updated successfully!");
-    }, 600);
+    }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="py-24 text-center space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-amber-500" />
+        <p className="text-xs text-slate-500 font-medium">Fetching verified vendor credentials...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -84,7 +132,7 @@ export default function VendorProfilePage() {
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
             <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 font-black text-sm flex items-center justify-center">
-              KF
+              {(vendorData.businessName || "VP").slice(0, 2).toUpperCase()}
             </div>
             <div>
               <h2 className="text-sm font-black text-slate-900">Registered Business Identity</h2>
@@ -134,10 +182,10 @@ export default function VendorProfilePage() {
               <input
                 type="email"
                 required
+                disabled
                 name="email"
                 value={vendorData.email}
-                onChange={handleChange}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                className="w-full py-2.5 px-3 bg-slate-100 border border-slate-200 rounded-xl font-semibold text-slate-500 cursor-not-allowed"
               />
             </div>
 
@@ -186,31 +234,31 @@ export default function VendorProfilePage() {
             </div>
             <div>
               <h2 className="text-sm font-black text-slate-900">Tax & GSTIN Credentials</h2>
-              <p className="text-xs text-slate-500">Invoices generated to passengers will reflect this GST registration</p>
+              <p className="text-xs text-slate-500">Invoices generated to passengers reflect this GST registration</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Goods & Services Tax (GSTIN) *</label>
+              <label className="font-bold text-slate-700">Goods & Services Tax (GSTIN)</label>
               <input
                 type="text"
-                required
                 name="gstin"
                 value={vendorData.gstin}
                 onChange={handleChange}
+                placeholder="33AAAAA0000A1Z5"
                 className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Permanent Account Number (PAN) *</label>
+              <label className="font-bold text-slate-700">Permanent Account Number (PAN)</label>
               <input
                 type="text"
-                required
                 name="pan"
                 value={vendorData.pan}
                 onChange={handleChange}
+                placeholder="AAAAA0000A"
                 className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
               />
             </div>
@@ -224,44 +272,44 @@ export default function VendorProfilePage() {
               <CreditCard className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-slate-900">Bank Account for Weekly Payouts</h2>
-              <p className="text-xs text-slate-500">Direct deposit account for settled trips</p>
+              <h2 className="text-sm font-black text-slate-900">Direct Bank Account for Payouts</h2>
+              <p className="text-xs text-slate-500">Direct deposit account for settled trips and weekly disbursements</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Bank Name *</label>
+              <label className="font-bold text-slate-700">Bank Name</label>
               <input
                 type="text"
-                required
                 name="bankName"
                 value={vendorData.bankName}
                 onChange={handleChange}
+                placeholder="e.g. HDFC Bank, State Bank of India"
                 className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Current Account Number *</label>
+              <label className="font-bold text-slate-700">Account Number</label>
               <input
                 type="text"
-                required
                 name="accountNumber"
                 value={vendorData.accountNumber}
                 onChange={handleChange}
+                placeholder="50200000000000"
                 className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">IFSC Code *</label>
+              <label className="font-bold text-slate-700">IFSC Code</label>
               <input
                 type="text"
-                required
                 name="ifsc"
                 value={vendorData.ifsc}
                 onChange={handleChange}
+                placeholder="HDFC0001234"
                 className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
               />
             </div>
@@ -273,6 +321,7 @@ export default function VendorProfilePage() {
                 name="branch"
                 value={vendorData.branch}
                 onChange={handleChange}
+                placeholder="e.g. Main Branch"
                 className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
@@ -284,7 +333,7 @@ export default function VendorProfilePage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
+            className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {loading ? "Saving Profile..." : "Update Business Profile"}
           </button>

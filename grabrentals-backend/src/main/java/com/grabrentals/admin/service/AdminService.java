@@ -22,9 +22,9 @@ import java.util.UUID;
 public class AdminService {
 
     private final UserRepository userRepository;
-    private final com.grabrentals.fleet.repository.FleetProfileRepository fleetProfileRepository;
-    private final com.grabrentals.fleet.repository.VehicleRepository vehicleRepository;
-    private final com.grabrentals.fleet.repository.DriverRepository driverRepository;
+    private final com.grabrentals.vendor.repository.VendorProfileRepository vendorProfileRepository;
+    private final com.grabrentals.vendor.repository.VehicleRepository vehicleRepository;
+    private final com.grabrentals.vendor.repository.DriverRepository driverRepository;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final com.grabrentals.security.CustomUserDetailsService userDetailsService;
@@ -104,12 +104,12 @@ public class AdminService {
         User saved = userRepository.save(user);
 
         if (saved.getRole() == Role.FLEET || saved.getRole() == Role.VENDOR) {
-            fleetProfileRepository.findByUserId(saved.getId()).ifPresent(fp -> {
+            vendorProfileRepository.findByUserId(saved.getId()).ifPresent(fp -> {
                 if (saved.getBusinessName() != null) {
                     fp.setCompanyName(saved.getBusinessName());
                 }
                 fp.setContactPerson(saved.getName());
-                fleetProfileRepository.save(fp);
+                vendorProfileRepository.save(fp);
             });
         }
 
@@ -137,19 +137,19 @@ public class AdminService {
         }
 
         // 1. Delete associated drivers if any
-        List<com.grabrentals.fleet.entity.Driver> drivers = driverRepository.findByUserIdOrderByCreatedAtDesc(id);
+        List<com.grabrentals.vendor.entity.Driver> drivers = driverRepository.findByUserIdOrderByCreatedAtDesc(id);
         if (drivers != null && !drivers.isEmpty()) {
             driverRepository.deleteAll(drivers);
         }
 
         // 2. Delete associated vehicles if any
-        List<com.grabrentals.fleet.entity.Vehicle> vehicles = vehicleRepository.findByUserIdOrderByCreatedAtDesc(id);
+        List<com.grabrentals.vendor.entity.Vehicle> vehicles = vehicleRepository.findByUserIdOrderByCreatedAtDesc(id);
         if (vehicles != null && !vehicles.isEmpty()) {
             vehicleRepository.deleteAll(vehicles);
         }
 
         // 3. Delete fleet profile if any
-        fleetProfileRepository.findByUserId(id).ifPresent(fleetProfileRepository::delete);
+        vendorProfileRepository.findByUserId(id).ifPresent(vendorProfileRepository::delete);
 
         // 4. Delete user entity
         userRepository.delete(user);
@@ -232,12 +232,12 @@ public class AdminService {
 
         User saved = userRepository.save(user);
 
-        com.grabrentals.fleet.entity.FleetProfile fleetProfile = com.grabrentals.fleet.entity.FleetProfile.builder()
+        com.grabrentals.vendor.entity.VendorProfile vendorProfile = com.grabrentals.vendor.entity.VendorProfile.builder()
                 .user(saved)
                 .companyName(request.getBusinessName().trim())
                 .contactPerson(request.getName().trim())
                 .build();
-        fleetProfileRepository.save(fleetProfile);
+        vendorProfileRepository.save(vendorProfile);
 
         try {
             auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()

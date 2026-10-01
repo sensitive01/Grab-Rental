@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Edit3
 } from "lucide-react";
+import { setAuthSession, isAuthenticated } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,6 +38,15 @@ export default function LoginPage() {
   const [canResend, setCanResend] = useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const redirectUrl = params?.get("redirect") || "/dashboard";
+      router.replace(redirectUrl);
+    }
+  }, [router]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -126,16 +136,21 @@ export default function LoginPage() {
         throw new Error(formattedMsg);
       }
 
-      // Save token and user details to localStorage
-      if (typeof window !== "undefined") {
-        localStorage.setItem("rental_access_token", result.data.accessToken);
-        localStorage.setItem("rental_user", JSON.stringify(result.data.user));
-      }
+      // Save token and user details using auth utility
+      setAuthSession(result.data.accessToken, result.data.user);
 
       setSuccessMessage("Verification successful! Redirecting...");
 
-      // If user profile is still default or incomplete, guide them to account settings
+      // Check for redirect query parameter, or route to appropriate default
       setTimeout(() => {
+        const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const redirectParam = params?.get("redirect");
+
+        if (redirectParam && redirectParam.startsWith("/")) {
+          router.push(redirectParam);
+          return;
+        }
+
         const user = result.data.user;
         if (user.role === "ADMIN") {
           router.push("/admin");

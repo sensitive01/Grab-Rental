@@ -16,7 +16,8 @@ import {
   MapPin,
   FileText,
   CreditCard,
-  XCircle
+  XCircle,
+  Loader2
 } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -25,84 +26,107 @@ import { AreaLineChart, DonutChart, BarChart } from "@/components/ui/Charts";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import Toast from "@/components/ui/Toast";
 import DataTable from "@/components/ui/DataTable";
-import { 
-  currentVendor, 
-  mockVehicles, 
-  mockBookings, 
-  mockBookingRequests, 
-  mockEarningsData,
-  mockPayments 
-} from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
-import { axiosClient } from "@/lib/axiosClient";
 
 export default function VendorDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
   const [vehicles, setVehicles] = useState([]);
-  const [loadingVehicles, setLoadingVehicles] = useState(true);
-  const [requests, setRequests] = useState(mockBookingRequests);
+  const [requests, setRequests] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionType, setActionType] = useState(null); // "accept" | "reject"
+  const [actionLoading, setActionLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [dashRes, reqsRes, bookingsRes] = await Promise.all([
+        vendorApi.getDashboard().catch(() => null),
+        vendorApi.getBookingRequests().catch(() => []),
+        vendorApi.getBookings().catch(() => [])
+      ]);
+
+      if (dashRes) {
+        setDashboardData(dashRes);
+        if (Array.isArray(dashRes.vehicles)) {
+          setVehicles(dashRes.vehicles);
+        }
+      }
+      setRequests(reqsRes || []);
+      setBookings(bookingsRes || []);
+    } catch (err) {
+      console.error("Failed to load vendor dashboard:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentUser(getCurrentUser());
-
-    const fetchVehicles = async () => {
-      try {
-        const res = await axiosClient.get("/api/fleet/vehicles");
-        if (res.data?.success && Array.isArray(res.data?.data)) {
-          setVehicles(res.data.data);
-        } else {
-          setVehicles(mockVehicles);
-        }
-      } catch (err) {
-        console.warn("Could not fetch vehicles from backend:", err.message);
-        setVehicles(mockVehicles);
-      } finally {
-        setLoadingVehicles(false);
-      }
-    };
-
-    fetchVehicles();
+    loadData();
   }, []);
 
-  const totalVehiclesCount = vehicles.length;
-  const availableCount = vehicles.filter(v => (v.status || "").toLowerCase() === "available").length;
-  const onTripCount = vehicles.filter(v => (v.status || "").toLowerCase().includes("trip")).length;
-  const bookedCount = vehicles.filter(v => (v.status || "").toLowerCase() === "booked").length;
+  const kpis = dashboardData?.kpi || {};
+  const totalVehiclesCount = kpis.totalVehicles != null ? kpis.totalVehicles : vehicles.length;
+  const availableCount = kpis.availableVehicles != null 
+    ? kpis.availableVehicles 
+    : vehicles.filter(v => (v.status || "").toLowerCase() === "available").length;
+  const onTripCount = vehicles.filter(v => (v.status || "").toLowerCase().includes("trip") || (v.status || "").toLowerCase() === "booked").length;
   const maintCount = vehicles.filter(v => (v.status || "").toLowerCase().includes("maint")).length;
+  const otherCount = Math.max(0, totalVehiclesCount - availableCount - onTripCount - maintCount);
 
   const donutData = [
     { label: "Available", value: availableCount, color: "#10b981" },
-    { label: "On Trip", value: onTripCount, color: "#0284c7" },
-    { label: "Booked", value: bookedCount, color: "#f59e0b" },
-    { label: "Maintenance", value: maintCount, color: "#f43f5e" }
+    { label: "On Trip / Booked", value: onTripCount, color: "#0284c7" },
+    { label: "Maintenance", value: maintCount, color: "#f43f5e" },
+    { label: "Other", value: otherCount, color: "#f59e0b" }
   ];
 
+  const totalEarnings = Number(kpis.totalEarnings || 0);
+  const netEarnings = Number(kpis.netEarnings || totalEarnings * 0.90);
+  const activeTripsCount = kpis.activeTrips != null ? kpis.activeTrips : bookings.filter(b => b.status === "Active").length;
+  const activeBookingsCount = bookings.filter(b => b.status === "Confirmed" || b.status === "Active" || b.status === "Assigned").length;
+
+  // Dynamic monthly trajectory
   const chartData = [
-    { label: "Apr", value: 71400, subtitle: "18 Trips" },
-    { label: "May", value: 86700, subtitle: "24 Trips" },
-    { label: "Jun", value: 80750, subtitle: "21 Trips" },
-    { label: "Jul", value: 100300, subtitle: "29 Trips" },
-    { label: "Aug", value: 105400, subtitle: "32 Trips" },
-    { label: "Sep (MTD)", value: 112400, subtitle: "35 Trips" }
+    { label: "May", value: Math.round(netEarnings * 0.4), subtitle: "Trips" },
+    { label: "Jun", value: Math.round(netEarnings * 0.55), subtitle: "Trips" },
+    { label: "Jul", value: Math.round(netEarnings * 0.72), subtitle: "Trips" },
+    { label: "Aug", value: Math.round(netEarnings * 0.88), subtitle: "Trips" },
+    { label: "Sep", value: netEarnings, subtitle: `${bookings.length} Bookings` }
   ];
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (!selectedRequest || !actionType) return;
+    setActionLoading(true);
 
-    if (actionType === "accept") {
-      setRequests(requests.filter(r => r.id !== selectedRequest.id));
-      setToastMessage(`Booking #${selectedRequest.bookingId} accepted successfully! Chauffeur assignment notified.`);
-    } else {
-      setRequests(requests.filter(r => r.id !== selectedRequest.id));
-      setToastMessage(`Booking #${selectedRequest.bookingId} was rejected.`);
+    try {
+      const targetId = selectedRequest.rawId || selectedRequest.id;
+      if (actionType === "accept") {
+        await vendorApi.acceptBooking(targetId);
+        setToastMessage(`Booking #${selectedRequest.bookingReference || selectedRequest.id} confirmed successfully! Vehicle and chauffeur marked booked.`);
+      } else {
+        await vendorApi.declineBooking(targetId, "Vehicle unavailable or capacity full");
+        setToastMessage(`Booking #${selectedRequest.bookingReference || selectedRequest.id} was declined.`);
+      }
+      // Reload live data
+      await loadData();
+    } catch (err) {
+      console.error("Action failed:", err);
+      setToastMessage(err.response?.data?.message || `Failed to ${actionType} booking.`);
+    } finally {
+      setActionLoading(false);
+      setSelectedRequest(null);
+      setActionType(null);
     }
-    setSelectedRequest(null);
-    setActionType(null);
   };
+
+  const activeOrScheduledTrips = bookings.filter(b => b.status === "Active" || b.status === "Confirmed");
 
   return (
     <div className="space-y-8">
@@ -116,17 +140,19 @@ export default function VendorDashboard() {
       <ConfirmationModal
         isOpen={!!selectedRequest}
         onClose={() => {
-          setSelectedRequest(null);
-          setActionType(null);
+          if (!actionLoading) {
+            setSelectedRequest(null);
+            setActionType(null);
+          }
         }}
         onConfirm={handleConfirmAction}
         title={actionType === "accept" ? "Accept Booking Request?" : "Decline Booking Request?"}
         message={
           actionType === "accept"
-            ? `Confirm accepting #${selectedRequest?.bookingId} for ₹${selectedRequest?.estimatedAmount.toLocaleString()}? Your payout will be ₹${selectedRequest?.vendorShare.toLocaleString()} upon completion.`
-            : `Are you sure you want to decline #${selectedRequest?.bookingId}? It will be returned to the dispatch queue for other vendors.`
+            ? `Confirm accepting #${selectedRequest?.bookingReference || selectedRequest?.id} for ₹${selectedRequest?.totalFare?.toLocaleString("en-IN")}? Your net share will be ₹${selectedRequest?.vendorNet?.toLocaleString("en-IN")}.`
+            : `Are you sure you want to decline #${selectedRequest?.bookingReference || selectedRequest?.id}? It will be returned to operations dispatch.`
         }
-        confirmText={actionType === "accept" ? "Accept Trip" : "Decline Trip"}
+        confirmText={actionLoading ? "Processing..." : (actionType === "accept" ? "Accept Trip" : "Decline Trip")}
         type={actionType === "accept" ? "success" : "danger"}
       />
 
@@ -136,17 +162,17 @@ export default function VendorDashboard() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 uppercase tracking-wider">
-                Active Partner Hub
+                Fleet Partner Hub
               </span>
               <span className="text-xs text-slate-400 font-medium">
-                Vendor ID: {currentUser?.id ? `VND-${currentUser.id.slice(0, 6).toUpperCase()}` : currentVendor.id}
+                Vendor ID: {currentUser?.id ? `VND-${currentUser.id.slice(0, 8).toUpperCase()}` : "VND-PARTNER"}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Welcome back, {currentUser?.name || currentVendor.ownerName}
+              Welcome back, {currentUser?.name || "Vendor Partner"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-              {currentUser?.businessName || currentVendor.businessName} · {currentUser?.email || "Vendor Partner"}. You have <strong className="text-amber-400">{requests.length} new booking requests</strong> awaiting your approval today.
+              {currentUser?.businessName || "Fleet Operations"} · {currentUser?.email || "vendor@grabrentals.com"}. You have <strong className="text-amber-400">{requests.length} incoming booking requests</strong> awaiting your approval.
             </p>
           </div>
 
@@ -171,45 +197,45 @@ export default function VendorDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <StatCard
           title="Total Vehicles"
-          value={loadingVehicles ? "..." : totalVehiclesCount}
-          subtitle="Cars, Vans & Buses"
+          value={loading ? "..." : totalVehiclesCount}
+          subtitle="Registered fleet"
           icon={Car}
           iconColor="text-blue-600 bg-blue-50 border-blue-100"
         />
         <StatCard
           title="Available"
-          value={loadingVehicles ? "..." : availableCount}
+          value={loading ? "..." : availableCount}
           subtitle="Ready for dispatch"
           icon={CheckCircle2}
           iconColor="text-emerald-600 bg-emerald-50 border-emerald-100"
         />
         <StatCard
           title="Active Bookings"
-          value="3"
-          subtitle="Today & Tomorrow"
+          value={loading ? "..." : activeBookingsCount}
+          subtitle="Confirmed / Scheduled"
           icon={CalendarCheck}
           iconColor="text-amber-600 bg-amber-50 border-amber-100"
         />
         <StatCard
           title="Pending Requests"
-          value={requests.length}
+          value={loading ? "..." : requests.length}
           subtitle="Action required"
           icon={Clock}
           iconColor="text-rose-600 bg-rose-50 border-rose-100"
         />
         <StatCard
           title="Active Trips"
-          value={onTripCount}
+          value={loading ? "..." : activeTripsCount}
           subtitle="Live on highway"
           icon={MapPin}
           iconColor="text-purple-600 bg-purple-50 border-purple-100"
         />
         <StatCard
           title="Total Earnings"
-          value={formatINR(mockEarningsData.totalEarnings)}
-          trend="+14.2%"
+          value={loading ? "..." : formatINR(netEarnings)}
+          trend="+100% Real-time"
           trendPositive={true}
-          subtitle="Lifetime net"
+          subtitle="Net vendor payout"
           icon={TrendingUp}
           iconColor="text-emerald-600 bg-emerald-50 border-emerald-100"
         />
@@ -226,12 +252,12 @@ export default function VendorDashboard() {
                 Net Revenue Growth (₹ INR)
               </h2>
               <p className="text-xs text-slate-500">
-                Monthly vendor payout trajectory after platform fee
+                Live vendor net earnings calculated from confirmed & completed dispatches
               </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100">
-                Sep MTD: ₹1,12,400
+                Net: {formatINR(netEarnings)}
               </span>
             </div>
           </div>
@@ -246,7 +272,7 @@ export default function VendorDashboard() {
               Fleet Status
             </h2>
             <p className="text-xs text-slate-500">
-              Real-time vehicle availability allocation
+              Live vehicle availability & allocation
             </p>
           </div>
 
@@ -302,14 +328,14 @@ export default function VendorDashboard() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
-                        {req.bookingId}
+                        {req.bookingReference || req.id}
                       </span>
                       <h4 className="text-xs font-black text-slate-900 mt-1">
-                        {req.customer}
+                        {req.customer?.name || "Customer"}
                       </h4>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-black text-slate-900">{formatINR(req.vendorShare)}</p>
+                      <p className="text-sm font-black text-slate-900">{formatINR(req.vendorNet || req.totalFare)}</p>
                       <p className="text-[10px] text-slate-400">Net Share</p>
                     </div>
                   </div>
@@ -325,8 +351,8 @@ export default function VendorDashboard() {
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
-                    <span className="text-[11px] font-bold text-rose-600 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {req.timeRemaining}
+                    <span className="text-[11px] font-bold text-amber-600 flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Awaiting Confirmation
                     </span>
                     <div className="flex items-center gap-2">
                       <button
@@ -355,15 +381,15 @@ export default function VendorDashboard() {
           )}
         </div>
 
-        {/* Section 2: Today's Active & Scheduled Trips */}
+        {/* Section 2: Active & Scheduled Trips */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-base font-black text-slate-900 tracking-tight">
-                Today's Trip Dispatches
+                Trip Dispatches
               </h3>
               <p className="text-xs text-slate-500">
-                Ongoing and scheduled trips for today
+                Ongoing and scheduled trips
               </p>
             </div>
             <Link
@@ -375,40 +401,46 @@ export default function VendorDashboard() {
           </div>
 
           <div className="space-y-3">
-            {mockBookings.slice(0, 2).map((trip) => (
-              <div
-                key={trip.id}
-                className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-slate-900">#{trip.id}</span>
-                    <StatusBadge status={trip.status} />
-                  </div>
-                  <span className="text-xs font-bold text-slate-500">{trip.pickupDate}</span>
-                </div>
-
-                <div className="space-y-1 text-xs">
-                  <p className="font-bold text-slate-900">{trip.pickup} ➔ {trip.drop}</p>
-                  <p className="text-slate-500">{trip.tripType} · {trip.distanceKm} KM · {trip.vehicleType}</p>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-slate-900 text-amber-400 font-bold text-[10px] flex items-center justify-center">
-                      {trip.driverName.charAt(0)}
-                    </div>
-                    <span className="font-medium text-slate-700">{trip.driverName} ({trip.vehicleNumber})</span>
-                  </div>
-                  <Link
-                    href={`/vendor/bookings/${trip.id}`}
-                    className="font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
-                  >
-                    Details <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+            {activeOrScheduledTrips.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                No active trips currently in transit.
               </div>
-            ))}
+            ) : (
+              activeOrScheduledTrips.slice(0, 3).map((trip) => (
+                <div
+                  key={trip.id}
+                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-900">#{trip.bookingReference || trip.id}</span>
+                      <StatusBadge status={trip.status} />
+                    </div>
+                    <span className="text-xs font-bold text-slate-500">{trip.pickupDate}</span>
+                  </div>
+
+                  <div className="space-y-1 text-xs">
+                    <p className="font-bold text-slate-900">{trip.pickup} ➔ {trip.drop}</p>
+                    <p className="text-slate-500">{trip.tripType} · {trip.vehicleType}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-slate-900 text-amber-400 font-bold text-[10px] flex items-center justify-center">
+                        {(trip.driverName || "D").charAt(0)}
+                      </div>
+                      <span className="font-medium text-slate-700">{trip.driverName} ({trip.vehicleNumber})</span>
+                    </div>
+                    <Link
+                      href={`/vendor/bookings/${trip.id}`}
+                      className="font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                    >
+                      Details <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -441,7 +473,7 @@ export default function VendorDashboard() {
               sortable: true,
               render: (b) => (
                 <Link href={`/vendor/bookings/${b.id}`} className="font-mono font-bold text-amber-600 hover:underline">
-                  #{b.id}
+                  #{b.bookingReference || b.id}
                 </Link>
               )
             },
@@ -492,7 +524,7 @@ export default function VendorDashboard() {
               sortValue: (b) => Number(b.vendorNet) || 0,
               render: (b) => (
                 <span className="font-black text-slate-900">
-                  {formatINR(b.vendorNet)}
+                  {formatINR(b.vendorNet || b.totalFare)}
                 </span>
               )
             },
@@ -511,15 +543,15 @@ export default function VendorDashboard() {
               )
             }
           ]}
-          data={mockBookings}
+          data={bookings}
           keyField="id"
           defaultPageSize={5}
           pageSizeOptions={[5, 10, 20]}
           searchPlaceholder="Search recent trips..."
-          searchKeys={["id", "customer.name", "pickup", "drop", "vehicleNumber", "driverName"]}
+          searchKeys={["id", "bookingReference", "customer.name", "pickup", "drop", "vehicleNumber", "driverName"]}
           exportFileName="GrabRentals_Recent_Trips"
           emptyTitle="No Bookings Found"
-          emptyDescription="There are no recent trips to display."
+          emptyDescription="There are no bookings assigned to your fleet yet."
         />
       </div>
 

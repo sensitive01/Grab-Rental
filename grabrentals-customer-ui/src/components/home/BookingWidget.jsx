@@ -81,6 +81,20 @@ export default function BookingWidget() {
     return `/outstation/select-vehicle?${params.toString()}`;
   };
 
+  const handleExploreClick = () => {
+    const validStops = stops.filter((s) => s.trim());
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("grab_pending_trip", JSON.stringify({
+        from: pickupCity,
+        to: dropCity,
+        stops: validStops.join("|"),
+        tripType,
+        date: pickupDate,
+        time: pickupTime
+      }));
+    }
+  };
+
   const hasStops = allowsStops && stops.length > 0;
   const isRoundTrip = tripType === "round-trip";
 
@@ -194,7 +208,7 @@ export default function BookingWidget() {
                     type="text" 
                     value={stop}
                     onChange={(e) => handleStopChange(index, e.target.value)}
-                    placeholder={`e.g. Chennai, Tamil Nadu`}
+                    placeholder="Type stop city (e.g. Salem)"
                     className="w-full pl-11 pr-20 py-3.5 bg-amber-50/40 border border-amber-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm"
                   />
                   {/* Action buttons (- and +) like Savaari */}
@@ -219,6 +233,23 @@ export default function BookingWidget() {
                     )}
                   </div>
                 </div>
+
+                {/* Quick suggestion chips */}
+                {!stop && (
+                  <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                    <span className="text-[10px] text-slate-400 font-semibold">Suggested:</span>
+                    {["Salem", "Chennai", "Mysore", "Vellore"].map((city) => (
+                      <button
+                        key={city}
+                        type="button"
+                        onClick={() => handleStopChange(index, city)}
+                        className="text-[10px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-0.5 rounded-md transition-colors"
+                      >
+                        + {city}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
 
@@ -314,6 +345,7 @@ export default function BookingWidget() {
             <div className={isRoundTrip ? "lg:col-span-4" : "lg:col-span-5"}>
               <Link 
                 href={buildExploreUrl()}
+                onClick={handleExploreClick}
                 className="flex items-center justify-center gap-2 w-full bg-[#D97706] hover:bg-[#B45309] text-white py-3.5 px-6 rounded-xl font-extrabold text-sm uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
               >
                 EXPLORE CABS <ArrowRight className="w-4 h-4" />
@@ -423,6 +455,7 @@ export default function BookingWidget() {
           <div className="w-full lg:w-auto mt-4 lg:mt-0">
             <Link 
               href={buildExploreUrl()}
+              onClick={handleExploreClick}
               className="flex items-center justify-center gap-2 w-full lg:w-44 bg-[#D97706] hover:bg-[#B45309] text-white py-3.5 rounded-lg font-extrabold text-sm uppercase tracking-wide transition-all shadow-sm"
             >
               Explore <ArrowRight className="w-4 h-4" />

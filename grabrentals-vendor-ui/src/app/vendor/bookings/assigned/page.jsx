@@ -1,20 +1,30 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { ChevronRight, Eye } from "lucide-react";
+import { ChevronRight, Eye, Loader2 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import DataTable from "@/components/ui/DataTable";
-import { mockBookings } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 
 export default function AssignedBookingsPage() {
-  const assignedTrips = useMemo(() => {
-    return mockBookings.filter(
-      b => b.status.toLowerCase() === "assigned" || b.status.toLowerCase() === "confirmed"
-    );
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    vendorApi.getBookings()
+      .then(res => setBookings(res || []))
+      .catch(err => console.error("Failed to fetch assigned bookings:", err))
+      .finally(() => setLoading(false));
   }, []);
+
+  const assignedTrips = useMemo(() => {
+    return bookings.filter(
+      b => (b.status || "").toLowerCase() === "assigned" || (b.status || "").toLowerCase() === "confirmed"
+    );
+  }, [bookings]);
 
   const columns = useMemo(() => [
     {
@@ -26,7 +36,7 @@ export default function AssignedBookingsPage() {
           href={`/vendor/bookings/${b.id}`}
           className="text-amber-600 hover:text-amber-700 font-mono font-bold"
         >
-          #{b.id}
+          #{b.bookingReference || b.id}
         </Link>
       )
     },
@@ -60,17 +70,6 @@ export default function AssignedBookingsPage() {
       className: "font-semibold text-slate-800"
     },
     {
-      key: "route",
-      label: "Route",
-      sortable: true,
-      sortValue: (b) => `${b.pickup} ${b.drop}`,
-      render: (b) => (
-        <span className="text-slate-600 truncate max-w-[200px] block">
-          {b.pickup} ➔ {b.drop}
-        </span>
-      )
-    },
-    {
       key: "status",
       label: "Status",
       sortable: true,
@@ -80,21 +79,46 @@ export default function AssignedBookingsPage() {
       key: "actions",
       label: "Action",
       align: "center",
-      sortable: false,
       render: (b) => (
         <Link
           href={`/vendor/bookings/${b.id}`}
-          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors inline-flex items-center gap-1 font-bold text-xs"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors inline-block"
         >
-          <Eye className="w-3.5 h-3.5" />
-          <span>View</span>
+          <Eye className="w-4 h-4" />
         </Link>
       )
     }
   ], []);
 
+  const renderMobileCard = (b) => (
+    <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="font-mono font-bold text-amber-600">#{b.bookingReference || b.id}</span>
+        <StatusBadge status={b.status} />
+      </div>
+      <div className="text-xs space-y-1">
+        <p className="font-bold text-slate-900">{b.customer?.name}</p>
+        <p className="text-slate-500">{b.pickupDate}</p>
+        <div className="pt-2 flex items-center justify-between">
+          <NumberPlate number={b.vehicleNumber} />
+          <span className="text-slate-600 font-medium">{b.driverName}</span>
+        </div>
+      </div>
+      <div className="pt-2 border-t border-slate-100 flex justify-end">
+        <Link
+          href={`/vendor/bookings/${b.id}`}
+          className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+        >
+          View Full Details <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
+      
+      {/* Header & Breadcrumbs */}
       <div className="space-y-1">
         <Breadcrumbs
           items={[
@@ -102,11 +126,14 @@ export default function AssignedBookingsPage() {
             { label: "Assigned Trips" }
           ]}
         />
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          Assigned Bookings
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+          Assigned & Confirmed Trips
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+            {assignedTrips.length} Ready
+          </span>
         </h1>
         <p className="text-xs sm:text-sm text-slate-500">
-          Bookings that have vehicles and chauffeurs successfully allocated and scheduled for dispatch.
+          Bookings that have been accepted with vehicle and chauffeur locked for customer pickup.
         </p>
       </div>
 
@@ -115,13 +142,15 @@ export default function AssignedBookingsPage() {
         data={assignedTrips}
         keyField="id"
         defaultPageSize={10}
-        pageSizeOptions={[5, 10, 25, 50]}
-        searchPlaceholder="Search assigned bookings..."
-        searchKeys={["id", "customer.name", "vehicleNumber", "driverName", "pickup", "drop"]}
-        exportFileName="GrabRentals_Assigned_Bookings"
-        emptyTitle="No Assigned Bookings"
-        emptyDescription="There are currently no bookings scheduled with allocated fleet assets."
+        pageSizeOptions={[5, 10, 20]}
+        searchPlaceholder="Search assigned trips..."
+        searchKeys={["id", "bookingReference", "customer.name", "vehicleNumber", "driverName"]}
+        exportFileName="GrabRentals_Assigned_Trips"
+        emptyTitle="No Assigned Trips"
+        emptyDescription="There are currently no bookings in assigned or confirmed status."
+        renderMobileCard={renderMobileCard}
       />
+
     </div>
   );
 }

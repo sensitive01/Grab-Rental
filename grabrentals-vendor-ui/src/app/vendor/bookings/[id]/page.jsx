@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -15,18 +15,71 @@ import {
   Mail, 
   ShieldCheck, 
   ChevronRight,
-  FileText
+  FileText,
+  KeyRound,
+  Loader2
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
-import { mockBookings } from "@/lib/mockData";
+import NumberPlate from "@/components/ui/NumberPlate";
+import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
 
 export default function BookingDetailsPage({ params }) {
   const unwrappedParams = use(params);
-  const bookingId = unwrappedParams?.id || "BK-2026-000124";
+  const bookingId = unwrappedParams?.id;
 
-  const booking = mockBookings.find(b => b.id === bookingId) || mockBookings[0];
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!bookingId) return;
+    const fetchBooking = async () => {
+      try {
+        setLoading(true);
+        const data = await vendorApi.getBookingById(bookingId);
+        if (data) {
+          setBooking(data);
+        } else {
+          setError("Booking not found");
+        }
+      } catch (err) {
+        console.error("Failed to load booking details:", err);
+        setError("Unable to load booking details from the server.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooking();
+  }, [bookingId]);
+
+  if (loading) {
+    return (
+      <div className="py-24 text-center space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-amber-500" />
+        <p className="text-xs text-slate-500 font-medium">Fetching real-time booking particulars...</p>
+      </div>
+    );
+  }
+
+  if (error || !booking) {
+    return (
+      <div className="max-w-md mx-auto py-16 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+          <FileText className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-black text-slate-900">Booking Not Found</h2>
+        <p className="text-xs text-slate-500">{error || `No booking found for identifier #${bookingId}`}</p>
+        <Link
+          href="/vendor/bookings"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
+        >
+          <ArrowLeft className="w-4 h-4" /> Return to Ledger
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -37,12 +90,12 @@ export default function BookingDetailsPage({ params }) {
           <Breadcrumbs
             items={[
               { label: "Bookings", href: "/vendor/bookings" },
-              { label: `#${booking.id}` }
+              { label: `#${booking.bookingReference || booking.id}` }
             ]}
           />
           <div className="flex items-center gap-3 pt-1">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
-              #{booking.id}
+              #{booking.bookingReference || booking.id}
             </h1>
             <StatusBadge status={booking.status} />
           </div>
@@ -68,7 +121,11 @@ export default function BookingDetailsPage({ params }) {
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
             <h2 className="text-sm font-black text-slate-900 tracking-tight pb-3 border-b border-slate-100 flex items-center justify-between">
               <span>Journey Route & Timing</span>
-              <span className="text-xs font-bold text-slate-500">{booking.distanceKm} KM Estimated</span>
+              {booking.rideOtp && (
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-950 font-black text-xs font-mono">
+                  <KeyRound className="w-3.5 h-3.5 text-amber-600" /> Start OTP: {booking.rideOtp}
+                </span>
+              )}
             </h2>
 
             <div className="space-y-6 relative pl-6 border-l-2 border-slate-200 ml-3">
@@ -99,7 +156,7 @@ export default function BookingDetailsPage({ params }) {
 
             </div>
 
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-xs text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-xs text-center">
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Vehicle Class</span>
                 <p className="font-bold text-slate-800 mt-0.5">{booking.vehicleType}</p>
@@ -108,9 +165,9 @@ export default function BookingDetailsPage({ params }) {
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Passengers</span>
                 <p className="font-bold text-slate-800 mt-0.5">{booking.passengers} Guests</p>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Trip Distance</span>
-                <p className="font-bold text-slate-800 mt-0.5">{booking.distanceKm} Kilometers</p>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 col-span-2 sm:col-span-1">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Trip Mode</span>
+                <p className="font-bold text-slate-800 mt-0.5">{booking.tripType}</p>
               </div>
             </div>
           </div>
@@ -133,7 +190,7 @@ export default function BookingDetailsPage({ params }) {
                     {booking.driverName ? booking.driverName.charAt(0) : "D"}
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">{booking.driverName || "Driver not mapped"}</p>
+                    <p className="font-bold text-slate-900">{booking.driverName || "Chauffeur Pending"}</p>
                     <p className="text-slate-500 font-medium">{booking.driverPhone || "N/A"}</p>
                   </div>
                 </div>
@@ -149,8 +206,8 @@ export default function BookingDetailsPage({ params }) {
                     <Car className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-mono font-bold text-slate-900">{booking.vehicleNumber || "Vehicle not mapped"}</p>
-                    <p className="text-slate-500 font-medium">{booking.vehicleType}</p>
+                    <NumberPlate number={booking.vehicleNumber || "UNASSIGNED"} />
+                    <p className="text-slate-500 font-medium text-[11px] mt-0.5">{booking.vehicleType}</p>
                   </div>
                 </div>
               </div>
@@ -172,24 +229,26 @@ export default function BookingDetailsPage({ params }) {
             <div className="space-y-3">
               <div>
                 <span className="text-slate-400 text-[10px] uppercase font-bold">Customer Name</span>
-                <p className="text-sm font-black text-slate-900">{booking.customer.name}</p>
+                <p className="text-sm font-black text-slate-900">{booking.customer?.name || "Customer"}</p>
               </div>
 
               <div>
                 <span className="text-slate-400 text-[10px] uppercase font-bold">Contact Phone</span>
                 <p className="font-semibold text-slate-800 flex items-center gap-1.5 mt-0.5">
                   <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  {booking.customer.phone}
+                  {booking.customer?.phone || "N/A"}
                 </p>
               </div>
 
-              <div>
-                <span className="text-slate-400 text-[10px] uppercase font-bold">Email Address</span>
-                <p className="font-semibold text-slate-800 flex items-center gap-1.5 mt-0.5">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
-                  {booking.customer.email}
-                </p>
-              </div>
+              {booking.customer?.email && (
+                <div>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold">Email Address</span>
+                  <p className="font-semibold text-slate-800 flex items-center gap-1.5 mt-0.5">
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    {booking.customer.email}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -201,18 +260,18 @@ export default function BookingDetailsPage({ params }) {
 
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Total Customer Fare</span>
-                <span className="font-bold text-slate-900">{formatINR(booking.estimatedAmount)}</span>
+                <span className="text-slate-600">Total Booking Fare</span>
+                <span className="font-bold text-slate-900">{formatINR(booking.totalFare || booking.estimatedAmount)}</span>
               </div>
 
               <div className="flex items-center justify-between text-rose-600">
-                <span>Platform Commission (15%)</span>
+                <span>Platform Commission (10%)</span>
                 <span>-{formatINR(booking.platformFee)}</span>
               </div>
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-sm">
                 <span className="font-black text-slate-900">Net Vendor Payout</span>
-                <span className="font-black text-emerald-600">{formatINR(booking.vendorNet)}</span>
+                <span className="font-black text-emerald-600">{formatINR(booking.vendorNet || booking.totalFare)}</span>
               </div>
             </div>
 

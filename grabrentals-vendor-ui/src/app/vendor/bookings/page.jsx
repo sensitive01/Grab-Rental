@@ -1,22 +1,45 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { 
   Sparkles,
   MapPin, 
   ChevronRight,
-  Eye
+  Eye,
+  Loader2
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import DataTable from "@/components/ui/DataTable";
-import { mockBookings } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
 
 export default function VendorBookingsPage() {
+  const [bookings, setBookings] = useState([]);
+  const [requestsCount, setRequestsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const [bList, rList] = await Promise.all([
+          vendorApi.getBookings(),
+          vendorApi.getBookingRequests().catch(() => [])
+        ]);
+        setBookings(bList || []);
+        setRequestsCount(rList?.length || 0);
+      } catch (err) {
+        console.error("Failed to fetch bookings:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const tabs = [
     { id: "all", label: "All Bookings" },
@@ -29,10 +52,10 @@ export default function VendorBookingsPage() {
   ];
 
   const tabFilteredBookings = useMemo(() => {
-    return mockBookings.filter((b) => {
-      return activeTab === "all" || b.status.toLowerCase() === activeTab.toLowerCase();
+    return bookings.filter((b) => {
+      return activeTab === "all" || (b.status || "").toLowerCase() === activeTab.toLowerCase();
     });
-  }, [activeTab]);
+  }, [bookings, activeTab]);
 
   const columns = useMemo(() => [
     {
@@ -189,7 +212,7 @@ export default function VendorBookingsPage() {
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             Bookings Ledger
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
-              {mockBookings.length} Total
+              {bookings.length} Total
             </span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
@@ -201,7 +224,7 @@ export default function VendorBookingsPage() {
           href="/vendor/bookings/requests"
           className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 text-center shrink-0"
         >
-          <Sparkles className="w-4 h-4 shrink-0" /> Incoming Requests (2)
+          <Sparkles className="w-4 h-4 shrink-0" /> Incoming Requests ({requestsCount})
         </Link>
       </div>
 
@@ -209,8 +232,8 @@ export default function VendorBookingsPage() {
       <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-2xs flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const count = tab.id === "all" 
-            ? mockBookings.length 
-            : mockBookings.filter(b => b.status.toLowerCase() === tab.id.toLowerCase()).length;
+            ? bookings.length 
+            : bookings.filter(b => (b.status || "").toLowerCase() === tab.id.toLowerCase()).length;
           const isActive = activeTab === tab.id;
 
           return (

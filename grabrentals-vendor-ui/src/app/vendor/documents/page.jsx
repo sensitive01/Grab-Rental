@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { 
   FileText, 
@@ -11,33 +11,53 @@ import {
   CheckCircle2, 
   Clock, 
   ShieldCheck,
-  Filter
+  Filter,
+  Loader2,
+  ExternalLink
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import DataTable from "@/components/ui/DataTable";
-import { mockDocuments } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 
 export default function VendorDocumentsPage() {
-  const [documents, setDocuments] = useState(mockDocuments);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  const expiringCount = documents.filter(d => d.status.toLowerCase().includes("expiring")).length;
+  const fetchDocs = async () => {
+    try {
+      setLoading(true);
+      const docs = await vendorApi.getDocuments();
+      setDocuments(docs || []);
+    } catch (err) {
+      console.error("Failed to load documents:", err);
+      setDocuments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocs();
+  }, []);
+
+  const expiringCount = documents.filter(d => (d.status || "").toLowerCase().includes("expiring")).length;
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((d) => {
-      return selectedCategory === "all" || d.type.toLowerCase().includes(selectedCategory.toLowerCase());
+      return selectedCategory === "all" || (d.type || "").toLowerCase().includes(selectedCategory.toLowerCase());
     });
   }, [documents, selectedCategory]);
 
   const handleUploadNew = (e) => {
     e.preventDefault();
     setUploadModalOpen(false);
-    setToastMessage("Document uploaded successfully and queued for RTO verification!");
+    setToastMessage("Document uploaded successfully and linked to platform fleet compliance!");
   };
 
   const columns = useMemo(() => [
@@ -52,14 +72,14 @@ export default function VendorDocumentsPage() {
           </div>
           <div>
             <p className="font-bold text-slate-900">{doc.name}</p>
-            <p className="text-[11px] text-slate-400">{doc.fileSize}</p>
+            <p className="text-[11px] text-slate-400">{doc.fileSize || "Statutory Document"}</p>
           </div>
         </div>
       )
     },
     {
       key: "target",
-      label: "Target Asset / Driver",
+      label: "Target Asset / Chauffeur",
       sortable: true,
       className: "font-semibold text-slate-800"
     },
@@ -74,14 +94,14 @@ export default function VendorDocumentsPage() {
       label: "Expiry Date",
       sortable: true,
       render: (doc) => {
-        const isExpiring = doc.status.toLowerCase().includes("expiring");
+        const isExpiring = (doc.status || "").toLowerCase().includes("expiring");
         return (
           <div>
             <p className={`font-bold ${isExpiring ? "text-rose-600" : "text-slate-900"}`}>
               {doc.expiryDate}
             </p>
             <p className="text-[11px] text-slate-400">
-              {isExpiring ? `⚠ Only ${doc.daysRemaining} days left` : "Valid"}
+              {isExpiring ? `⚠ Only ${doc.daysRemaining} days left` : "Verified & Valid"}
             </p>
           </div>
         );
@@ -89,7 +109,7 @@ export default function VendorDocumentsPage() {
     },
     {
       key: "status",
-      label: "Verification Status",
+      label: "Status",
       sortable: true,
       render: (doc) => <StatusBadge status={doc.status} />
     },
@@ -100,14 +120,26 @@ export default function VendorDocumentsPage() {
       sortable: false,
       render: (doc) => (
         <div className="flex items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => alert(`Opening preview of ${doc.name}...`)}
-            title="View Document"
-            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
-          >
-            <Eye className="w-3.5 h-3.5" />
-          </button>
+          {doc.fileUrl ? (
+            <a
+              href={doc.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open Document File"
+              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors inline-block"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => alert(`Statutory record on file for: ${doc.target}`)}
+              title="View Document Details"
+              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setUploadModalOpen(true)}
@@ -132,7 +164,7 @@ export default function VendorDocumentsPage() {
       <Modal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        title="Upload Statutory Document"
+        title="Upload Statutory Fleet Document"
       >
         <form onSubmit={handleUploadNew} className="space-y-4 text-xs">
           <div className="space-y-1.5">
@@ -140,19 +172,9 @@ export default function VendorDocumentsPage() {
             <select className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500">
               <option>Commercial Vehicle Insurance Policy</option>
               <option>All India Tourist Permit (AITP)</option>
-              <option>Fitness Certificate (FC)</option>
+              <option>Commercial Fitness Certificate (FC)</option>
               <option>Vehicle Registration Certificate (RC)</option>
-              <option>Pollution Under Control Certificate (PUCC)</option>
-              <option>Driver Commercial License</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-700">Select Vehicle / Driver *</label>
-            <select className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500">
-              <option>Maruti Suzuki S-Presso (TN-38-XY-9901)</option>
-              <option>Toyota Innova Crysta (TN-38-XY-9900)</option>
-              <option>Driver: Senthil Nathan</option>
+              <option>Chauffeur Commercial Driving License</option>
             </select>
           </div>
 
@@ -224,10 +246,10 @@ export default function VendorDocumentsPage() {
             </div>
             <div>
               <h3 className="text-xs font-bold text-slate-900">
-                {expiringCount} Document{expiringCount > 1 ? "s" : ""} Expiring Within 30 Days
+                {expiringCount} Document{expiringCount > 1 ? "s" : ""} Expiring Soon
               </h3>
               <p className="text-[11px] text-slate-600">
-                Vehicles with expired statutory paperwork are automatically locked by operations dispatch.
+                Please renew paperwork to prevent automated dispatch holds on affected vehicles.
               </p>
             </div>
           </div>
@@ -251,7 +273,7 @@ export default function VendorDocumentsPage() {
         searchKeys={["name", "target", "type", "expiryDate", "status"]}
         exportFileName="GrabRentals_Documents_Compliance"
         emptyTitle="No Documents Found"
-        emptyDescription="No statutory records matched your search query."
+        emptyDescription="All fleet vehicles and chauffeurs will automatically reflect their statutory certificates here."
         filters={
           <div className="flex items-center gap-1.5 text-slate-600">
             <Filter className="w-3.5 h-3.5 text-slate-400" />

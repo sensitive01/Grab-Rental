@@ -73,7 +73,7 @@ export default function VehicleCard({ vehicle }) {
           All-Inclusive Fixed Fare
         </p>
         
-        <Link href="/outstation/trip-details" className={`w-full ${vehicle.isRecommended ? 'bg-brand-amber hover:bg-brand-amber-active text-white' : 'bg-brand-navy hover:bg-brand-navy-dark text-white'} py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wider transition-all shadow-sm flex items-center justify-center`}>
+        <Link href="/outstation/review-pay" className={`w-full ${vehicle.isRecommended ? 'bg-brand-amber hover:bg-brand-amber-active text-white' : 'bg-brand-navy hover:bg-brand-navy-dark text-white'} py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wider transition-all shadow-sm flex items-center justify-center`}>
           {vehicle.ctaText}
         </Link>
 

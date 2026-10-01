@@ -7,6 +7,7 @@ import { formatINR, getStatusStyle } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import {
   Table,
   TableHeader,
@@ -57,10 +58,10 @@ export default function OperationsBookingsPage() {
       const q = search.toLowerCase();
       const matchSearch =
         !search ||
-        b.id.toLowerCase().includes(q) ||
-        b.customerName.toLowerCase().includes(q) ||
-        b.pickupLocation.toLowerCase().includes(q) ||
-        b.dropLocation.toLowerCase().includes(q) ||
+        (b.id && b.id.toLowerCase().includes(q)) ||
+        (b.customerName && b.customerName.toLowerCase().includes(q)) ||
+        (b.pickupLocation && b.pickupLocation.toLowerCase().includes(q)) ||
+        (b.dropLocation && b.dropLocation.toLowerCase().includes(q)) ||
         (b.assignedVehicleNumber && b.assignedVehicleNumber.toLowerCase().includes(q)) ||
         (b.assignedDriverName && b.assignedDriverName.toLowerCase().includes(q));
       return matchTab && matchSearch;
@@ -114,8 +115,8 @@ export default function OperationsBookingsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
-                  Loading bookings...
+                <TableCell colSpan={9} className="py-12">
+                  <LoadingAnimation inline title="Loading bookings from database..." />
                 </TableCell>
               </TableRow>
             ) : paginated.length === 0 ? (
@@ -172,7 +173,7 @@ export default function OperationsBookingsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="font-bold text-slate-900 text-xs">{formatINR(b.fare)}</div>
+                      <div className="font-bold text-slate-900 text-xs">{formatINR(b.fare ?? b.totalFare)}</div>
                       <div className="text-[10px] text-slate-500">{b.paymentStatus}</div>
                     </TableCell>
                     <TableCell>

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { operationsApi } from "@/lib/operationsApi";
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -42,7 +44,7 @@ export const OPERATIONS_NAV = [
     items: [
       { label: "Dashboard", href: "/operations/dashboard", icon: LayoutDashboard },
       { label: "All Bookings", href: "/operations/bookings", icon: CalendarCheck },
-      { label: "New Requests", href: "/operations/bookings/new", icon: PlusCircle, badge: "3" },
+      { label: "New Requests", href: "/operations/bookings/new", icon: PlusCircle },
     ],
   },
   {
@@ -50,8 +52,7 @@ export const OPERATIONS_NAV = [
     items: [
       { label: "Vehicles Roster", href: "/operations/vehicles", icon: Car },
       { label: "Chauffeur Roster", href: "/operations/drivers", icon: UserCheck },
-      { label: "Assign Vehicle", href: "/operations/assignments/vehicle", icon: GitPullRequest },
-      { label: "Assign Driver", href: "/operations/assignments/driver", icon: Users },
+      { label: "Assign Vehicle & Driver", href: "/operations/assignments/vehicle", icon: GitPullRequest },
     ],
   },
   {
@@ -66,7 +67,7 @@ export const OPERATIONS_NAV = [
   {
     title: "Coordination & Insights",
     items: [
-      { label: "Customer Requests", href: "/operations/customer-requests", icon: MessageSquare, badge: "2" },
+      { label: "Customer Requests", href: "/operations/customer-requests", icon: MessageSquare },
       { label: "Vendor Coordination", href: "/operations/vendor-coordination", icon: Building2 },
       { label: "Operations Reports", href: "/operations/reports", icon: FileBarChart },
       { label: "Notifications", href: "/operations/notifications", icon: Bell },
@@ -89,7 +90,7 @@ export const ADMIN_NAV = [
       { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "Customers", href: "/admin/customers", icon: Users },
       { label: "Vendors", href: "/admin/vendors", icon: Building2 },
-      { label: "Vendor Approvals", href: "/admin/vendors/approval", icon: CheckCircle, badge: "1" },
+      { label: "Vendor Approvals", href: "/admin/vendors/approval", icon: CheckCircle },
       { label: "Operations Staff", href: "/admin/operations-users", icon: ShieldCheck },
     ],
   },
@@ -105,7 +106,7 @@ export const ADMIN_NAV = [
     title: "Financials & Tariffs",
     items: [
       { label: "Payments", href: "/admin/payments", icon: CreditCard },
-      { label: "Refunds Queue", href: "/admin/refunds", icon: RotateCcw, badge: "1" },
+      { label: "Refunds Queue", href: "/admin/refunds", icon: RotateCcw },
       { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
     ],
   },
@@ -115,7 +116,7 @@ export const ADMIN_NAV = [
       { label: "Cities & Hubs", href: "/admin/locations", icon: MapPin },
       { label: "Rental Services", href: "/admin/services", icon: Sparkles },
       { label: "Customer Reviews", href: "/admin/reviews", icon: Star },
-      { label: "Complaints & Grievances", href: "/admin/complaints", icon: AlertTriangle, badge: "2" },
+      { label: "Complaints & Grievances", href: "/admin/complaints", icon: AlertTriangle },
       { label: "Platform Reports", href: "/admin/reports", icon: FileBarChart },
     ],
   },
@@ -136,6 +137,34 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
   const pathname = usePathname();
   const navSections = role === "ADMIN" ? ADMIN_NAV : OPERATIONS_NAV;
   const isOps = role === "OPERATIONS";
+
+  const [counts, setCounts] = useState({
+    pendingAllocations: 0,
+    activeTrips: 0,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCounts() {
+      try {
+        if (role === "OPERATIONS") {
+          const res = await operationsApi.getKPIs();
+          if (isMounted && res?.data) {
+            setCounts({
+              pendingAllocations: res.data.pendingAllocations || 0,
+              activeTrips: res.data.activeTrips || 0,
+            });
+          }
+        }
+      } catch {
+        // silent
+      }
+    }
+    loadCounts();
+    return () => {
+      isMounted = false;
+    };
+  }, [role, pathname]);
 
   return (
     <>
@@ -215,6 +244,13 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
                       item.href !== "/admin/dashboard" &&
                       pathname.startsWith(item.href));
 
+                  let badgeText = item.badge;
+                  if (item.href === "/operations/bookings/new") {
+                    badgeText = counts.pendingAllocations > 0 ? String(counts.pendingAllocations) : null;
+                  } else if (item.href === "/operations/trips/active") {
+                    badgeText = counts.activeTrips > 0 ? String(counts.activeTrips) : null;
+                  }
+
                   return (
                     <Link
                       key={item.href}
@@ -244,7 +280,7 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
                         />
                         <span>{item.label}</span>
                       </div>
-                      {item.badge && (
+                      {badgeText && (
                         <span
                           className={cn(
                             "text-[10px] font-bold px-1.5 py-0.2 rounded-full",
@@ -255,7 +291,7 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
                               : "bg-slate-800 text-slate-400 group-hover:bg-slate-700"
                           )}
                         >
-                          {item.badge}
+                          {badgeText}
                         </span>
                       )}
                     </Link>

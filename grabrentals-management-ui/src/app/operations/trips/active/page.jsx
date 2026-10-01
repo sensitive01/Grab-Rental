@@ -5,6 +5,7 @@ import Link from "next/link";
 import { operationsApi } from "@/lib/operationsApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import {
@@ -24,11 +25,19 @@ export default function ActiveTripsPage() {
   const [toast, setToast] = useState(null);
   const [milestoneInputs, setMilestoneInputs] = useState({});
 
-  async function loadTrips() {
-    setLoading(true);
+  async function loadTrips(showSpinner = false) {
+    if (showSpinner) setLoading(true);
     try {
       const res = await operationsApi.getBookings();
-      setTrips(res.data.filter((b) => ["ASSIGNED", "EN_ROUTE"].includes(b.status)));
+      const activeStatuses = [
+        "CONFIRMED",
+        "ASSIGNED_TO_VENDOR",
+        "ASSIGNED",
+        "ON_THE_WAY",
+        "EN_ROUTE",
+        "IN_TRANSIT",
+      ];
+      setTrips(res.data.filter((b) => activeStatuses.includes(b.status)));
     } catch (err) {
       console.error(err);
     } finally {
@@ -37,7 +46,31 @@ export default function ActiveTripsPage() {
   }
 
   useEffect(() => {
-    loadTrips();
+    let ignore = false;
+    operationsApi
+      .getBookings()
+      .then((res) => {
+        if (ignore) return;
+        const activeStatuses = [
+          "CONFIRMED",
+          "ASSIGNED_TO_VENDOR",
+          "ASSIGNED",
+          "ON_THE_WAY",
+          "EN_ROUTE",
+          "IN_TRANSIT",
+        ];
+        setTrips(res.data.filter((b) => activeStatuses.includes(b.status)));
+      })
+      .catch((err) => {
+        if (!ignore) console.error(err);
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   async function handleProgressStatus(tripId, nextStatus) {
@@ -54,7 +87,7 @@ export default function ActiveTripsPage() {
     const text = milestoneInputs[tripId];
     if (!text) return;
     try {
-      await operationsApi.updateTripStatus(tripId, "EN_ROUTE", text);
+      await operationsApi.updateTripStatus(tripId, "IN_TRANSIT", text);
       setToast({ type: "success", message: "Live milestone update recorded" });
       setMilestoneInputs({ ...milestoneInputs, [tripId]: "" });
       loadTrips();
@@ -89,7 +122,11 @@ export default function ActiveTripsPage() {
       />
 
       {loading ? (
-        <div className="py-12 text-center text-slate-500">Scanning active fleet...</div>
+        <LoadingAnimation
+          title="Scanning Active Fleet..."
+          subtitle="Connecting to GPS telematics and driver trip status..."
+          icon={Navigation}
+        />
       ) : trips.length === 0 ? (
         <Card className="text-center py-12">
           <Navigation className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -105,8 +142,18 @@ export default function ActiveTripsPage() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-sm text-slate-900">{t.id}</span>
-                  <Badge variant="primary" size="sm" dot>
-                    {t.status}
+                  <Badge
+                    variant={
+                      t.status === "COMPLETED"
+                        ? "success"
+                        : ["EN_ROUTE", "ON_THE_WAY", "IN_TRANSIT"].includes(t.status)
+                        ? "primary"
+                        : "warning"
+                    }
+                    size="sm"
+                    dot
+                  >
+                    {t.status.replace(/_/g, " ")}
                   </Badge>
                 </div>
                 <span className="font-bold text-slate-900 text-sm">{formatINR(t.fare)}</span>
@@ -178,16 +225,16 @@ export default function ActiveTripsPage() {
                   </span>
                 </Link>
                 <div className="flex items-center gap-2">
-                  {t.status === "ASSIGNED" && (
+                  {["CONFIRMED", "ASSIGNED", "ASSIGNED_TO_VENDOR"].includes(t.status) && (
                     <Button
                       size="xs"
                       variant="primary"
-                      onClick={() => handleProgressStatus(t.id, "EN_ROUTE")}
+                      onClick={() => handleProgressStatus(t.id, "IN_TRANSIT")}
                     >
                       Start En Route
                     </Button>
                   )}
-                  {t.status === "EN_ROUTE" && (
+                  {["EN_ROUTE", "ON_THE_WAY", "IN_TRANSIT", "CONFIRMED"].includes(t.status) && (
                     <Button
                       size="xs"
                       variant="emerald"

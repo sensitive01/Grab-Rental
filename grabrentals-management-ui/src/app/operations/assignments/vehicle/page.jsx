@@ -23,6 +23,7 @@ export default function VehicleAssignmentPage() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -61,22 +62,76 @@ export default function VehicleAssignmentPage() {
       return;
     }
 
+    setSubmitting(true);
     try {
-      await operationsApi.assignVehicleAndDriver(
-        selectedBooking.id,
-        selectedVehicle.id,
-        selectedDriver.id
-      );
+      const bId = selectedBooking.rawId || selectedBooking.id;
+      const vId = selectedVehicle.rawId || selectedVehicle.id;
+      const dId = selectedDriver.rawId || selectedDriver.id;
+
+      await operationsApi.assignVehicleAndDriver(bId, vId, dId);
       setToast({
         type: "success",
-        message: `Dispatched ${selectedVehicle.model} with driver ${selectedDriver.name} to booking ${selectedBooking.id}!`,
+        message: `Dispatched ${selectedVehicle.model} with driver ${selectedDriver.name} to booking ${selectedBooking.id}! Routed to Vendor for confirmation.`,
       });
       setTimeout(() => {
         router.push(`/operations/bookings/${selectedBooking.id}`);
       }, 1200);
     } catch {
       setToast({ type: "error", message: "Failed to allocate fleet" });
+      setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Fleet & Chauffeur Fast Allocator"
+          subtitle="Split-screen dual dispatch workflow for pending customer bookings"
+          breadcrumbs={[
+            { label: "Operations", href: "/operations/dashboard" },
+            { label: "Assignments", href: "/operations/assignments/vehicle" },
+            { label: "Fast Allocator" },
+          ]}
+        />
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-14 shadow-xs min-h-[440px] flex flex-col items-center justify-center text-center">
+          <div className="relative flex items-center justify-center">
+            {/* Ambient pulse halo */}
+            <div className="absolute w-24 h-24 rounded-full bg-amber-500/10 animate-ping" />
+            <div className="absolute w-16 h-16 rounded-full bg-amber-500/20 animate-pulse" />
+            {/* Spinning dual rings */}
+            <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-amber-500 border-r-amber-500 animate-spin" />
+            <div className="absolute">
+              <Car className="w-6 h-6 text-amber-600 animate-pulse" />
+            </div>
+          </div>
+
+          <h3 className="mt-6 text-base font-bold text-slate-900 tracking-tight">
+            Loading Fast Allocator
+          </h3>
+          <p className="mt-1.5 text-xs text-slate-500 max-w-sm">
+            Fetching unassigned bookings, available commercial fleet, and active chauffeurs from database...
+          </p>
+
+          {/* Skeleton progress pills */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              Checking bookings
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+              Scanning fleet
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              Verifying drivers
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -168,7 +223,7 @@ export default function VehicleAssignmentPage() {
           >
             {vehicles.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-500">
-                No vehicles currently marked AVAILABLE.
+                No vehicle available
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
@@ -205,7 +260,7 @@ export default function VehicleAssignmentPage() {
           >
             {drivers.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-500">
-                No drivers currently marked AVAILABLE.
+                No driver available
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
@@ -247,9 +302,10 @@ export default function VehicleAssignmentPage() {
               size="md"
               icon={CheckCircle2}
               onClick={handleConfirmDispatch}
-              disabled={!selectedBooking || !selectedVehicle || !selectedDriver}
+              isLoading={submitting}
+              disabled={submitting || !selectedBooking || !selectedVehicle || !selectedDriver}
             >
-              Confirm & Dispatch Fleet
+              {submitting ? "Dispatching Fleet..." : "Confirm & Dispatch Fleet"}
             </Button>
           </div>
         </div>

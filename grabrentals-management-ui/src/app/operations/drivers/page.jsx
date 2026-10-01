@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { operationsApi } from "@/lib/operationsApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge } from "@/components/ui/Card";
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import {
   Table,
   TableHeader,
@@ -49,10 +50,10 @@ export default function OperationsDriversPage() {
       const q = search.toLowerCase();
       const matchSearch =
         !search ||
-        d.name.toLowerCase().includes(q) ||
-        d.phone.toLowerCase().includes(q) ||
-        d.badgeNumber.toLowerCase().includes(q) ||
-        d.vendorName.toLowerCase().includes(q);
+        (d.name && d.name.toLowerCase().includes(q)) ||
+        (d.phone && d.phone.toLowerCase().includes(q)) ||
+        (d.badgeNumber && d.badgeNumber.toLowerCase().includes(q)) ||
+        (d.vendorName && d.vendorName.toLowerCase().includes(q));
       return matchTab && matchSearch;
     });
   }, [drivers, activeTab, search]);
@@ -90,8 +91,8 @@ export default function OperationsDriversPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  Loading chauffeur roster...
+                <TableCell colSpan={7} className="py-12">
+                  <LoadingAnimation inline title="Loading active chauffeurs from database..." />
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (

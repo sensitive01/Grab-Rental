@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   AlertTriangle
 } from "lucide-react";
-import { mockNotifications } from "@/lib/mockData";
+import { vendorApi } from "@/lib/vendorApi";
 import { getCurrentUser, logout } from "@/lib/auth";
 
 export default function TopNavbar({ onMenuClick }) {
@@ -24,23 +24,29 @@ export default function TopNavbar({ onMenuClick }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     const user = getCurrentUser();
     if (user) {
       setCurrentUser(user);
     }
+
+    vendorApi.getNotifications()
+      .then(res => setNotifications(res))
+      .catch(() => {});
   }, []);
 
-  const displayName = currentUser?.name || "K. Subramanian";
-  const displayCompany = currentUser?.businessName || "Royal Travels Chennai";
-  const displayEmail = currentUser?.email || "operations@royaltravelschennai.in";
+  const displayName = currentUser?.name || "Vendor Operations";
+  const displayCompany = currentUser?.businessName || "Vendor Partner Fleet";
+  const displayEmail = currentUser?.email || "vendor@grabrentals.com";
   const displayInitials = displayName
     .split(" ")
     .map((w) => w[0])
+    .filter(Boolean)
     .join("")
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || "VP";
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-3.5 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs">
@@ -109,9 +115,11 @@ export default function TopNavbar({ onMenuClick }) {
             aria-label="Notifications"
           >
             <Bell className="w-4.5 h-4.5" />
-            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center">
-              2
-            </span>
+            {notifications.length > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center">
+                {notifications.length}
+              </span>
+            )}
           </button>
 
           {notificationsOpen && (
@@ -132,23 +140,27 @@ export default function TopNavbar({ onMenuClick }) {
                   </Link>
                 </div>
                 <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                  {mockNotifications.slice(0, 3).map((n) => (
-                    <Link
-                      key={n.id}
-                      href={n.actionUrl}
-                      onClick={() => setNotificationsOpen(false)}
-                      className="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <div className="w-2 h-2 rounded-full bg-amber-500 mt-1 shrink-0" />
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-bold text-slate-900">{n.title}</p>
-                          <p className="text-[11px] text-slate-500 line-clamp-2">{n.message}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">{n.time}</p>
+                  {notifications.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-3 text-center">No new notifications</p>
+                  ) : (
+                    notifications.slice(0, 4).map((n) => (
+                      <Link
+                        key={n.id}
+                        href={n.actionUrl}
+                        onClick={() => setNotificationsOpen(false)}
+                        className="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-2 h-2 rounded-full bg-amber-500 mt-1 shrink-0" />
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-bold text-slate-900">{n.title}</p>
+                            <p className="text-[11px] text-slate-500 line-clamp-2">{n.message}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{n.time}</p>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    ))
+                  )}
                 </div>
               </div>
             </>
@@ -206,7 +218,7 @@ export default function TopNavbar({ onMenuClick }) {
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 font-semibold"
                   >
-                    <HelpCircle className="w-4 h-4 text-amber-500" /> Partner Helpline (24/7)
+                    <HelpCircle className="w-4 h-4 text-slate-400" /> Partner Helpline (24/7)
                   </Link>
                 </div>
                 <div className="pt-1">
