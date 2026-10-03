@@ -67,9 +67,41 @@ public class AuthService {
 
     private final Map<String, LoginAttemptRecord> loginAttempts = new ConcurrentHashMap<>();
 
+    public java.util.Optional<User> findUserByPhoneFlexible(String rawPhone) {
+        if (rawPhone == null || rawPhone.isBlank()) return java.util.Optional.empty();
+        String normalized = otpService.normalizePhone(rawPhone);
+        String digitsOnly = rawPhone.replaceAll("[^0-9]", "");
+        if (digitsOnly.length() > 10) {
+            digitsOnly = digitsOnly.substring(digitsOnly.length() - 10);
+        }
+
+        java.util.Optional<User> user = userRepository.findByPhone(normalized);
+        if (user.isPresent()) return user;
+
+        if (!digitsOnly.isEmpty()) {
+            user = userRepository.findByPhone(digitsOnly);
+            if (user.isPresent()) return user;
+
+            user = userRepository.findByPhone("+91" + digitsOnly);
+            if (user.isPresent()) return user;
+        }
+
+        return java.util.Optional.empty();
+    }
+
     @Transactional
     public SendOtpResponse sendOtp(SendOtpRequest request) {
-        return otpService.generateAndSendOtp(request.getPhone());
+        java.util.Optional<User> existingUser = findUserByPhoneFlexible(request.getPhone());
+        boolean userExists = existingUser.isPresent();
+
+        if ("REGISTRATION".equalsIgnoreCase(request.getPurpose()) && userExists) {
+            throw new IllegalArgumentException("An account is already registered with this mobile number. Please log in to continue.");
+        }
+
+        SendOtpResponse response = otpService.generateAndSendOtp(request.getPhone());
+        response.setUserExists(userExists);
+        existingUser.ifPresent(u -> response.setExistingRole(u.getRole() != null ? u.getRole().name() : null));
+        return response;
     }
 
     @Transactional
@@ -78,29 +110,70 @@ public class AuthService {
 
         String phone = otpService.normalizePhone(request.getPhone());
 
-        // Find existing user or auto-provision a new Customer
-        User user = userRepository.findByPhone(phone).orElseGet(() -> {
+        boolean isVendorRequest = request.getRole() != null &&
+                (request.getRole().equalsIgnoreCase("FLEET") || request.getRole().equalsIgnoreCase("VENDOR"));
+
+        java.util.concurrent.atomic.AtomicBoolean isNew = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        // Find existing user or auto-provision a new Vendor Partner or Customer
+        User user = findUserByPhoneFlexible(request.getPhone()).orElseGet(() -> {
+            isNew.set(true);
             String digitsOnly = phone.replaceAll("[^0-9]", "");
-            String placeholderEmail = digitsOnly + "@grabrentals.guest";
+            String placeholderEmail = digitsOnly + (isVendorRequest ? "@vendor.grabrentals.in" : "@grabrentals.guest");
+            String displayName = request.getName() != null && !request.getName().isBlank()
+                    ? request.getName().trim()
+                    : (isVendorRequest ? "Vendor Partner" : "Customer");
 
             User newUser = User.builder()
-                    .name("Customer")
+                    .name(displayName)
                     .phone(phone)
                     .email(placeholderEmail)
                     .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
-                    .role(Role.CUSTOMER)
+                    .role(isVendorRequest ? Role.FLEET : Role.CUSTOMER)
+                    .businessName(request.getBusinessName() != null ? request.getBusinessName().trim() : null)
                     .status(UserStatus.ACTIVE)
                     .build();
             User saved = userRepository.save(newUser);
 
-            com.grabrentals.customer.entity.CustomerProfile profile = com.grabrentals.customer.entity.CustomerProfile.builder()
-                    .user(saved)
-                    .fullName("Customer")
-                    .build();
-            customerProfileRepository.save(profile);
+            if (isVendorRequest) {
+                com.grabrentals.vendor.entity.VendorProfile vendorProfile = com.grabrentals.vendor.entity.VendorProfile.builder()
+                        .user(saved)
+                        .companyName(request.getBusinessName() != null && !request.getBusinessName().isBlank()
+                                ? request.getBusinessName().trim()
+                                : displayName)
+                        .contactPerson(displayName)
+                        .fleetSize(0)
+                        .build();
+                vendorProfileRepository.save(vendorProfile);
+            } else {
+                com.grabrentals.customer.entity.CustomerProfile profile = com.grabrentals.customer.entity.CustomerProfile.builder()
+                        .user(saved)
+                        .fullName(displayName)
+                        .build();
+                customerProfileRepository.save(profile);
+            }
 
             return saved;
         });
+
+        // If vendor request and user lacks vendor profile, ensure one is created
+        if (isVendorRequest) {
+            if (user.getRole() == Role.CUSTOMER) {
+                user.setRole(Role.FLEET);
+                userRepository.save(user);
+            }
+            if (!vendorProfileRepository.existsByUserId(user.getId())) {
+                com.grabrentals.vendor.entity.VendorProfile vendorProfile = com.grabrentals.vendor.entity.VendorProfile.builder()
+                        .user(user)
+                        .companyName(request.getBusinessName() != null && !request.getBusinessName().isBlank()
+                                ? request.getBusinessName().trim()
+                                : user.getName())
+                        .contactPerson(user.getName())
+                        .fleetSize(0)
+                        .build();
+                vendorProfileRepository.save(vendorProfile);
+            }
+        }
 
         if (user.getStatus() == UserStatus.BLOCKED) {
             throw new AccountBlockedException("Your account has been blocked. Please contact support.");
@@ -122,7 +195,7 @@ public class AuthService {
                     .status("SUCCESS")
                     .details("Customer authenticated via OTP verification")
                     .build());
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
 
         return LoginResponse.builder()
                 .accessToken(token)
@@ -133,6 +206,7 @@ public class AuthService {
                         .email(user.getEmail())
                         .role(user.getRole())
                         .build())
+                .isNewUser(isNew.get())
                 .build();
     }
 
@@ -173,7 +247,7 @@ public class AuthService {
                     .status("SUCCESS")
                     .details("New customer self-registered account")
                     .build());
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
 
         return UserResponse.fromEntity(savedUser);
     }
@@ -217,7 +291,7 @@ public class AuthService {
                     .status("WARNING")
                     .details("Vendor registered company account (PENDING admin review): " + request.getBusinessName())
                     .build());
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
 
         return UserResponse.fromEntity(savedUser);
     }
@@ -256,7 +330,7 @@ public class AuthService {
                             ? "Account temporarily locked for 15 minutes after 5 failed password attempts" 
                             : "Failed login attempt with invalid credentials (" + remaining + " attempts remaining)")
                         .build());
-            } catch (Exception ignored) {}
+            } catch (Throwable ignored) {}
 
             if (attempt.isLocked()) {
                 throw new RateLimitExceededException(
@@ -281,7 +355,7 @@ public class AuthService {
                         .status("FAILED")
                         .details("Blocked account attempted to log in")
                         .build());
-            } catch (Exception ignored) {}
+            } catch (Throwable ignored) {}
             throw new AccountBlockedException("Your account has been blocked. Please contact support.");
         }
 
@@ -305,7 +379,7 @@ public class AuthService {
                     .status("SUCCESS")
                     .details("User successfully authenticated session via credentials")
                     .build());
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
 
         return LoginResponse.builder()
                 .accessToken(token)
@@ -356,7 +430,7 @@ public class AuthService {
                         .status("SUCCESS")
                         .details("User session terminated and JWT token revoked in blacklist")
                         .build());
-            } catch (Exception ignored) {}
+            } catch (Throwable ignored) {}
         }
     }
 }

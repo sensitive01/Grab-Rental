@@ -92,7 +92,7 @@ export default function OperationsDriversPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={7} className="py-12">
-                  <LoadingAnimation inline title="Loading active chauffeurs from database..." />
+                  <LoadingAnimation inline title="Loading active chauffeurs..." />
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (

@@ -67,6 +67,24 @@ public class VendorProfile {
     @Column(name = "fleet_size")
     private Integer fleetSize;
 
+    @Column(name = "gst_document_url")
+    private String gstDocumentUrl;
+
+    @Column(name = "pan_document_url")
+    private String panDocumentUrl;
+
+    @Column(name = "bank_proof_document_url")
+    private String bankProofDocumentUrl;
+
+    @Column(name = "business_proof_document_url")
+    private String businessProofDocumentUrl;
+
+    @Column(name = "id_proof_document_url")
+    private String idProofDocumentUrl;
+
+    @Column(name = "address_proof_document_url")
+    private String addressProofDocumentUrl;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

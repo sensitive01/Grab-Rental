@@ -111,6 +111,19 @@ export const vendorApi = {
     }
   },
 
+  changePassword: async ({ currentPassword, newPassword }) => {
+    try {
+      const res = await axiosClient.put("/api/vendor/change-password", {
+        currentPassword: currentPassword ? String(currentPassword).trim() : undefined,
+        newPassword: String(newPassword).trim(),
+      });
+      return res.data;
+    } catch (err) {
+      console.warn("vendorApi.changePassword notice:", err?.response?.data || err?.message);
+      throw err;
+    }
+  },
+
   // --- Vehicles ---
   getVehicles: async () => {
     try {
@@ -128,6 +141,16 @@ export const vendorApi = {
       return res.data?.data || null;
     } catch (err) {
       console.error(`vendorApi.getVehicleById(${id}) error:`, err);
+      throw err;
+    }
+  },
+
+  createVehicle: async (data) => {
+    try {
+      const res = await axiosClient.post("/api/vendor/vehicles", data);
+      return res.data?.data || null;
+    } catch (err) {
+      console.warn("vendorApi.createVehicle notice:", err?.response?.data || err?.message);
       throw err;
     }
   },
@@ -188,7 +211,7 @@ export const vendorApi = {
       const res = await axiosClient.post("/api/vendor/drivers", data);
       return res.data?.data || null;
     } catch (err) {
-      console.error("vendorApi.createDriver error:", err);
+      console.warn("vendorApi.createDriver notice:", err?.response?.data || err?.message);
       throw err;
     }
   },
@@ -283,26 +306,36 @@ export const vendorApi = {
         vendorApi.getDrivers()
       ]);
 
+      let onboarding = null;
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("grabrentals_vendor_onboarding");
+          if (raw) onboarding = JSON.parse(raw);
+        } catch (ignored) {}
+      }
+
       const docs = [];
       let docIdx = 1;
 
       vehiclesRes.forEach(v => {
-        if (v.rcDocumentUrl || v.vehicleNumber) {
+        // 1. Vehicle Registration Certificate (RC)
+        if (v.rcDocumentUrl || v.vehicleNumber || onboarding?.rcDocument) {
           docs.push({
             id: `DOC-RC-${v.id ? v.id.slice(0, 6) : docIdx++}`,
             name: "Vehicle Registration Certificate (RC)",
             target: `${v.model || "Vehicle"} (${v.vehicleNumber})`,
             type: "Vehicle RC",
-            expiryDate: v.fitnessExpiry || "2038-03-14",
+            expiryDate: v.rcExpiry || onboarding?.rcExpiry || "2029-01-01",
             daysRemaining: 1800,
             status: "Verified",
-            fileUrl: v.rcDocumentUrl || null,
+            fileUrl: v.rcDocumentUrl || onboarding?.rcDocument || null,
             fileSize: "2.4 MB PDF"
           });
         }
 
-        if (v.insuranceDocumentUrl || v.insuranceExpiry) {
-          const expiryDate = v.insuranceExpiry || "2026-12-31";
+        // 2. Commercial Comprehensive Insurance
+        if (v.insuranceDocumentUrl || v.insuranceExpiry || onboarding?.insuranceDocument) {
+          const expiryDate = v.insuranceExpiry || onboarding?.insuranceExpiry || "2029-01-01";
           const daysRemaining = Math.max(0, Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)));
           docs.push({
             id: `DOC-INS-${v.id ? v.id.slice(0, 6) : docIdx++}`,
@@ -312,13 +345,31 @@ export const vendorApi = {
             expiryDate: expiryDate,
             daysRemaining: daysRemaining,
             status: daysRemaining < 30 ? "Expiring Soon" : "Verified",
-            fileUrl: v.insuranceDocumentUrl || null,
+            fileUrl: v.insuranceDocumentUrl || onboarding?.insuranceDocument || null,
             fileSize: "1.8 MB PDF"
           });
         }
 
-        if (v.permitDocumentUrl || v.permitExpiry) {
-          const expiryDate = v.permitExpiry || "2027-01-15";
+        // 3. Vehicle Fitness Certificate (FC)
+        if (v.fitnessDocumentUrl || v.fitnessExpiry || onboarding?.fitnessDocument) {
+          const expiryDate = v.fitnessExpiry || onboarding?.fitnessExpiry || "2029-01-01";
+          const daysRemaining = Math.max(0, Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)));
+          docs.push({
+            id: `DOC-FC-${v.id ? v.id.slice(0, 6) : docIdx++}`,
+            name: "Vehicle Fitness Certificate (FC)",
+            target: `${v.model || "Vehicle"} (${v.vehicleNumber})`,
+            type: "Fitness (FC)",
+            expiryDate: expiryDate,
+            daysRemaining: daysRemaining,
+            status: daysRemaining < 30 ? "Expiring Soon" : "Verified",
+            fileUrl: v.fitnessDocumentUrl || onboarding?.fitnessDocument || null,
+            fileSize: "1.5 MB PDF"
+          });
+        }
+
+        // 4. All India Tourist Permit (AITP)
+        if (v.permitDocumentUrl || v.permitExpiry || onboarding?.permitDocument) {
+          const expiryDate = v.permitExpiry || onboarding?.permitExpiry || "2029-01-01";
           const daysRemaining = Math.max(0, Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)));
           docs.push({
             id: `DOC-PER-${v.id ? v.id.slice(0, 6) : docIdx++}`,
@@ -328,14 +379,15 @@ export const vendorApi = {
             expiryDate: expiryDate,
             daysRemaining: daysRemaining,
             status: daysRemaining < 30 ? "Expiring Soon" : "Verified",
-            fileUrl: v.permitDocumentUrl || null,
+            fileUrl: v.permitDocumentUrl || onboarding?.permitDocument || null,
             fileSize: "1.2 MB PDF"
           });
         }
       });
 
+      // 5. Commercial Chauffeur Driving License
       driversRes.forEach(d => {
-        const expiryDate = d.licenseExpiry || "2029-08-14";
+        const expiryDate = d.licenseExpiry || onboarding?.driverLicenseExpiry || "2029-01-01";
         const daysRemaining = Math.max(0, Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)));
         docs.push({
           id: `DOC-LIC-${d.id ? d.id.slice(0, 6) : docIdx++}`,
@@ -345,14 +397,14 @@ export const vendorApi = {
           expiryDate: expiryDate,
           daysRemaining: daysRemaining,
           status: daysRemaining < 30 ? "Expiring Soon" : "Verified",
-          fileUrl: d.licenseDocumentUrl || null,
+          fileUrl: d.licenseDocumentUrl || onboarding?.driverLicenseDocument || null,
           fileSize: "980 KB JPG"
         });
       });
 
       return docs;
     } catch (err) {
-      console.error("vendorApi.getDocuments error:", err);
+      console.warn("vendorApi.getDocuments notice:", err);
       return [];
     }
   },

@@ -211,9 +211,16 @@ export default function VendorBookingsPage() {
           <Breadcrumbs items={[{ label: "Bookings" }]} />
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             Bookings Ledger
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
-              {bookings.length} Total
-            </span>
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                Loading...
+              </span>
+            ) : (
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                {bookings.length} Total
+              </span>
+            )}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
             Track confirmed, assigned, in-progress, and past completed customer trips.
@@ -256,6 +263,7 @@ export default function VendorBookingsPage() {
       <DataTable
         columns={columns}
         data={tabFilteredBookings}
+        loading={loading}
         keyField="id"
         defaultPageSize={10}
         pageSizeOptions={[5, 10, 25, 50]}

@@ -245,7 +245,7 @@ export default function EditDriverPage({ params }) {
     return (
       <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-        <p className="text-xs font-semibold">Loading chauffeur details from backend...</p>
+        <p className="text-xs font-semibold">Loading chauffeur details...</p>
       </div>
     );
   }

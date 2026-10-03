@@ -13,4 +13,6 @@ public class SendOtpResponse {
     private String phone;
     private int expiresInSeconds;
     private String devOtp; // Provided for testing convenience
+    private boolean userExists;
+    private String existingRole;
 }

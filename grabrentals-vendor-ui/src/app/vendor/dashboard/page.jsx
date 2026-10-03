@@ -17,7 +17,9 @@ import {
   FileText,
   CreditCard,
   XCircle,
-  Loader2
+  Loader2,
+  ArrowRight,
+  RefreshCw
 } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -28,10 +30,11 @@ import Toast from "@/components/ui/Toast";
 import DataTable from "@/components/ui/DataTable";
 import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getOnboardingData } from "@/lib/auth";
 
 export default function VendorDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [onboardingData, setOnboardingData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [vehicles, setVehicles] = useState([]);
@@ -68,6 +71,7 @@ export default function VendorDashboard() {
 
   useEffect(() => {
     setCurrentUser(getCurrentUser());
+    setOnboardingData(getOnboardingData());
     loadData();
   }, []);
 
@@ -156,6 +160,44 @@ export default function VendorDashboard() {
         type={actionType === "accept" ? "success" : "danger"}
       />
 
+      {/* Onboarding Pending Resume Banner */}
+      {onboardingData && !onboardingData.completed && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shrink-0 mt-0.5">
+              <Car className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                  Partner Setup Incomplete
+                </span>
+                <span className="text-xs text-slate-500 font-medium">
+                  {onboardingData.step === 1 && "Step 1: Personal Details Saved"}
+                  {onboardingData.step === 2 && "Step 2: Business Profile Saved"}
+                  {onboardingData.step === 3 && "Step 3: Operating Model Saved"}
+                  {onboardingData.step >= 4 && "Step 4: Vehicle Registration Pending"}
+                </span>
+              </div>
+              <h2 className="text-base font-black text-slate-900 mt-1">
+                Complete your fleet setup to start receiving customer trips
+              </h2>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Your previously entered information is saved. Finish adding your vehicle and chauffeur details anytime.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/register?resume=true"
+            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xs shrink-0 cursor-pointer"
+          >
+            <span>Resume Setup</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-slate-800">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -181,7 +223,7 @@ export default function VendorDashboard() {
               href="/vendor/bookings/requests"
               className="px-3 sm:px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 text-center"
             >
-              <Sparkles className="w-4 h-4 shrink-0" /> View Requests ({requests.length})
+              <Sparkles className="w-4 h-4 shrink-0" /> View Requests ({loading ? "..." : requests.length})
             </Link>
             <Link
               href="/vendor/vehicles/add"
@@ -189,6 +231,15 @@ export default function VendorDashboard() {
             >
               + Add Vehicle
             </Link>
+            <button
+              type="button"
+              onClick={loadData}
+              disabled={loading}
+              title="Refresh Dashboard"
+              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition-colors border border-slate-700 flex items-center justify-center disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
+            </button>
           </div>
         </div>
       </div>
@@ -197,42 +248,48 @@ export default function VendorDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <StatCard
           title="Total Vehicles"
-          value={loading ? "..." : totalVehiclesCount}
+          value={totalVehiclesCount}
+          loading={loading}
           subtitle="Registered fleet"
           icon={Car}
           iconColor="text-blue-600 bg-blue-50 border-blue-100"
         />
         <StatCard
           title="Available"
-          value={loading ? "..." : availableCount}
+          value={availableCount}
+          loading={loading}
           subtitle="Ready for dispatch"
           icon={CheckCircle2}
           iconColor="text-emerald-600 bg-emerald-50 border-emerald-100"
         />
         <StatCard
           title="Active Bookings"
-          value={loading ? "..." : activeBookingsCount}
+          value={activeBookingsCount}
+          loading={loading}
           subtitle="Confirmed / Scheduled"
           icon={CalendarCheck}
           iconColor="text-amber-600 bg-amber-50 border-amber-100"
         />
         <StatCard
           title="Pending Requests"
-          value={loading ? "..." : requests.length}
+          value={requests.length}
+          loading={loading}
           subtitle="Action required"
           icon={Clock}
           iconColor="text-rose-600 bg-rose-50 border-rose-100"
         />
         <StatCard
           title="Active Trips"
-          value={loading ? "..." : activeTripsCount}
+          value={activeTripsCount}
+          loading={loading}
           subtitle="Live on highway"
           icon={MapPin}
           iconColor="text-purple-600 bg-purple-50 border-purple-100"
         />
         <StatCard
           title="Total Earnings"
-          value={loading ? "..." : formatINR(netEarnings)}
+          value={formatINR(netEarnings)}
+          loading={loading}
           trend="+100% Real-time"
           trendPositive={true}
           subtitle="Net vendor payout"
@@ -262,7 +319,14 @@ export default function VendorDashboard() {
             </div>
           </div>
 
-          <AreaLineChart data={chartData} height={230} strokeColor="#f59e0b" />
+          {loading ? (
+            <div className="h-[230px] flex flex-col items-center justify-center text-slate-400 gap-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <Loader2 className="w-7 h-7 animate-spin text-amber-500" />
+              <p className="text-xs font-semibold text-slate-600">Updating revenue chart...</p>
+            </div>
+          ) : (
+            <AreaLineChart data={chartData} height={230} strokeColor="#f59e0b" />
+          )}
         </div>
 
         {/* Chart 2: Vehicle Utilization Donut */}
@@ -276,7 +340,14 @@ export default function VendorDashboard() {
             </p>
           </div>
 
-          <DonutChart data={donutData} size={150} />
+          {loading ? (
+            <div className="h-[150px] flex flex-col items-center justify-center text-slate-400 gap-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+              <p className="text-xs font-semibold text-slate-600">Calculating fleet status...</p>
+            </div>
+          ) : (
+            <DonutChart data={donutData} size={150} />
+          )}
 
           <Link
             href="/vendor/vehicles/availability"
@@ -313,7 +384,12 @@ export default function VendorDashboard() {
             </Link>
           </div>
 
-          {requests.length === 0 ? (
+          {loading ? (
+            <div className="p-8 flex flex-col items-center justify-center text-slate-400 gap-2.5">
+              <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+              <p className="text-xs font-semibold text-slate-600">Checking pending requests...</p>
+            </div>
+          ) : requests.length === 0 ? (
             <div className="p-8 text-center text-slate-400 text-xs">
               <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
               All incoming booking requests have been answered!
@@ -401,7 +477,12 @@ export default function VendorDashboard() {
           </div>
 
           <div className="space-y-3">
-            {activeOrScheduledTrips.length === 0 ? (
+            {loading ? (
+              <div className="p-8 flex flex-col items-center justify-center text-slate-400 gap-2.5">
+                <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                <p className="text-xs font-semibold text-slate-600">Loading trip dispatches...</p>
+              </div>
+            ) : activeOrScheduledTrips.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
                 No active trips currently in transit.
               </div>
@@ -544,6 +625,7 @@ export default function VendorDashboard() {
             }
           ]}
           data={bookings}
+          loading={loading}
           keyField="id"
           defaultPageSize={5}
           pageSizeOptions={[5, 10, 20]}

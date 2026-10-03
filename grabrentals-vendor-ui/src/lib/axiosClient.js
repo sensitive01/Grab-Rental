@@ -41,7 +41,11 @@ axiosClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401 && typeof window !== "undefined") {
-        if (!window.location.pathname.startsWith("/login")) {
+        const isAuthPage =
+          window.location.pathname.startsWith("/login") ||
+          window.location.pathname.startsWith("/register");
+
+        if (!isAuthPage) {
           console.warn("Vendor session expired or unauthorized (401). Redirecting to login...");
           localStorage.removeItem("grabrentals_vendor_token");
           localStorage.removeItem("grabrentals_vendor_session");

@@ -8,8 +8,10 @@ export default function StatCard({
   trendPositive = true,
   icon: Icon,
   iconColor = "text-amber-600 bg-amber-50 border-amber-100",
-  onClick
+  onClick,
+  loading = false
 }) {
+  const isLoading = loading || value === "...";
   const isLongValue = typeof value === "string" && value.length > 7;
 
   return (
@@ -35,14 +37,18 @@ export default function StatCard({
         </div>
 
         <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span
-            className={`${
-              isLongValue ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
-            } font-black text-slate-900 tracking-tight`}
-          >
-            {value}
-          </span>
-          {trend && (
+          {isLoading ? (
+            <div className="h-8 w-24 bg-slate-200/80 animate-pulse rounded-lg my-0.5" />
+          ) : (
+            <span
+              className={`${
+                isLongValue ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
+              } font-black text-slate-900 tracking-tight`}
+            >
+              {value}
+            </span>
+          )}
+          {trend && !isLoading && (
             <span
               className={`inline-flex items-center text-xs font-bold px-1.5 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
                 trendPositive
@@ -61,7 +67,9 @@ export default function StatCard({
         </div>
       </div>
 
-      {subtitle && (
+      {isLoading ? (
+        <div className="h-3 w-16 bg-slate-100 animate-pulse rounded mt-2" />
+      ) : subtitle && (
         <p
           title={subtitle}
           className="mt-2 text-xs text-slate-500 font-medium truncate"
@@ -72,3 +80,4 @@ export default function StatCard({
     </div>
   );
 }
+

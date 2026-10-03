@@ -22,18 +22,59 @@ import {
   AlertCircle
 } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
+import { vendorApi } from "@/lib/vendorApi";
 
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState(null);
+  const [requestsCount, setRequestsCount] = useState(0);
+  const [expiringDocsCount, setExpiringDocsCount] = useState(0);
+  const [activeTripsCount, setActiveTripsCount] = useState(0);
 
   useEffect(() => {
     const user = getCurrentUser();
     if (user) setCurrentUser(user);
-  }, []);
 
-  const displayName = currentUser?.name || "K. Subramanian";
-  const displayCompany = currentUser?.businessName || "Royal Travels Chennai";
+    async function loadCounts() {
+      try {
+        const [reqs, docs, bookings, prof] = await Promise.all([
+          vendorApi.getBookingRequests().catch(() => []),
+          vendorApi.getDocuments().catch(() => []),
+          vendorApi.getBookings().catch(() => []),
+          vendorApi.getProfile().catch(() => null)
+        ]);
+
+        if (prof) {
+          setCurrentUser((prev) => ({
+            ...prev,
+            businessName: prof.businessName || prev?.businessName,
+            name: prof.ownerName || prev?.name
+          }));
+        }
+
+        setRequestsCount(Array.isArray(reqs) ? reqs.length : 0);
+
+        const expiring = Array.isArray(docs)
+          ? docs.filter((d) => (d.status || "").toLowerCase().includes("expiring")).length
+          : 0;
+        setExpiringDocsCount(expiring);
+
+        const active = Array.isArray(bookings)
+          ? bookings.filter((b) => (b.status || "").toLowerCase().includes("active") || (b.status || "").toLowerCase().includes("transit")).length
+          : 0;
+        setActiveTripsCount(active);
+      } catch (err) {
+        console.warn("Could not load sidebar counts:", err);
+      }
+    }
+
+    loadCounts();
+  }, [pathname]);
+
+  const displayName = currentUser?.name || "Vendor Partner";
+  const displayCompany = currentUser?.businessName && currentUser.businessName !== "Fleet Partner"
+    ? currentUser.businessName
+    : (currentUser?.name ? `${currentUser.name} · Fleet` : "Independent Fleet Partner");
   const displayInitials = displayName
     .split(" ")
     .map((w) => w[0])
@@ -262,9 +303,11 @@ export default function Sidebar({ isOpen, onClose }) {
                 <span>Bookings</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-black text-[10px]">
-                  2
-                </span>
+                {requestsCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-black text-[10px]">
+                    {requestsCount}
+                  </span>
+                )}
                 <ChevronDown
                   className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
                     bookingsOpen ? "rotate-180" : ""
@@ -296,9 +339,11 @@ export default function Sidebar({ isOpen, onClose }) {
                   }`}
                 >
                   <span>New Requests</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-black text-[9px]">
-                    2 New
-                  </span>
+                  {requestsCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-black text-[9px]">
+                      {requestsCount} New
+                    </span>
+                  )}
                 </Link>
                 <Link
                   href="/vendor/bookings/assigned"
@@ -360,7 +405,9 @@ export default function Sidebar({ isOpen, onClose }) {
                   }`}
                 >
                   <span>Active Live Trips</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {activeTripsCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  )}
                 </Link>
                 <Link
                   href="/vendor/trips/completed"
@@ -421,15 +468,17 @@ export default function Sidebar({ isOpen, onClose }) {
               <FileText className={`w-4 h-4 shrink-0 ${pathname === "/vendor/documents" ? "text-slate-950" : "text-amber-400"}`} />
               <span>Documents & Expiries</span>
             </div>
-            <span
-              className={`px-1.5 py-0.2 rounded-full font-black text-[10px] min-w-[18px] text-center ${
-                pathname === "/vendor/documents"
-                  ? "bg-slate-950 text-amber-400"
-                  : "bg-amber-500 text-slate-950"
-              }`}
-            >
-              3
-            </span>
+            {expiringDocsCount > 0 && (
+              <span
+                className={`px-1.5 py-0.2 rounded-full font-black text-[10px] min-w-[18px] text-center ${
+                  pathname === "/vendor/documents"
+                    ? "bg-slate-950 text-amber-400"
+                    : "bg-amber-500 text-slate-950"
+                }`}
+              >
+                {expiringDocsCount}
+              </span>
+            )}
           </Link>
 
         </nav>

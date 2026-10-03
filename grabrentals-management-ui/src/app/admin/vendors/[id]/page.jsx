@@ -31,7 +31,7 @@ export default function VendorDetailPage({ params }) {
   }, [id]);
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500">Loading vendor dossier...</div>;
+    return <div className="p-8 text-center text-slate-500">Loading vendor profile...</div>;
   }
 
   if (!vendor) {
@@ -50,7 +50,7 @@ export default function VendorDetailPage({ params }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Vendor Dossier: ${vendor.name}`}
+        title={`Vendor Profile: ${vendor.name}`}
         subtitle={`Partner since ${vendor.joinedDate} • GSTIN: ${vendor.gstNumber}`}
         breadcrumbs={[
           { label: "Admin", href: "/admin/dashboard" },

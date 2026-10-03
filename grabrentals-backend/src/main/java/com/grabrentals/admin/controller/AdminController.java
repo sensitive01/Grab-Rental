@@ -95,9 +95,22 @@ public class AdminController {
     }
 
     @GetMapping("/audit-logs")
-    public ResponseEntity<ApiResponse<List<com.grabrentals.audit.dto.AuditLogResponse>>> getAuditLogs(
-            @RequestParam(required = false) String category
+    public ResponseEntity<ApiResponse<?>> getAuditLogs(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String event,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDir
     ) {
+        if (page != null && size != null) {
+            com.grabrentals.common.response.PageResponse<com.grabrentals.audit.dto.AuditLogResponse> paged =
+                    auditLogService.getAuditLogsPaginated(category, status, event, search, page, size, sortBy, sortDir);
+            return ResponseEntity.ok(ApiResponse.success("Audit logs retrieved successfully", paged));
+        }
+
         List<com.grabrentals.audit.dto.AuditLogResponse> logs = auditLogService.getAuditLogs(category);
         return ResponseEntity.ok(ApiResponse.success("Audit logs retrieved successfully", logs));
     }

@@ -147,6 +147,7 @@ export default function CompletedTripsPage() {
       <DataTable
         columns={columns}
         data={completedTrips}
+        loading={loading}
         keyField="id"
         defaultPageSize={10}
         pageSizeOptions={[5, 10, 20]}

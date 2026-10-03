@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 export function Table({ children, className }) {
   return (
@@ -42,6 +42,43 @@ export function TableRow({ children, className, onClick, isClickable = false }) 
 
 export function TableHead({ children, className }) {
   return <th scope="col" className={cn("px-4 py-3.5 text-xs font-bold text-slate-700", className)}>{children}</th>;
+}
+
+export function SortableHeader({ columnKey, label, currentSort = {}, onSort, align = "left", className = "" }) {
+  const isActive = currentSort?.key === columnKey;
+  const isAsc = currentSort?.direction === "asc";
+
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => onSort && onSort(columnKey)}
+        className={cn(
+          "group inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] hover:text-blue-600 transition-colors cursor-pointer select-none",
+          isActive ? "text-blue-600 font-extrabold" : "text-slate-700",
+          align === "right" && "justify-end w-full"
+        )}
+      >
+        <span>{label}</span>
+        <span
+          className={cn(
+            "p-0.5 rounded transition-colors",
+            isActive ? "bg-blue-50 text-blue-600" : "text-slate-400 group-hover:text-blue-600 group-hover:bg-slate-100"
+          )}
+        >
+          {isActive ? (
+            isAsc ? (
+              <ArrowUp className="w-3.5 h-3.5 stroke-[2.5]" />
+            ) : (
+              <ArrowDown className="w-3.5 h-3.5 stroke-[2.5]" />
+            )
+          ) : (
+            <ArrowUpDown className="w-3.5 h-3.5 stroke-[1.8] opacity-50 group-hover:opacity-100" />
+          )}
+        </span>
+      </button>
+    </TableHead>
+  );
 }
 
 export function TableCell({ children, className }) {

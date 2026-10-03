@@ -185,26 +185,30 @@ export default function VendorEarningsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Gross Revenue"
-          value={loading ? "..." : formatINR(totalGross)}
+          value={formatINR(totalGross)}
+          loading={loading}
           change="Real-time gross bookings"
           trend="up"
           icon={TrendingUp}
         />
         <StatCard
           title="Net Transferred"
-          value={loading ? "..." : formatINR(totalNet)}
+          value={formatINR(totalNet)}
+          loading={loading}
           subtitle="Vendor net payout share"
           icon={CreditCard}
         />
         <StatCard
           title="Pending Next Settlement"
-          value={loading ? "..." : formatINR(pendingPayout)}
+          value={formatINR(pendingPayout)}
+          loading={loading}
           subtitle="Automated weekly NEFT"
           icon={Calendar}
         />
         <StatCard
           title="Average Booking Net"
-          value={loading ? "..." : formatINR(averagePerBooking)}
+          value={formatINR(averagePerBooking)}
+          loading={loading}
           subtitle={`Across ${bookings.length} total bookings`}
           icon={TrendingUp}
         />
@@ -270,6 +274,7 @@ export default function VendorEarningsPage() {
         <DataTable
           columns={columns}
           data={bookings}
+          loading={loading}
           keyField="id"
           defaultPageSize={10}
           pageSizeOptions={[5, 10, 25, 50]}

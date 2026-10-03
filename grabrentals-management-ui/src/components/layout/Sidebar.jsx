@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { operationsApi } from "@/lib/operationsApi";
+import { adminApi } from "@/lib/adminApi";
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -90,7 +91,6 @@ export const ADMIN_NAV = [
       { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "Customers", href: "/admin/customers", icon: Users },
       { label: "Vendors", href: "/admin/vendors", icon: Building2 },
-      { label: "Vendor Approvals", href: "/admin/vendors/approval", icon: CheckCircle },
       { label: "Operations Staff", href: "/admin/operations-users", icon: ShieldCheck },
     ],
   },
@@ -127,8 +127,6 @@ export const ADMIN_NAV = [
       { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldCheck },
       { label: "System Settings", href: "/admin/settings", icon: Sliders },
       { label: "Audit Logs", href: "/admin/audit-logs", icon: History },
-      { label: "Admin Profile", href: "/admin/profile", icon: User },
-      { label: "Change Password", href: "/admin/change-password", icon: KeyRound },
     ],
   },
 ];
@@ -141,6 +139,7 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
   const [counts, setCounts] = useState({
     pendingAllocations: 0,
     activeTrips: 0,
+    pendingApprovals: 0,
   });
 
   useEffect(() => {
@@ -150,10 +149,22 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
         if (role === "OPERATIONS") {
           const res = await operationsApi.getKPIs();
           if (isMounted && res?.data) {
-            setCounts({
+            setCounts((prev) => ({
+              ...prev,
               pendingAllocations: res.data.pendingAllocations || 0,
               activeTrips: res.data.activeTrips || 0,
-            });
+            }));
+          }
+        } else if (role === "ADMIN") {
+          const res = await adminApi.getVendors();
+          if (isMounted && res?.data) {
+            const pending = res.data.filter(
+              (v) => v.status === "PENDING_APPROVAL" || v.status === "PENDING"
+            ).length;
+            setCounts((prev) => ({
+              ...prev,
+              pendingApprovals: pending,
+            }));
           }
         }
       } catch {
@@ -249,6 +260,8 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
                     badgeText = counts.pendingAllocations > 0 ? String(counts.pendingAllocations) : null;
                   } else if (item.href === "/operations/trips/active") {
                     badgeText = counts.activeTrips > 0 ? String(counts.activeTrips) : null;
+                  } else if (item.href === "/admin/vendors") {
+                    badgeText = counts.pendingApprovals > 0 ? String(counts.pendingApprovals) : null;
                   }
 
                   return (

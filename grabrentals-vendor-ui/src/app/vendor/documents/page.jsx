@@ -25,6 +25,7 @@ import { vendorApi } from "@/lib/vendorApi";
 export default function VendorDocumentsPage() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -54,10 +55,17 @@ export default function VendorDocumentsPage() {
     });
   }, [documents, selectedCategory]);
 
-  const handleUploadNew = (e) => {
+  const handleUploadNew = async (e) => {
     e.preventDefault();
-    setUploadModalOpen(false);
-    setToastMessage("Document uploaded successfully and linked to platform fleet compliance!");
+    try {
+      setUploading(true);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      setUploadModalOpen(false);
+      setToastMessage("Document uploaded successfully and linked to platform fleet compliance!");
+      await fetchDocs();
+    } finally {
+      setUploading(false);
+    }
   };
 
   const columns = useMemo(() => [
@@ -206,9 +214,11 @@ export default function VendorDocumentsPage() {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400"
+              disabled={uploading}
+              className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
             >
-              Submit for Verification
+              {uploading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {uploading ? "Submitting..." : "Submit for Verification"}
             </button>
           </div>
         </form>
@@ -220,21 +230,39 @@ export default function VendorDocumentsPage() {
           <Breadcrumbs items={[{ label: "Compliance", href: "/vendor/documents" }, { label: "Documents" }]} />
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             Statutory Documents & Expiries
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
-              {documents.length} Records
-            </span>
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                Loading...
+              </span>
+            ) : (
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                {documents.length} Records
+              </span>
+            )}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
             Track RTO registrations, tourist permits, fitness certificates, and chauffeur commercial licenses.
           </p>
         </div>
 
-        <button
-          onClick={() => setUploadModalOpen(true)}
-          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-        >
-          <Upload className="w-4 h-4" /> Upload Document
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={fetchDocs}
+            disabled={loading}
+            title="Refresh Documents"
+            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-2xs cursor-pointer flex items-center justify-center disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-600" : ""}`} />
+          </button>
+          <button
+            onClick={() => setUploadModalOpen(true)}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Upload className="w-4 h-4" /> Upload Document
+          </button>
+        </div>
       </div>
 
       {/* Expiring Alert Banner */}
@@ -266,6 +294,7 @@ export default function VendorDocumentsPage() {
       <DataTable
         columns={columns}
         data={filteredDocuments}
+        loading={loading}
         keyField="id"
         defaultPageSize={10}
         pageSizeOptions={[5, 10, 25, 50]}

@@ -283,20 +283,20 @@ export default function AdminUsersDirectoryPage() {
         if (isManualSync) {
           setToast({
             type: "success",
-            message: `Retrieved ${res.data.length} records from database!`,
+            message: `Retrieved ${res.data.length} user records successfully`,
           });
         }
       } else {
         if (!silent) setUsers([]);
         setToast({
           type: "error",
-          message: res.error || "Could not connect to database.",
+          message: res.error || "Could not connect to server.",
         });
       }
     } catch (err) {
       console.error(err);
       if (!silent) setUsers([]);
-      setToast({ type: "error", message: "Failed to load database users: " + err.message });
+      setToast({ type: "error", message: "Failed to load users: " + err.message });
     } finally {
       setLoading(false);
       setSyncing(false);
@@ -319,14 +319,14 @@ export default function AdminUsersDirectoryPage() {
       await adminApi.updateUserStatus(userId, newStatus);
       setToast({
         type: "success",
-        message: `User status successfully updated to ${newStatus} in database`,
+        message: `User status successfully updated to ${newStatus}`,
       });
       // Update local state immediately
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
       );
     } catch (err) {
-      setToast({ type: "error", message: err.message || "Failed to update user status in database" });
+      setToast({ type: "error", message: err.message || "Failed to update user status" });
     }
   }
 
@@ -466,7 +466,7 @@ export default function AdminUsersDirectoryPage() {
 
       <PageHeader
         title="Platform Users Directory"
-        subtitle="Live directory directly connected to PostgreSQL database via Spring Boot REST API"
+        subtitle="Directory of registered customers, vendor partners, operations dispatchers, and administrators"
         breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Users" }]}
         action={
           <div className="flex items-center gap-2.5">
@@ -477,7 +477,7 @@ export default function AdminUsersDirectoryPage() {
               isLoading={syncing}
               onClick={() => loadUsers(true)}
             >
-              Refresh Database Users
+              Refresh Directory
             </Button>
             <Button
               variant="primary"
@@ -653,7 +653,7 @@ export default function AdminUsersDirectoryPage() {
                 <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                   <div className="flex flex-col items-center gap-2">
                     <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-                    <span className="font-medium text-xs">Connecting to backend user directory...</span>
+                    <span className="font-medium text-xs">Loading user directory...</span>
                   </div>
                 </TableCell>
               </TableRow>
@@ -926,7 +926,7 @@ export default function AdminUsersDirectoryPage() {
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}
         title="Add New User Account"
-        subtitle="Create real database credentials for Vendors, Operations Staff, or Customers"
+        subtitle="Create portal credentials for Vendors, Operations Staff, or Customers"
         size="lg"
       >
         <form onSubmit={handleCreateUser} className="space-y-4">
@@ -1147,7 +1147,7 @@ export default function AdminUsersDirectoryPage() {
                 { value: "BLOCKED", label: "BLOCKED (Access Denied)" },
                 { value: "PENDING_APPROVAL", label: "PENDING_APPROVAL (Under Review)" },
               ]}
-              helperText="Operational state in PostgreSQL database"
+              helperText="Operational status for account access"
             />
           </div>
 
@@ -1196,7 +1196,7 @@ export default function AdminUsersDirectoryPage() {
         isOpen={!!userToDelete}
         onClose={() => !deletingUser && setUserToDelete(null)}
         title="Delete User Account"
-        description="Permanently remove this user and their associated data from PostgreSQL."
+        description="Permanently remove this user and their associated data."
         size="md"
       >
         <div className="space-y-4">

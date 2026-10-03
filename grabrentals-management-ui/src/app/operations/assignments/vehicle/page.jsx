@@ -111,7 +111,7 @@ export default function VehicleAssignmentPage() {
             Loading Fast Allocator
           </h3>
           <p className="mt-1.5 text-xs text-slate-500 max-w-sm">
-            Fetching unassigned bookings, available commercial fleet, and active chauffeurs from database...
+            Fetching unassigned bookings, available commercial fleet, and active chauffeurs...
           </p>
 
           {/* Skeleton progress pills */}

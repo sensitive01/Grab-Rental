@@ -112,7 +112,7 @@ export default function AdminDashboardPage() {
         breadcrumbs={[{ label: "Admin" }, { label: "Executive Dashboard" }]}
         action={
           <div className="flex items-center gap-2">
-            <Link href="/admin/vendors/approval">
+            <Link href="/admin/vendors?tab=approvals">
               <Button variant="secondary" size="sm" icon={Building2}>
                 Vendor Approvals ({loading ? "..." : kpis?.pendingVendorApprovals ?? 1})
               </Button>
@@ -184,7 +184,7 @@ export default function AdminDashboardPage() {
             {loading ? "..." : kpis?.pendingVendorApprovals ?? 1}
           </h3>
           <Link
-            href="/admin/vendors/approval"
+            href="/admin/vendors?tab=approvals"
             className="text-[10px] text-amber-700 font-bold hover:underline mt-1 block"
           >
             Review applications ➔

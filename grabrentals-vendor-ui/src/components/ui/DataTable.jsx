@@ -258,9 +258,15 @@ export default function DataTable({
 
       {/* Loading State */}
       {loading ? (
-        <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-          <p className="text-xs font-semibold text-slate-600">Loading records...</p>
+        <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full border-2 border-amber-200 border-t-amber-500 animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+            </div>
+          </div>
+          <p className="text-xs font-bold text-slate-700 tracking-wide">Loading records...</p>
+          <p className="text-[11px] text-slate-400">Please wait while information is updated</p>
         </div>
       ) : paginatedData.length === 0 ? (
         /* Empty State */

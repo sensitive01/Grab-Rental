@@ -68,6 +68,7 @@ public class VendorVehicleService {
                 .rcDocumentUrl(request.getRcDocumentUrl())
                 .insuranceDocumentUrl(request.getInsuranceDocumentUrl())
                 .permitDocumentUrl(request.getPermitDocumentUrl())
+                .fitnessDocumentUrl(request.getFitnessDocumentUrl())
                 .build();
 
         Vehicle saved = vehicleRepository.save(vehicle);
@@ -157,6 +158,7 @@ public class VendorVehicleService {
         if (request.getRcDocumentUrl() != null && !request.getRcDocumentUrl().isBlank()) vehicle.setRcDocumentUrl(request.getRcDocumentUrl().trim());
         if (request.getInsuranceDocumentUrl() != null && !request.getInsuranceDocumentUrl().isBlank()) vehicle.setInsuranceDocumentUrl(request.getInsuranceDocumentUrl().trim());
         if (request.getPermitDocumentUrl() != null && !request.getPermitDocumentUrl().isBlank()) vehicle.setPermitDocumentUrl(request.getPermitDocumentUrl().trim());
+        if (request.getFitnessDocumentUrl() != null && !request.getFitnessDocumentUrl().isBlank()) vehicle.setFitnessDocumentUrl(request.getFitnessDocumentUrl().trim());
 
         Vehicle saved = vehicleRepository.save(vehicle);
         Driver driver = driverRepository.findByAssignedVehicleId(vehicleId).orElse(null);

@@ -32,13 +32,27 @@ export default function TopNavbar({ onMenuClick }) {
       setCurrentUser(user);
     }
 
+    vendorApi.getProfile()
+      .then(p => {
+        if (p) {
+          setCurrentUser(prev => ({
+            ...prev,
+            businessName: p.businessName || prev?.businessName,
+            name: p.ownerName || prev?.name
+          }));
+        }
+      })
+      .catch(() => {});
+
     vendorApi.getNotifications()
       .then(res => setNotifications(res))
       .catch(() => {});
   }, []);
 
-  const displayName = currentUser?.name || "Vendor Operations";
-  const displayCompany = currentUser?.businessName || "Vendor Partner Fleet";
+  const displayName = currentUser?.name || "Vendor Partner";
+  const displayCompany = currentUser?.businessName && currentUser.businessName !== "Fleet Partner"
+    ? currentUser.businessName
+    : "Fleet Partner";
   const displayEmail = currentUser?.email || "vendor@grabrentals.com";
   const displayInitials = displayName
     .split(" ")

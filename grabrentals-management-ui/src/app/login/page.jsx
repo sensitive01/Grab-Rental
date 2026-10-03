@@ -208,7 +208,7 @@ export default function LoginPage() {
                 </div>
                 <div className="text-[11px] text-slate-400 font-mono">admin@grabrentals.com</div>
                 <div className="text-[10px] text-blue-400/80 mt-1 font-sans">
-                  Target: /admin/dashboard
+                  Platform Governance & Controls
                 </div>
               </button>
 
@@ -223,17 +223,11 @@ export default function LoginPage() {
                 </div>
                 <div className="text-[11px] text-slate-400 font-mono">ops@grabrentals.com</div>
                 <div className="text-[10px] text-amber-400/80 mt-1 font-sans">
-                  Target: /operations/dashboard
+                  Fleet Dispatch & Trip Tracking
                 </div>
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Security badge note */}
-        <div className="mt-6 text-center text-xs text-slate-500 flex items-center justify-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Spring Security JWT Ready • Role Protected Routes</span>
         </div>
       </div>
     </div>

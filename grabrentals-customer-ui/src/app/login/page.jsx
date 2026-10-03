@@ -99,7 +99,7 @@ export default function LoginPage() {
       setCanResend(false);
       setSuccessMessage(`OTP sent successfully to +91 ${cleaned.slice(-10)}`);
     } catch (err) {
-      setErrorMessage(err.message || "Unable to send OTP. Please ensure the backend is running.");
+      setErrorMessage(err.message || "Unable to send verification code. Please try again.");
     } finally {
       setIsLoading(false);
     }

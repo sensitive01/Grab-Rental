@@ -116,7 +116,7 @@ export default function OperationsBookingsPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={9} className="py-12">
-                  <LoadingAnimation inline title="Loading bookings from database..." />
+                  <LoadingAnimation inline title="Loading bookings..." />
                 </TableCell>
               </TableRow>
             ) : paginated.length === 0 ? (

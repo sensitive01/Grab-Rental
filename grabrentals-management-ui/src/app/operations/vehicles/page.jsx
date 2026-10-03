@@ -94,7 +94,7 @@ export default function OperationsVehiclesPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={7} className="py-12">
-                  <LoadingAnimation inline title="Loading fleet vehicles from database..." />
+                  <LoadingAnimation inline title="Loading fleet vehicles..." />
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (

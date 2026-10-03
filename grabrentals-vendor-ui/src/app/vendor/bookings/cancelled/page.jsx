@@ -142,6 +142,7 @@ export default function CancelledBookingsPage() {
       <DataTable
         columns={columns}
         data={cancelledTrips}
+        loading={loading}
         keyField="id"
         defaultPageSize={10}
         pageSizeOptions={[5, 10, 20]}

@@ -38,6 +38,7 @@ public class VehicleResponse {
     private String rcDocumentUrl;
     private String insuranceDocumentUrl;
     private String permitDocumentUrl;
+    private String fitnessDocumentUrl;
     private UUID assignedDriverId;
     private String assignedDriverName;
     private String assignedDriverPhone;
@@ -82,6 +83,7 @@ public class VehicleResponse {
                 .rcDocumentUrl(vehicle.getRcDocumentUrl())
                 .insuranceDocumentUrl(vehicle.getInsuranceDocumentUrl())
                 .permitDocumentUrl(vehicle.getPermitDocumentUrl())
+                .fitnessDocumentUrl(vehicle.getFitnessDocumentUrl())
                 .assignedDriverId(driverId)
                 .assignedDriverName(driverName)
                 .assignedDriverPhone(driverPhone)

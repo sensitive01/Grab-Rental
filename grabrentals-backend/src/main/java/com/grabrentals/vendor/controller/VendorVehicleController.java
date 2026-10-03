@@ -33,6 +33,7 @@ public class VendorVehicleController {
     private final VendorVehicleService vendorVehicleService;
     private final CloudinaryService cloudinaryService;
 
+    @PreAuthorize("permitAll()")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadFile(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -41,7 +42,9 @@ public class VendorVehicleController {
             @RequestParam(value = "preset", required = false) String preset,
             HttpServletRequest request
     ) {
-        log.info("[HTTP API] POST /api/fleet/vehicles/upload by vendor '{}' ({}) [preset: {}]", userDetails.getEmail(), userDetails.getId(), preset);
+        String userEmail = userDetails != null ? userDetails.getEmail() : "onboarding-partner";
+        String userId = userDetails != null && userDetails.getId() != null ? userDetails.getId().toString() : "new";
+        log.info("[HTTP API] POST /api/fleet/vehicles/upload by vendor '{}' ({}) [preset: {}]", userEmail, userId, preset);
         String url = cloudinaryService.uploadFile(file, folder, preset);
         return ResponseEntity.ok(ApiResponse.<Map<String, String>>builder()
                 .success(true)

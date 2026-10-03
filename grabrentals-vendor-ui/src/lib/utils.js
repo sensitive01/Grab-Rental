@@ -1,3 +1,8 @@
+// Class name merger utility
+export function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
 // Currency Formatter for Indian Rupee (INR)
 export function formatINR(amount) {
   if (amount === undefined || amount === null) return "₹0";

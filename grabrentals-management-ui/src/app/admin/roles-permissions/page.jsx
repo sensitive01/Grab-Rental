@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, SearchInput } from "@/components/ui/Table";
 import { Toast } from "@/components/ui/Toast";
 import { ShieldCheck, Check, Save } from "lucide-react";
 
@@ -21,17 +21,22 @@ const INITIAL_PERMISSIONS = [
 
 export default function AdminRolesPermissionsPage() {
   const [matrix, setMatrix] = useState(INITIAL_PERMISSIONS);
+  const [search, setSearch] = useState("");
   const [toast, setToast] = useState(null);
 
-  function togglePermission(idx, role) {
+  function togglePermission(originalIdx, role) {
     const next = [...matrix];
-    next[idx][role] = !next[idx][role];
+    next[originalIdx][role] = !next[originalIdx][role];
     setMatrix(next);
   }
 
   function handleSave() {
     setToast({ type: "success", message: "Role-permission security matrix policy saved" });
   }
+
+  const filteredMatrix = matrix
+    .map((row, idx) => ({ ...row, originalIdx: idx }))
+    .filter((row) => !search.trim() || row.module.toLowerCase().includes(search.toLowerCase().trim()));
 
   return (
     <div className="space-y-6">
@@ -55,6 +60,18 @@ export default function AdminRolesPermissionsPage() {
       />
 
       <Card noPadding>
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search functional module..."
+            className="w-full sm:w-80"
+          />
+          <span className="text-xs text-slate-500">
+            Showing <strong>{filteredMatrix.length}</strong> of {matrix.length} modules
+          </span>
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -65,7 +82,7 @@ export default function AdminRolesPermissionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {matrix.map((row, idx) => (
+            {filteredMatrix.map((row) => (
               <TableRow key={row.module}>
                 <TableCell>
                   <span className="font-semibold text-xs text-slate-900">{row.module}</span>
@@ -74,7 +91,7 @@ export default function AdminRolesPermissionsPage() {
                   <input
                     type="checkbox"
                     checked={row.admin}
-                    onChange={() => togglePermission(idx, "admin")}
+                    onChange={() => togglePermission(row.originalIdx, "admin")}
                     className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                 </TableCell>
@@ -82,7 +99,7 @@ export default function AdminRolesPermissionsPage() {
                   <input
                     type="checkbox"
                     checked={row.ops}
-                    onChange={() => togglePermission(idx, "ops")}
+                    onChange={() => togglePermission(row.originalIdx, "ops")}
                     className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
                   />
                 </TableCell>
@@ -90,7 +107,7 @@ export default function AdminRolesPermissionsPage() {
                   <input
                     type="checkbox"
                     checked={row.vendor}
-                    onChange={() => togglePermission(idx, "vendor")}
+                    onChange={() => togglePermission(row.originalIdx, "vendor")}
                     className="w-4 h-4 rounded text-slate-600 focus:ring-slate-500 cursor-pointer"
                   />
                 </TableCell>

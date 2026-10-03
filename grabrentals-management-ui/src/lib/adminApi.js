@@ -49,7 +49,7 @@ export const adminApi = {
           success: true,
           source: "backend",
           url: `${axiosClient.defaults.baseURL}/api/admin/users`,
-          message: "Users retrieved from Spring Boot PostgreSQL backend (Axios)",
+          message: "Users retrieved successfully",
           data: json.data,
         };
       }
@@ -97,7 +97,7 @@ export const adminApi = {
       return {
         success: true,
         source: "backend",
-        message: "User status updated in PostgreSQL database (Axios)",
+        message: "User status updated successfully",
         data: response.data.data,
       };
     } catch (err) {
@@ -271,8 +271,10 @@ export const adminApi = {
       (acc, curr) => acc + (curr.status !== "CANCELLED" ? curr.fare : 0),
       0
     );
-    const activeVendors = vendors.filter((v) => v.status === "APPROVED").length;
-    const pendingVendorApprovals = vendors.filter((v) => v.status === "PENDING_APPROVAL").length;
+    const vendorsRes = await this.getVendors();
+    const liveVendors = vendorsRes.success && Array.isArray(vendorsRes.data) ? vendorsRes.data : [];
+    const activeVendors = liveVendors.filter((v) => v.status === "APPROVED").length;
+    const pendingVendorApprovals = liveVendors.filter((v) => v.status === "PENDING_APPROVAL" || v.status === "PENDING").length;
     const totalFleet = initialVehicles.length;
     const pendingRefunds = refunds.filter((r) => r.status === "PROCESSING").length;
 
@@ -339,27 +341,65 @@ export const adminApi = {
   },
 
   async getVendors() {
-    await simulateLatency();
-    return createApiResponse(vendors);
+    try {
+      const res = await this.getAllUsers();
+      if (res.success && Array.isArray(res.data)) {
+        const liveVendors = res.data
+          .filter((u) => u.role === "FLEET" || u.role === "VENDOR")
+          .map((u) => {
+            const isPending = u.status === "PENDING" || u.status === "PENDING_APPROVAL";
+            const isApproved = u.status === "ACTIVE" || u.status === "APPROVED";
+            return {
+              id: u.id,
+              name: u.businessName || u.name || "Vendor Partner",
+              businessName: u.businessName || u.name,
+              contactPerson: u.name,
+              ownerName: u.name,
+              email: u.email,
+              phone: u.phone || "—",
+              city: u.hubLocation || "Primary Hub",
+              fleetCount: 0,
+              driverCount: 0,
+              vehiclesCount: 0,
+              driversCount: 0,
+              commissionRate: 12,
+              rating: 5.0,
+              createdAt: u.createdAt || null,
+              joinedDate: u.createdAt ? u.createdAt.slice(0, 10) : "Recently",
+              gstNumber: "Pending Submission",
+              gstStatus: isApproved ? "Verified Active" : "Pending Verification",
+              status: isPending ? "PENDING_APPROVAL" : (isApproved ? "APPROVED" : u.status),
+              rawStatus: u.status,
+            };
+          });
+        return createApiResponse(liveVendors);
+      }
+    } catch (err) {
+      console.error("Failed to load live vendors:", err);
+    }
+    return createApiResponse([]);
   },
 
   async getVendorById(id) {
-    await simulateLatency();
-    const vendor = vendors.find((v) => v.id === id);
-    if (!vendor) throw new Error("Vendor not found");
-    const vendorVehicles = initialVehicles.filter((v) => v.vendorId === id);
-    const vendorDrivers = initialDrivers.filter((d) => d.vendorId === id);
+    const res = await this.getVendors();
+    const vendor = (res.data || []).find((v) => String(v.id) === String(id));
+    if (!vendor) throw new Error("Vendor not found in database registry");
+    const vendorVehicles = initialVehicles.filter((v) => String(v.vendorId) === String(id));
+    const vendorDrivers = initialDrivers.filter((d) => String(d.vendorId) === String(id));
     return createApiResponse({ ...vendor, vehicles: vendorVehicles, drivers: vendorDrivers });
   },
 
   async approveVendor(id, commissionRate = 12) {
-    await simulateLatency();
-    const vendor = vendors.find((v) => v.id === id);
-    if (vendor) {
-      vendor.status = "APPROVED";
-      vendor.commissionRate = commissionRate;
+    try {
+      const updateRes = await this.updateUserStatus(id, "ACTIVE");
+      return createApiResponse(
+        { id, status: "APPROVED", commissionRate, ...updateRes.data },
+        "Vendor approved and activated in live database"
+      );
+    } catch (err) {
+      console.error("Failed to approve vendor in database:", err);
+      throw err;
     }
-    return createApiResponse(vendor, "Vendor approved successfully");
   },
 
   async getOperationsUsers() {
@@ -392,7 +432,7 @@ export const adminApi = {
         password: data.password || "Operations@123",
       });
 
-      return createApiResponse(response.data.data, "Operations staff user created in PostgreSQL database (Axios)");
+      return createApiResponse(response.data.data, "Operations staff user created successfully");
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
       throw new Error(msg);
@@ -477,6 +517,63 @@ export const adminApi = {
     }
   },
 
+  async getAuditLogsPaginated({
+    category,
+    status,
+    event,
+    search,
+    page = 1,
+    size = 10,
+    sortBy = "createdAt",
+    sortDir = "desc",
+  } = {}) {
+    try {
+      const params = {
+        page,
+        size,
+        sortBy,
+        sortDir,
+      };
+      if (category && category !== "ALL") params.category = category;
+      if (status && status !== "ALL") params.status = status;
+      if (event && event !== "ALL") params.event = event;
+      if (search && search.trim()) params.search = search.trim();
+
+      const response = await axiosClient.get("/api/admin/audit-logs", { params });
+      const pagedData = response.data?.data;
+      return {
+        success: true,
+        source: "backend",
+        data: pagedData?.content || [],
+        pagination: {
+          page: pagedData?.page ?? page,
+          size: pagedData?.size ?? size,
+          totalElements: pagedData?.totalElements ?? 0,
+          totalPages: pagedData?.totalPages ?? 1,
+          first: pagedData?.first ?? true,
+          last: pagedData?.last ?? true,
+          empty: pagedData?.empty ?? false,
+        },
+      };
+    } catch (err) {
+      console.error("Backend error for getAuditLogsPaginated:", err);
+      return {
+        success: false,
+        error: err.response?.data?.message || err.message,
+        data: [],
+        pagination: {
+          page,
+          size,
+          totalElements: 0,
+          totalPages: 1,
+          first: true,
+          last: true,
+          empty: true,
+        },
+      };
+    }
+  },
+
   async getSecurityAuditLogs() {
     try {
       const response = await axiosClient.get("/api/admin/audit-logs", {
@@ -499,13 +596,16 @@ export const adminApi = {
 
   async getActivityLogs() {
     try {
-      const response = await axiosClient.get("/api/admin/audit-logs", {
-        params: { category: "ACTIVITY" },
-      });
+      const response = await axiosClient.get("/api/admin/audit-logs");
+      const allLogs = response.data?.data || [];
+      // Platform activity logs encompass all non-security operational events (BOOKING, FLEET, OPERATIONS, VENDOR, DISPATCH)
+      const activityLogs = allLogs.filter(
+        (l) => l.category && l.category.toUpperCase() !== "SECURITY"
+      );
       return {
         success: true,
         source: "backend",
-        data: response.data?.data || [],
+        data: activityLogs,
       };
     } catch (err) {
       console.error("Backend error for getActivityLogs:", err);

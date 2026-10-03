@@ -1,15 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { adminApi } from "@/lib/adminApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  SortableHeader,
+  Pagination,
+  SearchInput,
+} from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Select } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
-import { ShieldCheck, Plus, User, Phone, Mail } from "lucide-react";
+import { ShieldCheck, Plus, User, Phone, Mail, Filter } from "lucide-react";
 
 export default function AdminOperationsUsersPage() {
   const [users, setUsers] = useState([]);
@@ -19,16 +29,22 @@ export default function AdminOperationsUsersPage() {
     name: "",
     email: "",
     phone: "",
-    role: "Trip Allocations Specialist",
     city: "Chennai Hub",
     shiftsAssigned: "Morning Shift (06:00 - 14:30)",
   });
   const [toast, setToast] = useState(null);
 
+  // DataTable State
+  const [search, setSearch] = useState("");
+  const [hubFilter, setHubFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortConfig, setSortConfig] = useState({ key: "name", direction: "asc" });
+
   async function loadUsers() {
     try {
       const res = await adminApi.getOperationsUsers();
-      setUsers(res.data);
+      setUsers(res.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,6 +55,14 @@ export default function AdminOperationsUsersPage() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+    setCurrentPage(1);
+  };
 
   async function handleCreateUser(e) {
     e.preventDefault();
@@ -51,7 +75,6 @@ export default function AdminOperationsUsersPage() {
         name: "",
         email: "",
         phone: "",
-        role: "Trip Allocations Specialist",
         city: "Chennai Hub",
         shiftsAssigned: "Morning Shift (06:00 - 14:30)",
       });
@@ -60,6 +83,55 @@ export default function AdminOperationsUsersPage() {
       setToast({ type: "error", message: "Failed to create user" });
     }
   }
+
+  const hubs = useMemo(() => {
+    const set = new Set();
+    users.forEach((u) => {
+      if (u.city) set.add(u.city);
+    });
+    return Array.from(set);
+  }, [users]);
+
+  const filteredAndSortedUsers = useMemo(() => {
+    let result = [...users];
+
+    if (hubFilter !== "ALL") {
+      result = result.filter((u) => u.city === hubFilter);
+    }
+
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      result = result.filter(
+        (u) =>
+          u.name?.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q) ||
+          u.phone?.toLowerCase().includes(q) ||
+          u.city?.toLowerCase().includes(q)
+      );
+    }
+
+    result.sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+
+      if (typeof valA === "string") {
+        valA = valA.toLowerCase();
+        valB = (valB || "").toLowerCase();
+      }
+
+      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [users, search, hubFilter, sortConfig]);
+
+  const totalPages = Math.ceil(filteredAndSortedUsers.length / pageSize) || 1;
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAndSortedUsers.slice(start, start + pageSize);
+  }, [filteredAndSortedUsers, currentPage, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -83,36 +155,120 @@ export default function AdminOperationsUsersPage() {
       />
 
       <Card noPadding>
+        {/* DataTable Controls Bar */}
+        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/50">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            <SearchInput
+              value={search}
+              onChange={(val) => {
+                setSearch(val);
+                setCurrentPage(1);
+              }}
+              placeholder="Search staff by name, email, phone, hub..."
+              className="w-full sm:w-80"
+            />
+
+            {hubs.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                <select
+                  value={hubFilter}
+                  onChange={(e) => {
+                    setHubFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                >
+                  <option value="ALL">All Hubs ({users.length})</option>
+                  {hubs.map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 self-end md:self-center">
+            <span className="text-xs text-slate-500">
+              Showing <strong>{filteredAndSortedUsers.length}</strong> staff
+            </span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 font-medium focus:outline-none"
+            >
+              <option value={10}>10 / page</option>
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+            </select>
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Staff Member</TableHead>
-              <TableHead>Role Title</TableHead>
-              <TableHead>Hub / Location</TableHead>
+              <SortableHeader
+                columnKey="name"
+                label="Staff Member"
+                currentSort={sortConfig}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                columnKey="city"
+                label="Hub / Location"
+                currentSort={sortConfig}
+                onSort={handleSort}
+              />
               <TableHead>Assigned Duty Shift</TableHead>
-              <TableHead>Last Sign-In</TableHead>
-              <TableHead>Status</TableHead>
+              <SortableHeader
+                columnKey="lastLogin"
+                label="Last Sign-In"
+                currentSort={sortConfig}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                columnKey="status"
+                label="Status"
+                currentSort={sortConfig}
+                onSort={handleSort}
+              />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={5} className="text-center py-12 text-slate-500">
                   Loading operations users...
                 </TableCell>
               </TableRow>
+            ) : paginatedUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                  <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div className="font-bold text-slate-800 text-sm">No Operations Staff Found</div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      No staff members match your search criteria.
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : (
-              users.map((u) => (
+              paginatedUsers.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>
                     <div className="font-bold text-xs text-slate-900">{u.name}</div>
                     <div className="text-[11px] text-slate-500">{u.email}</div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs font-semibold text-slate-800">{u.role}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs text-slate-700">{u.city}</span>
+                    <span className="text-xs text-slate-700 font-medium">{u.city}</span>
                   </TableCell>
                   <TableCell>
                     <span className="text-xs text-slate-600 font-medium">{u.shiftsAssigned}</span>
@@ -128,6 +284,16 @@ export default function AdminOperationsUsersPage() {
             )}
           </TableBody>
         </Table>
+
+        {!loading && filteredAndSortedUsers.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredAndSortedUsers.length}
+            pageSize={pageSize}
+          />
+        )}
       </Card>
 
       <Modal
@@ -157,16 +323,6 @@ export default function AdminOperationsUsersPage() {
             placeholder="+91 98400 12345"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          />
-          <Select
-            label="Role & Assignment"
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            options={[
-              { value: "Senior Operations Dispatcher", label: "Senior Operations Dispatcher" },
-              { value: "Trip Allocations Specialist", label: "Trip Allocations Specialist" },
-              { value: "Night Fleet Coordinator", label: "Night Fleet Coordinator" },
-            ]}
           />
           <Select
             label="Primary Hub"

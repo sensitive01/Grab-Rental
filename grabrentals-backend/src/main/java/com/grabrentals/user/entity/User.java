@@ -61,6 +61,10 @@ public class User {
     @Column(name = "city")
     private String city;
 
+    @Column(name = "password_set")
+    @Builder.Default
+    private Boolean passwordSet = false;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -18,6 +18,7 @@ public class LoginResponse {
     @Builder.Default
     private String tokenType = "Bearer";
     private UserSummary user;
+    private boolean isNewUser;
 
     @Data
     @Builder

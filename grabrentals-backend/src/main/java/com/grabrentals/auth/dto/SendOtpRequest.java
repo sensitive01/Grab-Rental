@@ -19,4 +19,6 @@ public class SendOtpRequest {
         message = "Please provide a valid 10-digit mobile number"
     )
     private String phone;
+
+    private String purpose; // "REGISTRATION" | "LOGIN"
 }

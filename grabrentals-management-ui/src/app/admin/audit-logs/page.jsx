@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { adminApi } from "@/lib/adminApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge } from "@/components/ui/Card";
@@ -18,7 +18,6 @@ import { Toast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import {
   Shield,
-  History,
   Activity,
   Lock,
   Key,
@@ -38,7 +37,6 @@ import {
   Filter,
   Search,
   Laptop,
-  CheckCircle2,
   XCircle,
   AlertTriangle,
   Globe,
@@ -89,24 +87,34 @@ const LOG_TABS = [
 
 export default function AdminAuditLogsPage() {
   const [activeTab, setActiveTab] = useState("SECURITY");
+
+  // Master records for tab counts and filter options
   const [securityLogs, setSecurityLogs] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
+
+  // Current page records & pagination state
+  const [logs, setLogs] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Loading states
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState("");
-  const [toast, setToast] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
-  // Filters & Pagination
+  // Filters & Controls
+  const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: "timestamp", direction: "desc" });
 
-  async function loadLogs(isManual = false) {
-    if (isManual) setRefreshing(true);
-    else setLoading(true);
+  const [toast, setToast] = useState(null);
+  const searchDebounceRef = useRef(null);
 
+  // Fetch full dataset to maintain accurate tab counts and complete filter dropdowns
+  const fetchSummaryCounts = useCallback(async () => {
     try {
       const [secRes, actRes] = await Promise.all([
         adminApi.getSecurityAuditLogs(),
@@ -119,26 +127,100 @@ export default function AdminAuditLogsPage() {
       if (actRes.success && Array.isArray(actRes.data)) {
         setActivityLogs(actRes.data);
       }
-
-      if (isManual) {
-        setToast({
-          type: "success",
-          message: "Refreshed live audit & activity logs successfully",
-        });
-      }
     } catch (err) {
-      console.error(err);
-      setToast({ type: "error", message: "Failed to load logs: " + err.message });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      console.error("Failed to load audit counts:", err);
     }
-  }
-
-  useEffect(() => {
-    loadLogs(false);
   }, []);
 
+  // Fetch paginated page records
+  const fetchPage = useCallback(
+    async (pageToLoad = currentPage, currentSearch = search) => {
+      setLoading(true);
+      try {
+        let sortKey = sortConfig.key;
+        if (sortKey === "timestamp") sortKey = "createdAt";
+
+        const res = await adminApi.getAuditLogsPaginated({
+          category: activeTab,
+          status: statusFilter !== "ALL" ? statusFilter : undefined,
+          event: actionFilter !== "ALL" ? actionFilter : undefined,
+          search: currentSearch ? currentSearch.trim() : undefined,
+          page: pageToLoad,
+          size: pageSize,
+          sortBy: sortKey,
+          sortDir: sortConfig.direction,
+        });
+
+        if (res.success) {
+          setLogs(res.data);
+          if (res.pagination) {
+            setTotalItems(res.pagination.totalElements ?? 0);
+            setTotalPages(Math.max(1, res.pagination.totalPages ?? 1));
+          } else {
+            setTotalItems(res.data.length);
+            setTotalPages(1);
+          }
+        } else {
+          // Client-side fallback if paginated endpoint fails
+          const fallbackSource = activeTab === "SECURITY" ? securityLogs : activityLogs;
+          const q = (currentSearch || "").toLowerCase().trim();
+          const filtered = fallbackSource.filter((item) => {
+            const matchAction =
+              actionFilter === "ALL" ||
+              item.event === actionFilter ||
+              item.actionCode === actionFilter;
+            const matchStatus =
+              activeTab !== "SECURITY" ||
+              statusFilter === "ALL" ||
+              item.status === statusFilter;
+            const matchSearch =
+              !q ||
+              (item.event && item.event.toLowerCase().includes(q)) ||
+              (item.actionCode && item.actionCode.toLowerCase().includes(q)) ||
+              (item.userName && item.userName.toLowerCase().includes(q)) ||
+              (item.userId && item.userId.toLowerCase().includes(q)) ||
+              (item.ipAddress && item.ipAddress.toLowerCase().includes(q)) ||
+              (item.details && item.details.toLowerCase().includes(q));
+            return matchAction && matchStatus && matchSearch;
+          });
+          const start = (pageToLoad - 1) * pageSize;
+          setLogs(filtered.slice(start, start + pageSize));
+          setTotalItems(filtered.length);
+          setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
+        }
+      } catch (err) {
+        console.error(err);
+        setToast({ type: "error", message: "Failed to load audit logs: " + err.message });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activeTab, currentPage, pageSize, search, actionFilter, statusFilter, sortConfig, securityLogs, activityLogs]
+  );
+
+  // Initial load
+  useEffect(() => {
+    fetchSummaryCounts();
+  }, [fetchSummaryCounts]);
+
+  // Debounced load when filters, search, or pagination changes
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      fetchPage(currentPage, search);
+    }, 250);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [fetchPage, currentPage, search]);
+
+  // Handle Tab Switch
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setSearch("");
@@ -148,6 +230,7 @@ export default function AdminAuditLogsPage() {
     setSortConfig({ key: "timestamp", direction: "desc" });
   };
 
+  // Handle Column Sorting
   const handleSort = (key) => {
     setSortConfig((prev) => {
       if (prev.key === key) {
@@ -161,7 +244,18 @@ export default function AdminAuditLogsPage() {
     setCurrentPage(1);
   };
 
-  // Dynamic Tabs with Counts
+  // Refresh handler
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchSummaryCounts(), fetchPage(currentPage, search)]);
+    setRefreshing(false);
+    setToast({
+      type: "success",
+      message: "Refreshed audit logs successfully",
+    });
+  };
+
+  // Dynamic Tabs with Total Counts
   const tabsWithCounts = useMemo(() => {
     return [
       {
@@ -180,151 +274,200 @@ export default function AdminAuditLogsPage() {
   // Unique action options for current tab
   const actionOptions = useMemo(() => {
     if (activeTab === "SECURITY") {
-      const unique = Array.from(new Set(securityLogs.map((l) => l.event).filter(Boolean)));
-      return unique;
+      const knownEvents = [
+        "LOGIN_SUCCESS",
+        "LOGIN_FAILED",
+        "USER_LOGOUT",
+        "CHANGE_PASSWORD",
+        "PASSWORD_RESET_REQUESTED",
+        "USER_PROVISIONED",
+        "USER_STATUS_CHANGE",
+      ];
+      const fromLogs = securityLogs.map((l) => l.event).filter(Boolean);
+      return Array.from(new Set([...knownEvents, ...fromLogs]));
     } else {
-      const unique = Array.from(new Set(activityLogs.map((l) => l.actionCode).filter(Boolean)));
-      return unique;
+      const knownActions = [
+        "UPDATE_PRICING",
+        "DISPATCH_ASSIGNED",
+        "STATUS_UPDATED",
+        "NEW_BOOKING",
+        "VEHICLE_ADDED",
+        "VEHICLE_UPDATED",
+        "DRIVER_ASSIGNED",
+        "DRIVER_STATUS_CHANGE",
+      ];
+      const fromLogs = activityLogs.map((l) => l.actionCode || l.event).filter(Boolean);
+      return Array.from(new Set([...knownActions, ...fromLogs]));
     }
   }, [activeTab, securityLogs, activityLogs]);
 
-  // Current active dataset filtered
-  const filteredLogs = useMemo(() => {
-    const q = search.toLowerCase().trim();
+  // CSV Export Handler
+  const handleExportCSV = async () => {
+    try {
+      setExporting(true);
+      const res =
+        activeTab === "SECURITY"
+          ? await adminApi.getSecurityAuditLogs()
+          : await adminApi.getActivityLogs();
 
-    if (activeTab === "SECURITY") {
-      return securityLogs.filter((l) => {
-        const matchAction = actionFilter === "ALL" || l.event === actionFilter;
-        const matchStatus = statusFilter === "ALL" || l.status === statusFilter;
-        const matchSearch =
-          !q ||
-          (l.event && l.event.toLowerCase().includes(q)) ||
-          (l.userId && l.userId.toLowerCase().includes(q)) ||
-          (l.userName && l.userName.toLowerCase().includes(q)) ||
-          (l.ipAddress && l.ipAddress.toLowerCase().includes(q)) ||
-          (l.device && l.device.toLowerCase().includes(q)) ||
-          (l.details && l.details.toLowerCase().includes(q)) ||
-          (l.id && l.id.toLowerCase().includes(q));
-
-        return matchAction && matchStatus && matchSearch;
-      });
-    } else {
-      return activityLogs.filter((l) => {
-        const matchAction = actionFilter === "ALL" || l.actionCode === actionFilter;
-        const matchSearch =
-          !q ||
-          (l.actionCode && l.actionCode.toLowerCase().includes(q)) ||
-          (l.module && l.module.toLowerCase().includes(q)) ||
-          (l.operatorId && l.operatorId.toLowerCase().includes(q)) ||
-          (l.operatorName && l.operatorName.toLowerCase().includes(q)) ||
-          (l.targetEntity && l.targetEntity.toLowerCase().includes(q)) ||
-          (l.ipAddress && l.ipAddress.toLowerCase().includes(q)) ||
-          (l.details && l.details.toLowerCase().includes(q)) ||
-          (l.id && l.id.toLowerCase().includes(q));
-
-        return matchAction && matchSearch;
-      });
-    }
-  }, [activeTab, securityLogs, activityLogs, actionFilter, statusFilter, search]);
-
-  // Sorted dataset
-  const sortedLogs = useMemo(() => {
-    if (!sortConfig.key) return filteredLogs;
-    return [...filteredLogs].sort((a, b) => {
-      let aVal = a[sortConfig.key] ?? "";
-      let bVal = b[sortConfig.key] ?? "";
-
-      if (typeof aVal === "string") {
-        const cmp = aVal.localeCompare(String(bVal), undefined, { numeric: true, sensitivity: "base" });
-        return sortConfig.direction === "asc" ? cmp : -cmp;
+      let logsToExport = [];
+      if (res.success && Array.isArray(res.data)) {
+        const q = search.toLowerCase().trim();
+        logsToExport = res.data.filter((l) => {
+          const matchAction =
+            actionFilter === "ALL" ||
+            l.event === actionFilter ||
+            l.actionCode === actionFilter;
+          const matchStatus =
+            activeTab !== "SECURITY" ||
+            statusFilter === "ALL" ||
+            l.status === statusFilter;
+          const matchSearch =
+            !q ||
+            (l.event && l.event.toLowerCase().includes(q)) ||
+            (l.actionCode && l.actionCode.toLowerCase().includes(q)) ||
+            (l.userName && l.userName.toLowerCase().includes(q)) ||
+            (l.userId && l.userId.toLowerCase().includes(q)) ||
+            (l.ipAddress && l.ipAddress.toLowerCase().includes(q)) ||
+            (l.details && l.details.toLowerCase().includes(q));
+          return matchAction && matchStatus && matchSearch;
+        });
       }
 
-      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [filteredLogs, sortConfig]);
+      if (!logsToExport.length) {
+        setToast({ type: "warning", message: "No log entries to export" });
+        return;
+      }
 
-  // Pagination
-  const totalItems = sortedLogs.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      let headers, rows;
+      if (activeTab === "SECURITY") {
+        headers = [
+          "Log ID",
+          "Timestamp",
+          "Event Code",
+          "User Name",
+          "Email",
+          "Role",
+          "IP Address",
+          "Device / Agent",
+          "Status",
+          "Details",
+        ];
+        rows = logsToExport.map((l) => [
+          `"${l.id || ""}"`,
+          `"${l.timestamp || ""}"`,
+          `"${l.event || ""}"`,
+          `"${(l.userName || "").replace(/"/g, '""')}"`,
+          `"${l.userId || ""}"`,
+          `"${l.userRole || ""}"`,
+          `"${l.ipAddress || ""}"`,
+          `"${(l.device || "").replace(/"/g, '""')}"`,
+          `"${l.status || ""}"`,
+          `"${(l.details || "").replace(/"/g, '""')}"`,
+        ]);
+      } else {
+        headers = [
+          "Log ID",
+          "Timestamp",
+          "Action Code",
+          "Module",
+          "Operator Name",
+          "Operator Email",
+          "Role",
+          "Target Entity",
+          "IP Address",
+          "Details",
+        ];
+        rows = logsToExport.map((l) => [
+          `"${l.id || ""}"`,
+          `"${l.timestamp || ""}"`,
+          `"${l.actionCode || l.event || ""}"`,
+          `"${(l.module || "").replace(/"/g, '""')}"`,
+          `"${(l.operatorName || l.userName || "").replace(/"/g, '""')}"`,
+          `"${l.operatorId || l.userId || ""}"`,
+          `"${l.operatorRole || l.userRole || ""}"`,
+          `"${(l.targetEntity || "").replace(/"/g, '""')}"`,
+          `"${l.ipAddress || ""}"`,
+          `"${(l.details || "").replace(/"/g, '""')}"`,
+        ]);
+      }
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
+      const csvContent =
+        "data:text/csv;charset=utf-8," +
+        [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute(
+        "download",
+        `grabrentals_${activeTab.toLowerCase()}_logs_${new Date().toISOString().slice(0, 10)}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setToast({
+        type: "success",
+        message: `Exported ${logsToExport.length} ${activeTab.toLowerCase()} log entries`,
+      });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: "error", message: "Failed to export CSV: " + err.message });
+    } finally {
+      setExporting(false);
     }
-  }, [totalPages, currentPage]);
-
-  const paginatedLogs = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return sortedLogs.slice(start, start + pageSize);
-  }, [sortedLogs, currentPage, pageSize]);
-
-  // CSV Export Handler
-  const handleExportCSV = () => {
-    if (!sortedLogs.length) return;
-
-    let headers, rows;
-    if (activeTab === "SECURITY") {
-      headers = ["Log ID", "Timestamp", "Event Code", "User Name", "Email", "Role", "IP Address", "Device / Agent", "Status", "Details"];
-      rows = sortedLogs.map((l) => [
-        `"${l.id || ""}"`,
-        `"${l.timestamp || ""}"`,
-        `"${l.event || ""}"`,
-        `"${(l.userName || "").replace(/"/g, '""')}"`,
-        `"${l.userId || ""}"`,
-        `"${l.userRole || ""}"`,
-        `"${l.ipAddress || ""}"`,
-        `"${(l.device || "").replace(/"/g, '""')}"`,
-        `"${l.status || ""}"`,
-        `"${(l.details || "").replace(/"/g, '""')}"`,
-      ]);
-    } else {
-      headers = ["Log ID", "Timestamp", "Action Code", "Module", "Operator Name", "Operator Email", "Role", "Target Entity", "IP Address", "Details"];
-      rows = sortedLogs.map((l) => [
-        `"${l.id || ""}"`,
-        `"${l.timestamp || ""}"`,
-        `"${l.actionCode || ""}"`,
-        `"${(l.module || "").replace(/"/g, '""')}"`,
-        `"${(l.operatorName || "").replace(/"/g, '""')}"`,
-        `"${l.operatorId || ""}"`,
-        `"${l.operatorRole || ""}"`,
-        `"${(l.targetEntity || "").replace(/"/g, '""')}"`,
-        `"${l.ipAddress || ""}"`,
-        `"${(l.details || "").replace(/"/g, '""')}"`,
-      ]);
-    }
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `grabrentals_${activeTab.toLowerCase()}_logs_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setToast({ type: "success", message: `Exported ${sortedLogs.length} ${activeTab.toLowerCase()} log entries to CSV` });
   };
 
   const getEventBadge = (event) => {
     switch (event) {
       case "LOGIN_SUCCESS":
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md"><LogIn className="w-3 h-3 text-emerald-600" /> {event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+            <LogIn className="w-3 h-3 text-emerald-600" /> {event}
+          </span>
+        );
       case "USER_LOGOUT":
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md"><LogOut className="w-3 h-3 text-slate-500" /> {event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+            <LogOut className="w-3 h-3 text-slate-500" /> {event}
+          </span>
+        );
       case "CHANGE_PASSWORD":
       case "PASSWORD_CHANGED":
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md"><Key className="w-3 h-3 text-blue-600" /> {event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+            <Key className="w-3 h-3 text-blue-600" /> {event}
+          </span>
+        );
       case "PASSWORD_RESET_REQUESTED":
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md"><Lock className="w-3 h-3 text-indigo-600" /> {event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+            <Lock className="w-3 h-3 text-indigo-600" /> {event}
+          </span>
+        );
       case "USER_PROVISIONED":
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md"><UserPlus className="w-3 h-3 text-purple-600" /> {event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">
+            <UserPlus className="w-3 h-3 text-purple-600" /> {event}
+          </span>
+        );
       case "USER_STATUS_CHANGE":
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md"><AlertTriangle className="w-3 h-3 text-amber-600" /> {event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+            <AlertTriangle className="w-3 h-3 text-amber-600" /> {event}
+          </span>
+        );
       case "LOGIN_FAILED":
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md"><XCircle className="w-3 h-3 text-rose-600" /> {event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+            <XCircle className="w-3 h-3 text-rose-600" /> {event}
+          </span>
+        );
       default:
-        return <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">{event}</span>;
+        return (
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">
+            {event}
+          </span>
+        );
     }
   };
 
@@ -338,6 +481,7 @@ export default function AdminAuditLogsPage() {
         />
       )}
 
+      {/* Top Header */}
       <PageHeader
         title="System Security & Platform Activity Audit Trail"
         subtitle="Complete governance history of authentication, account changes, operations dispatch, and pricing actions"
@@ -348,7 +492,7 @@ export default function AdminAuditLogsPage() {
             size="sm"
             icon={RefreshCw}
             isLoading={refreshing}
-            onClick={() => loadLogs(true)}
+            onClick={handleRefresh}
           >
             Refresh Logs
           </Button>
@@ -356,7 +500,7 @@ export default function AdminAuditLogsPage() {
       />
 
       {/* Main DataTable Card */}
-      <Card noPadding className="overflow-hidden">
+      <Card noPadding className="overflow-hidden shadow-xs border border-slate-200/80">
         {/* Navigation Tabs */}
         <div className="px-4 pt-3 border-b border-slate-100">
           <Tabs
@@ -384,6 +528,7 @@ export default function AdminAuditLogsPage() {
                 <option value={10}>10</option>
                 <option value={25}>25</option>
                 <option value={50}>50</option>
+                <option value={100}>100</option>
               </select>
               <span className="font-medium text-slate-500">entries</span>
             </div>
@@ -399,7 +544,7 @@ export default function AdminAuditLogsPage() {
                   setActionFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 text-xs shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 cursor-pointer max-w-[180px] truncate"
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800 text-xs shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 cursor-pointer max-w-[200px] truncate"
               >
                 <option value="ALL">All {activeTab === "SECURITY" ? "Events" : "Actions"}</option>
                 {actionOptions.map((opt) => (
@@ -457,7 +602,11 @@ export default function AdminAuditLogsPage() {
                   setSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder={activeTab === "SECURITY" ? "Search user, IP, action, device..." : "Search action, module, operator, entity..."}
+                placeholder={
+                  activeTab === "SECURITY"
+                    ? "Search user, IP, action, device..."
+                    : "Search action, module, operator, entity..."
+                }
                 className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 bg-white placeholder:text-slate-400 text-slate-800 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-colors"
               />
               {search && (
@@ -480,8 +629,9 @@ export default function AdminAuditLogsPage() {
               size="xs"
               icon={Download}
               onClick={handleExportCSV}
-              disabled={sortedLogs.length === 0}
-              title="Export filtered records to CSV"
+              isLoading={exporting}
+              disabled={totalItems === 0 || exporting}
+              title="Export records to CSV"
             >
               Export CSV
             </Button>
@@ -537,7 +687,7 @@ export default function AdminAuditLogsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : paginatedLogs.length === 0 ? (
+              ) : logs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-12 text-slate-500">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
@@ -566,7 +716,7 @@ export default function AdminAuditLogsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedLogs.map((log) => {
+                logs.map((log) => {
                   const isSuccess = log.status === "SUCCESS";
                   const isFailed = log.status === "FAILED";
                   const isWarning = log.status === "WARNING";
@@ -580,9 +730,7 @@ export default function AdminAuditLogsPage() {
                       </TableCell>
 
                       {/* Event Badge */}
-                      <TableCell>
-                        {getEventBadge(log.event)}
-                      </TableCell>
+                      <TableCell>{getEventBadge(log.event)}</TableCell>
 
                       {/* User Identity & Role */}
                       <TableCell>
@@ -601,39 +749,53 @@ export default function AdminAuditLogsPage() {
                                 : "bg-slate-100 text-slate-700"
                             )}
                           >
-                            {log.userRole === "FLEET" ? "VENDOR" : log.userRole}
+                            {log.userRole}
                           </span>
                         )}
                       </TableCell>
 
                       {/* IP & Device */}
                       <TableCell>
-                        <div className="font-mono text-xs text-slate-700 font-medium flex items-center gap-1">
-                          <Globe className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span>{log.ipAddress}</span>
+                        <div className="flex items-center gap-1.5 font-mono text-xs font-medium text-slate-700">
+                          <Globe className="w-3 h-3 text-slate-400" />
+                          {log.ipAddress}
                         </div>
-                        {log.device && (
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Laptop className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span>{log.device}</span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+                          <Laptop className="w-3 h-3 text-slate-400" />
+                          {log.device}
+                        </div>
                       </TableCell>
 
                       {/* Status */}
                       <TableCell>
-                        <Badge
-                          variant={isSuccess ? "success" : isFailed ? "danger" : isWarning ? "warning" : "neutral"}
-                          size="sm"
-                          dot
-                        >
-                          {log.status}
-                        </Badge>
+                        {isSuccess && (
+                          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            SUCCESS
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            FAILED
+                          </span>
+                        )}
+                        {isWarning && (
+                          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            WARNING
+                          </span>
+                        )}
+                        {!isSuccess && !isFailed && !isWarning && (
+                          <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
+                            {log.status || "LOGGED"}
+                          </span>
+                        )}
                       </TableCell>
 
                       {/* Details */}
                       <TableCell>
-                        <span className="text-xs text-slate-700 font-medium leading-relaxed max-w-md block">
+                        <span className="text-xs text-slate-700 font-medium leading-relaxed max-w-sm block">
                           {log.details}
                         </span>
                       </TableCell>
@@ -668,7 +830,7 @@ export default function AdminAuditLogsPage() {
                 />
                 <SortableHeader
                   columnKey="operatorName"
-                  label="Operator Identity"
+                  label="Operator"
                   currentSort={sortConfig}
                   onSort={handleSort}
                 />
@@ -680,11 +842,11 @@ export default function AdminAuditLogsPage() {
                 />
                 <SortableHeader
                   columnKey="ipAddress"
-                  label="IP Origin"
+                  label="IP Address"
                   currentSort={sortConfig}
                   onSort={handleSort}
                 />
-                <TableHead>Activity Log Details</TableHead>
+                <TableHead>Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -693,20 +855,20 @@ export default function AdminAuditLogsPage() {
                   <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="font-medium text-xs">Loading Platform Activity Logs...</span>
+                      <span className="font-medium text-xs">Loading Platform Activity Trail...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : paginatedLogs.length === 0 ? (
+              ) : logs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
                       <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
                         <Activity className="w-5 h-5" />
                       </div>
-                      <div className="font-bold text-slate-800 text-sm">No activity logs found</div>
+                      <div className="font-bold text-slate-800 text-sm">No platform activity logs found</div>
                       <p className="text-xs text-slate-500 mt-1 mb-3">
-                        No operational activity matches your search or action filter.
+                        No activity records match your current search or action criteria.
                       </p>
                       {(search || actionFilter !== "ALL") && (
                         <Button
@@ -725,7 +887,7 @@ export default function AdminAuditLogsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedLogs.map((log) => (
+                logs.map((log) => (
                   <TableRow key={log.id}>
                     {/* Timestamp */}
                     <TableCell>
@@ -735,25 +897,25 @@ export default function AdminAuditLogsPage() {
 
                     {/* Action Code */}
                     <TableCell>
-                      <span className="font-mono font-bold text-xs text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md inline-block">
-                        {log.actionCode}
+                      <span className="inline-flex items-center gap-1 font-mono font-bold text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                        {log.actionCode || log.event}
                       </span>
                     </TableCell>
 
                     {/* Module */}
                     <TableCell>
-                      <span className="text-xs font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                      <Badge variant="neutral" size="sm">
                         {log.module}
-                      </span>
+                      </Badge>
                     </TableCell>
 
                     {/* Operator */}
                     <TableCell>
-                      <div className="text-xs font-bold text-slate-900">{log.operatorName}</div>
-                      <div className="text-[11px] text-slate-500">{log.operatorId}</div>
-                      {log.operatorRole && (
+                      <div className="text-xs font-bold text-slate-900">{log.operatorName || log.userName}</div>
+                      <div className="text-[11px] text-slate-500">{log.operatorId || log.userId}</div>
+                      {(log.operatorRole || log.userRole) && (
                         <span className="text-[10px] font-bold text-slate-500 uppercase">
-                          Role: {log.operatorRole}
+                          Role: {log.operatorRole || log.userRole}
                         </span>
                       )}
                     </TableCell>
@@ -786,21 +948,24 @@ export default function AdminAuditLogsPage() {
         {/* DataTable Footer: Pagination & Stats */}
         <div className="px-4 py-3 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
           <div>
-            Showing <span className="font-semibold text-slate-900">{totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> to{" "}
-            <span className="font-semibold text-slate-900">{Math.min(currentPage * pageSize, totalItems)}</span> of{" "}
-            <span className="font-semibold text-slate-900">{totalItems}</span> {activeTab === "SECURITY" ? "audit" : "activity"} entries
-            {totalItems !== (activeTab === "SECURITY" ? securityLogs.length : activityLogs.length) && (
-              <span className="text-slate-400 ml-1">
-                (filtered from {activeTab === "SECURITY" ? securityLogs.length : activityLogs.length} total)
-              </span>
-            )}
+            Showing{" "}
+            <span className="font-semibold text-slate-900">
+              {totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-semibold text-slate-900">
+              {Math.min(currentPage * pageSize, totalItems)}
+            </span>{" "}
+            of <span className="font-semibold text-slate-900">{totalItems}</span>{" "}
+            {activeTab === "SECURITY" ? "audit" : "activity"} entries
           </div>
 
+          {/* Pagination Navigation Controls */}
           <div className="flex items-center gap-1 select-none">
             {/* First Page */}
             <button
               type="button"
-              disabled={currentPage <= 1}
+              disabled={currentPage <= 1 || loading}
               onClick={() => setCurrentPage(1)}
               className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
               title="First Page"
@@ -811,7 +976,7 @@ export default function AdminAuditLogsPage() {
             {/* Prev Page */}
             <button
               type="button"
-              disabled={currentPage <= 1}
+              disabled={currentPage <= 1 || loading}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
               title="Previous Page"
@@ -819,7 +984,7 @@ export default function AdminAuditLogsPage() {
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
 
-            {/* Numbered Page Buttons */}
+            {/* Numbered Page Buttons with Smart Ellipsis */}
             <div className="flex items-center gap-1 mx-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter((p) => {
@@ -839,6 +1004,7 @@ export default function AdminAuditLogsPage() {
                       {hasGap && <span className="px-1 text-slate-400">...</span>}
                       <button
                         type="button"
+                        disabled={loading}
                         onClick={() => setCurrentPage(page)}
                         className={cn(
                           "min-w-[28px] h-7 px-2 text-xs font-semibold rounded-lg border transition-colors cursor-pointer",
@@ -857,7 +1023,7 @@ export default function AdminAuditLogsPage() {
             {/* Next Page */}
             <button
               type="button"
-              disabled={currentPage >= totalPages}
+              disabled={currentPage >= totalPages || loading}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
               title="Next Page"
@@ -868,7 +1034,7 @@ export default function AdminAuditLogsPage() {
             {/* Last Page */}
             <button
               type="button"
-              disabled={currentPage >= totalPages}
+              disabled={currentPage >= totalPages || loading}
               onClick={() => setCurrentPage(totalPages)}
               className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
               title="Last Page"

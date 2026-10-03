@@ -19,4 +19,8 @@ public class VerifyOtpRequest {
     @NotBlank(message = "OTP is required")
     @Pattern(regexp = "^[0-9]{6}$", message = "OTP must be exactly 6 digits")
     private String otp;
+
+    private String role; // "FLEET" / "VENDOR" or "CUSTOMER"
+    private String name;
+    private String businessName;
 }

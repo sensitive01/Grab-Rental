@@ -20,15 +20,20 @@ import com.grabrentals.vendor.entity.VendorProfile;
 import com.grabrentals.vendor.repository.DriverRepository;
 import com.grabrentals.vendor.repository.VehicleRepository;
 import com.grabrentals.vendor.repository.VendorProfileRepository;
+import com.grabrentals.vendor.service.CloudinaryService;
 import com.grabrentals.vendor.service.VendorDriverService;
 import com.grabrentals.vendor.service.VendorVehicleService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -48,6 +53,29 @@ public class VendorController {
     private final VendorVehicleService vendorVehicleService;
     private final VendorDriverService vendorDriverService;
     private final CustomerBookingService customerBookingService;
+    private final PasswordEncoder passwordEncoder;
+    private final CloudinaryService cloudinaryService;
+
+    @PreAuthorize("permitAll()")
+    @PostMapping(value = {"/profile/upload", "/compliance/upload"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, String>>> uploadProofDocument(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "folder", required = false, defaultValue = "grabrentals/business") String folder,
+            @RequestParam(value = "preset", required = false, defaultValue = "grabrentals_business") String preset,
+            HttpServletRequest request
+    ) {
+        String userEmail = userDetails != null ? userDetails.getEmail() : "onboarding-partner";
+        String userId = userDetails != null && userDetails.getId() != null ? userDetails.getId().toString() : "new";
+        log.info("[HTTP API] POST /api/vendor/profile/upload by vendor '{}' ({}) [preset: {}]", userEmail, userId, preset);
+        String url = cloudinaryService.uploadFile(file, folder, preset);
+        return ResponseEntity.ok(ApiResponse.<Map<String, String>>builder()
+                .success(true)
+                .message("Document proof uploaded successfully")
+                .data(Map.of("url", url))
+                .path(request.getRequestURI())
+                .build());
+    }
 
     @GetMapping("/dashboard")
     @Transactional(readOnly = true)
@@ -144,17 +172,41 @@ public class VendorController {
                     return vendorProfileRepository.save(newProfile);
                 });
 
+        String resolvedBusinessName = profile.getCompanyName();
+        if (resolvedBusinessName == null || resolvedBusinessName.isBlank()) {
+            resolvedBusinessName = vendor.getBusinessName();
+        }
+        boolean hasRegisteredBusiness = resolvedBusinessName != null && 
+                !resolvedBusinessName.isBlank() && 
+                !resolvedBusinessName.equalsIgnoreCase("Fleet Partner");
+
+        if (!hasRegisteredBusiness) {
+            resolvedBusinessName = (vendor.getName() != null && !vendor.getName().isBlank())
+                    ? vendor.getName() + " Fleet"
+                    : "Individual Fleet Partner";
+        }
+
+        String resolvedTradeName = profile.getTradeName();
+        if (resolvedTradeName == null || resolvedTradeName.isBlank()) {
+            resolvedTradeName = resolvedBusinessName;
+        }
+
+        String resolvedAddress = profile.getAddress();
+        if (resolvedAddress == null || resolvedAddress.isBlank()) {
+            resolvedAddress = vendor.getCity() != null ? vendor.getCity() : "";
+        }
+
         Map<String, Object> map = new HashMap<>();
         map.put("id", profile.getId());
         map.put("userId", vendor.getId());
-        map.put("businessName", profile.getCompanyName());
-        map.put("tradeName", profile.getTradeName() != null ? profile.getTradeName() : profile.getCompanyName());
-        map.put("ownerName", vendor.getName());
-        map.put("contactPerson", profile.getContactPerson() != null ? profile.getContactPerson() : vendor.getName());
+        map.put("businessName", resolvedBusinessName);
+        map.put("tradeName", resolvedTradeName);
+        map.put("ownerName", vendor.getName() != null ? vendor.getName() : "");
+        map.put("contactPerson", profile.getContactPerson() != null && !profile.getContactPerson().isBlank() ? profile.getContactPerson() : (vendor.getName() != null ? vendor.getName() : ""));
         map.put("email", vendor.getEmail());
         map.put("phone", vendor.getPhone());
         map.put("altPhone", vendor.getAlternatePhone() != null ? vendor.getAlternatePhone() : "");
-        map.put("address", profile.getAddress() != null ? profile.getAddress() : (vendor.getCity() != null ? vendor.getCity() : ""));
+        map.put("address", resolvedAddress);
         map.put("gstin", profile.getGstin() != null ? profile.getGstin() : "");
         map.put("pan", profile.getPan() != null ? profile.getPan() : "");
         map.put("bankName", profile.getBankName() != null ? profile.getBankName() : "");
@@ -162,6 +214,15 @@ public class VendorController {
         map.put("ifsc", profile.getIfsc() != null ? profile.getIfsc() : "");
         map.put("branch", profile.getBranch() != null ? profile.getBranch() : "");
         map.put("fleetSize", vehicleRepository.countByUserId(vendorId));
+        map.put("isIndividual", !hasRegisteredBusiness);
+        map.put("gstDocumentUrl", profile.getGstDocumentUrl() != null ? profile.getGstDocumentUrl() : "");
+        map.put("panDocumentUrl", profile.getPanDocumentUrl() != null ? profile.getPanDocumentUrl() : "");
+        map.put("bankProofDocumentUrl", profile.getBankProofDocumentUrl() != null ? profile.getBankProofDocumentUrl() : "");
+        map.put("businessProofDocumentUrl", profile.getBusinessProofDocumentUrl() != null ? profile.getBusinessProofDocumentUrl() : "");
+        map.put("idProofDocumentUrl", profile.getIdProofDocumentUrl() != null ? profile.getIdProofDocumentUrl() : "");
+        map.put("addressProofDocumentUrl", profile.getAddressProofDocumentUrl() != null ? profile.getAddressProofDocumentUrl() : "");
+        boolean hasPassword = Boolean.TRUE.equals(vendor.getPasswordSet());
+        map.put("hasPassword", hasPassword);
 
         return ResponseEntity.ok(ApiResponse.success("Vendor profile retrieved successfully", map));
     }
@@ -216,11 +277,41 @@ public class VendorController {
         if (updates.containsKey("altPhone")) {
             vendor.setAlternatePhone(String.valueOf(updates.get("altPhone")));
         }
+        if (updates.containsKey("alternatePhone")) {
+            vendor.setAlternatePhone(String.valueOf(updates.get("alternatePhone")));
+        }
         if (updates.containsKey("phone")) {
             vendor.setPhone(String.valueOf(updates.get("phone")));
         }
         if (updates.containsKey("ownerName")) {
             vendor.setName(String.valueOf(updates.get("ownerName")));
+        }
+        if (updates.containsKey("name")) {
+            vendor.setName(String.valueOf(updates.get("name")));
+        }
+        if (updates.containsKey("city")) {
+            vendor.setCity(String.valueOf(updates.get("city")));
+        }
+        if (updates.containsKey("email")) {
+            vendor.setEmail(String.valueOf(updates.get("email")));
+        }
+        if (updates.containsKey("gstDocumentUrl")) {
+            profile.setGstDocumentUrl(String.valueOf(updates.get("gstDocumentUrl")));
+        }
+        if (updates.containsKey("panDocumentUrl")) {
+            profile.setPanDocumentUrl(String.valueOf(updates.get("panDocumentUrl")));
+        }
+        if (updates.containsKey("bankProofDocumentUrl")) {
+            profile.setBankProofDocumentUrl(String.valueOf(updates.get("bankProofDocumentUrl")));
+        }
+        if (updates.containsKey("businessProofDocumentUrl")) {
+            profile.setBusinessProofDocumentUrl(String.valueOf(updates.get("businessProofDocumentUrl")));
+        }
+        if (updates.containsKey("idProofDocumentUrl")) {
+            profile.setIdProofDocumentUrl(String.valueOf(updates.get("idProofDocumentUrl")));
+        }
+        if (updates.containsKey("addressProofDocumentUrl")) {
+            profile.setAddressProofDocumentUrl(String.valueOf(updates.get("addressProofDocumentUrl")));
         }
 
         userRepository.save(vendor);
@@ -228,6 +319,37 @@ public class VendorController {
         vendorProfileRepository.save(profile);
 
         return getProfile(userDetails);
+    }
+
+    @PutMapping("/change-password")
+    @Transactional
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody Map<String, String> request
+    ) {
+        User user = getUser(userDetails);
+        String currentPassword = request.get("currentPassword");
+        String newPassword = request.get("newPassword");
+
+        if (newPassword == null || newPassword.trim().length() < 8) {
+            throw new IllegalArgumentException("New password must be at least 8 characters long");
+        }
+
+        // If user already has a custom password set, require and verify currentPassword
+        if (Boolean.TRUE.equals(user.getPasswordSet())) {
+            if (currentPassword == null || currentPassword.isBlank()) {
+                throw new IllegalArgumentException("Current password is required");
+            }
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                throw new IllegalArgumentException("Current password does not match");
+            }
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword.trim()));
+        user.setPasswordSet(true);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(ApiResponse.success("Password updated successfully", null));
     }
 
     private User getUser(CustomUserDetails userDetails) {

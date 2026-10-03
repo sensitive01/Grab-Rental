@@ -54,4 +54,5 @@ public class CreateVehicleRequest {
     private String rcDocumentUrl;
     private String insuranceDocumentUrl;
     private String permitDocumentUrl;
+    private String fitnessDocumentUrl;
 }

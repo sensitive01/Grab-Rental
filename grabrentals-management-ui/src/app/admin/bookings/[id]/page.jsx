@@ -32,7 +32,7 @@ export default function AdminBookingDetailPage({ params }) {
   if (loading) {
     return (
       <div className="py-12 text-center text-sm text-slate-500">
-        Loading audit dossier...
+        Loading booking details...
       </div>
     );
   }
@@ -40,11 +40,11 @@ export default function AdminBookingDetailPage({ params }) {
   if (!booking) {
     return (
       <div className="py-12 text-center text-sm text-slate-500">
-        Booking not found in database.
+        Booking record not found.
         <div className="mt-4">
           <Link href="/admin/bookings">
             <Button variant="secondary" size="sm" icon={ArrowLeft}>
-              Back to Ledger
+              Back to Bookings
             </Button>
           </Link>
         </div>

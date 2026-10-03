@@ -109,7 +109,7 @@ export default function AdminSettingsPage() {
               />
               <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>JWT tokens signed with RS256 algorithm and rotating keys.</span>
+                <span>Enterprise sessions protected with automatic key rotation and encryption.</span>
               </div>
             </div>
           )}

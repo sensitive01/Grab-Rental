@@ -203,6 +203,7 @@ export default function VendorPaymentsPage() {
       <DataTable
         columns={columns}
         data={payments}
+        loading={loading}
         keyField="id"
         defaultPageSize={10}
         pageSizeOptions={[5, 10, 25, 50]}

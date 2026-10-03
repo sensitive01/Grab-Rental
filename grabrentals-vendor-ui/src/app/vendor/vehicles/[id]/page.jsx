@@ -97,7 +97,7 @@ export default function VehicleDetailsPage({ params }) {
     return (
       <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-        <p className="text-xs font-semibold">Loading vehicle particulars from fleet database...</p>
+        <p className="text-xs font-semibold">Loading vehicle particulars...</p>
       </div>
     );
   }

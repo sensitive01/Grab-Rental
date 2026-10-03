@@ -96,6 +96,9 @@ public class Vehicle {
     @Column(name = "permit_document_url", length = 500)
     private String permitDocumentUrl;
 
+    @Column(name = "fitness_document_url", length = 500)
+    private String fitnessDocumentUrl;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

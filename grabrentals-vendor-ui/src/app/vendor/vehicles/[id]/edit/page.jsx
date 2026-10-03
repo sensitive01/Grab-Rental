@@ -88,7 +88,7 @@ export default function EditVehiclePage({ params }) {
         dailyRate: Number(formData.dailyRate),
         perKmRate: Number(formData.perKmRate)
       });
-      setToastMessage("Vehicle details updated successfully in backend!");
+      setToastMessage("Vehicle details updated successfully!");
       setTimeout(() => {
         router.push("/vendor/vehicles");
       }, 900);

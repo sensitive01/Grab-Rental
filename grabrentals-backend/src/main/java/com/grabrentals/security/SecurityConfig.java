@@ -62,6 +62,15 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Public auth endpoints
                 .requestMatchers(HttpMethod.POST, "/api/auth/register/customer", "/api/auth/register/vendor", "/api/auth/register/fleet", "/api/auth/login", "/api/auth/otp/**").permitAll()
+                // Public upload endpoints for onboarding / registration document uploads
+                .requestMatchers(HttpMethod.POST,
+                    "/api/vendor/vehicles/upload",
+                    "/api/fleet/vehicles/upload",
+                    "/api/vendor/drivers/upload",
+                    "/api/fleet/drivers/upload",
+                    "/api/vendor/profile/upload",
+                    "/api/vendor/compliance/upload"
+                ).permitAll()
                 // Public vehicle search & catalog
                 .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
                 // Role-based endpoints
