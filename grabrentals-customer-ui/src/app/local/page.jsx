@@ -47,6 +47,26 @@ export default function LocalRentalsPage() {
             </div>
           ))}
         </div>
+
+        {/* Visual Fleet Showcase */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="space-y-3">
+            <span className="text-xs font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+              City Chauffeur Advantage
+            </span>
+            <h3 className="text-2xl font-black text-slate-950">Travel in Complete Air-Conditioned Comfort</h3>
+            <p className="text-sm text-slate-600 font-medium">
+              Zero surging prices, professional drivers with deep city route knowledge, and sanitized executive sedans & premium MPVs ready at your doorstep.
+            </p>
+          </div>
+          <div className="h-56 rounded-2xl overflow-hidden border border-slate-200 shadow-md">
+            <img
+              src="/images/cars/innova.jpg"
+              alt="Local City Car Rental"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
       </section>
     </main>
   );

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -39,7 +40,8 @@ public class VendorDriverService {
 
         String normalizedLicense = request.getLicenseNumber().trim().toUpperCase();
 
-        if (driverRepository.existsByLicenseNumberIgnoreCase(normalizedLicense)) {
+        Optional<Driver> existingOpt = driverRepository.findByLicenseNumberIgnoreCase(normalizedLicense);
+        if (existingOpt.isPresent() && !existingOpt.get().getUser().getId().equals(vendorUserId)) {
             throw new IllegalArgumentException("Driver with commercial license '" + normalizedLicense + "' is already registered in the platform");
         }
 
@@ -49,25 +51,90 @@ public class VendorDriverService {
                     .orElse(null);
         }
 
-        Driver driver = Driver.builder()
-                .user(user)
-                .name(request.getName().trim())
-                .phone(request.getPhone().trim())
-                .email(request.getEmail() != null ? request.getEmail().trim() : null)
-                .address(request.getAddress().trim())
-                .dob(request.getDob())
-                .bloodGroup(request.getBloodGroup() != null ? request.getBloodGroup().trim() : null)
-                .emergencyContact(request.getEmergencyContact().trim())
-                .licenseNumber(normalizedLicense)
-                .licenseExpiry(request.getLicenseExpiry())
-                .experienceYears(request.getExperienceYears())
-                .assignedVehicle(assignedVehicle)
-                .licenseDocumentUrl(request.getLicenseDocumentUrl())
-                .photoUrl(request.getPhotoUrl())
-                .status(request.getStatus() != null ? request.getStatus() : DriverStatus.AVAILABLE)
-                .rating(BigDecimal.valueOf(5.0))
-                .totalTrips(0)
-                .build();
+        // Experience calculation: if experienceYears is null and drivingSince is provided
+        Integer calculatedExp = request.getExperienceYears();
+        if (calculatedExp == null && request.getDrivingSince() != null) {
+            calculatedExp = Math.max(0, java.time.Period.between(request.getDrivingSince(), java.time.LocalDate.now()).getYears());
+        }
+        if (calculatedExp == null) {
+            calculatedExp = 0;
+        }
+
+        String emergencyContactCombined = request.getEmergencyContact() != null ? request.getEmergencyContact().trim() : "";
+        if (request.getEmergencyContactName() != null && !request.getEmergencyContactName().isBlank()) {
+            emergencyContactCombined = request.getEmergencyContactName().trim() + 
+                (request.getEmergencyContactPhone() != null ? " (" + request.getEmergencyContactPhone().trim() + ")" : "");
+        }
+
+        Driver driver;
+        if (existingOpt.isPresent()) {
+            driver = existingOpt.get();
+            driver.setName(request.getName().trim());
+            driver.setPhone(request.getPhone().trim());
+            if (request.getEmail() != null) driver.setEmail(request.getEmail().trim());
+            if (request.getAddress() != null) driver.setAddress(request.getAddress().trim());
+            if (request.getDob() != null) driver.setDob(request.getDob());
+            if (request.getGender() != null) driver.setGender(request.getGender().trim());
+            if (request.getBloodGroup() != null) driver.setBloodGroup(request.getBloodGroup().trim());
+            if (request.getIdProofType() != null) driver.setIdProofType(request.getIdProofType().trim());
+            if (request.getIdProofNumber() != null) driver.setIdProofNumber(request.getIdProofNumber().trim());
+            if (request.getIdProofDocumentUrl() != null) driver.setIdProofDocumentUrl(request.getIdProofDocumentUrl().trim());
+            if (request.getLicenseClass() != null) driver.setLicenseClass(request.getLicenseClass().trim());
+            if (request.getDrivingSince() != null) driver.setDrivingSince(request.getDrivingSince());
+            if (request.getJoiningDate() != null) driver.setJoiningDate(request.getJoiningDate());
+            if (request.getAddressProofType() != null) driver.setAddressProofType(request.getAddressProofType().trim());
+            if (request.getAddressProofNumber() != null) driver.setAddressProofNumber(request.getAddressProofNumber().trim());
+            if (request.getAddressProofDocumentUrl() != null) driver.setAddressProofDocumentUrl(request.getAddressProofDocumentUrl().trim());
+            if (!emergencyContactCombined.isBlank()) driver.setEmergencyContact(emergencyContactCombined);
+            if (request.getEmergencyContactName() != null) driver.setEmergencyContactName(request.getEmergencyContactName().trim());
+            if (request.getEmergencyContactPhone() != null) driver.setEmergencyContactPhone(request.getEmergencyContactPhone().trim());
+            if (request.getLanguagesSpoken() != null) driver.setLanguagesSpoken(request.getLanguagesSpoken().trim());
+            if (request.getVerificationStatus() != null) driver.setVerificationStatus(request.getVerificationStatus().trim());
+            if (request.getNotes() != null) driver.setNotes(request.getNotes().trim());
+            if (request.getLicenseExpiry() != null) driver.setLicenseExpiry(request.getLicenseExpiry());
+            driver.setExperienceYears(calculatedExp);
+            if (assignedVehicle != null) driver.setAssignedVehicle(assignedVehicle);
+            if (request.getLicenseDocumentUrl() != null) driver.setLicenseDocumentUrl(request.getLicenseDocumentUrl());
+            if (request.getPhotoUrl() != null) driver.setPhotoUrl(request.getPhotoUrl());
+            if (request.getStatus() != null) driver.setStatus(request.getStatus());
+            if (request.getRating() != null) driver.setRating(request.getRating());
+            if (request.getTotalTrips() != null) driver.setTotalTrips(request.getTotalTrips());
+        } else {
+            driver = Driver.builder()
+                    .user(user)
+                    .name(request.getName().trim())
+                    .phone(request.getPhone().trim())
+                    .email(request.getEmail() != null ? request.getEmail().trim() : null)
+                    .address(request.getAddress() != null ? request.getAddress().trim() : null)
+                    .dob(request.getDob())
+                    .gender(request.getGender() != null ? request.getGender().trim() : null)
+                    .bloodGroup(request.getBloodGroup() != null ? request.getBloodGroup().trim() : null)
+                    .idProofType(request.getIdProofType() != null ? request.getIdProofType().trim() : null)
+                    .idProofNumber(request.getIdProofNumber() != null ? request.getIdProofNumber().trim() : null)
+                    .idProofDocumentUrl(request.getIdProofDocumentUrl() != null ? request.getIdProofDocumentUrl().trim() : null)
+                    .licenseClass(request.getLicenseClass() != null ? request.getLicenseClass().trim() : null)
+                    .drivingSince(request.getDrivingSince())
+                    .joiningDate(request.getJoiningDate())
+                    .addressProofType(request.getAddressProofType() != null ? request.getAddressProofType().trim() : null)
+                    .addressProofNumber(request.getAddressProofNumber() != null ? request.getAddressProofNumber().trim() : null)
+                    .addressProofDocumentUrl(request.getAddressProofDocumentUrl() != null ? request.getAddressProofDocumentUrl().trim() : null)
+                    .emergencyContact(emergencyContactCombined)
+                    .emergencyContactName(request.getEmergencyContactName() != null ? request.getEmergencyContactName().trim() : null)
+                    .emergencyContactPhone(request.getEmergencyContactPhone() != null ? request.getEmergencyContactPhone().trim() : null)
+                    .languagesSpoken(request.getLanguagesSpoken() != null ? request.getLanguagesSpoken().trim() : null)
+                    .verificationStatus(request.getVerificationStatus() != null ? request.getVerificationStatus().trim() : "Pending")
+                    .notes(request.getNotes() != null ? request.getNotes().trim() : null)
+                    .licenseNumber(normalizedLicense)
+                    .licenseExpiry(request.getLicenseExpiry())
+                    .experienceYears(calculatedExp)
+                    .assignedVehicle(assignedVehicle)
+                    .licenseDocumentUrl(request.getLicenseDocumentUrl())
+                    .photoUrl(request.getPhotoUrl())
+                    .status(request.getStatus() != null ? request.getStatus() : DriverStatus.AVAILABLE)
+                    .rating(request.getRating() != null ? request.getRating() : BigDecimal.valueOf(5.0))
+                    .totalTrips(request.getTotalTrips() != null ? request.getTotalTrips() : 0)
+                    .build();
+        }
 
         Driver saved = driverRepository.save(driver);
         log.info("[FLEET] Registered new chauffeur {} (License: {}) for vendor {}", saved.getId(), saved.getLicenseNumber(), user.getEmail());
@@ -153,13 +220,39 @@ public class VendorDriverService {
         driver.setName(request.getName().trim());
         driver.setPhone(request.getPhone().trim());
         driver.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
-        driver.setAddress(request.getAddress().trim());
+        if (request.getAddress() != null) driver.setAddress(request.getAddress().trim());
         driver.setDob(request.getDob());
+        if (request.getGender() != null) driver.setGender(request.getGender().trim());
         driver.setBloodGroup(request.getBloodGroup() != null ? request.getBloodGroup().trim() : null);
-        driver.setEmergencyContact(request.getEmergencyContact().trim());
+        if (request.getIdProofType() != null) driver.setIdProofType(request.getIdProofType().trim());
+        if (request.getIdProofNumber() != null) driver.setIdProofNumber(request.getIdProofNumber().trim());
+        if (request.getIdProofDocumentUrl() != null && !request.getIdProofDocumentUrl().isBlank()) {
+            driver.setIdProofDocumentUrl(request.getIdProofDocumentUrl().trim());
+        }
+        if (request.getLicenseClass() != null) driver.setLicenseClass(request.getLicenseClass().trim());
+        if (request.getDrivingSince() != null) driver.setDrivingSince(request.getDrivingSince());
+        if (request.getJoiningDate() != null) driver.setJoiningDate(request.getJoiningDate());
+        if (request.getAddressProofType() != null) driver.setAddressProofType(request.getAddressProofType().trim());
+        if (request.getAddressProofNumber() != null) driver.setAddressProofNumber(request.getAddressProofNumber().trim());
+        if (request.getAddressProofDocumentUrl() != null && !request.getAddressProofDocumentUrl().isBlank()) {
+            driver.setAddressProofDocumentUrl(request.getAddressProofDocumentUrl().trim());
+        }
+        if (request.getEmergencyContactName() != null) driver.setEmergencyContactName(request.getEmergencyContactName().trim());
+        if (request.getEmergencyContactPhone() != null) driver.setEmergencyContactPhone(request.getEmergencyContactPhone().trim());
+        if (request.getLanguagesSpoken() != null) driver.setLanguagesSpoken(request.getLanguagesSpoken().trim());
+        if (request.getVerificationStatus() != null) driver.setVerificationStatus(request.getVerificationStatus().trim());
+        if (request.getNotes() != null) driver.setNotes(request.getNotes().trim());
+        if (request.getEmergencyContact() != null) driver.setEmergencyContact(request.getEmergencyContact().trim());
         driver.setLicenseNumber(normalizedLicense);
         driver.setLicenseExpiry(request.getLicenseExpiry());
-        driver.setExperienceYears(request.getExperienceYears());
+        
+        Integer calculatedExp = request.getExperienceYears();
+        if (calculatedExp == null && request.getDrivingSince() != null) {
+            calculatedExp = Math.max(0, java.time.Period.between(request.getDrivingSince(), java.time.LocalDate.now()).getYears());
+        }
+        if (calculatedExp != null) {
+            driver.setExperienceYears(calculatedExp);
+        }
         driver.setAssignedVehicle(assignedVehicle);
 
         if (request.getLicenseDocumentUrl() != null && !request.getLicenseDocumentUrl().isBlank()) {

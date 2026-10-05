@@ -92,6 +92,20 @@ export default function VendorSupportPage() {
         </div>
       </div>
 
+      {/* Support Hero Banner Photo */}
+      <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/cars/dzire.jpg"
+          alt="Vendor Support & Assistance"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Dedicated Fleet Desk</span>
+          <h2 className="text-xl font-black text-white">24/7 Operations & Roadside Assistance</h2>
+          <p className="text-xs text-slate-200">Rapid driver relief, live toll & parking adjustments, and high-priority ticket tracking.</p>
+        </div>
+      </div>
+
       {/* Emergency Hotlines Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         

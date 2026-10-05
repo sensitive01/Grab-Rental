@@ -43,33 +43,76 @@ public class VendorVehicleService {
 
         String normalizedPlate = request.getVehicleNumber().trim().toUpperCase();
 
-        if (vehicleRepository.existsByVehicleNumberIgnoreCase(normalizedPlate)) {
-            throw new IllegalArgumentException("Vehicle plate number '" + normalizedPlate + "' is already registered in the platform");
+        Optional<Vehicle> existingOpt = vehicleRepository.findByVehicleNumberIgnoreCase(normalizedPlate);
+        Vehicle vehicle;
+        if (existingOpt.isPresent()) {
+            vehicle = existingOpt.get();
+            if (!vehicle.getUser().getId().equals(vendorUserId)) {
+                throw new IllegalArgumentException("Vehicle plate number '" + normalizedPlate + "' is already registered in the platform");
+            }
+            vehicle.setModel(request.getVehicleModel().trim());
+            vehicle.setVehicleType(request.getVehicleType().trim());
+            if (request.getRegistrationNumber() != null) vehicle.setRegistrationNumber(request.getRegistrationNumber().trim().toUpperCase());
+            vehicle.setSeatingCapacity(request.getSeatingCapacity());
+            if (request.getFuelType() != null) vehicle.setFuelType(request.getFuelType().trim());
+            if (request.getAcType() != null) vehicle.setAcType(request.getAcType().trim());
+            if (request.getVariant() != null) vehicle.setVariant(request.getVariant().trim());
+            if (request.getColor() != null) vehicle.setColor(request.getColor().trim());
+            if (request.getRegistrationType() != null) vehicle.setRegistrationType(request.getRegistrationType().trim());
+            if (request.getAlternateFuel() != null) vehicle.setAlternateFuel(request.getAlternateFuel().trim());
+            if (request.getTransmission() != null) vehicle.setTransmission(request.getTransmission().trim());
+            if (request.getEngineCc() != null) vehicle.setEngineCc(request.getEngineCc());
+            if (request.getParkingLocation() != null) vehicle.setParkingLocation(request.getParkingLocation().trim());
+            if (request.getFeatures() != null) vehicle.setFeatures(request.getFeatures().trim());
+            if (request.getYear() != null) vehicle.setYear(request.getYear());
+            if (request.getInsuranceExpiry() != null) vehicle.setInsuranceExpiry(request.getInsuranceExpiry());
+            if (request.getPermitExpiry() != null) vehicle.setPermitExpiry(request.getPermitExpiry());
+            if (request.getFitnessExpiry() != null) vehicle.setFitnessExpiry(request.getFitnessExpiry());
+            if (request.getDailyRate() != null) vehicle.setDailyRate(request.getDailyRate());
+            if (request.getPerKmRate() != null) vehicle.setPerKmRate(request.getPerKmRate());
+            if (request.getCurrentLocation() != null) vehicle.setCurrentLocation(request.getCurrentLocation().trim());
+            if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) vehicle.setImageUrl(request.getImageUrl().trim());
+            if (request.getPhotos() != null && !request.getPhotos().isBlank()) vehicle.setPhotos(request.getPhotos().trim());
+            if (request.getRcDocumentUrl() != null) vehicle.setRcDocumentUrl(request.getRcDocumentUrl());
+            if (request.getInsuranceDocumentUrl() != null) vehicle.setInsuranceDocumentUrl(request.getInsuranceDocumentUrl());
+            if (request.getPermitDocumentUrl() != null) vehicle.setPermitDocumentUrl(request.getPermitDocumentUrl());
+            if (request.getFitnessDocumentUrl() != null) vehicle.setFitnessDocumentUrl(request.getFitnessDocumentUrl());
+        } else {
+            vehicle = Vehicle.builder()
+                    .user(user)
+                    .vehicleType(request.getVehicleType().trim())
+                    .model(request.getVehicleModel().trim())
+                    .vehicleNumber(normalizedPlate)
+                    .registrationNumber(request.getRegistrationNumber() != null ? request.getRegistrationNumber().trim().toUpperCase() : null)
+                    .seatingCapacity(request.getSeatingCapacity())
+                    .fuelType(request.getFuelType() != null ? request.getFuelType().trim() : null)
+                    .acType(request.getAcType() != null ? request.getAcType().trim() : null)
+                    .variant(request.getVariant() != null ? request.getVariant().trim() : null)
+                    .color(request.getColor() != null ? request.getColor().trim() : null)
+                    .registrationType(request.getRegistrationType() != null ? request.getRegistrationType().trim() : null)
+                    .alternateFuel(request.getAlternateFuel() != null ? request.getAlternateFuel().trim() : null)
+                    .transmission(request.getTransmission() != null ? request.getTransmission().trim() : null)
+                    .engineCc(request.getEngineCc())
+                    .parkingLocation(request.getParkingLocation() != null ? request.getParkingLocation().trim() : null)
+                    .features(request.getFeatures() != null ? request.getFeatures().trim() : null)
+                    .year(request.getYear())
+                    .insuranceExpiry(request.getInsuranceExpiry())
+                    .permitExpiry(request.getPermitExpiry())
+                    .fitnessExpiry(request.getFitnessExpiry())
+                    .dailyRate(request.getDailyRate())
+                    .perKmRate(request.getPerKmRate())
+                    .currentLocation(request.getCurrentLocation() != null ? request.getCurrentLocation().trim() : null)
+                    .status(VehicleStatus.AVAILABLE)
+                    .imageUrl(request.getImageUrl() != null && !request.getImageUrl().isBlank() 
+                            ? request.getImageUrl().trim() 
+                            : (request.getPhotos() != null && !request.getPhotos().isBlank() ? request.getPhotos().split(",")[0].trim() : null))
+                    .photos(request.getPhotos() != null ? request.getPhotos().trim() : null)
+                    .rcDocumentUrl(request.getRcDocumentUrl())
+                    .insuranceDocumentUrl(request.getInsuranceDocumentUrl())
+                    .permitDocumentUrl(request.getPermitDocumentUrl())
+                    .fitnessDocumentUrl(request.getFitnessDocumentUrl())
+                    .build();
         }
-
-        Vehicle vehicle = Vehicle.builder()
-                .user(user)
-                .vehicleType(request.getVehicleType().trim())
-                .model(request.getVehicleModel().trim())
-                .vehicleNumber(normalizedPlate)
-                .registrationNumber(request.getRegistrationNumber() != null ? request.getRegistrationNumber().trim().toUpperCase() : null)
-                .seatingCapacity(request.getSeatingCapacity())
-                .fuelType(request.getFuelType() != null ? request.getFuelType().trim() : null)
-                .acType(request.getAcType() != null ? request.getAcType().trim() : null)
-                .year(request.getYear())
-                .insuranceExpiry(request.getInsuranceExpiry())
-                .permitExpiry(request.getPermitExpiry())
-                .fitnessExpiry(request.getFitnessExpiry())
-                .dailyRate(request.getDailyRate())
-                .perKmRate(request.getPerKmRate())
-                .currentLocation(request.getCurrentLocation() != null ? request.getCurrentLocation().trim() : null)
-                .status(VehicleStatus.AVAILABLE)
-                .imageUrl(request.getImageUrl())
-                .rcDocumentUrl(request.getRcDocumentUrl())
-                .insuranceDocumentUrl(request.getInsuranceDocumentUrl())
-                .permitDocumentUrl(request.getPermitDocumentUrl())
-                .fitnessDocumentUrl(request.getFitnessDocumentUrl())
-                .build();
 
         Vehicle saved = vehicleRepository.save(vehicle);
         log.info("[FLEET] Registered new vehicle {} (Plate: {}) for vendor {}", saved.getId(), saved.getVehicleNumber(), user.getEmail());
@@ -147,6 +190,14 @@ public class VendorVehicleService {
         vehicle.setSeatingCapacity(request.getSeatingCapacity());
         if (request.getFuelType() != null) vehicle.setFuelType(request.getFuelType().trim());
         if (request.getAcType() != null) vehicle.setAcType(request.getAcType().trim());
+        if (request.getVariant() != null) vehicle.setVariant(request.getVariant().trim());
+        if (request.getColor() != null) vehicle.setColor(request.getColor().trim());
+        if (request.getRegistrationType() != null) vehicle.setRegistrationType(request.getRegistrationType().trim());
+        if (request.getAlternateFuel() != null) vehicle.setAlternateFuel(request.getAlternateFuel().trim());
+        if (request.getTransmission() != null) vehicle.setTransmission(request.getTransmission().trim());
+        if (request.getEngineCc() != null) vehicle.setEngineCc(request.getEngineCc());
+        if (request.getParkingLocation() != null) vehicle.setParkingLocation(request.getParkingLocation().trim());
+        if (request.getFeatures() != null) vehicle.setFeatures(request.getFeatures().trim());
         vehicle.setYear(request.getYear());
         vehicle.setInsuranceExpiry(request.getInsuranceExpiry());
         vehicle.setPermitExpiry(request.getPermitExpiry());

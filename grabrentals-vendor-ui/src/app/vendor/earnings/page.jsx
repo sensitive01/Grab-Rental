@@ -181,6 +181,20 @@ export default function VendorEarningsPage() {
         </div>
       </div>
 
+      {/* Earnings Hero Banner Photo */}
+      <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/fleet/sedan.jpg"
+          alt="Fleet Revenue & Payouts"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Financial Settlements</span>
+          <h2 className="text-xl font-black text-white">Earnings & Net Revenue Dashboard</h2>
+          <p className="text-xs text-slate-200">Transparent fare breakdowns, instant booking margins, and bank settlement reconciliation.</p>
+        </div>
+      </div>
+
       {/* KPI Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

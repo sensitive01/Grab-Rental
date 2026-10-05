@@ -200,6 +200,12 @@ export default function VendorDashboard() {
 
       {/* Welcome Banner */}
       <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-slate-800">
+        <img
+          src="/images/hero-bg.jpg"
+          alt="Fleet Operations"
+          className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-transparent pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">

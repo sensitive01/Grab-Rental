@@ -34,6 +34,9 @@ public class VendorProfile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
+    @Column(name = "vendor_id_code", length = 32)
+    private String vendorIdCode;
+
     @Column(name = "company_name", nullable = false)
     private String companyName;
 

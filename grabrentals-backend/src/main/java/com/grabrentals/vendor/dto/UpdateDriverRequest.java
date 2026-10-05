@@ -4,6 +4,7 @@ import com.grabrentals.vendor.entity.DriverStatus;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -24,15 +25,47 @@ public class UpdateDriverRequest {
     @Email(message = "Invalid email format")
     private String email;
 
-    @NotBlank(message = "Residential address is required")
     private String address;
 
     private LocalDate dob;
 
+    private String gender;
+
     private String bloodGroup;
 
-    @NotBlank(message = "Emergency contact is required")
+    private String idProofType;
+
+    private String idProofNumber;
+
+    private String idProofDocumentUrl;
+
+    private String licenseClass;
+
+    private LocalDate drivingSince;
+
+    private LocalDate joiningDate;
+
+    private String addressProofType;
+
+    private String addressProofNumber;
+
+    private String addressProofDocumentUrl;
+
     private String emergencyContact;
+
+    private String emergencyContactName;
+
+    private String emergencyContactPhone;
+
+    private String languagesSpoken;
+
+    private String verificationStatus;
+
+    private String notes;
+
+    private BigDecimal rating;
+
+    private Integer totalTrips;
 
     @NotBlank(message = "Commercial driving license number is required")
     private String licenseNumber;
@@ -40,9 +73,6 @@ public class UpdateDriverRequest {
     @NotNull(message = "License expiry date is required")
     private LocalDate licenseExpiry;
 
-    @NotNull(message = "Driving experience is required")
-    @Min(value = 0, message = "Experience years must be non-negative")
-    @Max(value = 50, message = "Experience years cannot exceed 50")
     private Integer experienceYears;
 
     private UUID assignedVehicleId;

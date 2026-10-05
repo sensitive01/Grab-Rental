@@ -58,6 +58,30 @@ public class Vehicle {
     @Column(name = "ac_type", length = 50)
     private String acType;
 
+    @Column(name = "variant", length = 100)
+    private String variant;
+
+    @Column(name = "color", length = 50)
+    private String color;
+
+    @Column(name = "registration_type", length = 50)
+    private String registrationType;
+
+    @Column(name = "alternate_fuel", length = 50)
+    private String alternateFuel;
+
+    @Column(name = "transmission", length = 30)
+    private String transmission;
+
+    @Column(name = "engine_cc")
+    private Integer engineCc;
+
+    @Column(name = "parking_location", length = 255)
+    private String parkingLocation;
+
+    @Column(name = "features", length = 1000)
+    private String features;
+
     @Column(name = "manufacturing_year")
     private Integer year;
 
@@ -86,6 +110,9 @@ public class Vehicle {
 
     @Column(name = "image_url", length = 500)
     private String imageUrl;
+
+    @Column(name = "photos", length = 4000)
+    private String photos;
 
     @Column(name = "rc_document_url", length = 500)
     private String rcDocumentUrl;

@@ -8,6 +8,8 @@ import com.grabrentals.customer.entity.BookingStatus;
 import com.grabrentals.customer.repository.BookingRepository;
 import com.grabrentals.customer.service.CustomerBookingService;
 import com.grabrentals.security.CustomUserDetails;
+import com.grabrentals.security.CustomUserDetailsService;
+import com.grabrentals.security.JwtService;
 import com.grabrentals.user.entity.User;
 import com.grabrentals.user.repository.UserRepository;
 import com.grabrentals.vendor.dto.DriverResponse;
@@ -55,6 +57,8 @@ public class VendorController {
     private final CustomerBookingService customerBookingService;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
+    private final JwtService jwtService;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @PreAuthorize("permitAll()")
     @PostMapping(value = {"/profile/upload", "/compliance/upload"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -159,8 +163,10 @@ public class VendorController {
 
         VendorProfile profile = vendorProfileRepository.findByUserId(vendorId)
                 .orElseGet(() -> {
+                    int num = Math.abs(vendorId.hashCode() % 900000) + 100000;
                     VendorProfile newProfile = VendorProfile.builder()
                             .user(vendor)
+                            .vendorIdCode("GR-VND-" + num)
                             .companyName(vendor.getBusinessName() != null && !vendor.getBusinessName().isBlank()
                                     ? vendor.getBusinessName()
                                     : vendor.getName() + " Logistics")
@@ -171,6 +177,12 @@ public class VendorController {
                             .build();
                     return vendorProfileRepository.save(newProfile);
                 });
+
+        if (profile.getVendorIdCode() == null || profile.getVendorIdCode().isBlank()) {
+            int num = Math.abs(vendorId.hashCode() % 900000) + 100000;
+            profile.setVendorIdCode("GR-VND-" + num);
+            profile = vendorProfileRepository.save(profile);
+        }
 
         String resolvedBusinessName = profile.getCompanyName();
         if (resolvedBusinessName == null || resolvedBusinessName.isBlank()) {
@@ -199,6 +211,8 @@ public class VendorController {
         Map<String, Object> map = new HashMap<>();
         map.put("id", profile.getId());
         map.put("userId", vendor.getId());
+        map.put("vendorId", profile.getVendorIdCode());
+        map.put("vendorIdCode", profile.getVendorIdCode());
         map.put("businessName", resolvedBusinessName);
         map.put("tradeName", resolvedTradeName);
         map.put("ownerName", vendor.getName() != null ? vendor.getName() : "");
@@ -293,7 +307,17 @@ public class VendorController {
             vendor.setCity(String.valueOf(updates.get("city")));
         }
         if (updates.containsKey("email")) {
-            vendor.setEmail(String.valueOf(updates.get("email")));
+            String newEmail = String.valueOf(updates.get("email")).toLowerCase().trim();
+            if (!newEmail.isBlank() && !newEmail.equalsIgnoreCase(vendor.getEmail())) {
+                boolean emailTaken = userRepository.findByEmail(newEmail)
+                        .filter(existing -> !existing.getId().equals(vendorId))
+                        .isPresent();
+                if (emailTaken) {
+                    throw new IllegalArgumentException("Email is already registered to another account: " + newEmail);
+                }
+                customUserDetailsService.evictUser(vendor.getEmail());
+                vendor.setEmail(newEmail);
+            }
         }
         if (updates.containsKey("gstDocumentUrl")) {
             profile.setGstDocumentUrl(String.valueOf(updates.get("gstDocumentUrl")));
@@ -318,7 +342,16 @@ public class VendorController {
         profile.setFleetSize((int) vehicleRepository.countByUserId(vendorId));
         vendorProfileRepository.save(profile);
 
-        return getProfile(userDetails);
+        customUserDetailsService.evictUser(vendor.getEmail());
+        customUserDetailsService.evictUser("id:" + vendorId);
+
+        ResponseEntity<ApiResponse<Map<String, Object>>> profileResp = getProfile(userDetails);
+        Map<String, Object> data = new HashMap<>(profileResp.getBody().getData());
+        String freshToken = jwtService.generateToken(vendor);
+        data.put("token", freshToken);
+        data.put("accessToken", freshToken);
+
+        return ResponseEntity.ok(ApiResponse.success("Vendor profile updated successfully", data));
     }
 
     @PutMapping("/change-password")

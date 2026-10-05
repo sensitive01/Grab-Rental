@@ -25,6 +25,13 @@ export default function CorporatePage() {
             
             {/* Features */}
             <div>
+                <div className="mb-6 rounded-2xl overflow-hidden border border-slate-200 shadow-md h-56">
+                    <img 
+                      src="/images/fleet/sedan.jpg" 
+                      alt="Corporate Chauffeur Fleet" 
+                      className="w-full h-full object-cover"
+                    />
+                </div>
                 <h2 className="text-3xl font-extrabold text-slate-900 mb-8">Why Partner With Us?</h2>
                 <div className="space-y-6">
                     <div className="flex gap-4">

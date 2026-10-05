@@ -384,7 +384,7 @@ public class AuthIntegrationTest {
     @DisplayName("13. Customer OTP flow: sends OTP, auto-creates customer on verify, and updates profile")
     void testOtpSendAndVerifyAndUpdateProfile() throws Exception {
         // Step 1: Send OTP to 10-digit mobile
-        com.grabrentals.auth.dto.SendOtpRequest sendRequest = new com.grabrentals.auth.dto.SendOtpRequest("9876543210");
+        com.grabrentals.auth.dto.SendOtpRequest sendRequest = com.grabrentals.auth.dto.SendOtpRequest.builder().phone("9876543210").build();
         MvcResult sendResult = mockMvc.perform(post("/api/auth/otp/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sendRequest)))
@@ -397,7 +397,7 @@ public class AuthIntegrationTest {
         String devOtp = sendJson.path("data").path("devOtp").asText();
 
         // Step 2: Verify OTP
-        com.grabrentals.auth.dto.VerifyOtpRequest verifyRequest = new com.grabrentals.auth.dto.VerifyOtpRequest("9876543210", devOtp);
+        com.grabrentals.auth.dto.VerifyOtpRequest verifyRequest = com.grabrentals.auth.dto.VerifyOtpRequest.builder().phone("9876543210").otp(devOtp).build();
         MvcResult verifyResult = mockMvc.perform(post("/api/auth/otp/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyRequest)))

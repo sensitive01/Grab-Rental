@@ -104,7 +104,24 @@ export const vendorApi = {
   updateProfile: async (payload) => {
     try {
       const res = await axiosClient.put("/api/vendor/profile", payload);
-      return res.data?.data || null;
+      const data = res.data?.data;
+      if (data?.accessToken || data?.token) {
+        const freshToken = data.accessToken || data.token;
+        if (typeof window !== "undefined") {
+          localStorage.setItem("grabrentals_vendor_token", freshToken);
+          const raw = localStorage.getItem("grabrentals_vendor_session");
+          if (raw) {
+            try {
+              const session = JSON.parse(raw);
+              session.token = freshToken;
+              if (payload?.email) session.email = payload.email;
+              if (payload?.name) session.name = payload.name;
+              localStorage.setItem("grabrentals_vendor_session", JSON.stringify(session));
+            } catch (ignored) {}
+          }
+        }
+      }
+      return data || null;
     } catch (err) {
       console.error("vendorApi.updateProfile error:", err);
       throw err;

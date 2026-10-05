@@ -23,8 +23,23 @@ public class DriverResponse {
     private String email;
     private String address;
     private LocalDate dob;
+    private String gender;
     private String bloodGroup;
+    private String idProofType;
+    private String idProofNumber;
+    private String idProofDocumentUrl;
+    private String licenseClass;
+    private LocalDate drivingSince;
+    private LocalDate joiningDate;
+    private String addressProofType;
+    private String addressProofNumber;
+    private String addressProofDocumentUrl;
     private String emergencyContact;
+    private String emergencyContactName;
+    private String emergencyContactPhone;
+    private String languagesSpoken;
+    private String verificationStatus;
+    private String notes;
     private String licenseNumber;
     private LocalDate licenseExpiry;
     private Integer experienceYears;
@@ -57,8 +72,23 @@ public class DriverResponse {
                 .email(driver.getEmail())
                 .address(driver.getAddress())
                 .dob(driver.getDob())
+                .gender(driver.getGender())
                 .bloodGroup(driver.getBloodGroup())
+                .idProofType(driver.getIdProofType())
+                .idProofNumber(driver.getIdProofNumber())
+                .idProofDocumentUrl(driver.getIdProofDocumentUrl())
+                .licenseClass(driver.getLicenseClass())
+                .drivingSince(driver.getDrivingSince())
+                .joiningDate(driver.getJoiningDate())
+                .addressProofType(driver.getAddressProofType())
+                .addressProofNumber(driver.getAddressProofNumber())
+                .addressProofDocumentUrl(driver.getAddressProofDocumentUrl())
                 .emergencyContact(driver.getEmergencyContact())
+                .emergencyContactName(driver.getEmergencyContactName())
+                .emergencyContactPhone(driver.getEmergencyContactPhone())
+                .languagesSpoken(driver.getLanguagesSpoken())
+                .verificationStatus(driver.getVerificationStatus())
+                .notes(driver.getNotes())
                 .licenseNumber(driver.getLicenseNumber())
                 .licenseExpiry(driver.getLicenseExpiry())
                 .experienceYears(driver.getExperienceYears())

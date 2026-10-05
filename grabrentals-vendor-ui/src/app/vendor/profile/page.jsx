@@ -123,6 +123,7 @@ export default function VendorProfilePage() {
   const [partnerType, setPartnerType] = useState("individual"); // "individual" | "business"
 
   const [vendorData, setVendorData] = useState({
+    vendorId: "",
     businessName: "",
     tradeName: "",
     ownerName: "",
@@ -154,6 +155,7 @@ export default function VendorProfilePage() {
           setPartnerType(isInd ? "individual" : "business");
           const defaultBizName = res.businessName || (res.ownerName ? `${res.ownerName} Fleet` : "Independent Fleet");
           setVendorData({
+            vendorId: res.vendorId || res.vendorIdCode || "",
             businessName: defaultBizName,
             tradeName: res.tradeName || defaultBizName,
             ownerName: res.ownerName || "",
@@ -253,16 +255,36 @@ export default function VendorProfilePage() {
         <Breadcrumbs items={[{ label: "Account", href: "/vendor/profile" }, { label: "Profile & KYC" }]} />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 flex-wrap">
               Fleet Partner Profile
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                 Verified Partner
               </span>
+              {vendorData.vendorId && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/30 font-mono font-bold text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                  ID: {vendorData.vendorId}
+                </span>
+              )}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500">
               Manage partner identity, KYC proofs, and direct bank settlement accounts.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Profile Hero Banner Photo */}
+      <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/login-hero.jpg"
+          alt="Vendor Partner Profile"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">KYC & Banking Setup</span>
+          <h2 className="text-xl font-black text-white">Partner Credentials & Settlement Account</h2>
+          <p className="text-xs text-slate-200">Verified company identity, GST documentation, and automatic payout destinations.</p>
         </div>
       </div>
 
@@ -332,6 +354,40 @@ export default function VendorProfilePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* Dedicated Vendor Partner ID banner card */}
+            <div className="sm:col-span-2 p-3.5 bg-amber-50/70 border border-amber-200/90 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-slate-900 text-xs">Vendor Partner ID</span>
+                    <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      System Generated & Verified
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">Unique Grab Rentals partner identifier for invoices, dispatch, and support.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="font-mono font-black text-xs sm:text-sm tracking-wider text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                  {vendorData.vendorId || "GR-VND-..."}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (vendorData.vendorId) {
+                      navigator.clipboard.writeText(vendorData.vendorId);
+                      setToastMessage("Vendor Partner ID copied to clipboard!");
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Copy ID
+                </button>
+              </div>
+            </div>
             <div className="space-y-1.5">
               <label className="font-bold text-slate-700">
                 {isIndividual ? "Fleet / Display Tag *" : "Display Business Name *"}

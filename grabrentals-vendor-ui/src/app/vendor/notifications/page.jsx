@@ -108,6 +108,20 @@ export default function VendorNotificationsPage() {
         </div>
       </div>
 
+      {/* Notifications Hero Banner Photo */}
+      <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/fleet/tempo.jpg"
+          alt="Partner Dispatch Notifications"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Real-Time Dispatch Feed</span>
+          <h2 className="text-xl font-black text-white">Operational Updates & Fleet Signals</h2>
+          <p className="text-xs text-slate-200">Instant trip confirmations, chauffeur duty shifts, and vehicle compliance reminders.</p>
+        </div>
+      </div>
+
       {/* Category Pills */}
       <div className="flex items-center gap-2 overflow-x-auto text-xs font-bold pb-1">
         {["all", "booking", "compliance", "payment", "trip"].map((cat) => (

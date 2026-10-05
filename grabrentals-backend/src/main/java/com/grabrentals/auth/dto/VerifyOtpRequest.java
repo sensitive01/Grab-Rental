@@ -23,4 +23,5 @@ public class VerifyOtpRequest {
     private String role; // "FLEET" / "VENDOR" or "CUSTOMER"
     private String name;
     private String businessName;
+    private String purpose; // "LOGIN" | "REGISTRATION"
 }

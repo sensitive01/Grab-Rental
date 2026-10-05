@@ -33,6 +33,14 @@ public class CreateVehicleRequest {
     private String fuelType;
 
     private String acType;
+    private String variant;
+    private String color;
+    private String registrationType;
+    private String alternateFuel;
+    private String transmission;
+    private Integer engineCc;
+    private String parkingLocation;
+    private String features;
 
     @Min(value = 2000, message = "Year must be 2000 or later")
     private Integer year;
@@ -51,6 +59,7 @@ public class CreateVehicleRequest {
     private String currentLocation;
 
     private String imageUrl;
+    private String photos;
     private String rcDocumentUrl;
     private String insuranceDocumentUrl;
     private String permitDocumentUrl;

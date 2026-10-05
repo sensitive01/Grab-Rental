@@ -70,7 +70,7 @@ function LoginContent() {
     }
 
     setLoading(true);
-    const res = await sendOtp(clean);
+    const res = await sendOtp(clean, { purpose: "LOGIN" });
     setLoading(false);
 
     if (res.success) {
@@ -101,6 +101,7 @@ function LoginContent() {
     const res = await verifyVendorOtp({
       phone,
       otp: otp.trim(),
+      purpose: "LOGIN",
     });
     setLoading(false);
 

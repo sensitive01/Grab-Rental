@@ -26,6 +26,14 @@ public class VehicleResponse {
     private Integer seatingCapacity;
     private String fuelType;
     private String acType;
+    private String variant;
+    private String color;
+    private String registrationType;
+    private String alternateFuel;
+    private String transmission;
+    private Integer engineCc;
+    private String parkingLocation;
+    private String features;
     private Integer year;
     private LocalDate insuranceExpiry;
     private LocalDate permitExpiry;
@@ -35,6 +43,7 @@ public class VehicleResponse {
     private String currentLocation;
     private String status;
     private String imageUrl;
+    private String photos;
     private String rcDocumentUrl;
     private String insuranceDocumentUrl;
     private String permitDocumentUrl;
@@ -71,6 +80,14 @@ public class VehicleResponse {
                 .seatingCapacity(vehicle.getSeatingCapacity())
                 .fuelType(vehicle.getFuelType())
                 .acType(vehicle.getAcType())
+                .variant(vehicle.getVariant())
+                .color(vehicle.getColor())
+                .registrationType(vehicle.getRegistrationType())
+                .alternateFuel(vehicle.getAlternateFuel())
+                .transmission(vehicle.getTransmission())
+                .engineCc(vehicle.getEngineCc())
+                .parkingLocation(vehicle.getParkingLocation())
+                .features(vehicle.getFeatures())
                 .year(vehicle.getYear())
                 .insuranceExpiry(vehicle.getInsuranceExpiry())
                 .permitExpiry(vehicle.getPermitExpiry())
@@ -80,6 +97,7 @@ public class VehicleResponse {
                 .currentLocation(vehicle.getCurrentLocation())
                 .status(vehicle.getStatus() != null ? vehicle.getStatus().name() : "AVAILABLE")
                 .imageUrl(vehicle.getImageUrl())
+                .photos(vehicle.getPhotos())
                 .rcDocumentUrl(vehicle.getRcDocumentUrl())
                 .insuranceDocumentUrl(vehicle.getInsuranceDocumentUrl())
                 .permitDocumentUrl(vehicle.getPermitDocumentUrl())

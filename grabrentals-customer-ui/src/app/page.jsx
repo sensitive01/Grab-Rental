@@ -1,6 +1,7 @@
 import BookingWidget from "@/components/home/BookingWidget";
 import { CheckCircle, ShieldCheck, MapPin, Star, CarFront, FileText, UserCheck, ShieldAlert, BadgeCheck } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -63,21 +64,25 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { name: "Executive Sedan", price: "Starts ₹11/km", desc: "Dzire, Etios", tags: ["4 Seats", "2 Bags", "AC"], badge: null, image: "/images/fleet/sedan.jpg" },
-              { name: "Innova Crysta / SUV", price: "Starts ₹16/km", desc: "Innova Crysta, Hycross", tags: ["6-7 Seats", "4 Bags", "Captain Seats"], badge: "MOST POPULAR", image: "/images/fleet/suv.jpg" },
-              { name: "Luxury Tempo Traveller", price: "Starts ₹24/km", desc: "12 to 26 Seater Force Urbania", tags: ["Maharaja Recliner", "AC", "AV System"], badge: null, image: "/images/fleet/tempo.jpg" },
-              { name: "Luxury Coaches & Buses", price: "Starts ₹45/km", desc: "35 to 55 Seater Volvo, Scania", tags: ["Washroom", "Mic", "Air Suspension"], badge: null, image: "/images/fleet/bus.jpg" },
+              { slug: "sedan", name: "Executive Sedan", price: "Starts ₹11/km", desc: "Dzire, Etios, Aura", tags: ["4 Seats", "2 Bags", "AC"], badge: null, image: "/images/fleet/sedan.jpg" },
+              { slug: "suv", name: "Innova Crysta / SUV", price: "Starts ₹16/km", desc: "Innova Crysta, Hycross", tags: ["6-7 Seats", "4 Bags", "Captain Seats"], badge: "MOST POPULAR", image: "/images/fleet/suv.jpg" },
+              { slug: "tempo", name: "Luxury Tempo Traveller", price: "Starts ₹24/km", desc: "12 to 26 Seater Force Urbania", tags: ["Maharaja Recliner", "AC", "AV System"], badge: null, image: "/images/fleet/tempo.jpg" },
+              { slug: "bus", name: "Luxury Coaches & Buses", price: "Starts ₹45/km", desc: "35 to 55 Seater Volvo, Scania", tags: ["Washroom", "Mic", "Air Suspension"], badge: null, image: "/images/fleet/bus.jpg" },
             ].map((fleet, idx) => (
-              <div key={idx} className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 flex flex-col items-center text-center relative hover:shadow-md transition-all cursor-pointer">
+              <Link 
+                key={idx} 
+                href={`/fleet/${fleet.slug}`}
+                className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 flex flex-col items-center text-center relative hover:shadow-xl hover:border-amber-400 hover:bg-white transition-all cursor-pointer group"
+              >
                 {fleet.badge && (
                   <div className="absolute -top-3 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm z-10">
                     {fleet.badge}
                   </div>
                 )}
                 <div className="w-full aspect-[16/9] relative mb-6 rounded-xl overflow-hidden bg-white shadow-sm border border-slate-100">
-                  <Image src={fleet.image} alt={fleet.name} fill sizes="(max-width: 768px) 100vw, 300px" className="object-cover hover:scale-105 transition-transform duration-500" />
+                  <Image src={fleet.image} alt={fleet.name} fill sizes="(max-width: 768px) 100vw, 300px" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
-                <h3 className="text-lg font-extrabold text-slate-900 mb-1">{fleet.name}</h3>
+                <h3 className="text-lg font-extrabold text-slate-900 mb-1 group-hover:text-amber-600 transition-colors">{fleet.name}</h3>
                 <p className="text-sm font-semibold text-slate-500 mb-4">{fleet.desc}</p>
                 <div className="flex flex-wrap gap-2 justify-center mb-6">
                   {fleet.tags.map(tag => (
@@ -85,9 +90,12 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="mt-auto flex items-center justify-between w-full pt-4 border-t border-slate-200">
-                  <span className="text-lg font-black text-brand-emerald-dark mx-auto">{fleet.price}</span>
+                  <span className="text-lg font-black text-brand-emerald-dark">{fleet.price}</span>
+                  <span className="text-xs font-black text-amber-600 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                    Details →
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

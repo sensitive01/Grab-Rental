@@ -119,15 +119,32 @@ export default function VendorChangePasswordPage() {
 
       {/* Header & Breadcrumbs */}
       <div className="space-y-1">
-        <Breadcrumbs items={[{ label: "Account", href: "/vendor/profile" }, { label: "Security & Password" }]} />
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-2">
-          Security & Password
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500">
-          {isNewAccount
-            ? "Create your account password to enable secure password login."
-            : "Update your account password to keep your fleet account secure."}
-        </p>
+        <Breadcrumbs items={[{ label: "Account", href: "/vendor/profile" }, { label: "Reset Password" }]} />
+        <div className="pt-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            <KeyRound className="w-7 h-7 text-amber-500" />
+            <span>Reset Password</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {isNewAccount
+              ? "Create your account password to enable secure password login."
+              : "Change or reset your vendor partner account password for maximum security."}
+          </p>
+        </div>
+      </div>
+
+      {/* Security Hero Banner Photo */}
+      <div className="relative h-40 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/login-hero.jpg"
+          alt="Vendor Security & Authentication"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Account Protection</span>
+          <h2 className="text-xl font-black text-white">Security & Access Control</h2>
+          <p className="text-xs text-slate-200">Keep your partner portal, driver records, and bank settlements secure with strong credentials.</p>
+        </div>
       </div>
 
       {checkingAccount ? (

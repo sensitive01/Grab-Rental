@@ -306,6 +306,20 @@ export default function VendorDriversPage() {
         </Link>
       </div>
 
+      {/* Driver Fleet Hero Banner Photo */}
+      <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/login-hero.jpg"
+          alt="Chauffeur & Driver Management"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Verified Chauffeur Force</span>
+          <h2 className="text-xl font-black text-white">Professional & Verified Drivers</h2>
+          <p className="text-xs text-slate-200">Track commercial licenses, background checks, road experience, and active duty assignments.</p>
+        </div>
+      </div>
+
       {/* Main Drivers DataTable */}
       <DataTable
         columns={columns}

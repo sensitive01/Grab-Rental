@@ -128,7 +128,7 @@ export async function sendOtp(phone, options = {}) {
   }
 }
 
-export async function verifyVendorOtp({ phone, otp, name, businessName }) {
+export async function verifyVendorOtp({ phone, otp, name, businessName, purpose = "LOGIN" }) {
   const cleanPhone = String(phone || "").trim();
   const cleanOtp = String(otp || "").trim();
 
@@ -143,6 +143,7 @@ export async function verifyVendorOtp({ phone, otp, name, businessName }) {
         phone: cleanPhone,
         otp: cleanOtp,
         role: "FLEET",
+        purpose: purpose,
         name: name ? String(name).trim() : undefined,
         businessName: businessName ? String(businessName).trim() : undefined,
       },

@@ -30,6 +30,16 @@ import {
   PhoneCall,
   Camera,
   Image as ImageIcon,
+  Fuel,
+  Gauge,
+  Tv,
+  Wind,
+  Navigation,
+  Star,
+  Zap,
+  Eye,
+  CheckSquare,
+  Award,
 } from "lucide-react";
 import {
   sendOtp,
@@ -42,6 +52,8 @@ import {
 import { vendorApi } from "@/lib/vendorApi";
 import { uploadSignedToCloudinary } from "@/lib/cloudinary";
 import { cn } from "@/lib/utils";
+import InteractiveMapPicker from "@/components/ui/InteractiveMapPicker";
+import MultipleVehiclePhotoUploader from "@/components/ui/MultipleVehiclePhotoUploader";
 
 function VendorOnboardingFlow() {
   const router = useRouter();
@@ -103,6 +115,7 @@ function VendorOnboardingFlow() {
   const [seatingCapacity, setSeatingCapacity] = useState("4");
   const [fuelType, setFuelType] = useState("Diesel");
   const [vehicleImage, setVehicleImage] = useState("");
+  const [vehiclePhotos, setVehiclePhotos] = useState([]);
 
   // Proofs with Expiry Dates (for Model 1 and Model 2)
   const [rcNumber, setRcNumber] = useState("");
@@ -130,12 +143,110 @@ function VendorOnboardingFlow() {
   const [driversList, setDriversList] = useState([]);
   const [showAddVehicleForm, setShowAddVehicleForm] = useState(true);
   const [showAddDriverForm, setShowAddDriverForm] = useState(false);
+  const [savingVehicle, setSavingVehicle] = useState(false);
 
   // New Driver Form (for Model 2)
   const [newDriverName, setNewDriverName] = useState("");
   const [newDriverPhone, setNewDriverPhone] = useState("");
   const [newDriverLicense, setNewDriverLicense] = useState("");
   const [newDriverExpiry, setNewDriverExpiry] = useState("");
+
+  // Additional requested Vehicle Fields
+  const [vehicleVariant, setVehicleVariant] = useState("Top Spec / Titanium");
+  const [vehicleColor, setVehicleColor] = useState("Pearl White");
+  const [registrationType, setRegistrationType] = useState("Yellow Board (Commercial)");
+  const [alternateFuel, setAlternateFuel] = useState("None");
+  const [transmission, setTransmission] = useState("Automatic");
+  const [engineCc, setEngineCc] = useState("1498");
+  const [parkingLocation, setParkingLocation] = useState("Airport Hub - T2 Parking, Bay 4B");
+  const [vehicleFeatures, setVehicleFeatures] = useState([
+    "Sunroof",
+    "360 Camera",
+    "ADAS Level 2",
+    "Luggage Carrier",
+    "Dual-Zone AC",
+    "Ventilated Seats",
+    "Recliner Seats",
+  ]);
+
+  // Additional requested Chauffeur Fields (Model 1)
+  const [driverPhoto, setDriverPhoto] = useState("");
+  const [driverEmail, setDriverEmail] = useState("");
+  const [driverDob, setDriverDob] = useState("1990-05-15");
+  const [driverGender, setDriverGender] = useState("Male");
+  const [driverIdProofType, setDriverIdProofType] = useState("Aadhaar Card");
+  const [driverIdProofNumber, setDriverIdProofNumber] = useState("");
+  const [driverIdProofDocument, setDriverIdProofDocument] = useState("");
+  const [driverLicenseClass, setDriverLicenseClass] = useState("LMV-TR (Transport)");
+  const [drivingSince, setDrivingSince] = useState("2016-04-10");
+  const [driverExperienceYears, setDriverExperienceYears] = useState("8 Years");
+  const [driverStatus, setDriverStatus] = useState("Available");
+  const [assignedVehicle, setAssignedVehicle] = useState("");
+  const [joiningDate, setJoiningDate] = useState("");
+  const [chauffeurAddress, setChauffeurAddress] = useState("");
+  const [addressProofType, setAddressProofType] = useState("Aadhaar Card");
+  const [addressProofNumber, setAddressProofNumber] = useState("");
+  const [addressProofDocumentUrl, setAddressProofDocumentUrl] = useState("");
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+  const [languagesSpoken, setLanguagesSpoken] = useState(["English", "Tamil", "Hindi"]);
+  const [bgvStatus, setBgvStatus] = useState("Verified");
+  const [driverRating, setDriverRating] = useState("5.0");
+  const [totalTripsCompleted, setTotalTripsCompleted] = useState("142");
+  const [driverNotes, setDriverNotes] = useState("");
+
+  // Additional requested Chauffeur Fields (Model 2)
+  const [newDriverPhoto, setNewDriverPhoto] = useState("");
+  const [newDriverEmail, setNewDriverEmail] = useState("");
+  const [newDriverDob, setNewDriverDob] = useState("1992-08-20");
+  const [newDriverGender, setNewDriverGender] = useState("Male");
+  const [newDriverIdProofType, setNewDriverIdProofType] = useState("Aadhaar Card");
+  const [newDriverIdProofNumber, setNewDriverIdProofNumber] = useState("");
+  const [newDriverIdProofDocument, setNewDriverIdProofDocument] = useState("");
+  const [newDriverLicenseClass, setNewDriverLicenseClass] = useState("LMV-TR (Transport)");
+  const [newDrivingSince, setNewDrivingSince] = useState("2018-05-10");
+  const [newDriverExperienceYears, setNewDriverExperienceYears] = useState("6 Years");
+  const [newDriverStatus, setNewDriverStatus] = useState("Available");
+  const [newDriverAssignedVehicle, setNewDriverAssignedVehicle] = useState("");
+  const [newDriverJoiningDate, setNewDriverJoiningDate] = useState("");
+  const [newDriverAddress, setNewDriverAddress] = useState("");
+  const [newDriverAddressProofType, setNewDriverAddressProofType] = useState("Aadhaar Card");
+  const [newDriverAddressProofNumber, setNewDriverAddressProofNumber] = useState("");
+  const [newDriverAddressProofDocument, setNewDriverAddressProofDocument] = useState("");
+  const [newEmergencyContactName, setNewEmergencyContactName] = useState("");
+  const [newEmergencyContactPhone, setNewEmergencyContactPhone] = useState("");
+  const [newDriverLanguages, setNewDriverLanguages] = useState(["English", "Tamil"]);
+  const [newDriverBgvStatus, setNewDriverBgvStatus] = useState("Verified");
+  const [newDriverRating, setNewDriverRating] = useState("5.0");
+  const [newDriverTotalTrips, setNewDriverTotalTrips] = useState("85");
+  const [newDriverNotes, setNewDriverNotes] = useState("");
+
+  // Automatic experience calculation based on Driving Since date
+  const calculateExperience = (sinceDate) => {
+    if (!sinceDate) return "0 Years";
+    const start = new Date(sinceDate);
+    const now = new Date();
+    if (isNaN(start.getTime())) return "0 Years";
+    const diffYears = Math.max(0, Math.floor((now - start) / (365.25 * 24 * 60 * 60 * 1000)));
+    return `${diffYears} Years`;
+  };
+
+  const handleDrivingSinceChange = (val, isModel2 = false) => {
+    const exp = calculateExperience(val);
+    if (isModel2) {
+      setNewDrivingSince(val);
+      setNewDriverExperienceYears(exp);
+    } else {
+      setDrivingSince(val);
+      setDriverExperienceYears(exp);
+    }
+  };
+
+  const toggleFeature = (featureName) => {
+    setVehicleFeatures((prev) =>
+      prev.includes(featureName) ? prev.filter((f) => f !== featureName) : [...prev, featureName]
+    );
+  };
 
   // Document Upload States
   const [uploadingDocs, setUploadingDocs] = useState({});
@@ -275,6 +386,7 @@ function VendorOnboardingFlow() {
     const res = await verifyVendorOtp({
       phone,
       otp: otp.trim(),
+      purpose: "REGISTRATION",
       name: partnerName.trim() || undefined,
       businessName: businessName.trim() || undefined,
     });
@@ -440,9 +552,7 @@ function VendorOnboardingFlow() {
         addressProofDocumentUrl: addressProofDocument || undefined,
       }).catch(() => null);
 
-      if (!businessCity) {
-        setBusinessCity(userCity.trim());
-      }
+      setBusinessCity(userCity.trim());
 
       setCurrentStep(2);
       setSuccessNotice("Personal details saved. Let's configure your business profile.");
@@ -538,7 +648,7 @@ function VendorOnboardingFlow() {
     setError("");
 
     try {
-      const isDriver = docType === "license";
+      const isDriver = docType === "license" || docType === "driverPhoto" || docType === "driverIdProof" || docType === "driverAddressProof" || docType === "newDriverPhoto" || docType === "newDriverLicense" || docType === "newDriverIdProof" || docType === "newDriverAddressProof";
       const isCompliance = docType === "idProof" || docType === "addressProof" || docType === "businessProof" || docType === "gst" || docType === "pan";
       const isVehiclePhoto = docType === "vehicleImage";
       const folder = isCompliance
@@ -556,6 +666,13 @@ function VendorOnboardingFlow() {
 
       if (uploadedUrl) {
         if (docType === "license") setDriverLicenseDocument(uploadedUrl);
+        else if (docType === "driverPhoto") setDriverPhoto(uploadedUrl);
+        else if (docType === "driverIdProof") setDriverIdProofDocument(uploadedUrl);
+        else if (docType === "driverAddressProof") setAddressProofDocumentUrl(uploadedUrl);
+        else if (docType === "newDriverPhoto") setNewDriverPhoto(uploadedUrl);
+        else if (docType === "newDriverLicense") setNewDriverLicense(uploadedUrl);
+        else if (docType === "newDriverIdProof") setNewDriverIdProofDocument(uploadedUrl);
+        else if (docType === "newDriverAddressProof") setNewDriverAddressProofDocument(uploadedUrl);
         else if (docType === "vehicleImage") setVehicleImage(uploadedUrl);
         else if (docType === "rc") setRcDocument(uploadedUrl);
         else if (docType === "insurance") setInsuranceDocument(uploadedUrl);
@@ -624,16 +741,39 @@ function VendorOnboardingFlow() {
 
       // 1. Create Driver (Assign user as chauffeur)
       try {
+        const expNum = parseInt(driverExperienceYears) || 5;
         await vendorApi.createDriver({
           name: partnerName?.trim() || user?.name || "Fleet Partner Driver",
           phone: phone?.trim() || user?.phone || "9999999999",
-          email: email?.trim() || user?.email || undefined,
-          address: driverAddress,
-          emergencyContact: emergencyContactNumber,
+          email: driverEmail?.trim() || email?.trim() || user?.email || undefined,
+          address: chauffeurAddress?.trim() || driverAddress,
+          emergencyContact: emergencyContactPhone?.trim() || emergencyContactNumber,
+          emergencyContactName: emergencyContactName?.trim() || partnerName?.trim() || "Emergency Contact",
+          emergencyContactPhone: emergencyContactPhone?.trim() || emergencyContactNumber,
           licenseNumber: driverLicenseNumber.trim().toUpperCase(),
           licenseExpiry: driverLicenseExpiry,
           licenseDocumentUrl: driverLicenseDocument || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
-          experienceYears: 5,
+          licenseClass: driverLicenseClass,
+          experienceYears: expNum,
+          drivingSince: drivingSince || undefined,
+          photoUrl: driverPhoto || undefined,
+          gender: driverGender,
+          dob: driverDob || undefined,
+          dateOfBirth: driverDob || undefined,
+          idProofType: driverIdProofType,
+          idProofNumber: driverIdProofNumber || undefined,
+          idProofDocumentUrl: driverIdProofDocument || undefined,
+          status: driverStatus || "Available",
+          assignedVehicle: cleanPlate,
+          joiningDate: joiningDate || undefined,
+          addressProofType: addressProofType || undefined,
+          addressProofNumber: addressProofNumber || undefined,
+          addressProofDocumentUrl: addressProofDocumentUrl || undefined,
+          languagesSpoken: Array.isArray(languagesSpoken) ? languagesSpoken.join(", ") : languagesSpoken,
+          verificationStatus: bgvStatus || "Verified",
+          rating: driverRating ? parseFloat(driverRating) : 5.0,
+          totalTrips: totalTripsCompleted ? parseInt(totalTripsCompleted) : 142,
+          notes: driverNotes || undefined,
         });
       } catch (dErr) {
         console.warn("Chauffeur registration notice:", dErr?.response?.data || dErr?.message);
@@ -641,16 +781,27 @@ function VendorOnboardingFlow() {
 
       // 2. Register Vehicle
       try {
+        const photosPayload = (vehiclePhotos && vehiclePhotos.length > 0) ? JSON.stringify(vehiclePhotos) : undefined;
+        const mainImage = (vehiclePhotos && vehiclePhotos.length > 0) ? vehiclePhotos[0] : (vehicleImage || undefined);
         await vendorApi.createVehicle({
           vehicleNumber: cleanPlate,
           vehicleModel: vehicleModel.trim(),
           vehicleType: vehicleCategory || "SUV",
+          variant: vehicleVariant,
+          color: vehicleColor,
+          registrationType: registrationType,
+          alternateFuel: alternateFuel,
+          transmission: transmission,
+          engineCc: engineCc ? parseInt(engineCc) : 1498,
+          parkingLocation: parkingLocation,
+          features: Array.isArray(vehicleFeatures) ? vehicleFeatures.join(", ") : vehicleFeatures,
           year: Math.max(2000, parseInt(vehicleYear) || 2023),
           seatingCapacity: Math.max(1, parseInt(seatingCapacity) || 4),
           fuelType: fuelType || "Diesel",
           dailyRate: 2500,
           perKmRate: 14,
-          imageUrl: vehicleImage || undefined,
+          imageUrl: mainImage,
+          photos: photosPayload,
           insuranceExpiry: insuranceExpiry || undefined,
           fitnessExpiry: fitnessExpiry || undefined,
           permitExpiry: permitExpiry || undefined,
@@ -701,59 +852,81 @@ function VendorOnboardingFlow() {
       return;
     }
 
-    const newVeh = {
-      id: "v-" + Date.now(),
-      vehicleNumber: vehicleNumber.trim().toUpperCase(),
-      vehicleModel: vehicleModel.trim(),
-      vehicleType: vehicleCategory,
-      year: vehicleYear,
-      seatingCapacity,
-      fuelType,
-      imageUrl: vehicleImage || undefined,
-      insuranceExpiry,
-      rcExpiry,
-      fitnessExpiry,
-      permitExpiry,
-      pucExpiry,
-      rcDocumentUrl: rcDocument || undefined,
-      insuranceDocumentUrl: insuranceDocument || undefined,
-      permitDocumentUrl: permitDocument || undefined,
-      fitnessDocumentUrl: fitnessDocument || undefined,
-      pucDocumentUrl: pucDocument || undefined,
-    };
-
-    // Save to direct records
+    setSavingVehicle(true);
     try {
-      await vendorApi.createVehicle({
-        vehicleNumber: newVeh.vehicleNumber,
-        vehicleModel: newVeh.vehicleModel,
-        vehicleType: newVeh.vehicleType || "SUV",
-        year: Math.max(2000, parseInt(newVeh.year) || 2023),
-        seatingCapacity: Math.max(1, parseInt(newVeh.seatingCapacity) || 4),
-        fuelType: newVeh.fuelType || "Diesel",
-        dailyRate: 2500,
-        perKmRate: 14,
-        imageUrl: newVeh.imageUrl,
-        insuranceExpiry: newVeh.insuranceExpiry || undefined,
-        fitnessExpiry: newVeh.fitnessExpiry || undefined,
-        permitExpiry: newVeh.permitExpiry || undefined,
+      const newVeh = {
+        id: "v-" + Date.now(),
+        vehicleNumber: vehicleNumber.trim().toUpperCase(),
+        vehicleModel: vehicleModel.trim(),
+        vehicleType: vehicleCategory,
+        variant: vehicleVariant,
+        color: vehicleColor,
+        registrationType,
+        alternateFuel,
+        transmission,
+        engineCc: engineCc ? parseInt(engineCc) : 1498,
+        parkingLocation,
+        features: Array.isArray(vehicleFeatures) ? vehicleFeatures.join(", ") : vehicleFeatures,
+        year: vehicleYear,
+        seatingCapacity,
+        fuelType,
+        imageUrl: vehicleImage || undefined,
+        insuranceExpiry,
+        rcExpiry,
+        fitnessExpiry,
+        permitExpiry,
+        pucExpiry,
         rcDocumentUrl: rcDocument || undefined,
         insuranceDocumentUrl: insuranceDocument || undefined,
         permitDocumentUrl: permitDocument || undefined,
         fitnessDocumentUrl: fitnessDocument || undefined,
-      }).catch((err) => {
-        console.warn("Vehicle registration notice:", err?.response?.data || err?.message);
-      });
-    } catch (ignored) {}
+        pucDocumentUrl: pucDocument || undefined,
+      };
 
-    const updated = [...vehiclesList, newVeh];
-    setVehiclesList(updated);
-    saveOnboardingData({ vehiclesList: updated });
+      // Save to direct records
+      try {
+        const photosPayload = (vehiclePhotos && vehiclePhotos.length > 0) ? JSON.stringify(vehiclePhotos) : undefined;
+        const mainImage = (vehiclePhotos && vehiclePhotos.length > 0) ? vehiclePhotos[0] : (newVeh.imageUrl || undefined);
+        await vendorApi.createVehicle({
+          vehicleNumber: newVeh.vehicleNumber,
+          vehicleModel: newVeh.vehicleModel,
+          vehicleType: newVeh.vehicleType || "SUV",
+          variant: newVeh.variant,
+          color: newVeh.color,
+          registrationType: newVeh.registrationType,
+          alternateFuel: newVeh.alternateFuel,
+          transmission: newVeh.transmission,
+          engineCc: newVeh.engineCc,
+          parkingLocation: newVeh.parkingLocation,
+          features: newVeh.features,
+          year: Math.max(2000, parseInt(newVeh.year) || 2023),
+          seatingCapacity: Math.max(1, parseInt(newVeh.seatingCapacity) || 4),
+          fuelType: newVeh.fuelType || "Diesel",
+          dailyRate: 2500,
+          perKmRate: 14,
+          imageUrl: mainImage,
+          photos: photosPayload,
+          insuranceExpiry: newVeh.insuranceExpiry || undefined,
+          fitnessExpiry: newVeh.fitnessExpiry || undefined,
+          permitExpiry: newVeh.permitExpiry || undefined,
+          rcDocumentUrl: rcDocument || undefined,
+          insuranceDocumentUrl: insuranceDocument || undefined,
+          permitDocumentUrl: permitDocument || undefined,
+          fitnessDocumentUrl: fitnessDocument || undefined,
+        }).catch((err) => {
+          console.warn("Vehicle registration notice:", err?.response?.data || err?.message);
+        });
+      } catch (ignored) {}
+
+      const updated = [...vehiclesList, newVeh];
+      setVehiclesList(updated);
+      saveOnboardingData({ vehiclesList: updated });
 
     // Reset vehicle fields
     setVehicleNumber("");
     setVehicleModel("");
     setVehicleImage("");
+    setVehiclePhotos([]);
     setInsuranceExpiry("");
     setRcExpiry("");
     setFitnessExpiry("");
@@ -775,7 +948,10 @@ function VendorOnboardingFlow() {
     }));
     setShowAddVehicleForm(false);
     setError("");
-  };
+  } finally {
+    setSavingVehicle(false);
+  }
+};
 
   // --- Step 3 Handler: Add Driver to Multiple Fleet List (Model 2) ---
   const handleAddDriverToList = async (e) => {
@@ -800,14 +976,37 @@ function VendorOnboardingFlow() {
       phone?.trim() ||
       "9876543210";
 
+    const expYears = parseInt(newDriverExperienceYears) || 6;
     const newDrv = {
       id: "d-" + Date.now(),
       name: newDriverName.trim(),
       phone: newDriverPhone.trim() || phone || "9999999999",
+      email: newDriverEmail.trim() || undefined,
       licenseNumber: newDriverLicense.trim().toUpperCase(),
       licenseExpiry: newDriverExpiry,
-      address: driverAddress,
-      emergencyContact: emergencyContactNumber,
+      licenseClass: newDriverLicenseClass,
+      drivingSince: newDrivingSince,
+      experienceYears: expYears,
+      photoUrl: newDriverPhoto || undefined,
+      gender: newDriverGender,
+      dateOfBirth: newDriverDob || undefined,
+      idProofType: newDriverIdProofType,
+      idProofNumber: newDriverIdProofNumber || undefined,
+      idProofDocumentUrl: newDriverIdProofDocument || undefined,
+      status: newDriverStatus || "Available",
+      assignedVehicle: newDriverAssignedVehicle || undefined,
+      joiningDate: newDriverJoiningDate || undefined,
+      address: newDriverAddress.trim() || driverAddress,
+      addressProofType: newDriverAddressProofType || undefined,
+      addressProofNumber: newDriverAddressProofNumber || undefined,
+      addressProofDocumentUrl: newDriverAddressProofDocument || undefined,
+      emergencyContact: newEmergencyContactPhone.trim() || emergencyContactNumber,
+      emergencyContactName: newEmergencyContactName.trim() || undefined,
+      languagesSpoken: Array.isArray(newDriverLanguages) ? newDriverLanguages.join(", ") : newDriverLanguages,
+      verificationStatus: newDriverBgvStatus || "Verified",
+      rating: newDriverRating ? parseFloat(newDriverRating) : 5.0,
+      totalTrips: newDriverTotalTrips ? parseInt(newDriverTotalTrips) : 85,
+      notes: newDriverNotes || undefined,
     };
 
     // Save to direct records
@@ -815,12 +1014,35 @@ function VendorOnboardingFlow() {
       await vendorApi.createDriver({
         name: newDrv.name,
         phone: newDrv.phone,
-        address: driverAddress,
-        emergencyContact: emergencyContactNumber,
+        email: newDrv.email,
+        address: newDrv.address,
+        emergencyContact: newDrv.emergencyContact,
+        emergencyContactName: newDrv.emergencyContactName,
+        emergencyContactPhone: newDrv.emergencyContact,
         licenseNumber: newDrv.licenseNumber,
         licenseExpiry: newDrv.licenseExpiry,
-        experienceYears: 4,
-        licenseDocumentUrl: driverLicenseDocument || undefined,
+        licenseClass: newDrv.licenseClass,
+        experienceYears: newDrv.experienceYears,
+        drivingSince: newDrv.drivingSince,
+        photoUrl: newDrv.photoUrl,
+        gender: newDrv.gender,
+        dob: newDrv.dateOfBirth,
+        dateOfBirth: newDrv.dateOfBirth,
+        idProofType: newDrv.idProofType,
+        idProofNumber: newDrv.idProofNumber,
+        idProofDocumentUrl: newDrv.idProofDocumentUrl,
+        status: newDrv.status,
+        assignedVehicle: newDrv.assignedVehicle,
+        joiningDate: newDrv.joiningDate,
+        addressProofType: newDrv.addressProofType,
+        addressProofNumber: newDrv.addressProofNumber,
+        addressProofDocumentUrl: newDrv.addressProofDocumentUrl,
+        languagesSpoken: newDrv.languagesSpoken,
+        verificationStatus: newDrv.verificationStatus,
+        rating: newDrv.rating,
+        totalTrips: newDrv.totalTrips,
+        notes: newDrv.notes,
+        licenseDocumentUrl: newDriverLicense || undefined,
       }).catch((err) => {
         console.warn("Chauffeur registration notice:", err?.response?.data || err?.message);
       });
@@ -833,8 +1055,17 @@ function VendorOnboardingFlow() {
     // Reset driver fields
     setNewDriverName("");
     setNewDriverPhone("");
+    setNewDriverEmail("");
     setNewDriverLicense("");
     setNewDriverExpiry("");
+    setNewDriverPhoto("");
+    setNewDriverIdProofNumber("");
+    setNewDriverIdProofDocument("");
+    setNewDriverAddressProofNumber("");
+    setNewDriverAddressProofDocument("");
+    setNewEmergencyContactName("");
+    setNewEmergencyContactPhone("");
+    setNewDriverNotes("");
     setShowAddDriverForm(false);
     setError("");
   };
@@ -962,6 +1193,22 @@ function VendorOnboardingFlow() {
         {currentStep === 0 && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm">
             <div className="max-w-md mx-auto space-y-6">
+              {/* Step 0 Photo Banner */}
+              <div className="relative h-44 rounded-2xl overflow-hidden mb-6 border border-slate-200 shadow-xs">
+                <img
+                  src="/images/login-hero.jpg"
+                  alt="Fleet Partner Registration"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black w-fit mb-1 shadow-xs">
+                    <Sparkles className="w-3 h-3" /> OFFICIAL PARTNER ONBOARDING
+                  </div>
+                  <h3 className="text-base font-bold text-white">Drive & Grow with Grab Rentals</h3>
+                  <p className="text-[11px] text-slate-200">Commercial Fleets, Airport Transfers, Outstation & Chauffeur Services</p>
+                </div>
+              </div>
+
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-3 shadow-xs">
                   <Phone className="w-6 h-6" />
@@ -1147,6 +1394,20 @@ function VendorOnboardingFlow() {
         {/* ======================================================== */}
         {currentStep === 1 && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8">
+            {/* Step 1 Photo Banner */}
+            <div className="relative h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-xs">
+              <img
+                src="/images/cars/innova.jpg"
+                alt="Personal & Contact Details"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 1 of 4</span>
+                <h3 className="text-base font-bold text-white">Partner Identity & Verification</h3>
+                <p className="text-[11px] text-slate-200">Verified identity credentials ensure fast fleet onboarding & immediate trip assignment</p>
+              </div>
+            </div>
+
             <div className="border-b border-slate-100 pb-5">
               <h2 className="text-xl font-black text-slate-950">
                 Step 1: Personal & Contact Details
@@ -1284,7 +1545,7 @@ function VendorOnboardingFlow() {
                       value={userCity}
                       onChange={(e) => {
                         setUserCity(e.target.value);
-                        if (!businessCity) setBusinessCity(e.target.value);
+                        setBusinessCity(e.target.value);
                       }}
                       placeholder="e.g. Bangalore, Mumbai, Pune"
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
@@ -1524,6 +1785,20 @@ function VendorOnboardingFlow() {
         {/* ======================================================== */}
         {currentStep === 2 && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8">
+            {/* Step 2 Photo Banner */}
+            <div className="relative h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-xs">
+              <img
+                src="/images/fleet/bus.jpg"
+                alt="Business Profile & Registration"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 2 of 4</span>
+                <h3 className="text-base font-bold text-white">Commercial & Enterprise Fleet Setup</h3>
+                <p className="text-[11px] text-slate-200">GST, MSME, or individual business profiles tailored for rental operations</p>
+              </div>
+            </div>
+
             <div className="border-b border-slate-100 pb-5">
               <h2 className="text-xl font-black text-slate-950">
                 Step 2: Business Profile & Registration
@@ -1938,6 +2213,20 @@ function VendorOnboardingFlow() {
         {/* ======================================================== */}
         {currentStep === 3 && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8">
+            {/* Step 3 Photo Banner */}
+            <div className="relative h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-xs">
+              <img
+                src="/images/hero-bg.jpg"
+                alt="Fleet Operating Structure"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 3 of 4</span>
+                <h3 className="text-base font-bold text-white">Select Fleet Operating Model</h3>
+                <p className="text-[11px] text-slate-200">Tailored dispatch configurations for owner-operators and commercial multi-fleet companies</p>
+              </div>
+            </div>
+
             <div className="border-b border-slate-100 pb-5">
               <h2 className="text-xl font-black text-slate-950">
                 Step 3: Fleet Operating Structure
@@ -1959,20 +2248,36 @@ function VendorOnboardingFlow() {
                 )}
               >
                 <div className="space-y-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shadow-xs">
-                    <Car className="w-6 h-6" />
+                  <div className="h-32 rounded-2xl overflow-hidden border border-slate-200 relative shadow-2xs">
+                    <img
+                      src="/images/cars/dzire.jpg"
+                      alt="Owner-Driver Sedan"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 left-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-400/90 backdrop-blur-xs px-2.5 py-0.5 rounded-full shadow-xs">
+                        Single Vehicle
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                      Owner-Driver
-                    </span>
-                    <h3 className="text-base font-black text-slate-950 mt-1.5">
-                      1. I Drive my own Fleet
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      You own a vehicle and will be driving it yourself. We will register your vehicle and automatically set you as the designated chauffeur.
-                    </p>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 shadow-xs">
+                      <Car className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                        Owner-Driver
+                      </span>
+                      <h3 className="text-base font-black text-slate-950 mt-0.5">
+                        1. I Drive my own Fleet
+                      </h3>
+                    </div>
                   </div>
+
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    You own a vehicle and will be driving it yourself. We will register your vehicle and automatically set you as the designated chauffeur.
+                  </p>
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
@@ -1999,20 +2304,36 @@ function VendorOnboardingFlow() {
                 )}
               >
                 <div className="space-y-4">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center shadow-xs">
-                    <Users className="w-6 h-6" />
+                  <div className="h-32 rounded-2xl overflow-hidden border border-slate-200 relative shadow-2xs">
+                    <img
+                      src="/images/fleet/tempo.jpg"
+                      alt="Multi-Fleet Operator"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 left-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-900 bg-purple-300/90 backdrop-blur-xs px-2.5 py-0.5 rounded-full shadow-xs">
+                        Multiple Fleets
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
-                      Fleet Operator
-                    </span>
-                    <h3 className="text-base font-black text-slate-950 mt-1.5">
-                      2. I Have Multiple Fleet & Multiple Vehicles
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      You operate a commercial fleet with multiple cars and hire/assign individual chauffeurs across your fleet.
-                    </p>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center shrink-0 shadow-xs">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                        Fleet Operator
+                      </span>
+                      <h3 className="text-base font-black text-slate-950 mt-0.5">
+                        2. Multiple Fleet & Vehicles
+                      </h3>
+                    </div>
                   </div>
+
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    You operate a commercial fleet with multiple cars and hire/assign individual chauffeurs across your fleet.
+                  </p>
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
@@ -2047,32 +2368,102 @@ function VendorOnboardingFlow() {
         {/* ======================================================== */}
         {currentStep === 4 && fleetModel === 1 && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8">
+            {/* Step 4A Photo Banner */}
+            <div className="relative h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-xs">
+              <img
+                src="/images/fleet/suv.jpg"
+                alt="Owner-Driver Vehicle Setup"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 4 of 4</span>
+                <h3 className="text-base font-bold text-white">Owner-Driver Vehicle & Chauffeur Profile</h3>
+                <p className="text-[11px] text-slate-200">Register your primary vehicle, luxury amenities, and commercial chauffeur qualifications</p>
+              </div>
+            </div>
+
             <div className="border-b border-slate-100 pb-5">
               <div className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full mb-1">
                 <Car className="w-3 h-3" /> Owner-Driver Setup
               </div>
               <h2 className="text-xl font-black text-slate-950">
-                Step 4: Vehicle Details & Chauffeur License
+                Step 4: Vehicle Details & Chauffeur Profile
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Add your vehicle specifications and verify all compliance proofs with expiry dates.
+                Add your vehicle specifications, luxury features, chauffeur credentials, and verify compliance proofs.
               </p>
             </div>
 
             <form onSubmit={handleSaveSingleFleet} className="space-y-8">
               {/* Section 1: Assigned Driver (Self) */}
-              <div className="p-6 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-4">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-amber-700" />
-                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                    Chauffeur Information (Assigned to You)
+              <div className="p-6 rounded-2xl bg-amber-50/40 border border-amber-200/80 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-amber-700" />
+                    <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      Chauffeur Information (Assigned to You)
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                    Primary Driver
                   </span>
                 </div>
-                <p className="text-xs text-slate-600">
-                  As the owner-driver, you will be registered as the primary chauffeur for this vehicle.
-                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Driver Photo Upload & Preview */}
+                <div className="p-3.5 rounded-2xl bg-white border border-amber-200/60 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="w-20 h-20 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative shrink-0 shadow-2xs">
+                    {driverPhoto ? (
+                      <img src={driverPhoto} alt="Driver Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-400 text-[10px] gap-1">
+                        <Camera className="w-5 h-5 text-slate-300" />
+                        <span>Driver Photo</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 w-full space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-800">
+                        Chauffeur Profile Photo <span className="text-rose-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-medium">Displayed to passengers</span>
+                    </div>
+                    <label className={cn(
+                      "flex items-center justify-between p-2 border-2 border-dashed rounded-xl cursor-pointer transition-all",
+                      driverPhoto ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
+                    )}>
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.webp"
+                        className="hidden"
+                        onChange={(e) => handleDocumentUpload("driverPhoto", e.target.files?.[0])}
+                      />
+                      {uploadingDocs.driverPhoto ? (
+                        <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Uploading photo...</span>
+                        </div>
+                      ) : driverPhoto ? (
+                        <div className="flex items-center justify-between w-full text-left gap-2">
+                          <span className="text-xs font-semibold text-slate-900 truncate">
+                            {docFileNames.driverPhoto || "Chauffeur photo attached"}
+                          </span>
+                          <span className="text-[10px] font-bold text-amber-700 shrink-0">Change Photo</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between w-full text-slate-600 text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <UploadCloud className="w-4 h-4 text-amber-600" />
+                            <span>Upload Professional Chauffeur Photo</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">JPG, PNG</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {/* Chauffeur Name */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -2091,16 +2482,11 @@ function VendorOnboardingFlow() {
                     </div>
                   </div>
 
-                  {/* Chauffeur Phone Number */}
+                  {/* Chauffeur Phone */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-slate-700">
-                        Chauffeur Phone Number
-                      </label>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded-full border border-emerald-200">
-                        Verified
-                      </span>
-                    </div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Phone Number <span className="text-rose-500">*</span>
+                    </label>
                     <div className="relative">
                       <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
@@ -2112,20 +2498,139 @@ function VendorOnboardingFlow() {
                     </div>
                   </div>
 
+                  {/* Email (Optional) */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Commercial Driving License Number <span className="text-rose-500">*</span>
+                      Email Address <span className="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        value={driverEmail || email}
+                        onChange={(e) => setDriverEmail(e.target.value)}
+                        placeholder="driver@example.com"
+                        className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Date of Birth <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={driverDob}
+                      onChange={(e) => setDriverDob(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Gender <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={driverGender}
+                      onChange={(e) => setDriverGender(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* ID Proof Type */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ID Proof Type <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={driverIdProofType}
+                      onChange={(e) => setDriverIdProofType(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="Aadhaar Card">Aadhaar Card</option>
+                      <option value="Voter ID">Voter ID</option>
+                      <option value="Passport">Passport</option>
+                      <option value="PAN Card">PAN Card</option>
+                    </select>
+                  </div>
+
+                  {/* ID Proof Number */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ID Proof Number <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={driverIdProofNumber}
+                      onChange={(e) => setDriverIdProofNumber(e.target.value.toUpperCase())}
+                      placeholder="e.g. 1234 5678 9012"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Upload ID Proof */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Upload ID Proof Copy
+                    </label>
+                    <label className={cn(
+                      "flex items-center justify-between p-2 border-2 border-dashed rounded-xl cursor-pointer transition-all",
+                      docFileNames.driverIdProof ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 hover:border-amber-400 bg-white"
+                    )}>
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        className="hidden"
+                        onChange={(e) => handleDocumentUpload("driverIdProof", e.target.files?.[0])}
+                      />
+                      <span className="text-[11px] text-slate-700 truncate">
+                        {docFileNames.driverIdProof || "Upload ID Proof"}
+                      </span>
+                      <UploadCloud className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    </label>
+                  </div>
+
+                  {/* Commercial Driving License Number */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Driving License Number <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={driverLicenseNumber}
                       onChange={(e) => setDriverLicenseNumber(e.target.value.toUpperCase())}
                       placeholder="DL-1420110012345"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                       required
                     />
                   </div>
 
+                  {/* License Class */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Licence Type / Class <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={driverLicenseClass}
+                      onChange={(e) => setDriverLicenseClass(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="LMV-TR (Transport)">LMV-TR (Commercial Transport)</option>
+                      <option value="LMV (Light Motor Vehicle)">LMV (Light Motor Vehicle)</option>
+                      <option value="HMV / HGMV">HMV / Heavy Transport</option>
+                      <option value="Commercial PSV Badge">Commercial PSV Badge</option>
+                    </select>
+                  </div>
+
+                  {/* License Expiry Date */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       License Expiry Date <span className="text-rose-500">*</span>
@@ -2139,16 +2644,105 @@ function VendorOnboardingFlow() {
                     />
                   </div>
 
+                  {/* Driving Since (date) */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Driving Since (Date) <span className="text-rose-500">*</span></span>
+                    </label>
+                    <input
+                      type="date"
+                      value={drivingSince}
+                      onChange={(e) => handleDrivingSinceChange(e.target.value, false)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Automatically Experience field should display the experience number */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Experience</span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                        Auto-Calculated
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <Clock className="w-4 h-4 text-amber-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={driverExperienceYears}
+                        readOnly
+                        className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 font-bold text-xs cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Chauffeur Status */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Chauffeur Status
+                    </label>
+                    <select
+                      value={driverStatus}
+                      onChange={(e) => setDriverStatus(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-emerald-700"
+                    >
+                      <option value="Available">Available (Default)</option>
+                      <option value="Assigned">Assigned</option>
+                      <option value="Off-duty">Off-duty</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+
+                  {/* Emergency Contact Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Emergency Contact Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={emergencyContactName}
+                      onChange={(e) => setEmergencyContactName(e.target.value)}
+                      placeholder="e.g. Spouse / Sibling"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Emergency Contact Phone */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Emergency Contact Phone <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={emergencyContactPhone}
+                      onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                      placeholder="9876543210"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Joining Date (Optional) */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Joining Date <span className="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={joiningDate}
+                      onChange={(e) => setJoiningDate(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+
                   {/* Upload Driver License Copy */}
-                  <div className="sm:col-span-2">
+                  <div className="sm:col-span-2 md:col-span-3">
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Upload Driving License Proof
+                      Upload Driving License Proof <span className="text-rose-500">*</span>
                     </label>
                     <label className={cn(
                       "flex items-center justify-between p-2.5 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                      docFileNames.license
-                        ? "border-emerald-300 bg-emerald-50/40"
-                        : "border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/20"
+                      docFileNames.license ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/20"
                     )}>
                       <input
                         type="file"
@@ -2184,22 +2778,57 @@ function VendorOnboardingFlow() {
                       )}
                     </label>
                   </div>
+
+                  {/* Languages Spoken */}
+                  <div className="sm:col-span-2 md:col-span-3 pt-1">
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Languages Spoken
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {["English", "Tamil", "Hindi", "Telugu", "Kannada", "Malayalam"].map((lang) => {
+                        const isSel = languagesSpoken.includes(lang);
+                        return (
+                          <button
+                            key={lang}
+                            type="button"
+                            onClick={() => {
+                              setLanguagesSpoken((prev) =>
+                                isSel ? prev.filter((l) => l !== lang) : [...prev, lang]
+                              );
+                            }}
+                            className={cn(
+                              "px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer",
+                              isSel ? "bg-amber-500 text-slate-950 shadow-xs" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                            )}
+                          >
+                            {lang}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Section 2: Vehicle Specs */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Car className="w-4 h-4 text-slate-700" />
-                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                    Vehicle Specifications
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Car className="w-4 h-4 text-amber-600" />
+                    <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      Vehicle Specifications & Amenities
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    Commercial Fleet Asset
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Plate Number */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Plate Number <span className="text-rose-500">*</span>
+                      Registration Plate Number <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -2211,6 +2840,7 @@ function VendorOnboardingFlow() {
                     />
                   </div>
 
+                  {/* Make & Model */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Make & Model <span className="text-rose-500">*</span>
@@ -2225,6 +2855,54 @@ function VendorOnboardingFlow() {
                     />
                   </div>
 
+                  {/* Vehicle Variant Field */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Vehicle Variant <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={vehicleVariant}
+                      onChange={(e) => setVehicleVariant(e.target.value)}
+                      placeholder="e.g. VXI / Titanium / ZX"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Vehicle Color Field */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Vehicle Color <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={vehicleColor}
+                      onChange={(e) => setVehicleColor(e.target.value)}
+                      placeholder="e.g. Pearl White / Arctic Silver"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Registration Type */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Registration Type <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={registrationType}
+                      onChange={(e) => setRegistrationType(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-amber-800"
+                    >
+                      <option value="Yellow Board (Commercial)">Yellow Board (Commercial)</option>
+                      <option value="White Board (Self Drive)">White Board (Self Drive / Private)</option>
+                      <option value="All India Tourist Permit (AITP)">All India Tourist Permit (AITP)</option>
+                      <option value="Stage Carriage Permit">Stage Carriage Permit</option>
+                    </select>
+                  </div>
+
+                  {/* Vehicle Category */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Vehicle Category
@@ -2238,9 +2916,12 @@ function VendorOnboardingFlow() {
                       <option value="SUV">SUV (Innova, Ertiga, Carens)</option>
                       <option value="Hatchback">Hatchback (WagonR, Swift)</option>
                       <option value="Premium">Premium Executive (Camry, Fortuner)</option>
+                      <option value="Tempo">Tempo Traveller (12-26 Seater)</option>
+                      <option value="Bus">Luxury Coach / Bus</option>
                     </select>
                   </div>
 
+                  {/* Year of Manufacture */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Year of Manufacture
@@ -2254,24 +2935,10 @@ function VendorOnboardingFlow() {
                     />
                   </div>
 
+                  {/* Fuel Type */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Seating Capacity
-                    </label>
-                    <select
-                      value={seatingCapacity}
-                      onChange={(e) => setSeatingCapacity(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    >
-                      <option value="4">4 Seater + Driver</option>
-                      <option value="6">6 Seater + Driver</option>
-                      <option value="7">7 Seater + Driver</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Fuel Type
+                      Primary Fuel Type
                     </label>
                     <select
                       value={fuelType}
@@ -2284,83 +2951,149 @@ function VendorOnboardingFlow() {
                       <option value="Electric">Electric (EV)</option>
                     </select>
                   </div>
-                </div>
 
-                {/* Vehicle Exterior Photo Upload */}
-                <div className="pt-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-amber-600" />
-                      Vehicle Exterior Photo
-                    </span>
-                    <span className="text-[10px] font-medium text-slate-400">Recommended for trip dispatch</span>
-                  </label>
+                  {/* Vehicle Alternate Fuel */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Vehicle Alternate Fuel
+                    </label>
+                    <select
+                      value={alternateFuel}
+                      onChange={(e) => setAlternateFuel(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="None">None (Single Fuel)</option>
+                      <option value="CNG">CNG (Bi-fuel)</option>
+                      <option value="Electric">Electric (Hybrid/Dual)</option>
+                      <option value="LPG">LPG</option>
+                    </select>
+                  </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-4 p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70">
-                    {/* Preview Thumbnail or Placeholder Box */}
-                    <div className="w-24 h-20 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center relative shrink-0 shadow-2xs">
-                      {vehicleImage ? (
-                        <img
-                          src={vehicleImage}
-                          alt="Vehicle Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-slate-400 text-[10px] gap-1">
-                          <ImageIcon className="w-6 h-6 text-slate-300" />
-                          <span>No Photo</span>
-                        </div>
-                      )}
-                    </div>
+                  {/* Vehicle Transmission */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Vehicle Transmission <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={transmission}
+                      onChange={(e) => setTransmission(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="Automatic">Automatic</option>
+                      <option value="Manual">Manual</option>
+                    </select>
+                  </div>
 
-                    {/* Upload Controls */}
-                    <div className="flex-1 w-full flex flex-col justify-center">
-                      <label
-                        className={cn(
-                          "flex items-center justify-between p-2.5 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                          vehicleImage
-                            ? "border-emerald-300 bg-emerald-50/40"
-                            : "border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/20"
-                        )}
-                      >
-                        <input
-                          type="file"
-                          accept=".png,.jpg,.jpeg,.webp"
-                          className="hidden"
-                          onChange={(e) => handleDocumentUpload("vehicleImage", e.target.files?.[0])}
-                        />
-                        {uploadingDocs.vehicleImage ? (
-                          <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Uploading vehicle image...</span>
-                          </div>
-                        ) : vehicleImage ? (
-                          <div className="flex items-center justify-between w-full text-left gap-2">
-                            <div className="flex items-center gap-2 truncate">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <span className="text-xs font-semibold text-slate-900 truncate">
-                                {docFileNames.vehicleImage || "Vehicle photo attached"}
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-bold text-amber-700 hover:underline shrink-0">
-                              Change Photo
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between w-full text-slate-600">
-                            <div className="flex items-center gap-1.5">
-                              <UploadCloud className="w-4 h-4 text-amber-600" />
-                              <span className="text-xs font-semibold">Upload Vehicle Exterior Photo</span>
-                            </div>
-                            <span className="text-[10px] text-slate-400">JPG, PNG, WEBP</span>
-                          </div>
-                        )}
-                      </label>
-                      <p className="text-[10px] text-slate-500 mt-1">
-                        Clear front or angle photo of your car helps passengers and corporate clients quickly identify your cab.
-                      </p>
+                  {/* Seating Capacity */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Seating Capacity
+                    </label>
+                    <select
+                      value={seatingCapacity}
+                      onChange={(e) => setSeatingCapacity(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="4">4 Seater + Driver</option>
+                      <option value="6">6 Seater + Driver</option>
+                      <option value="7">7 Seater + Driver</option>
+                      <option value="8">8 Seater</option>
+                      <option value="12">12 Seater (Tempo)</option>
+                      <option value="18">18 Seater (Tempo)</option>
+                      <option value="26">26 Seater (Mini Bus)</option>
+                      <option value="35">35 Seater (Coach)</option>
+                    </select>
+                  </div>
+
+                  {/* Engine CC */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Engine Displacement (CC) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Gauge className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="number"
+                        value={engineCc}
+                        onChange={(e) => setEngineCc(e.target.value)}
+                        placeholder="e.g. 1498"
+                        className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        required
+                      />
                     </div>
                   </div>
+
+                  {/* Parking Location (interactive map pin) */}
+                  <div className="sm:col-span-2 md:col-span-3">
+                    <InteractiveMapPicker
+                      value={parkingLocation}
+                      onChange={(loc) => setParkingLocation(loc)}
+                      placeholder="Pin parking hub or street address (e.g. Airport Bay 4B, Chennai)"
+                    />
+                  </div>
+                </div>
+
+                {/* Add Vehicle Features Options for every vehicle */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      Vehicle Features & Luxury Amenities
+                    </label>
+                    <span className="text-[10px] font-semibold text-slate-500">
+                      Select all installed options
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[
+                      { name: "Sunroof", icon: Sparkles },
+                      { name: "360 Camera", icon: Eye },
+                      { name: "ADAS Level 2", icon: Zap },
+                      { name: "Luggage Carrier", icon: Car },
+                      { name: "Smart TV / Screen", icon: Tv },
+                      { name: "Dual-Zone AC", icon: Wind },
+                      { name: "Ventilated Seats", icon: Award },
+                      { name: "Recliner Seats", icon: Star },
+                    ].map(({ name, icon: IconComp }) => {
+                      const isChecked = vehicleFeatures.includes(name);
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => toggleFeature(name)}
+                          className={cn(
+                            "flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all cursor-pointer",
+                            isChecked
+                              ? "bg-amber-500 text-slate-950 font-bold border-amber-600 shadow-xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-amber-300"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
+                            isChecked ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-500"
+                          )}>
+                            <IconComp className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="text-xs truncate">{name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Multiple Vehicle Photos Upload */}
+                <div className="pt-2">
+                  <MultipleVehiclePhotoUploader
+                    photos={vehiclePhotos}
+                    onChange={(newPhotos) => {
+                      setVehiclePhotos(newPhotos);
+                      setVehicleImage(newPhotos[0] || "");
+                    }}
+                    maxPhotos={8}
+                    label="Vehicle Exterior & Interior Photos"
+                    subtitle="Upload multiple photos (front, rear, side profile, dashboard, and passenger seats)."
+                  />
                 </div>
               </div>
 
@@ -2781,6 +3514,20 @@ function VendorOnboardingFlow() {
         {/* ======================================================== */}
         {currentStep === 4 && fleetModel === 2 && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8">
+            {/* Step 4B Photo Banner */}
+            <div className="relative h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-xs">
+              <img
+                src="/images/fleet/tempo.jpg"
+                alt="Commercial Multi-Fleet Setup"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">Step 4 of 4</span>
+                <h3 className="text-base font-bold text-white">Multi-Fleet & Driver Roster Management</h3>
+                <p className="text-[11px] text-slate-200">Scale your commercial rental operations with multiple vehicles and verified chauffeurs</p>
+              </div>
+            </div>
+
             <div className="border-b border-slate-100 pb-5">
               <div className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full mb-1">
                 <Users className="w-3 h-3" /> Multi-Vehicle Fleet Setup
@@ -2855,7 +3602,7 @@ function VendorOnboardingFlow() {
                   </div>
 
                   {/* Section A: Vehicle Basic Details */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Plate Number *
@@ -2882,6 +3629,45 @@ function VendorOnboardingFlow() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Vehicle Variant *
+                      </label>
+                      <input
+                        type="text"
+                        value={vehicleVariant}
+                        onChange={(e) => setVehicleVariant(e.target.value)}
+                        placeholder="e.g. ZX 2.4 / Titanium"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Vehicle Color *
+                      </label>
+                      <input
+                        type="text"
+                        value={vehicleColor}
+                        onChange={(e) => setVehicleColor(e.target.value)}
+                        placeholder="e.g. Garnet Red / Pearl White"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Registration Type *
+                      </label>
+                      <select
+                        value={registrationType}
+                        onChange={(e) => setRegistrationType(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-amber-800"
+                      >
+                        <option value="Yellow Board (Commercial)">Yellow Board (Commercial)</option>
+                        <option value="White Board (Self Drive)">White Board (Self Drive)</option>
+                        <option value="All India Tourist Permit (AITP)">All India Tourist Permit (AITP)</option>
+                        <option value="Stage Carriage Permit">Stage Carriage Permit</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Category
                       </label>
                       <select
@@ -2893,6 +3679,8 @@ function VendorOnboardingFlow() {
                         <option value="Sedan">Sedan (Dzire, Etios, Aura)</option>
                         <option value="Hatchback">Hatchback (WagonR, Swift)</option>
                         <option value="Premium">Premium Executive (Fortuner, Camry)</option>
+                        <option value="Tempo">Tempo Traveller (12-26 Seater)</option>
+                        <option value="Bus">Luxury Coach / Bus</option>
                       </select>
                     </div>
 
@@ -2920,6 +3708,11 @@ function VendorOnboardingFlow() {
                         <option value="4">4 Seater + Driver</option>
                         <option value="6">6 Seater + Driver</option>
                         <option value="7">7 Seater + Driver</option>
+                        <option value="8">8 Seater</option>
+                        <option value="12">12 Seater (Tempo)</option>
+                        <option value="18">18 Seater (Tempo)</option>
+                        <option value="26">26 Seater (Mini Bus)</option>
+                        <option value="35">35 Seater (Coach)</option>
                       </select>
                     </div>
                     <div>
@@ -2937,78 +3730,106 @@ function VendorOnboardingFlow() {
                         <option value="Electric">Electric (EV)</option>
                       </select>
                     </div>
-                  </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Alternate Fuel
+                      </label>
+                      <select
+                        value={alternateFuel}
+                        onChange={(e) => setAlternateFuel(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      >
+                        <option value="None">None (Single Fuel)</option>
+                        <option value="CNG">CNG</option>
+                        <option value="Electric">Electric (Hybrid)</option>
+                        <option value="LPG">LPG</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Transmission *
+                      </label>
+                      <select
+                        value={transmission}
+                        onChange={(e) => setTransmission(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      >
+                        <option value="Automatic">Automatic</option>
+                        <option value="Manual">Manual</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Engine CC *
+                      </label>
+                      <input
+                        type="number"
+                        value={engineCc}
+                        onChange={(e) => setEngineCc(e.target.value)}
+                        placeholder="e.g. 1998"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
 
-                  {/* Section B: Vehicle Exterior Photo */}
-                  <div className="pt-2 border-t border-slate-200/80">
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Camera className="w-3.5 h-3.5 text-amber-600" />
-                        Vehicle Exterior Photo
-                      </span>
-                      <span className="text-[10px] font-medium text-slate-400">Optional</span>
-                    </label>
+                    <div className="sm:col-span-2 md:col-span-3">
+                      <InteractiveMapPicker
+                        value={parkingLocation}
+                        onChange={(loc) => setParkingLocation(loc)}
+                        placeholder="Pin parking hub or depot address"
+                      />
+                    </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white">
-                      <div className="w-20 h-16 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center relative shrink-0">
-                        {vehicleImage ? (
-                          <img
-                            src={vehicleImage}
-                            alt="Vehicle Preview"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-slate-400 text-[9px] gap-0.5">
-                            <ImageIcon className="w-5 h-5 text-slate-300" />
-                            <span>No Photo</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 w-full">
-                        <label
-                          className={cn(
-                            "flex items-center justify-between p-2 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                            vehicleImage
-                              ? "border-emerald-300 bg-emerald-50/40"
-                              : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
-                          )}
-                        >
-                          <input
-                            type="file"
-                            accept=".png,.jpg,.jpeg,.webp"
-                            className="hidden"
-                            onChange={(e) => handleDocumentUpload("vehicleImage", e.target.files?.[0])}
-                          />
-                          {uploadingDocs.vehicleImage ? (
-                            <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span>Uploading vehicle photo...</span>
-                            </div>
-                          ) : vehicleImage ? (
-                            <div className="flex items-center justify-between w-full text-left gap-2">
-                              <div className="flex items-center gap-2 truncate">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span className="text-xs font-semibold text-slate-900 truncate">
-                                  {docFileNames.vehicleImage || "Vehicle photo selected"}
-                                </span>
-                              </div>
-                              <span className="text-[10px] font-bold text-amber-700 hover:underline shrink-0">
-                                Change Photo
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between w-full text-slate-600">
-                              <div className="flex items-center gap-1.5">
-                                <UploadCloud className="w-3.5 h-3.5 text-amber-600" />
-                                <span className="text-xs font-semibold">Upload Vehicle Exterior Photo</span>
-                              </div>
-                              <span className="text-[10px] text-slate-400">JPG, PNG, WEBP</span>
-                            </div>
-                          )}
-                        </label>
+                    {/* Features options for Model 2 */}
+                    <div className="sm:col-span-2 md:col-span-3 pt-2">
+                      <label className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        Vehicle Features & Amenities
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { name: "Sunroof", icon: Sparkles },
+                          { name: "360 Camera", icon: Eye },
+                          { name: "ADAS Level 2", icon: Zap },
+                          { name: "Luggage Carrier", icon: Car },
+                          { name: "Smart TV / Screen", icon: Tv },
+                          { name: "Dual-Zone AC", icon: Wind },
+                          { name: "Ventilated Seats", icon: Award },
+                          { name: "Recliner Seats", icon: Star },
+                        ].map(({ name, icon: IconComp }) => {
+                          const isChecked = vehicleFeatures.includes(name);
+                          return (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => toggleFeature(name)}
+                              className={cn(
+                                "flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all cursor-pointer text-xs",
+                                isChecked
+                                  ? "bg-amber-500 text-slate-950 font-bold border-amber-600"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-amber-300"
+                              )}
+                            >
+                              <IconComp className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{name}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Section B: Multiple Vehicle Photos */}
+                  <div className="pt-2 border-t border-slate-200/80">
+                    <MultipleVehiclePhotoUploader
+                      photos={vehiclePhotos}
+                      onChange={(newPhotos) => {
+                        setVehiclePhotos(newPhotos);
+                        setVehicleImage(newPhotos[0] || "");
+                      }}
+                      maxPhotos={8}
+                      label="Vehicle Photos (Exterior & Interior)"
+                      subtitle="Upload multiple photos (front, rear, side profile, dashboard, and passenger seats)."
+                    />
                   </div>
 
                   {/* Section C: All 5 Compliance Proofs with Expiry Dates */}
@@ -3359,18 +4180,27 @@ function VendorOnboardingFlow() {
                     {vehiclesList.length > 0 && (
                       <button
                         type="button"
+                        disabled={savingVehicle}
                         onClick={() => setShowAddVehicleForm(false)}
-                        className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
+                        className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 disabled:opacity-50"
                       >
                         Cancel
                       </button>
                     )}
                     <button
                       type="button"
+                      disabled={savingVehicle}
                       onClick={handleAddVehicleToList}
-                      className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-xs"
                     >
-                      Save Vehicle
+                      {savingVehicle ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                          <span>Saving Vehicle...</span>
+                        </>
+                      ) : (
+                        <span>Save Vehicle</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -3416,12 +4246,52 @@ function VendorOnboardingFlow() {
 
               {/* Add Driver Inline Form */}
               {showAddDriverForm && (
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                  <div className="font-bold text-xs text-slate-800">
-                    Add Chauffeur Details & License Expiry
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-purple-600" />
+                      <span>Add Chauffeur Profile & Credentials</span>
+                    </div>
+                    <span className="text-[10px] text-purple-700 bg-purple-50 font-bold px-2 py-0.5 rounded-full border border-purple-200">
+                      Roster Member
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Driver Photo Upload & Preview */}
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
+                    <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative shrink-0">
+                      {newDriverPhoto ? (
+                        <img src={newDriverPhoto} alt="Driver Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-slate-400 text-[9px] gap-0.5">
+                          <Camera className="w-4 h-4 text-slate-300" />
+                          <span>Photo</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 w-full space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-800">
+                        Chauffeur Photo <span className="text-rose-500">*</span>
+                      </label>
+                      <label className={cn(
+                        "flex items-center justify-between p-2 border-2 border-dashed rounded-lg cursor-pointer transition-all text-xs",
+                        newDriverPhoto ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 hover:border-purple-400 bg-slate-50"
+                      )}>
+                        <input
+                          type="file"
+                          accept=".png,.jpg,.jpeg,.webp"
+                          className="hidden"
+                          onChange={(e) => handleDocumentUpload("newDriverPhoto", e.target.files?.[0])}
+                        />
+                        <span className="text-[11px] text-slate-700 truncate">
+                          {docFileNames.newDriverPhoto || "Upload Professional Photo"}
+                        </span>
+                        <UploadCloud className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Driver Full Name *
@@ -3432,12 +4302,13 @@ function VendorOnboardingFlow() {
                         onChange={(e) => setNewDriverName(e.target.value)}
                         placeholder="e.g. Suresh Patil"
                         className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Driver Phone Number
+                        Driver Phone Number *
                       </label>
                       <input
                         type="tel"
@@ -3445,7 +4316,95 @@ function VendorOnboardingFlow() {
                         onChange={(e) => setNewDriverPhone(e.target.value)}
                         placeholder="9876543210"
                         className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                        required
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Email Address (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={newDriverEmail}
+                        onChange={(e) => setNewDriverEmail(e.target.value)}
+                        placeholder="chauffeur@fleet.com"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Date of Birth *
+                      </label>
+                      <input
+                        type="date"
+                        value={newDriverDob}
+                        onChange={(e) => setNewDriverDob(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Gender *
+                      </label>
+                      <select
+                        value={newDriverGender}
+                        onChange={(e) => setNewDriverGender(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        ID Proof Type *
+                      </label>
+                      <select
+                        value={newDriverIdProofType}
+                        onChange={(e) => setNewDriverIdProofType(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      >
+                        <option value="Aadhaar Card">Aadhaar Card</option>
+                        <option value="Voter ID">Voter ID</option>
+                        <option value="Passport">Passport</option>
+                        <option value="PAN Card">PAN Card</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        ID Proof Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={newDriverIdProofNumber}
+                        onChange={(e) => setNewDriverIdProofNumber(e.target.value.toUpperCase())}
+                        placeholder="e.g. 5678 9012 3456"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Upload ID Proof
+                      </label>
+                      <label className="flex items-center justify-between p-2 border-2 border-dashed border-slate-200 hover:border-purple-400 rounded-xl cursor-pointer bg-white text-xs">
+                        <input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          className="hidden"
+                          onChange={(e) => handleDocumentUpload("newDriverIdProof", e.target.files?.[0])}
+                        />
+                        <span className="truncate text-[11px] text-slate-600">
+                          {docFileNames.newDriverIdProof || "Upload ID Document"}
+                        </span>
+                        <UploadCloud className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                      </label>
                     </div>
 
                     <div>
@@ -3457,8 +4416,25 @@ function VendorOnboardingFlow() {
                         value={newDriverLicense}
                         onChange={(e) => setNewDriverLicense(e.target.value.toUpperCase())}
                         placeholder="DL-0420190012345"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white"
+                        required
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        License Class / Type *
+                      </label>
+                      <select
+                        value={newDriverLicenseClass}
+                        onChange={(e) => setNewDriverLicenseClass(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      >
+                        <option value="LMV-TR (Transport)">LMV-TR (Commercial Transport)</option>
+                        <option value="LMV (Light Motor Vehicle)">LMV (Light Motor Vehicle)</option>
+                        <option value="HMV / HGMV">HMV / Heavy Transport</option>
+                        <option value="Commercial PSV Badge">Commercial PSV Badge</option>
+                      </select>
                     </div>
 
                     <div>
@@ -3470,14 +4446,88 @@ function VendorOnboardingFlow() {
                         value={newDriverExpiry}
                         onChange={(e) => setNewDriverExpiry(e.target.value)}
                         className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                        required
                       />
                     </div>
 
-                    <div className="sm:col-span-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>Driving Since (Date) *</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={newDrivingSince}
+                        onChange={(e) => handleDrivingSinceChange(e.target.value, true)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      />
+                    </div>
+
+                    {/* Automatically Experience field should display the experience number */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>Experience</span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          Auto
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <Clock className="w-3.5 h-3.5 text-purple-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={newDriverExperienceYears}
+                          readOnly
+                          className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-950 font-bold text-xs cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Chauffeur Status
+                      </label>
+                      <select
+                        value={newDriverStatus}
+                        onChange={(e) => setNewDriverStatus(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-semibold text-emerald-700"
+                      >
+                        <option value="Available">Available (Default)</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Off-duty">Off-duty</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Emergency Contact Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newEmergencyContactName}
+                        onChange={(e) => setNewEmergencyContactName(e.target.value)}
+                        placeholder="e.g. Ramesh Patil"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Emergency Contact Phone *
+                      </label>
+                      <input
+                        type="tel"
+                        value={newEmergencyContactPhone}
+                        onChange={(e) => setNewEmergencyContactPhone(e.target.value)}
+                        placeholder="9876543210"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 md:col-span-3">
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Upload Driver License Copy
                       </label>
-                      <label className="flex items-center justify-between p-2 border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-xl cursor-pointer bg-white text-xs">
+                      <label className="flex items-center justify-between p-2 border-2 border-dashed border-slate-200 hover:border-purple-400 rounded-xl cursor-pointer bg-white text-xs">
                         <input
                           type="file"
                           accept=".pdf,.png,.jpg,.jpeg"
@@ -3487,8 +4537,36 @@ function VendorOnboardingFlow() {
                         <span className="truncate text-[11px] text-slate-600">
                           {docFileNames.license || "Upload License Document"}
                         </span>
-                        <UploadCloud className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <UploadCloud className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                       </label>
+                    </div>
+
+                    <div className="sm:col-span-2 md:col-span-3 pt-1">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Languages Spoken
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {["English", "Tamil", "Hindi", "Telugu", "Kannada", "Malayalam"].map((lang) => {
+                          const isSel = newDriverLanguages.includes(lang);
+                          return (
+                            <button
+                              key={lang}
+                              type="button"
+                              onClick={() => {
+                                setNewDriverLanguages((prev) =>
+                                  isSel ? prev.filter((l) => l !== lang) : [...prev, lang]
+                                );
+                              }}
+                              className={cn(
+                                "px-2.5 py-0.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                                isSel ? "bg-purple-600 text-white shadow-xs" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                              )}
+                            >
+                              {lang}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -3503,7 +4581,7 @@ function VendorOnboardingFlow() {
                     <button
                       type="button"
                       onClick={handleAddDriverToList}
-                      className="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer"
+                      className="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer shadow-xs"
                     >
                       Save Chauffeur
                     </button>

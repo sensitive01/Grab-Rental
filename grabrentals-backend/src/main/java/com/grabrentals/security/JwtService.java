@@ -66,8 +66,27 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
+        if (isTokenExpired(token)) {
+            return false;
+        }
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        if (username != null && username.equalsIgnoreCase(userDetails.getUsername())) {
+            return true;
+        }
+        if (userDetails instanceof CustomUserDetails cud) {
+            UUID tokenUserId = extractUserId(token);
+            if (tokenUserId != null && tokenUserId.equals(cud.getId())) {
+                return true;
+            }
+            if (username != null && cud.getPhone() != null) {
+                String cleanUsername = username.replaceAll("[^0-9]", "");
+                String cleanPhone = cud.getPhone().replaceAll("[^0-9]", "");
+                if (!cleanUsername.isBlank() && cleanUsername.equals(cleanPhone)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean isTokenExpired(String token) {

@@ -47,6 +47,14 @@ export default function BusesPage() {
                 <div className="text-brand-emerald-dark font-black text-lg">Starts ₹65/km</div>
             </div>
          </div>
+
+         <div className="mt-12 rounded-3xl overflow-hidden border border-slate-200 shadow-lg h-72">
+            <img
+              src="/images/fleet/bus.jpg"
+              alt="Luxury Volvo & BharatBenz Bus Fleet"
+              className="w-full h-full object-cover"
+            />
+         </div>
       </section>
     </main>
   );

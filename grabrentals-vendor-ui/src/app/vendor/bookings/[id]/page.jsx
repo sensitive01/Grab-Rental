@@ -112,6 +112,20 @@ export default function BookingDetailsPage({ params }) {
         </Link>
       </div>
 
+      {/* Booking Details Hero Banner Photo */}
+      <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/cars/innova.jpg"
+          alt="Trip Execution & Route"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Assigned Fleet Mission</span>
+          <h2 className="text-xl font-black text-white">Trip #{booking.bookingReference || booking.id}</h2>
+          <p className="text-xs text-slate-200">{booking.pickup} ➔ {booking.drop} · {booking.tripType}</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left 2 Cols: Route & Assignment */}

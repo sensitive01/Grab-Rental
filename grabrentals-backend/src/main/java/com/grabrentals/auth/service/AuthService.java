@@ -98,6 +98,10 @@ public class AuthService {
             throw new IllegalArgumentException("An account is already registered with this mobile number. Please log in to continue.");
         }
 
+        if ("LOGIN".equalsIgnoreCase(request.getPurpose()) && !userExists) {
+            throw new IllegalArgumentException("No partner account found with this mobile number. Please register your fleet first.");
+        }
+
         SendOtpResponse response = otpService.generateAndSendOtp(request.getPhone());
         response.setUserExists(userExists);
         existingUser.ifPresent(u -> response.setExistingRole(u.getRole() != null ? u.getRole().name() : null));
@@ -107,6 +111,13 @@ public class AuthService {
     @Transactional
     public LoginResponse verifyOtp(VerifyOtpRequest request) {
         otpService.verifyOtp(request.getPhone(), request.getOtp());
+
+        if ("LOGIN".equalsIgnoreCase(request.getPurpose())) {
+            java.util.Optional<User> existing = findUserByPhoneFlexible(request.getPhone());
+            if (existing.isEmpty()) {
+                throw new IllegalArgumentException("No partner account found with this mobile number. Please register your fleet first.");
+            }
+        }
 
         String phone = otpService.normalizePhone(request.getPhone());
 
@@ -136,8 +147,10 @@ public class AuthService {
             User saved = userRepository.save(newUser);
 
             if (isVendorRequest) {
+                int num = Math.abs(saved.getId().hashCode() % 900000) + 100000;
                 com.grabrentals.vendor.entity.VendorProfile vendorProfile = com.grabrentals.vendor.entity.VendorProfile.builder()
                         .user(saved)
+                        .vendorIdCode("GR-VND-" + num)
                         .companyName(request.getBusinessName() != null && !request.getBusinessName().isBlank()
                                 ? request.getBusinessName().trim()
                                 : displayName)
@@ -163,8 +176,10 @@ public class AuthService {
                 userRepository.save(user);
             }
             if (!vendorProfileRepository.existsByUserId(user.getId())) {
+                int num = Math.abs(user.getId().hashCode() % 900000) + 100000;
                 com.grabrentals.vendor.entity.VendorProfile vendorProfile = com.grabrentals.vendor.entity.VendorProfile.builder()
                         .user(user)
+                        .vendorIdCode("GR-VND-" + num)
                         .companyName(request.getBusinessName() != null && !request.getBusinessName().isBlank()
                                 ? request.getBusinessName().trim()
                                 : user.getName())

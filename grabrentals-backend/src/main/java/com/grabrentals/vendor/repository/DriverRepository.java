@@ -15,6 +15,8 @@ public interface DriverRepository extends JpaRepository<Driver, UUID> {
 
     Optional<Driver> findByIdAndUserId(UUID id, UUID userId);
 
+    Optional<Driver> findByLicenseNumberIgnoreCase(String licenseNumber);
+
     boolean existsByLicenseNumberIgnoreCase(String licenseNumber);
 
     long countByUserId(UUID userId);

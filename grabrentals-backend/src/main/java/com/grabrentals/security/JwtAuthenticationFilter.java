@@ -56,12 +56,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String userEmail = jwtService.extractUsername(jwt);
+            final java.util.UUID userId = jwtService.extractUserId(jwt);
 
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = null;
+
+                // Priority 1: Load by immutable User ID
+                if (userId != null) {
+                    try {
+                        userDetails = this.userDetailsService.loadUserById(userId);
+                    } catch (Exception ignored) {}
+                }
+
+                // Priority 2: Fallback to subject / email / phone
+                if (userDetails == null && userEmail != null) {
+                    try {
+                        userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                    } catch (Exception ignored) {}
+                }
 
                 // Ensure account is enabled and not locked
-                if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled() && userDetails.isAccountNonLocked()) {
+                if (userDetails != null && jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled() && userDetails.isAccountNonLocked()) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,

@@ -35,8 +35,12 @@ export default function AirportTransfersPage() {
               <li className="flex gap-3 items-start"><Star className="w-5 h-5 text-brand-amber shrink-0 mt-0.5" /> <strong>Meet & Greet:</strong> Driver will hold a placard with your name at the arrivals gate.</li>
             </ul>
           </div>
-          <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[300px]">
-            <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">[Airport Transfer Infographic]</span>
+          <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-md h-[300px]">
+            <img 
+              src="/images/fleet/sedan.jpg" 
+              alt="Airport Premium Sedan Transfer" 
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </section>

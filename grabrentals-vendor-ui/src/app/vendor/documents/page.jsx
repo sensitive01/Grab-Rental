@@ -265,6 +265,20 @@ export default function VendorDocumentsPage() {
         </div>
       </div>
 
+      {/* Documents Hero Banner Photo */}
+      <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
+        <img
+          src="/images/fleet/bus.jpg"
+          alt="Fleet Compliance & Document Registry"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">RTO & Statutory Compliance</span>
+          <h2 className="text-xl font-black text-white">Fleet & Chauffeur Documents</h2>
+          <p className="text-xs text-slate-200">Track RC books, national tourist permits, speed governor slips, and fitness renewals.</p>
+        </div>
+      </div>
+
       {/* Expiring Alert Banner */}
       {expiringCount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

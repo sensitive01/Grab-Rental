@@ -49,19 +49,19 @@ export default function TopNavigation() {
 
           {/* Navigation Tabs */}
           <nav className="hidden lg:flex items-center h-full space-x-1">
-            <Link href="/" className="px-3 h-full flex items-center text-sm font-semibold text-brand-amber border-b-2 border-brand-amber">
-              Outstation Cabs
+            <Link href="/fleet" className="px-3 h-full flex items-center text-sm font-semibold text-brand-amber border-b-2 border-brand-amber">
+              All Fleet
             </Link>
-            <Link href="/" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-              Hourly / Local Rentals
+            <Link href="/fleet/sedan" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+              Sedans
             </Link>
-            <Link href="/" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-              Airport Transfers
+            <Link href="/fleet/suv" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+              Innova & SUVs
             </Link>
-            <Link href="/" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+            <Link href="/fleet/tempo" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
               Tempo Traveller & Vans
             </Link>
-            <Link href="/" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+            <Link href="/fleet/bus" className="px-3 h-full flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
               Luxury Buses
             </Link>
           </nav>

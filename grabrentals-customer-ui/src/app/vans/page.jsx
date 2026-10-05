@@ -33,9 +33,11 @@ export default function VansPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-6 items-center">
-            <div className="w-full sm:w-1/3 aspect-square bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-400">
-              12-Seater
-            </div>
+            <img
+              src="/images/fleet/tempo.jpg"
+              alt="12-Seater Maharaja Tempo"
+              className="w-full sm:w-1/3 aspect-square object-cover rounded-xl shadow-xs"
+            />
             <div className="flex-1">
               <h3 className="text-2xl font-extrabold text-slate-900 mb-2">12-Seater Maharaja Tempo</h3>
               <ul className="space-y-2 mb-6 text-slate-600 text-sm font-semibold">
@@ -48,9 +50,11 @@ export default function VansPage() {
           </div>
           
           <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-6 items-center">
-            <div className="w-full sm:w-1/3 aspect-square bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-400">
-              Urbania
-            </div>
+            <img
+              src="/images/vendor/tempo.jpg"
+              alt="Force Urbania 17-Seater"
+              className="w-full sm:w-1/3 aspect-square object-cover rounded-xl shadow-xs"
+            />
             <div className="flex-1">
               <h3 className="text-2xl font-extrabold text-slate-900 mb-2">Force Urbania (17-Seater)</h3>
               <ul className="space-y-2 mb-6 text-slate-600 text-sm font-semibold">

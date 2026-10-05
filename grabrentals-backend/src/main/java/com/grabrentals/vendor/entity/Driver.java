@@ -53,11 +53,56 @@ public class Driver {
     @Column(name = "dob")
     private LocalDate dob;
 
+    @Column(name = "gender", length = 20)
+    private String gender;
+
     @Column(name = "blood_group", length = 10)
     private String bloodGroup;
 
+    @Column(name = "id_proof_type", length = 50)
+    private String idProofType;
+
+    @Column(name = "id_proof_number", length = 100)
+    private String idProofNumber;
+
+    @Column(name = "id_proof_document_url", length = 500)
+    private String idProofDocumentUrl;
+
+    @Column(name = "license_class", length = 50)
+    private String licenseClass;
+
+    @Column(name = "driving_since")
+    private LocalDate drivingSince;
+
+    @Column(name = "joining_date")
+    private LocalDate joiningDate;
+
+    @Column(name = "address_proof_type", length = 50)
+    private String addressProofType;
+
+    @Column(name = "address_proof_number", length = 100)
+    private String addressProofNumber;
+
+    @Column(name = "address_proof_document_url", length = 500)
+    private String addressProofDocumentUrl;
+
     @Column(name = "emergency_contact", length = 100)
     private String emergencyContact;
+
+    @Column(name = "emergency_contact_name", length = 100)
+    private String emergencyContactName;
+
+    @Column(name = "emergency_contact_phone", length = 50)
+    private String emergencyContactPhone;
+
+    @Column(name = "languages_spoken", length = 255)
+    private String languagesSpoken;
+
+    @Column(name = "verification_status", length = 50)
+    private String verificationStatus;
+
+    @Column(name = "notes", length = 1000)
+    private String notes;
 
     @Column(name = "license_number", nullable = false, unique = true, length = 50)
     private String licenseNumber;

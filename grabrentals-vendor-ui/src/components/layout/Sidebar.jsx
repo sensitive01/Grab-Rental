@@ -19,7 +19,8 @@ import {
   X,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  KeyRound
 } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { vendorApi } from "@/lib/vendorApi";
@@ -48,7 +49,8 @@ export default function Sidebar({ isOpen, onClose }) {
           setCurrentUser((prev) => ({
             ...prev,
             businessName: prof.businessName || prev?.businessName,
-            name: prof.ownerName || prev?.name
+            name: prof.ownerName || prev?.name,
+            vendorId: prof.vendorId || prof.vendorIdCode || prev?.vendorId
           }));
         }
 
@@ -481,6 +483,24 @@ export default function Sidebar({ isOpen, onClose }) {
             )}
           </Link>
 
+          {/* Section: Account & Security */}
+          <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
+            Account & Security
+          </div>
+
+          <Link
+            href="/vendor/reset-password"
+            onClick={() => onClose && onClose()}
+            className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all ${
+              pathname === "/vendor/reset-password" || pathname === "/vendor/change-password"
+                ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
+                : "text-slate-300 hover:bg-slate-900 hover:text-white"
+            }`}
+          >
+            <KeyRound className={`w-4 h-4 shrink-0 ${pathname === "/vendor/reset-password" || pathname === "/vendor/change-password" ? "text-slate-950" : "text-amber-400"}`} />
+            <span>Reset Password</span>
+          </Link>
+
         </nav>
 
         {/* Footer User Card */}
@@ -492,7 +512,14 @@ export default function Sidebar({ isOpen, onClose }) {
               </div>
               <div className="truncate">
                 <p className="text-sm font-bold text-white truncate">{displayName}</p>
-                <p className="text-xs text-slate-400 truncate">{displayCompany}</p>
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate">
+                  <span className="truncate">{displayCompany}</span>
+                  {currentUser?.vendorId && (
+                    <span className="font-mono text-[9px] bg-slate-800 text-amber-400 px-1 py-0.2 rounded-sm font-bold shrink-0">
+                      {currentUser.vendorId}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <Link
