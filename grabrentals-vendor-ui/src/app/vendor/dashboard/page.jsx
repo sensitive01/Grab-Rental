@@ -19,13 +19,15 @@ import {
   XCircle,
   Loader2,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  KeyRound
 } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import { AreaLineChart, DonutChart, BarChart } from "@/components/ui/Charts";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
+import ResetPasswordModal from "@/components/ui/ResetPasswordModal";
 import Toast from "@/components/ui/Toast";
 import DataTable from "@/components/ui/DataTable";
 import { vendorApi } from "@/lib/vendorApi";
@@ -44,6 +46,7 @@ export default function VendorDashboard() {
   const [actionType, setActionType] = useState(null); // "accept" | "reject"
   const [actionLoading, setActionLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -160,6 +163,13 @@ export default function VendorDashboard() {
         type={actionType === "accept" ? "success" : "danger"}
       />
 
+      {/* Reset Password Modal Popup */}
+      <ResetPasswordModal
+        isOpen={resetPasswordOpen}
+        onClose={() => setResetPasswordOpen(false)}
+        onSuccess={(msg) => setToastMessage(msg)}
+      />
+
       {/* Onboarding Pending Resume Banner */}
       {onboardingData && !onboardingData.completed && (
         <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -224,7 +234,7 @@ export default function VendorDashboard() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 w-full sm:flex sm:w-auto items-center">
+          <div className="grid grid-cols-2 gap-2.5 w-full sm:flex sm:w-auto items-center flex-wrap">
             <Link
               href="/vendor/bookings/requests"
               className="px-3 sm:px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 text-center"
@@ -237,6 +247,14 @@ export default function VendorDashboard() {
             >
               + Add Vehicle
             </Link>
+            <button
+              type="button"
+              onClick={() => setResetPasswordOpen(true)}
+              className="px-3 sm:px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors border border-slate-700 flex items-center justify-center gap-1.5 text-center cursor-pointer shadow-xs"
+            >
+              <KeyRound className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Reset Password</span>
+            </button>
             <button
               type="button"
               onClick={loadData}
