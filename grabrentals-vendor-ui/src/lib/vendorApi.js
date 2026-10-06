@@ -123,7 +123,7 @@ export const vendorApi = {
       }
       return data || null;
     } catch (err) {
-      console.error("vendorApi.updateProfile error:", err);
+      console.warn("vendorApi.updateProfile notice:", err?.response?.data?.message || err.message || err);
       throw err;
     }
   },

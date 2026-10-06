@@ -43,7 +43,8 @@ axiosClient.interceptors.response.use(
       if (status === 401 && typeof window !== "undefined") {
         const isAuthPage =
           window.location.pathname.startsWith("/login") ||
-          window.location.pathname.startsWith("/register");
+          window.location.pathname.startsWith("/register") ||
+          window.location.pathname.startsWith("/reset-password");
 
         if (!isAuthPage) {
           console.warn("Vendor session expired or unauthorized (401). Redirecting to login...");

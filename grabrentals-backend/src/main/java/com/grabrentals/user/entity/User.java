@@ -58,7 +58,7 @@ public class User {
     @Column(name = "alternate_phone")
     private String alternatePhone;
 
-    @Column(name = "city")
+    @Column(name = "city", columnDefinition = "TEXT")
     private String city;
 
     @Column(name = "password_set")

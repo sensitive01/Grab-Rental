@@ -11,10 +11,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -89,11 +92,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+        log.warn("Bad request on {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.error("Database constraint or length violation on {}: {}", request.getRequestURI(), ex.getMessage());
+        String msg = "Data validation or database constraint error: " + (ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, msg, request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex, HttpServletRequest request) {
+        log.error("Unhandled internal server exception on {}: ", request.getRequestURI(), ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected internal error occurred: " + ex.getMessage(), request.getRequestURI());
     }
 

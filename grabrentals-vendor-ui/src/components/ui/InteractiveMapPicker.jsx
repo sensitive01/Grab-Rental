@@ -26,7 +26,8 @@ export default function InteractiveMapPicker({
   value = "",
   onChange,
   className = "",
-  placeholder = "Search or pin exact parking location..."
+  placeholder = "Search or pin exact parking location...",
+  required = false
 }) {
   const [coordinates, setCoordinates] = useState({ lat: 12.9815, lng: 80.1636 });
   const [address, setAddress] = useState(value || "Airport Hub - Terminal 2 Parking, Bay 4B");
@@ -236,7 +237,7 @@ export default function InteractiveMapPicker({
         <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
           <MapPin className="w-4 h-4 text-rose-500 fill-rose-500/20" />
           <span>Parking Location (Interactive Map Pin)</span>
-          <span className="text-rose-500">*</span>
+          {required && <span className="text-rose-500">*</span>}
         </label>
         
         <div className="flex items-center gap-1.5">

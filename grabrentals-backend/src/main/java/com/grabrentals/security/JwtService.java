@@ -36,6 +36,22 @@ public class JwtService {
         return generateToken(extraClaims, subject);
     }
 
+    public String generatePasswordResetToken(User user) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("userId", user.getId().toString());
+        extraClaims.put("purpose", "RESET_PASSWORD");
+        extraClaims.put("email", user.getEmail());
+        String subject = (user.getEmail() != null && !user.getEmail().isBlank()) ? user.getEmail() : user.getPhone();
+        long expirationMs = 24 * 60 * 60 * 1000L; // 24 hours
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject(subject)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     public String generateToken(Map<String, Object> extraClaims, String subject) {
         return Jwts.builder()
                 .claims(extraClaims)

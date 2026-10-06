@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,9 +39,17 @@ public class VendorDriverService {
         User user = userRepository.findById(vendorUserId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + vendorUserId));
 
-        String normalizedLicense = request.getLicenseNumber().trim().toUpperCase();
+        String rawLicense = request.getLicenseNumber() != null ? request.getLicenseNumber().trim() : "";
+        String normalizedLicense = !rawLicense.isBlank()
+                ? rawLicense.toUpperCase()
+                : "DL-PENDING-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        LocalDate resolvedLicenseExpiry = request.getLicenseExpiry() != null
+                ? request.getLicenseExpiry()
+                : LocalDate.now().plusYears(10);
 
-        Optional<Driver> existingOpt = driverRepository.findByLicenseNumberIgnoreCase(normalizedLicense);
+        Optional<Driver> existingOpt = !rawLicense.isBlank()
+                ? driverRepository.findByLicenseNumberIgnoreCase(normalizedLicense)
+                : Optional.empty();
         if (existingOpt.isPresent() && !existingOpt.get().getUser().getId().equals(vendorUserId)) {
             throw new IllegalArgumentException("Driver with commercial license '" + normalizedLicense + "' is already registered in the platform");
         }
@@ -125,7 +134,7 @@ public class VendorDriverService {
                     .verificationStatus(request.getVerificationStatus() != null ? request.getVerificationStatus().trim() : "Pending")
                     .notes(request.getNotes() != null ? request.getNotes().trim() : null)
                     .licenseNumber(normalizedLicense)
-                    .licenseExpiry(request.getLicenseExpiry())
+                    .licenseExpiry(resolvedLicenseExpiry)
                     .experienceYears(calculatedExp)
                     .assignedVehicle(assignedVehicle)
                     .licenseDocumentUrl(request.getLicenseDocumentUrl())

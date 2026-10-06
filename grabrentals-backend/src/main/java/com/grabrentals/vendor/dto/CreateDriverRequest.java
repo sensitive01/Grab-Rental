@@ -69,10 +69,7 @@ public class CreateDriverRequest {
 
     private Integer totalTrips;
 
-    @NotBlank(message = "Commercial driving license number is required")
     private String licenseNumber;
-
-    @NotNull(message = "License expiry date is required")
     private LocalDate licenseExpiry;
 
     private Integer experienceYears;

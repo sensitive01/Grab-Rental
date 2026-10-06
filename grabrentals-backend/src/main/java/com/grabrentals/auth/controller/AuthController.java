@@ -60,6 +60,26 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", loginResponse));
     }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody com.grabrentals.auth.dto.ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Password has been reset successfully. You can now log in with your new password.", null));
+    }
+
+    @PostMapping("/reset-password/generate-token")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> generateResetToken(@RequestBody java.util.Map<String, String> request) {
+        String email = request.get("email");
+        java.util.Map<String, Object> data = authService.generateResetPasswordToken(email);
+        return ResponseEntity.ok(ApiResponse.success("Reset token generated successfully", data));
+    }
+
+    @PostMapping("/reset-password/send-otp")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> sendResetOtp(@RequestBody java.util.Map<String, String> request) {
+        String email = request.get("email");
+        java.util.Map<String, Object> data = authService.sendResetPasswordOtp(email);
+        return ResponseEntity.ok(ApiResponse.success("Verification code sent successfully", data));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser() {
         UserResponse response = authService.getCurrentUser();

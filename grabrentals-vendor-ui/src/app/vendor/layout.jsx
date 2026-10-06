@@ -14,6 +14,11 @@ export default function VendorLayout({ children }) {
 
   useEffect(() => {
     if (!isAuthenticated()) {
+      if (pathname?.startsWith("/vendor/reset-password")) {
+        const search = typeof window !== "undefined" ? window.location.search : "";
+        router.replace(`/reset-password${search}`);
+        return;
+      }
       const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
       router.replace(redirectUrl);
     } else {

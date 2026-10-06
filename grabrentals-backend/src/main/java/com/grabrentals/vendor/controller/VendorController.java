@@ -251,92 +251,111 @@ public class VendorController {
         UUID vendorId = vendor.getId();
 
         VendorProfile profile = vendorProfileRepository.findByUserId(vendorId)
-                .orElseGet(() -> VendorProfile.builder()
-                        .user(vendor)
-                        .companyName(vendor.getName() + " Logistics")
-                        .build());
+                .orElseGet(() -> {
+                    String initialCompany = vendor.getBusinessName();
+                    if (initialCompany == null || initialCompany.isBlank()) {
+                        initialCompany = (vendor.getName() != null && !vendor.getName().isBlank())
+                                ? vendor.getName() + " Logistics"
+                                : "Fleet Partner Logistics";
+                    }
+                    int num = Math.abs(vendorId.hashCode() % 900000) + 100000;
+                    return VendorProfile.builder()
+                            .user(vendor)
+                            .vendorIdCode("GR-VND-" + num)
+                            .companyName(initialCompany)
+                            .contactPerson(vendor.getName())
+                            .tradeName(initialCompany)
+                            .address(vendor.getCity() != null ? vendor.getCity() : "")
+                            .fleetSize(0)
+                            .build();
+                });
 
-        if (updates.containsKey("businessName")) {
-            String bName = String.valueOf(updates.get("businessName"));
-            profile.setCompanyName(bName);
-            vendor.setBusinessName(bName);
+        String businessName = extractStr(updates, "businessName");
+        if (businessName != null) {
+            profile.setCompanyName(businessName);
+            vendor.setBusinessName(businessName);
         }
-        if (updates.containsKey("tradeName")) {
-            profile.setTradeName(String.valueOf(updates.get("tradeName")));
-        }
-        if (updates.containsKey("contactPerson")) {
-            profile.setContactPerson(String.valueOf(updates.get("contactPerson")));
-        }
-        if (updates.containsKey("address")) {
-            profile.setAddress(String.valueOf(updates.get("address")));
-        }
-        if (updates.containsKey("gstin")) {
-            profile.setGstin(String.valueOf(updates.get("gstin")));
-        }
-        if (updates.containsKey("pan")) {
-            profile.setPan(String.valueOf(updates.get("pan")));
-        }
-        if (updates.containsKey("bankName")) {
-            profile.setBankName(String.valueOf(updates.get("bankName")));
-        }
-        if (updates.containsKey("accountNumber")) {
-            profile.setAccountNumber(String.valueOf(updates.get("accountNumber")));
-        }
-        if (updates.containsKey("ifsc")) {
-            profile.setIfsc(String.valueOf(updates.get("ifsc")));
-        }
-        if (updates.containsKey("branch")) {
-            profile.setBranch(String.valueOf(updates.get("branch")));
-        }
-        if (updates.containsKey("altPhone")) {
-            vendor.setAlternatePhone(String.valueOf(updates.get("altPhone")));
-        }
-        if (updates.containsKey("alternatePhone")) {
-            vendor.setAlternatePhone(String.valueOf(updates.get("alternatePhone")));
-        }
-        if (updates.containsKey("phone")) {
-            vendor.setPhone(String.valueOf(updates.get("phone")));
-        }
-        if (updates.containsKey("ownerName")) {
-            vendor.setName(String.valueOf(updates.get("ownerName")));
-        }
-        if (updates.containsKey("name")) {
-            vendor.setName(String.valueOf(updates.get("name")));
-        }
-        if (updates.containsKey("city")) {
-            vendor.setCity(String.valueOf(updates.get("city")));
-        }
-        if (updates.containsKey("email")) {
-            String newEmail = String.valueOf(updates.get("email")).toLowerCase().trim();
-            if (!newEmail.isBlank() && !newEmail.equalsIgnoreCase(vendor.getEmail())) {
-                boolean emailTaken = userRepository.findByEmail(newEmail)
-                        .filter(existing -> !existing.getId().equals(vendorId))
-                        .isPresent();
-                if (emailTaken) {
-                    throw new IllegalArgumentException("Email is already registered to another account: " + newEmail);
-                }
-                customUserDetailsService.evictUser(vendor.getEmail());
-                vendor.setEmail(newEmail);
+
+        String tradeName = extractStr(updates, "tradeName");
+        if (tradeName != null) profile.setTradeName(tradeName);
+
+        String contactPerson = extractStr(updates, "contactPerson");
+        if (contactPerson != null) profile.setContactPerson(contactPerson);
+
+        String address = extractStr(updates, "address");
+        if (address != null) profile.setAddress(address);
+
+        String gstin = extractStr(updates, "gstin");
+        if (gstin != null) profile.setGstin(gstin);
+
+        String pan = extractStr(updates, "pan");
+        if (pan != null) profile.setPan(pan);
+
+        String bankName = extractStr(updates, "bankName");
+        if (bankName != null) profile.setBankName(bankName);
+
+        String accountNumber = extractStr(updates, "accountNumber");
+        if (accountNumber != null) profile.setAccountNumber(accountNumber);
+
+        String ifsc = extractStr(updates, "ifsc");
+        if (ifsc != null) profile.setIfsc(ifsc);
+
+        String branch = extractStr(updates, "branch");
+        if (branch != null) profile.setBranch(branch);
+
+        String altPhone = extractStr(updates, "altPhone");
+        if (altPhone == null) altPhone = extractStr(updates, "alternatePhone");
+        if (altPhone != null) vendor.setAlternatePhone(altPhone);
+
+        String phone = extractStr(updates, "phone");
+        if (phone != null) vendor.setPhone(phone);
+
+        String ownerName = extractStr(updates, "ownerName");
+        if (ownerName == null) ownerName = extractStr(updates, "name");
+        if (ownerName != null) vendor.setName(ownerName);
+
+        String city = extractStr(updates, "city");
+        if (city != null) {
+            vendor.setCity(city);
+            if (profile.getAddress() == null || profile.getAddress().isBlank()) {
+                profile.setAddress(city);
             }
         }
-        if (updates.containsKey("gstDocumentUrl")) {
-            profile.setGstDocumentUrl(String.valueOf(updates.get("gstDocumentUrl")));
+
+        if (updates.containsKey("email")) {
+            String newEmail = extractStr(updates, "email");
+            if (newEmail != null) {
+                newEmail = newEmail.toLowerCase();
+                if (!newEmail.equalsIgnoreCase(vendor.getEmail())) {
+                    boolean emailTaken = userRepository.findByEmail(newEmail)
+                            .filter(existing -> !existing.getId().equals(vendorId))
+                            .isPresent();
+                    if (emailTaken) {
+                        throw new IllegalArgumentException("Email is already registered to another account: " + newEmail);
+                    }
+                    customUserDetailsService.evictUser(vendor.getEmail());
+                    vendor.setEmail(newEmail);
+                }
+            }
         }
-        if (updates.containsKey("panDocumentUrl")) {
-            profile.setPanDocumentUrl(String.valueOf(updates.get("panDocumentUrl")));
-        }
-        if (updates.containsKey("bankProofDocumentUrl")) {
-            profile.setBankProofDocumentUrl(String.valueOf(updates.get("bankProofDocumentUrl")));
-        }
-        if (updates.containsKey("businessProofDocumentUrl")) {
-            profile.setBusinessProofDocumentUrl(String.valueOf(updates.get("businessProofDocumentUrl")));
-        }
-        if (updates.containsKey("idProofDocumentUrl")) {
-            profile.setIdProofDocumentUrl(String.valueOf(updates.get("idProofDocumentUrl")));
-        }
-        if (updates.containsKey("addressProofDocumentUrl")) {
-            profile.setAddressProofDocumentUrl(String.valueOf(updates.get("addressProofDocumentUrl")));
-        }
+
+        String gstDoc = extractStr(updates, "gstDocumentUrl");
+        if (gstDoc != null) profile.setGstDocumentUrl(gstDoc);
+
+        String panDoc = extractStr(updates, "panDocumentUrl");
+        if (panDoc != null) profile.setPanDocumentUrl(panDoc);
+
+        String bankProofDoc = extractStr(updates, "bankProofDocumentUrl");
+        if (bankProofDoc != null) profile.setBankProofDocumentUrl(bankProofDoc);
+
+        String bizProofDoc = extractStr(updates, "businessProofDocumentUrl");
+        if (bizProofDoc != null) profile.setBusinessProofDocumentUrl(bizProofDoc);
+
+        String idProofDoc = extractStr(updates, "idProofDocumentUrl");
+        if (idProofDoc != null) profile.setIdProofDocumentUrl(idProofDoc);
+
+        String addressProofDoc = extractStr(updates, "addressProofDocumentUrl");
+        if (addressProofDoc != null) profile.setAddressProofDocumentUrl(addressProofDoc);
 
         userRepository.save(vendor);
         profile.setFleetSize((int) vehicleRepository.countByUserId(vendorId));
@@ -352,6 +371,14 @@ public class VendorController {
         data.put("accessToken", freshToken);
 
         return ResponseEntity.ok(ApiResponse.success("Vendor profile updated successfully", data));
+    }
+
+    private String extractStr(Map<String, Object> map, String key) {
+        if (!map.containsKey(key)) return null;
+        Object val = map.get(key);
+        if (val == null) return null;
+        String str = String.valueOf(val).trim();
+        return str.isEmpty() ? null : str;
     }
 
     @PutMapping("/change-password")

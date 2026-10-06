@@ -29,6 +29,18 @@ public class PublicVehicleCardDto {
     private List<String> exclusions;
     private Integer availableCount;
     private String badge;
+    private String vehicleNumber;
+    private String regNumber;
+    private String vehicleType;
+    private String fuelType;
+    private String transmission;
+    private Integer year;
+    private BigDecimal dailyPrice;
+    private BigDecimal perKmRate;
+    private String location;
+    private String chauffeur;
+    private Double chauffeurRating;
+    private String status;
 
     @Data
     @Builder

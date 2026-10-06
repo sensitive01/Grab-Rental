@@ -396,13 +396,12 @@ function LoginContent() {
                   <label className="font-bold text-slate-300">
                     Password
                   </label>
-                  <button
-                    type="button"
-                    className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
-                    onClick={() => alert("Please contact Grab Rentals Operations at +91 98400 99887 for password assistance.")}
+                  <Link
+                    href="/reset-password"
+                    className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer hover:underline"
                   >
-                    Need help?
-                  </button>
+                    Forgot Password?
+                  </Link>
                 </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />

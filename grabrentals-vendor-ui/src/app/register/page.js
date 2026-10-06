@@ -54,6 +54,7 @@ import { uploadSignedToCloudinary } from "@/lib/cloudinary";
 import { cn } from "@/lib/utils";
 import InteractiveMapPicker from "@/components/ui/InteractiveMapPicker";
 import MultipleVehiclePhotoUploader from "@/components/ui/MultipleVehiclePhotoUploader";
+import CitySelectorModal from "@/components/ui/CitySelectorModal";
 
 function VendorOnboardingFlow() {
   const router = useRouter();
@@ -76,6 +77,7 @@ function VendorOnboardingFlow() {
   const [email, setEmail] = useState("");
   const [userCity, setUserCity] = useState("");
   const [userAddress, setUserAddress] = useState("");
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [devOtpHint, setDevOtpHint] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
@@ -519,11 +521,6 @@ function VendorOnboardingFlow() {
       return;
     }
 
-    if (!addressProofDocument) {
-      setError("Please upload your Residential / Address Proof (Electricity Bill / Rental Agreement / Gas Bill).");
-      return;
-    }
-
     setLoading(true);
     try {
       const step1Data = {
@@ -701,18 +698,6 @@ function VendorOnboardingFlow() {
       setError("Please enter the vehicle registration plate number.");
       return;
     }
-    if (!vehicleModel.trim()) {
-      setError("Please enter the vehicle make and model.");
-      return;
-    }
-    if (!driverLicenseNumber.trim()) {
-      setError("Please enter your commercial driver license number.");
-      return;
-    }
-    if (!driverLicenseExpiry) {
-      setError("Please select your driver license expiry date.");
-      return;
-    }
     if (!insuranceExpiry) {
       setError("Please provide the vehicle insurance expiry date.");
       return;
@@ -750,10 +735,10 @@ function VendorOnboardingFlow() {
           emergencyContact: emergencyContactPhone?.trim() || emergencyContactNumber,
           emergencyContactName: emergencyContactName?.trim() || partnerName?.trim() || "Emergency Contact",
           emergencyContactPhone: emergencyContactPhone?.trim() || emergencyContactNumber,
-          licenseNumber: driverLicenseNumber.trim().toUpperCase(),
-          licenseExpiry: driverLicenseExpiry,
+          licenseNumber: driverLicenseNumber?.trim() ? driverLicenseNumber.trim().toUpperCase() : ("DL-PENDING-" + (phone?.slice(-6) || Math.floor(100000 + Math.random() * 900000))),
+          licenseExpiry: driverLicenseExpiry || "2035-12-31",
           licenseDocumentUrl: driverLicenseDocument || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
-          licenseClass: driverLicenseClass,
+          licenseClass: driverLicenseClass || "LMV-TR (Transport)",
           experienceYears: expNum,
           drivingSince: drivingSince || undefined,
           photoUrl: driverPhoto || undefined,
@@ -785,7 +770,7 @@ function VendorOnboardingFlow() {
         const mainImage = (vehiclePhotos && vehiclePhotos.length > 0) ? vehiclePhotos[0] : (vehicleImage || undefined);
         await vendorApi.createVehicle({
           vehicleNumber: cleanPlate,
-          vehicleModel: vehicleModel.trim(),
+          vehicleModel: vehicleModel?.trim() || "Commercial Vehicle",
           vehicleType: vehicleCategory || "SUV",
           variant: vehicleVariant,
           color: vehicleColor,
@@ -843,8 +828,8 @@ function VendorOnboardingFlow() {
   // --- Step 3 Handler: Add Vehicle to Multiple Fleet List (Model 2) ---
   const handleAddVehicleToList = async (e) => {
     e?.preventDefault();
-    if (!vehicleNumber.trim() || !vehicleModel.trim()) {
-      setError("Please enter vehicle plate number and model.");
+    if (!vehicleNumber.trim()) {
+      setError("Please enter vehicle plate number.");
       return;
     }
     if (!insuranceExpiry || !rcExpiry) {
@@ -857,7 +842,7 @@ function VendorOnboardingFlow() {
       const newVeh = {
         id: "v-" + Date.now(),
         vehicleNumber: vehicleNumber.trim().toUpperCase(),
-        vehicleModel: vehicleModel.trim(),
+        vehicleModel: vehicleModel?.trim() || "Commercial Vehicle",
         vehicleType: vehicleCategory,
         variant: vehicleVariant,
         color: vehicleColor,
@@ -953,15 +938,10 @@ function VendorOnboardingFlow() {
   }
 };
 
-  // --- Step 3 Handler: Add Driver to Multiple Fleet List (Model 2) ---
   const handleAddDriverToList = async (e) => {
     e?.preventDefault();
-    if (!newDriverName.trim() || !newDriverLicense.trim()) {
-      setError("Please enter driver name and license number.");
-      return;
-    }
-    if (!newDriverExpiry) {
-      setError("Please enter driver license expiry date.");
+    if (!newDriverName.trim()) {
+      setError("Please enter driver name.");
       return;
     }
 
@@ -982,10 +962,10 @@ function VendorOnboardingFlow() {
       name: newDriverName.trim(),
       phone: newDriverPhone.trim() || phone || "9999999999",
       email: newDriverEmail.trim() || undefined,
-      licenseNumber: newDriverLicense.trim().toUpperCase(),
-      licenseExpiry: newDriverExpiry,
-      licenseClass: newDriverLicenseClass,
-      drivingSince: newDrivingSince,
+      licenseNumber: newDriverLicense?.trim() ? newDriverLicense.trim().toUpperCase() : ("DL-PENDING-" + Date.now().toString().slice(-6)),
+      licenseExpiry: newDriverExpiry || "2035-12-31",
+      licenseClass: newDriverLicenseClass || "LMV-TR (Transport)",
+      drivingSince: newDrivingSince || undefined,
       experienceYears: expYears,
       photoUrl: newDriverPhoto || undefined,
       gender: newDriverGender,
@@ -1086,7 +1066,7 @@ function VendorOnboardingFlow() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900 flex flex-col justify-between">
       {/* Top Navigation Bar with Skip to Dashboard */}
       <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center font-black text-slate-950 text-sm shadow-xs">
@@ -1098,8 +1078,41 @@ function VendorOnboardingFlow() {
             </Link>
           </div>
 
-          {/* Hyperlink: Skip to Dashboard (Always visible on every step) */}
-          <div className="flex items-center gap-3">
+          {/* Right section: Enquiries Contact + Skip to Dashboard / Sign In */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* For enquiries: WhatsApp + Phone */}
+            <div className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 px-3 py-1.5 rounded-full transition-all shadow-2xs">
+              <span className="text-slate-500 text-xs font-semibold hidden sm:inline">For enquiries</span>
+              <div className="flex items-center gap-1.5">
+                <a
+                  href="https://wa.me/919071100200?text=Hi,%20I%20have%20an%20enquiry%20regarding%20Grab%20Rentals%20Fleet%20Partner%20onboarding."
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Chat on WhatsApp (9071100200)"
+                  className="w-6 h-6 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-2xs hover:scale-105"
+                >
+                  <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                </a>
+                <a
+                  href="tel:9071100200"
+                  title="Call 9071100200"
+                  className="w-6 h-6 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center justify-center transition-all shadow-2xs hover:scale-105"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                </a>
+              </div>
+              <a
+                href="tel:9071100200"
+                className="font-black text-xs text-slate-900 hover:text-amber-600 transition-colors tracking-tight"
+              >
+                9071100200
+              </a>
+            </div>
+
+            <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+
             {currentStep > 0 && (
               <button
                 type="button"
@@ -1116,7 +1129,7 @@ function VendorOnboardingFlow() {
             {currentStep === 0 && (
               <Link
                 href="/login"
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 shrink-0"
               >
                 Already registered? Sign In
               </Link>
@@ -1204,8 +1217,8 @@ function VendorOnboardingFlow() {
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black w-fit mb-1 shadow-xs">
                     <Sparkles className="w-3 h-3" /> OFFICIAL PARTNER ONBOARDING
                   </div>
-                  <h3 className="text-base font-bold text-white">Drive & Grow with Grab Rentals</h3>
-                  <p className="text-[11px] text-slate-200">Commercial Fleets, Airport Transfers, Outstation & Chauffeur Services</p>
+                  <h3 className="text-base font-bold text-white">100% Business Guaranteed</h3>
+                  <p className="text-[11px] text-slate-200">Earn Upto 1 Lakh on Each Vehicle</p>
                 </div>
               </div>
 
@@ -1534,12 +1547,23 @@ function VendorOnboardingFlow() {
                 </div>
 
                 {/* Operating City */}
+                {/* Operating City */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Operating City <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Operating City <span className="text-rose-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCityModalOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-200 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <MapPin className="w-3 h-3 text-amber-600" />
+                      <span>Choose Cities</span>
+                    </button>
+                  </div>
+                  <div className="relative flex items-center">
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       value={userCity}
@@ -1547,12 +1571,52 @@ function VendorOnboardingFlow() {
                         setUserCity(e.target.value);
                         setBusinessCity(e.target.value);
                       }}
-                      placeholder="e.g. Bangalore, Mumbai, Pune"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      placeholder="e.g. Bangalore, Coimbatore, Chennai"
+                      className="w-full pl-10 pr-24 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setIsCityModalOpen(true)}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Select</span>
+                    </button>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">City where your vehicles primarily operate.</p>
+
+                  {/* Active Selected City Badges */}
+                  {userCity && userCity.includes(",") && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {userCity.split(",").map((c) => c.trim()).filter(Boolean).map((city) => (
+                        <span
+                          key={city}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/80"
+                        >
+                          <span>{city}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const remaining = userCity
+                                .split(",")
+                                .map((x) => x.trim())
+                                .filter((x) => x && x.toLowerCase() !== city.toLowerCase())
+                                .join(", ");
+                              setUserCity(remaining);
+                              setBusinessCity(remaining);
+                            }}
+                            className="text-amber-600 hover:text-rose-600 transition"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Choose multiple operating cities across Karnataka and Tamil Nadu.
+                  </p>
                 </div>
 
                 {/* Current / Residential Address */}
@@ -1672,7 +1736,7 @@ function VendorOnboardingFlow() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                            Residential / Address Proof <span className="text-rose-500">*</span>
+                            Residential / Address Proof <span className="text-slate-400 font-normal text-[11px]">(Optional)</span>
                           </p>
                           <p className="text-[11px] text-slate-500">Electricity Bill, Rental Agreement, or Gas Bill</p>
                         </div>
@@ -1761,8 +1825,7 @@ function VendorOnboardingFlow() {
                     !userCity.trim() ||
                     !email.trim() ||
                     !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()) ||
-                    !idProofDocument ||
-                    !addressProofDocument
+                    !idProofDocument
                   }
                   className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all"
                 >
@@ -2467,7 +2530,7 @@ function VendorOnboardingFlow() {
                   {/* Chauffeur Name */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Chauffeur Full Name <span className="text-rose-500">*</span>
+                      Full Name <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -2565,7 +2628,7 @@ function VendorOnboardingFlow() {
                   {/* ID Proof Number */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      ID Proof Number <span className="text-rose-500">*</span>
+                      ID Proof Number
                     </label>
                     <input
                       type="text"
@@ -2601,7 +2664,7 @@ function VendorOnboardingFlow() {
                   {/* Commercial Driving License Number */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Driving License Number <span className="text-rose-500">*</span>
+                      Driving License Number
                     </label>
                     <input
                       type="text"
@@ -2609,14 +2672,13 @@ function VendorOnboardingFlow() {
                       onChange={(e) => setDriverLicenseNumber(e.target.value.toUpperCase())}
                       placeholder="DL-1420110012345"
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      required
                     />
                   </div>
 
                   {/* License Class */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Licence Type / Class <span className="text-rose-500">*</span>
+                      Licence Type / Class
                     </label>
                     <select
                       value={driverLicenseClass}
@@ -2633,28 +2695,26 @@ function VendorOnboardingFlow() {
                   {/* License Expiry Date */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      License Expiry Date <span className="text-rose-500">*</span>
+                      License Expiry Date
                     </label>
                     <input
                       type="date"
                       value={driverLicenseExpiry}
                       onChange={(e) => setDriverLicenseExpiry(e.target.value)}
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      required
                     />
                   </div>
 
                   {/* Driving Since (date) */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                      <span>Driving Since (Date) <span className="text-rose-500">*</span></span>
+                      <span>Driving Since (Date)</span>
                     </label>
                     <input
                       type="date"
                       value={drivingSince}
                       onChange={(e) => handleDrivingSinceChange(e.target.value, false)}
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      required
                     />
                   </div>
 
@@ -2828,7 +2888,7 @@ function VendorOnboardingFlow() {
                   {/* Plate Number */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Registration Plate Number <span className="text-rose-500">*</span>
+                    Vehicle Number <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -2843,7 +2903,7 @@ function VendorOnboardingFlow() {
                   {/* Make & Model */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Make & Model <span className="text-rose-500">*</span>
+                      Model
                     </label>
                     <input
                       type="text"
@@ -2851,14 +2911,13 @@ function VendorOnboardingFlow() {
                       onChange={(e) => setVehicleModel(e.target.value)}
                       placeholder="e.g. Maruti Suzuki Dzire"
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      required
                     />
                   </div>
 
                   {/* Vehicle Variant Field */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Vehicle Variant <span className="text-rose-500">*</span>
+                      Vehicle Variant
                     </label>
                     <input
                       type="text"
@@ -2866,14 +2925,13 @@ function VendorOnboardingFlow() {
                       onChange={(e) => setVehicleVariant(e.target.value)}
                       placeholder="e.g. VXI / Titanium / ZX"
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      required
                     />
                   </div>
 
                   {/* Vehicle Color Field */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Vehicle Color <span className="text-rose-500">*</span>
+                      Vehicle Color
                     </label>
                     <input
                       type="text"
@@ -2881,7 +2939,6 @@ function VendorOnboardingFlow() {
                       onChange={(e) => setVehicleColor(e.target.value)}
                       placeholder="e.g. Pearl White / Arctic Silver"
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      required
                     />
                   </div>
 
@@ -2913,11 +2970,17 @@ function VendorOnboardingFlow() {
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                     >
                       <option value="Sedan">Sedan (Dzire, Etios, Aura)</option>
-                      <option value="SUV">SUV (Innova, Ertiga, Carens)</option>
                       <option value="Hatchback">Hatchback (WagonR, Swift)</option>
-                      <option value="Premium">Premium Executive (Camry, Fortuner)</option>
-                      <option value="Tempo">Tempo Traveller (12-26 Seater)</option>
-                      <option value="Bus">Luxury Coach / Bus</option>
+                      <option value="SUV">SUV (Xylo, Ertiga, Carens, marazzo)</option>
+                      <option value="Innova">Innova (6+1 Seater, 7+1 Seater) </option>
+                      <option value="Innovacrysta">Innova Crysta</option>
+                      <option value="innovahycross">Innova Hycross</option>
+                      {/*<option value="Premium">Premium Executive (Camry, Fortuner)</option>*/}
+                      <option value="Tempo">Tempo Traveller (12+1 Seater, 13+1 Seater)</option>
+                      <option value="urbania">Force Urbania (10+1 Seater, 12+1 Seater, 16+1 Seater)</option>
+                      <option value="Bus">Bus</option> 
+                      <option value="Benz">Benz - Executive Class</option>
+                       
                     </select>
                   </div>
 
@@ -2972,7 +3035,7 @@ function VendorOnboardingFlow() {
                   {/* Vehicle Transmission */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Vehicle Transmission <span className="text-rose-500">*</span>
+                      Vehicle Transmission
                     </label>
                     <select
                       value={transmission}
@@ -3008,7 +3071,7 @@ function VendorOnboardingFlow() {
                   {/* Engine CC */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Engine Displacement (CC) <span className="text-rose-500">*</span>
+                      Engine Displacement (CC)
                     </label>
                     <div className="relative">
                       <Gauge className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -3018,7 +3081,6 @@ function VendorOnboardingFlow() {
                         onChange={(e) => setEngineCc(e.target.value)}
                         placeholder="e.g. 1498"
                         className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                        required
                       />
                     </div>
                   </div>
@@ -3617,7 +3679,7 @@ function VendorOnboardingFlow() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Make & Model *
+                        Model
                       </label>
                       <input
                         type="text"
@@ -3629,7 +3691,7 @@ function VendorOnboardingFlow() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Vehicle Variant *
+                        Vehicle Variant
                       </label>
                       <input
                         type="text"
@@ -3641,7 +3703,7 @@ function VendorOnboardingFlow() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Vehicle Color *
+                        Vehicle Color
                       </label>
                       <input
                         type="text"
@@ -3747,7 +3809,7 @@ function VendorOnboardingFlow() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Transmission *
+                        Transmission
                       </label>
                       <select
                         value={transmission}
@@ -3760,7 +3822,7 @@ function VendorOnboardingFlow() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Engine CC *
+                        Engine CC
                       </label>
                       <input
                         type="number"
@@ -4409,7 +4471,7 @@ function VendorOnboardingFlow() {
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Driving License Number *
+                        Driving License Number
                       </label>
                       <input
                         type="text"
@@ -4417,13 +4479,12 @@ function VendorOnboardingFlow() {
                         onChange={(e) => setNewDriverLicense(e.target.value.toUpperCase())}
                         placeholder="DL-0420190012345"
                         className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white"
-                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        License Class / Type *
+                        Licence Type / Class
                       </label>
                       <select
                         value={newDriverLicenseClass}
@@ -4439,20 +4500,19 @@ function VendorOnboardingFlow() {
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        License Expiry Date *
+                        License Expiry Date
                       </label>
                       <input
                         type="date"
                         value={newDriverExpiry}
                         onChange={(e) => setNewDriverExpiry(e.target.value)}
                         className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
-                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
-                        <span>Driving Since (Date) *</span>
+                        <span>Driving Since (Date)</span>
                       </label>
                       <input
                         type="date"
@@ -4621,6 +4681,18 @@ function VendorOnboardingFlow() {
           </div>
         )}
       </main>
+
+      {/* Operating City Selector Modal */}
+      <CitySelectorModal
+        isOpen={isCityModalOpen}
+        onClose={() => setIsCityModalOpen(false)}
+        initialCities={userCity}
+        onApply={(cities) => {
+          const joined = cities.join(", ");
+          setUserCity(joined);
+          setBusinessCity(joined);
+        }}
+      />
 
       {/* Footer */}
       <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-500">

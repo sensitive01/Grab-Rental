@@ -75,53 +75,43 @@ public class PublicVehicleService {
                     4.92, 1650, 7, "/images/cars/innova.jpg", distanceKm, new BigDecimal("19.50"), new BigDecimal("21.00"),
                     List.of("Diesel"), 5, "Premium Comfort"));
         } else {
-            // Dynamically group database vehicles by model name
-            Map<String, List<Vehicle>> groupedByModel = new LinkedHashMap<>();
+            // Map live database vehicles
             for (Vehicle v : availableVehicles) {
-                String modelName = (v.getModel() != null && !v.getModel().isBlank()) ? v.getModel().trim() : "Standard Fleet";
-                groupedByModel.computeIfAbsent(modelName, k -> new ArrayList<>()).add(v);
-            }
-
-            for (Map.Entry<String, List<Vehicle>> entry : groupedByModel.entrySet()) {
-                String model = entry.getKey();
-                List<Vehicle> fleetList = entry.getValue();
-                Vehicle rep = fleetList.get(0);
-
-                // Collect distinct fuel options across this model's vehicles in database
-                Set<String> fuelSet = new LinkedHashSet<>();
-                for (Vehicle v : fleetList) {
-                    if (v.getFuelType() != null && !v.getFuelType().isBlank()) {
-                        fuelSet.add(v.getFuelType().toUpperCase());
-                    }
-                }
-                if (fuelSet.isEmpty()) {
-                    fuelSet.add("Diesel");
-                }
-
-                // Dynamic pricing from database vehicle configuration
-                BigDecimal rate = (rep.getPerKmRate() != null && rep.getPerKmRate().compareTo(BigDecimal.ZERO) > 0)
-                        ? rep.getPerKmRate()
-                        : getDefaultRateForType(rep.getVehicleType(), rep.getSeatingCapacity());
+                String model = (v.getModel() != null && !v.getModel().isBlank()) ? v.getModel().trim() : "Standard Fleet";
+                BigDecimal rate = (v.getPerKmRate() != null && v.getPerKmRate().compareTo(BigDecimal.ZERO) > 0)
+                        ? v.getPerKmRate()
+                        : getDefaultRateForType(v.getVehicleType(), v.getSeatingCapacity());
                 BigDecimal postRate = rate.add(new BigDecimal("1.00"));
 
-                int seats = rep.getSeatingCapacity() != null ? rep.getSeatingCapacity() : 4;
-                String category = mapVehicleCategory(rep.getVehicleType(), seats);
-                String typeTitle = (rep.getVehicleType() != null && !rep.getVehicleType().isBlank())
-                        ? rep.getVehicleType()
+                int seats = v.getSeatingCapacity() != null ? v.getSeatingCapacity() : 4;
+                String category = mapVehicleCategory(v.getVehicleType(), seats);
+                String typeTitle = (v.getVehicleType() != null && !v.getVehicleType().isBlank())
+                        ? v.getVehicleType()
                         : (category.contains("SUV") ? "SUV" : category.contains("SEDAN") ? "Sedan" : "Hatchback");
 
-                String title = model.toLowerCase().contains("equivalent") ? model : model + " or Equivalent";
-                String subtitle = typeTitle + " • AC • " + seats + " Seats";
-                String image = resolveVehicleImage(model, category, rep.getImageUrl());
+                String image = resolveVehicleImage(model, category, v.getImageUrl());
                 String badge = getVehicleBadge(model, category);
                 double rating = getVehicleRating(model, category);
-                int ratingCount = 500 + (fleetList.size() * 120);
-                String cardId = model.toLowerCase().replaceAll("[^a-z0-9]+", "_");
+                int ratingCount = 500;
+                String cardId = v.getId() != null ? v.getId().toString() : model.toLowerCase().replaceAll("[^a-z0-9]+", "_");
 
-                cards.add(buildCategoryCard(
+                String fuel = (v.getFuelType() != null && !v.getFuelType().isBlank()) ? v.getFuelType() : "Diesel";
+                String trans = (v.getTransmission() != null && !v.getTransmission().isBlank()) ? v.getTransmission() : "Manual";
+                int yr = v.getYear() != null ? v.getYear() : 2023;
+                BigDecimal dailyPrice = (v.getDailyRate() != null && v.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
+                        ? v.getDailyRate()
+                        : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
+                String loc = v.getParkingLocation() != null && !v.getParkingLocation().isBlank()
+                        ? v.getParkingLocation()
+                        : (v.getCurrentLocation() != null && !v.getCurrentLocation().isBlank() ? v.getCurrentLocation() : cleanFrom);
+                String chauffeurName = (v.getUser() != null && v.getUser().getName() != null && !v.getUser().getName().isBlank())
+                        ? v.getUser().getName()
+                        : "Verified Commercial Chauffeur";
+
+                PublicVehicleCardDto card = buildCategoryCard(
                         cardId,
-                        title,
-                        subtitle,
+                        model,
+                        typeTitle + " • AC • " + seats + " Seats",
                         category,
                         rating,
                         ratingCount,
@@ -130,10 +120,24 @@ public class PublicVehicleService {
                         distanceKm,
                         rate,
                         postRate,
-                        new ArrayList<>(fuelSet),
-                        fleetList.size(),
+                        List.of(fuel),
+                        1,
                         badge
-                ));
+                );
+                card.setVehicleNumber(v.getVehicleNumber());
+                card.setRegNumber(v.getRegistrationNumber() != null && !v.getRegistrationNumber().isBlank() ? v.getRegistrationNumber() : v.getVehicleNumber());
+                card.setVehicleType(typeTitle);
+                card.setFuelType(fuel);
+                card.setTransmission(trans);
+                card.setYear(yr);
+                card.setDailyPrice(dailyPrice);
+                card.setPerKmRate(rate);
+                card.setLocation(loc);
+                card.setStatus(v.getStatus() != null ? v.getStatus().name() : "AVAILABLE");
+                card.setChauffeur(chauffeurName);
+                card.setChauffeurRating(4.9);
+
+                cards.add(card);
             }
         }
 

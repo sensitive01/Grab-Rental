@@ -61,7 +61,7 @@ public class SecurityConfig {
                 // Allow CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Public auth endpoints
-                .requestMatchers(HttpMethod.POST, "/api/auth/register/customer", "/api/auth/register/vendor", "/api/auth/register/fleet", "/api/auth/login", "/api/auth/otp/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register/customer", "/api/auth/register/vendor", "/api/auth/register/fleet", "/api/auth/login", "/api/auth/otp/**", "/api/auth/reset-password", "/api/auth/reset-password/**", "/api/auth/forgot-password").permitAll()
                 // Public upload endpoints for onboarding / registration document uploads
                 .requestMatchers(HttpMethod.POST,
                     "/api/vendor/vehicles/upload",

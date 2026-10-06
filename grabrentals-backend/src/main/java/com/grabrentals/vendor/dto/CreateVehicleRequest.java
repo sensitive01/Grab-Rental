@@ -16,7 +16,6 @@ public class CreateVehicleRequest {
     @NotBlank(message = "Vehicle type is required")
     private String vehicleType;
 
-    @NotBlank(message = "Vehicle make & model is required")
     private String vehicleModel;
 
     @NotBlank(message = "Vehicle plate number is required")

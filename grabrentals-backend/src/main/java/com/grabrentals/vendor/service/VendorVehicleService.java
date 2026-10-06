@@ -50,7 +50,10 @@ public class VendorVehicleService {
             if (!vehicle.getUser().getId().equals(vendorUserId)) {
                 throw new IllegalArgumentException("Vehicle plate number '" + normalizedPlate + "' is already registered in the platform");
             }
-            vehicle.setModel(request.getVehicleModel().trim());
+            String resolvedModel = (request.getVehicleModel() != null && !request.getVehicleModel().isBlank())
+                    ? request.getVehicleModel().trim()
+                    : "Commercial Fleet Asset";
+            vehicle.setModel(resolvedModel);
             vehicle.setVehicleType(request.getVehicleType().trim());
             if (request.getRegistrationNumber() != null) vehicle.setRegistrationNumber(request.getRegistrationNumber().trim().toUpperCase());
             vehicle.setSeatingCapacity(request.getSeatingCapacity());
@@ -78,10 +81,13 @@ public class VendorVehicleService {
             if (request.getPermitDocumentUrl() != null) vehicle.setPermitDocumentUrl(request.getPermitDocumentUrl());
             if (request.getFitnessDocumentUrl() != null) vehicle.setFitnessDocumentUrl(request.getFitnessDocumentUrl());
         } else {
+            String resolvedModel = (request.getVehicleModel() != null && !request.getVehicleModel().isBlank())
+                    ? request.getVehicleModel().trim()
+                    : "Commercial Fleet Asset";
             vehicle = Vehicle.builder()
                     .user(user)
                     .vehicleType(request.getVehicleType().trim())
-                    .model(request.getVehicleModel().trim())
+                    .model(resolvedModel)
                     .vehicleNumber(normalizedPlate)
                     .registrationNumber(request.getRegistrationNumber() != null ? request.getRegistrationNumber().trim().toUpperCase() : null)
                     .seatingCapacity(request.getSeatingCapacity())

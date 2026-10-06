@@ -22,8 +22,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
+import com.grabrentals.security.CustomUserDetailsService;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -35,6 +39,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final OtpService otpService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final CustomUserDetailsService customUserDetailsService;
     private final com.grabrentals.audit.service.AuditLogService auditLogService;
 
     private static final int MAX_FAILED_LOGINS = 5;
@@ -447,5 +452,124 @@ public class AuthService {
                         .build());
             } catch (Throwable ignored) {}
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> generateResetPasswordToken(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new IllegalArgumentException("Email or phone is required");
+        }
+        User user = userRepository.findByEmail(identifier.trim())
+                .or(() -> findUserByPhoneFlexible(identifier.trim()))
+                .orElseThrow(() -> new IllegalArgumentException("No partner account found with identifier: " + identifier));
+
+        String token = jwtService.generatePasswordResetToken(user);
+        Map<String, Object> res = new HashMap<>();
+        res.put("token", token);
+        res.put("email", user.getEmail());
+        res.put("phone", user.getPhone());
+        res.put("expiresInSeconds", 86400);
+        return res;
+    }
+
+    @Transactional
+    public Map<String, Object> sendResetPasswordOtp(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new IllegalArgumentException("Email or phone is required");
+        }
+        User user = userRepository.findByEmail(identifier.trim())
+                .or(() -> findUserByPhoneFlexible(identifier.trim()))
+                .orElseThrow(() -> new IllegalArgumentException("No partner account found with identifier: " + identifier));
+
+        if (user.getPhone() == null || user.getPhone().isBlank()) {
+            throw new IllegalArgumentException("No registered mobile number on file for account: " + identifier);
+        }
+
+        SendOtpResponse otpResp = otpService.generateAndSendOtp(user.getPhone());
+        String cleanPhone = user.getPhone().replaceAll("[^0-9]", "");
+        String maskedPhone = cleanPhone.length() >= 4 
+                ? "••••••" + cleanPhone.substring(cleanPhone.length() - 4) 
+                : cleanPhone;
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("phoneMasked", maskedPhone);
+        res.put("devOtp", otpResp.getDevOtp());
+        res.put("expiresInSeconds", otpResp.getExpiresInSeconds());
+        return res;
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String identifier = request.getEmail() != null ? request.getEmail().trim() : "";
+        String newPassword = request.getNewPassword() != null ? request.getNewPassword().trim() : "";
+
+        if (newPassword.length() < 8) {
+            throw new IllegalArgumentException("New password must be at least 8 characters long");
+        }
+
+        User user = null;
+        boolean verified = false;
+
+        // 1. Try to verify via Signed Token
+        if (request.getToken() != null && !request.getToken().isBlank()) {
+            try {
+                String token = request.getToken().trim();
+                String tokenSubject = jwtService.extractUsername(token);
+                if (tokenSubject != null && !tokenSubject.isBlank()) {
+                    user = userRepository.findByEmail(tokenSubject)
+                            .or(() -> findUserByPhoneFlexible(tokenSubject))
+                            .orElse(null);
+                    if (user != null) {
+                        verified = true;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Invalid or expired reset token provided: {}", e.getMessage());
+            }
+        }
+
+        // 2. If not verified via token, try to verify via OTP
+        if (!verified) {
+            if (user == null && !identifier.isBlank()) {
+                user = userRepository.findByEmail(identifier)
+                        .or(() -> findUserByPhoneFlexible(identifier))
+                        .orElseThrow(() -> new IllegalArgumentException("No account found with identifier: " + identifier));
+            }
+
+            if (user == null) {
+                throw new IllegalArgumentException("Please provide a valid email or mobile number.");
+            }
+
+            if (request.getOtp() == null || request.getOtp().isBlank()) {
+                throw new IllegalArgumentException("Security verification required: Please open the secure link sent to your email or enter the 6-digit verification code sent to your registered phone.");
+            }
+
+            String phoneToVerify = user.getPhone() != null ? user.getPhone() : identifier;
+            otpService.verifyOtp(phoneToVerify, request.getOtp().trim());
+            verified = true;
+        }
+
+        if (!verified || user == null) {
+            throw new IllegalArgumentException("Verification failed. Please request a new reset link or enter a valid verification code.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordSet(true);
+        userRepository.save(user);
+
+        customUserDetailsService.evictUser(user.getEmail());
+        customUserDetailsService.evictUser("id:" + user.getId());
+
+        try {
+            auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
+                    .category("SECURITY")
+                    .event("PASSWORD_RESET")
+                    .userId(user.getEmail() != null ? user.getEmail() : user.getId().toString())
+                    .userName(user.getName() != null ? user.getName() : "User")
+                    .userRole(user.getRole() != null ? user.getRole().name() : "USER")
+                    .status("SUCCESS")
+                    .details("Password reset completed successfully via verified token/OTP")
+                    .build());
+        } catch (Throwable ignored) {}
     }
 }
