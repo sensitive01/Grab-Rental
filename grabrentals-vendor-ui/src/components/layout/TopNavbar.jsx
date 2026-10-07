@@ -75,6 +75,15 @@ export default function TopNavbar({ onMenuClick }) {
           <Menu className="w-5 h-5" />
         </button>
 
+        {/* Mobile Header Brand Logo */}
+        <Link href="/vendor/dashboard" className="lg:hidden flex items-center shrink-0">
+          <img
+            src="/images/grab-rentals-logo.jpg"
+            alt="Grab Rentals"
+            className="h-8.5 w-auto object-contain rounded-md"
+          />
+        </Link>
+
         {/* Global Search for Desktop */}
         <div className="relative max-w-md w-full hidden sm:block">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />

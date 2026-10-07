@@ -147,7 +147,7 @@ public class AuthService {
                     .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
                     .role(isVendorRequest ? Role.FLEET : Role.CUSTOMER)
                     .businessName(request.getBusinessName() != null ? request.getBusinessName().trim() : null)
-                    .status(UserStatus.ACTIVE)
+                    .status(isVendorRequest ? UserStatus.PENDING : UserStatus.ACTIVE)
                     .build();
             User saved = userRepository.save(newUser);
 
@@ -225,6 +225,7 @@ public class AuthService {
                         .name(user.getName())
                         .email(user.getEmail())
                         .role(user.getRole())
+                        .status(user.getStatus())
                         .build())
                 .isNewUser(isNew.get())
                 .build();
@@ -383,10 +384,7 @@ public class AuthService {
             throw new AccountBlockedException("Your account is currently inactive.");
         }
 
-        if (user.getStatus() == UserStatus.PENDING) {
-            throw new AccountPendingException("Your account is pending administrator approval. Access will be granted once reviewed.");
-        }
-
+        // PENDING accounts can log in to view their registered fleet & profile details, but bookings remain restricted until approved.
         String token = jwtService.generateToken(user);
 
         try {
@@ -409,6 +407,7 @@ public class AuthService {
                         .name(user.getName())
                         .email(user.getEmail())
                         .role(user.getRole())
+                        .status(user.getStatus())
                         .build())
                 .build();
     }

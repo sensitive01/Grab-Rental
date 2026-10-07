@@ -158,25 +158,27 @@ function LoginContent() {
       <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
 
       {/* Top Navigation Bar */}
-      <header className="w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between relative z-10">
-        <Link href="/login" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-black text-sm shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform">
-            G
-          </div>
+      <header className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-3.5 sm:py-5 flex items-center justify-between gap-3 relative z-10">
+        <Link href="/login" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+          <img
+            src="/images/grab-rentals-logo.jpg"
+            alt="Grab Rentals"
+            className="h-8 sm:h-10 w-auto object-contain rounded-lg shadow-md group-hover:scale-105 transition-transform"
+          />
           <div>
-            <span className="font-extrabold text-sm tracking-tight text-white block">
+            <span className="font-extrabold text-xs sm:text-sm tracking-tight text-white block leading-tight">
               GRAB RENTALS
             </span>
-            <span className="text-[10px] font-bold text-amber-400 tracking-wider uppercase block -mt-0.5">
+            <span className="text-[9px] sm:text-[10px] font-bold text-amber-400 tracking-wider uppercase block -mt-0.5">
               Vendor Portal
             </span>
           </div>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
             href="/register"
-            className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
+            className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 whitespace-nowrap"
           >
             Become a Partner
           </Link>
@@ -184,7 +186,7 @@ function LoginContent() {
             href="http://localhost:3000"
             target="_blank"
             rel="noreferrer"
-            className="text-xs font-medium text-slate-400 hover:text-amber-400 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-900/60 border border-transparent hover:border-slate-800"
+            className="hidden sm:flex text-xs font-medium text-slate-400 hover:text-amber-400 transition-colors items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-900/60 border border-transparent hover:border-slate-800 whitespace-nowrap"
           >
             <span>Customer App</span>
             <span className="text-[10px]">↗</span>
@@ -193,24 +195,24 @@ function LoginContent() {
       </header>
 
       {/* Centered Sign-In Card */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
-        <div className="w-full max-w-[420px] bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-7 sm:p-9 shadow-2xl shadow-black/70 space-y-6">
+      <main className="flex-1 flex items-center justify-center px-3.5 sm:px-4 py-4 sm:py-8 relative z-10 w-full">
+        <div className="w-full max-w-[420px] bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-9 shadow-2xl shadow-black/70 space-y-5 sm:space-y-6">
           
           {/* Header */}
-          <div className="space-y-2 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-400 mx-auto flex items-center justify-center shadow-inner">
-              <ShieldCheck className="w-6 h-6" />
+          <div className="space-y-1.5 sm:space-y-2 text-center">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-400 mx-auto flex items-center justify-center shadow-inner">
+              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">
               Vendor Partner Sign In
             </h1>
-            <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
               Access your fleet dispatch, vehicles, chauffeurs, and earnings.
             </p>
           </div>
 
           {/* Sign-in Method Tabs */}
-          <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold">
+          <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950 border border-slate-800 text-[11px] sm:text-xs font-bold">
             <button
               type="button"
               onClick={() => {
@@ -468,7 +470,7 @@ function LoginContent() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-center text-[11px] text-slate-500 relative z-10">
+      <footer className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-center text-[10.5px] sm:text-[11px] text-slate-500 text-center relative z-10">
         <span>© {new Date().getFullYear()} Grab Rentals • Partner Fleet Network</span>
       </footer>
 

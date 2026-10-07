@@ -29,8 +29,7 @@ export default function InteractiveMapPicker({
   placeholder = "Search or pin exact parking location...",
   required = false
 }) {
-  const [coordinates, setCoordinates] = useState({ lat: 12.9815, lng: 80.1636 });
-  const [address, setAddress] = useState(value || "Airport Hub - Terminal 2 Parking, Bay 4B");
+  const [address, setAddress] = useState(value || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);

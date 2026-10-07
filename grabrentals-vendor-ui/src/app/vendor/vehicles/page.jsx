@@ -25,21 +25,21 @@ import {
   ShieldCheck,
   CheckCircle2,
   Clock,
-  Gauge
+  Gauge,
+  Loader2
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import Toast from "@/components/ui/Toast";
-import { formatINR } from "@/lib/utils";
 import { axiosClient } from "@/lib/axiosClient";
 
 export default function VendorVehiclesPage() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
-  const [sortBy, setSortBy] = useState("newest"); // "newest" | "price_asc" | "price_desc" | "year_desc"
+  const [sortBy, setSortBy] = useState("newest"); // "newest" | "year_desc"
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -49,8 +49,6 @@ export default function VendorVehiclesPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedFuels, setSelectedFuels] = useState([]);
   const [selectedTransmissions, setSelectedTransmissions] = useState([]);
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
   const [seatingCapacity, setSeatingCapacity] = useState("");
 
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -65,7 +63,75 @@ export default function VendorVehiclesPage() {
       ]);
 
       const drivers = Array.isArray(driversRes.data?.data) ? driversRes.data.data : [];
-      const beData = Array.isArray(vehiclesRes.data?.data) ? vehiclesRes.data.data : [];
+      let beData = Array.isArray(vehiclesRes.data?.data) ? [...vehiclesRes.data.data] : [];
+
+      // If backend has no vehicles yet, check if vendor registered vehicles during onboarding
+      if (beData.length === 0 && typeof window !== "undefined") {
+        try {
+          const rawOnboarding = localStorage.getItem("grabrentals_vendor_onboarding");
+          if (rawOnboarding) {
+            const parsed = JSON.parse(rawOnboarding);
+            const onboardVehicles = Array.isArray(parsed?.vehiclesList) ? parsed.vehiclesList : [];
+            if (onboardVehicles.length > 0) {
+              for (const v of onboardVehicles) {
+                try {
+                  const syncRes = await axiosClient.post("/api/vendor/vehicles", {
+                    vehicleNumber: v.vehicleNumber,
+                    vehicleModel: v.vehicleModel || "Commercial Fleet Asset",
+                    vehicleType: v.vehicleType || "SUV",
+                    variant: v.variant || undefined,
+                    color: v.color || undefined,
+                    registrationType: v.registrationType || undefined,
+                    alternateFuel: v.alternateFuel || undefined,
+                    transmission: v.transmission || undefined,
+                    engineCc: v.engineCc ? parseInt(v.engineCc) : undefined,
+                    parkingLocation: v.parkingLocation || undefined,
+                    features: v.features || undefined,
+                    year: v.year ? parseInt(v.year) : 2024,
+                    seatingCapacity: v.seatingCapacity ? Math.max(1, parseInt(v.seatingCapacity) || 5) : 5,
+                    fuelType: v.fuelType || "Diesel",
+                    dailyRate: 2500,
+                    perKmRate: 14,
+                    imageUrl: v.imageUrl || (v.photos && v.photos[0]) || undefined,
+                    photos: Array.isArray(v.photos) ? JSON.stringify(v.photos) : (typeof v.photos === "object" ? JSON.stringify(v.photos) : v.photos),
+                    insuranceExpiry: v.insuranceExpiry || undefined,
+                    fitnessExpiry: v.fitnessExpiry || undefined,
+                    permitExpiry: v.permitExpiry || undefined,
+                    rcDocumentUrl: v.rcDocumentUrl || undefined,
+                    insuranceDocumentUrl: v.insuranceDocumentUrl || undefined,
+                    permitDocumentUrl: v.permitDocumentUrl || undefined,
+                    fitnessDocumentUrl: v.fitnessDocumentUrl || undefined,
+                  });
+                  if (syncRes.data?.data) {
+                    beData.push(syncRes.data.data);
+                  }
+                } catch (syncErr) {
+                  console.warn("Auto-sync onboarding vehicle notice:", syncErr?.response?.data || syncErr?.message);
+                  beData.push({
+                    id: v.id || "v-" + Math.random(),
+                    model: v.vehicleModel || "Commercial Fleet Asset",
+                    variant: v.variant || "",
+                    vehicleNumber: v.vehicleNumber,
+                    vehicleType: v.vehicleType || "SUV",
+                    seatingCapacity: v.seatingCapacity || 5,
+                    fuelType: v.fuelType || "Diesel",
+                    transmission: v.transmission || "Automatic",
+                    year: v.year || 2024,
+                    status: "AVAILABLE",
+                    currentLocation: v.parkingLocation || "Bangalore",
+                    imageUrl: v.imageUrl || (v.photos && v.photos[0]) || null,
+                    photos: v.photos ? (typeof v.photos === "string" ? v.photos : JSON.stringify(v.photos)) : null,
+                    dailyRate: 2500,
+                    perKmRate: 14
+                  });
+                }
+              }
+            }
+          }
+        } catch (cacheErr) {
+          console.warn("Onboarding cache read notice:", cacheErr);
+        }
+      }
 
       const beVehicles = beData.map((v) => {
         const matchedDriver = drivers.find((d) => d.assignedVehicleId === v.id || d.assignedVehicle === v.vehicleNumber);
@@ -181,8 +247,6 @@ export default function VendorVehiclesPage() {
     setSelectedStatus("all");
     setSelectedFuels([]);
     setSelectedTransmissions([]);
-    setPriceMin("");
-    setPriceMax("");
     setSeatingCapacity("");
     setCurrentPage(1);
   };
@@ -231,10 +295,6 @@ export default function VendorVehiclesPage() {
         if (!selectedTransmissions.includes(v.transmission)) return false;
       }
 
-      // Price Range
-      if (priceMin && Number(v.dailyRate) < Number(priceMin)) return false;
-      if (priceMax && Number(v.dailyRate) > Number(priceMax)) return false;
-
       // Seating Capacity
       if (seatingCapacity) {
         const cap = Number(v.seatingCapacity) || 0;
@@ -248,8 +308,6 @@ export default function VendorVehiclesPage() {
 
     // Sorting
     result.sort((a, b) => {
-      if (sortBy === "price_asc") return (a.dailyRate || 0) - (b.dailyRate || 0);
-      if (sortBy === "price_desc") return (b.dailyRate || 0) - (a.dailyRate || 0);
       if (sortBy === "year_desc") return (b.year || 0) - (a.year || 0);
       // Default: newest
       return (b.year || 2024) - (a.year || 2024);
@@ -263,8 +321,6 @@ export default function VendorVehiclesPage() {
     selectedStatus, 
     selectedFuels, 
     selectedTransmissions, 
-    priceMin, 
-    priceMax, 
     seatingCapacity, 
     sortBy
   ]);
@@ -345,9 +401,16 @@ export default function VendorVehiclesPage() {
           <Breadcrumbs />
           <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2.5">
             Fleet Vehicles
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-              {vehicles.length} Total
-            </span>
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                <span>Loading...</span>
+              </span>
+            ) : (
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                {vehicles.length} Total
+              </span>
+            )}
           </h1>
         </div>
         <div className="flex items-center gap-3">
@@ -426,7 +489,11 @@ export default function VendorVehiclesPage() {
                       <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       <span>{name}</span>
                     </div>
-                    <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    {loading ? (
+                      <span className="w-3.5 h-3 bg-slate-200/80 rounded animate-pulse inline-block" />
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    )}
                   </label>
                 );
               })}
@@ -465,7 +532,11 @@ export default function VendorVehiclesPage() {
                       <span className={`w-2 h-2 rounded-full ${dot} shrink-0`} />
                       <span>{label}</span>
                     </div>
-                    <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    {loading ? (
+                      <span className="w-3.5 h-3 bg-slate-200/80 rounded animate-pulse inline-block" />
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    )}
                   </label>
                 );
               })}
@@ -499,7 +570,11 @@ export default function VendorVehiclesPage() {
                       <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       <span>{name}</span>
                     </div>
-                    <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    {loading ? (
+                      <span className="w-3.5 h-3 bg-slate-200/80 rounded animate-pulse inline-block" />
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    )}
                   </label>
                 );
               })}
@@ -530,38 +605,14 @@ export default function VendorVehiclesPage() {
                       <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       <span>{name}</span>
                     </div>
-                    <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    {loading ? (
+                      <span className="w-3.5 h-3 bg-slate-200/80 rounded animate-pulse inline-block" />
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-400">{count}</span>
+                    )}
                   </label>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Price / Day Range Inputs */}
-          <div className="space-y-2 border-t border-slate-100 pt-4">
-            <label className="text-xs font-bold text-slate-700 block">Price / Day (₹)</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                placeholder="Min"
-                value={priceMin}
-                onChange={(e) => {
-                  setPriceMin(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-1/2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/40"
-              />
-              <span className="text-slate-400 text-xs font-bold">-</span>
-              <input
-                type="number"
-                placeholder="Max"
-                value={priceMax}
-                onChange={(e) => {
-                  setPriceMax(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-1/2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/40"
-              />
             </div>
           </div>
 
@@ -603,8 +654,18 @@ export default function VendorVehiclesPage() {
           
           {/* Catalog Top Toolbar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 px-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-            <div className="text-base font-black text-slate-900 tracking-tight">
-              {filteredVehicles.length} Vehicles
+            <div className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+              {loading ? (
+                <>
+                  <div className="h-5 w-20 bg-slate-200/80 rounded-md animate-pulse" />
+                  <span className="text-xs font-semibold text-amber-600 flex items-center gap-1.5 ml-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Loading fleet...
+                  </span>
+                </>
+              ) : (
+                `${filteredVehicles.length} Vehicles`
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -617,8 +678,6 @@ export default function VendorVehiclesPage() {
                   className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500/40 cursor-pointer"
                 >
                   <option value="newest">Newest Added</option>
-                  <option value="price_asc">Price: Low to High</option>
-                  <option value="price_desc">Price: High to Low</option>
                   <option value="year_desc">Year: New to Old</option>
                 </select>
               </div>
@@ -651,8 +710,88 @@ export default function VendorVehiclesPage() {
             </div>
           </div>
 
+          {/* Loading Skeleton State */}
+          {loading && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-900 text-xs font-medium">
+                <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+                <span>Fetching commercial fleet vehicles and real-time status data...</span>
+              </div>
+
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((n) => (
+                    <div
+                      key={n}
+                      className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between animate-pulse"
+                    >
+                      <div>
+                        {/* Image Skeleton */}
+                        <div className="relative aspect-[16/9] w-full rounded-xl bg-slate-200/80 mb-3.5 flex items-center justify-center overflow-hidden">
+                          <Car className="w-10 h-10 text-slate-300" />
+                          <div className="absolute top-2.5 right-2.5">
+                            <div className="h-5 w-16 bg-slate-300/80 rounded-full" />
+                          </div>
+                        </div>
+
+                        {/* Title & Plate Number */}
+                        <div className="space-y-1.5 mb-2.5">
+                          <div className="h-4 bg-slate-200/80 rounded w-2/3" />
+                          <div className="h-3.5 bg-slate-200/80 rounded w-1/3" />
+                        </div>
+
+                        {/* Spec Icons Bar */}
+                        <div className="flex items-center gap-3 py-2 border-y border-slate-100 my-2">
+                          <div className="h-3 bg-slate-200/80 rounded w-12" />
+                          <div className="h-3 bg-slate-200/80 rounded w-12" />
+                          <div className="h-3 bg-slate-200/80 rounded w-16" />
+                          <div className="h-3 bg-slate-200/80 rounded w-14" />
+                        </div>
+
+                        {/* Location */}
+                        <div className="h-3 bg-slate-200/80 rounded w-24 mb-1.5" />
+
+                        {/* Chauffeur */}
+                        <div className="h-3 bg-slate-200/80 rounded w-36 mb-3" />
+                      </div>
+
+                      {/* Buttons */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                        <div className="h-7 w-14 bg-slate-200/80 rounded-xl" />
+                        <div className="h-7 w-14 bg-slate-200/80 rounded-xl" />
+                        <div className="h-7 w-7 bg-slate-200/80 rounded-xl" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs divide-y divide-slate-100">
+                  {[1, 2, 3, 4].map((n) => (
+                    <div key={n} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse">
+                      <div className="flex items-center gap-4">
+                        <div className="w-20 h-14 rounded-xl bg-slate-200/80 shrink-0" />
+                        <div className="space-y-2">
+                          <div className="h-4 bg-slate-200/80 rounded w-40" />
+                          <div className="h-3 bg-slate-200/80 rounded w-52" />
+                          <div className="h-2.5 bg-slate-200/80 rounded w-28" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="space-y-1.5 text-right">
+                          <div className="h-5 bg-slate-200/80 rounded-full w-16" />
+                        </div>
+                        <div className="h-8 w-14 bg-slate-200/80 rounded-xl" />
+                        <div className="h-8 w-14 bg-slate-200/80 rounded-xl" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Empty State */}
-          {paginatedVehicles.length === 0 && (
+          {!loading && paginatedVehicles.length === 0 && (
             <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-xs">
               <Car className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <h3 className="text-base font-bold text-slate-900 mb-1">
@@ -683,7 +822,7 @@ export default function VendorVehiclesPage() {
           )}
 
           {/* Grid View (Matches Screenshot 1 Exactly) */}
-          {viewMode === "grid" && paginatedVehicles.length > 0 && (
+          {!loading && viewMode === "grid" && paginatedVehicles.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {paginatedVehicles.map((v) => {
                 const isMenuOpen = activeMenuId === v.id;
@@ -757,16 +896,8 @@ export default function VendorVehiclesPage() {
                         </div>
                       </div>
 
-                      {/* Price Highlight */}
-                      <div className="my-2">
-                        <span className="text-base font-black text-blue-600">
-                          {formatINR(v.dailyRate)}
-                        </span>
-                        <span className="text-xs font-bold text-slate-500"> / day</span>
-                      </div>
-
                       {/* City Location */}
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 mb-1">
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 mb-1 mt-2">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />
                         <span>{v.currentLocation || "Bangalore"}</span>
                       </div>
@@ -849,7 +980,7 @@ export default function VendorVehiclesPage() {
           )}
 
           {/* List View Alternative */}
-          {viewMode === "list" && paginatedVehicles.length > 0 && (
+          {!loading && viewMode === "list" && paginatedVehicles.length > 0 && (
             <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs divide-y divide-slate-100">
               {paginatedVehicles.map((v) => (
                 <div key={v.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
@@ -880,8 +1011,7 @@ export default function VendorVehiclesPage() {
 
                   <div className="flex items-center gap-4 justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0">
                     <div className="text-right">
-                      <div className="text-sm font-black text-blue-600">{formatINR(v.dailyRate)} / day</div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border mt-0.5 ${getStatusBadgeStyle(v.status)}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${getStatusBadgeStyle(v.status)}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${getStatusDotColor(v.status)}`} />
                         {v.status}
                       </span>
@@ -901,7 +1031,7 @@ export default function VendorVehiclesPage() {
           )}
 
           {/* Pagination Controls Matching Screenshot */}
-          {filteredVehicles.length > 0 && (
+          {!loading && filteredVehicles.length > 0 && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-200/80">
               <div className="flex items-center gap-1 mx-auto sm:mx-0">
                 {/* Previous Button */}

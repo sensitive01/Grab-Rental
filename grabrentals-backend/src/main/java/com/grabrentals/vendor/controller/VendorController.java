@@ -149,6 +149,9 @@ public class VendorController {
         data.put("recentBookings", recentBookings);
         data.put("vehicles", vehicleResponses);
         data.put("drivers", driverResponses);
+        data.put("status", vendor.getStatus() != null ? vendor.getStatus().name() : "PENDING");
+        data.put("approvalStatus", vendor.getStatus() != null ? vendor.getStatus().name() : "PENDING");
+        data.put("isApproved", vendor.getStatus() == com.grabrentals.user.entity.UserStatus.ACTIVE);
 
         return ResponseEntity.ok(ApiResponse.success("Dynamic vendor dashboard data", data));
     }
@@ -237,6 +240,9 @@ public class VendorController {
         map.put("addressProofDocumentUrl", profile.getAddressProofDocumentUrl() != null ? profile.getAddressProofDocumentUrl() : "");
         boolean hasPassword = Boolean.TRUE.equals(vendor.getPasswordSet());
         map.put("hasPassword", hasPassword);
+        map.put("status", vendor.getStatus() != null ? vendor.getStatus().name() : "PENDING");
+        map.put("approvalStatus", vendor.getStatus() != null ? vendor.getStatus().name() : "PENDING");
+        map.put("isApproved", vendor.getStatus() == com.grabrentals.user.entity.UserStatus.ACTIVE);
 
         return ResponseEntity.ok(ApiResponse.success("Vendor profile retrieved successfully", map));
     }

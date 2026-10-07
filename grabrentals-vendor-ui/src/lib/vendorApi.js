@@ -162,6 +162,16 @@ export const vendorApi = {
     }
   },
 
+  checkPlateAvailability: async (plate) => {
+    try {
+      const res = await axiosClient.get(`/api/vehicles/check-plate?plate=${encodeURIComponent(plate)}`);
+      return res.data?.data || null;
+    } catch (err) {
+      console.warn("vendorApi.checkPlateAvailability error:", err);
+      return null;
+    }
+  },
+
   createVehicle: async (data) => {
     try {
       const res = await axiosClient.post("/api/vendor/vehicles", data);

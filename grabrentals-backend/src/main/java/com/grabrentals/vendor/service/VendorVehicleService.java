@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,84 +42,73 @@ public class VendorVehicleService {
         User user = userRepository.findById(vendorUserId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + vendorUserId));
 
-        String normalizedPlate = request.getVehicleNumber().trim().toUpperCase();
-
-        Optional<Vehicle> existingOpt = vehicleRepository.findByVehicleNumberIgnoreCase(normalizedPlate);
-        Vehicle vehicle;
-        if (existingOpt.isPresent()) {
-            vehicle = existingOpt.get();
-            if (!vehicle.getUser().getId().equals(vendorUserId)) {
-                throw new IllegalArgumentException("Vehicle plate number '" + normalizedPlate + "' is already registered in the platform");
-            }
-            String resolvedModel = (request.getVehicleModel() != null && !request.getVehicleModel().isBlank())
-                    ? request.getVehicleModel().trim()
-                    : "Commercial Fleet Asset";
-            vehicle.setModel(resolvedModel);
-            vehicle.setVehicleType(request.getVehicleType().trim());
-            if (request.getRegistrationNumber() != null) vehicle.setRegistrationNumber(request.getRegistrationNumber().trim().toUpperCase());
-            vehicle.setSeatingCapacity(request.getSeatingCapacity());
-            if (request.getFuelType() != null) vehicle.setFuelType(request.getFuelType().trim());
-            if (request.getAcType() != null) vehicle.setAcType(request.getAcType().trim());
-            if (request.getVariant() != null) vehicle.setVariant(request.getVariant().trim());
-            if (request.getColor() != null) vehicle.setColor(request.getColor().trim());
-            if (request.getRegistrationType() != null) vehicle.setRegistrationType(request.getRegistrationType().trim());
-            if (request.getAlternateFuel() != null) vehicle.setAlternateFuel(request.getAlternateFuel().trim());
-            if (request.getTransmission() != null) vehicle.setTransmission(request.getTransmission().trim());
-            if (request.getEngineCc() != null) vehicle.setEngineCc(request.getEngineCc());
-            if (request.getParkingLocation() != null) vehicle.setParkingLocation(request.getParkingLocation().trim());
-            if (request.getFeatures() != null) vehicle.setFeatures(request.getFeatures().trim());
-            if (request.getYear() != null) vehicle.setYear(request.getYear());
-            if (request.getInsuranceExpiry() != null) vehicle.setInsuranceExpiry(request.getInsuranceExpiry());
-            if (request.getPermitExpiry() != null) vehicle.setPermitExpiry(request.getPermitExpiry());
-            if (request.getFitnessExpiry() != null) vehicle.setFitnessExpiry(request.getFitnessExpiry());
-            if (request.getDailyRate() != null) vehicle.setDailyRate(request.getDailyRate());
-            if (request.getPerKmRate() != null) vehicle.setPerKmRate(request.getPerKmRate());
-            if (request.getCurrentLocation() != null) vehicle.setCurrentLocation(request.getCurrentLocation().trim());
-            if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) vehicle.setImageUrl(request.getImageUrl().trim());
-            if (request.getPhotos() != null && !request.getPhotos().isBlank()) vehicle.setPhotos(request.getPhotos().trim());
-            if (request.getRcDocumentUrl() != null) vehicle.setRcDocumentUrl(request.getRcDocumentUrl());
-            if (request.getInsuranceDocumentUrl() != null) vehicle.setInsuranceDocumentUrl(request.getInsuranceDocumentUrl());
-            if (request.getPermitDocumentUrl() != null) vehicle.setPermitDocumentUrl(request.getPermitDocumentUrl());
-            if (request.getFitnessDocumentUrl() != null) vehicle.setFitnessDocumentUrl(request.getFitnessDocumentUrl());
-        } else {
-            String resolvedModel = (request.getVehicleModel() != null && !request.getVehicleModel().isBlank())
-                    ? request.getVehicleModel().trim()
-                    : "Commercial Fleet Asset";
-            vehicle = Vehicle.builder()
-                    .user(user)
-                    .vehicleType(request.getVehicleType().trim())
-                    .model(resolvedModel)
-                    .vehicleNumber(normalizedPlate)
-                    .registrationNumber(request.getRegistrationNumber() != null ? request.getRegistrationNumber().trim().toUpperCase() : null)
-                    .seatingCapacity(request.getSeatingCapacity())
-                    .fuelType(request.getFuelType() != null ? request.getFuelType().trim() : null)
-                    .acType(request.getAcType() != null ? request.getAcType().trim() : null)
-                    .variant(request.getVariant() != null ? request.getVariant().trim() : null)
-                    .color(request.getColor() != null ? request.getColor().trim() : null)
-                    .registrationType(request.getRegistrationType() != null ? request.getRegistrationType().trim() : null)
-                    .alternateFuel(request.getAlternateFuel() != null ? request.getAlternateFuel().trim() : null)
-                    .transmission(request.getTransmission() != null ? request.getTransmission().trim() : null)
-                    .engineCc(request.getEngineCc())
-                    .parkingLocation(request.getParkingLocation() != null ? request.getParkingLocation().trim() : null)
-                    .features(request.getFeatures() != null ? request.getFeatures().trim() : null)
-                    .year(request.getYear())
-                    .insuranceExpiry(request.getInsuranceExpiry())
-                    .permitExpiry(request.getPermitExpiry())
-                    .fitnessExpiry(request.getFitnessExpiry())
-                    .dailyRate(request.getDailyRate())
-                    .perKmRate(request.getPerKmRate())
-                    .currentLocation(request.getCurrentLocation() != null ? request.getCurrentLocation().trim() : null)
-                    .status(VehicleStatus.AVAILABLE)
-                    .imageUrl(request.getImageUrl() != null && !request.getImageUrl().isBlank() 
-                            ? request.getImageUrl().trim() 
-                            : (request.getPhotos() != null && !request.getPhotos().isBlank() ? request.getPhotos().split(",")[0].trim() : null))
-                    .photos(request.getPhotos() != null ? request.getPhotos().trim() : null)
-                    .rcDocumentUrl(request.getRcDocumentUrl())
-                    .insuranceDocumentUrl(request.getInsuranceDocumentUrl())
-                    .permitDocumentUrl(request.getPermitDocumentUrl())
-                    .fitnessDocumentUrl(request.getFitnessDocumentUrl())
-                    .build();
+        String rawPlate = request.getVehicleNumber() != null ? request.getVehicleNumber().trim() : "";
+        if (rawPlate.isBlank()) {
+            throw new IllegalArgumentException("Vehicle plate number is required");
         }
+        String normalizedPlate = rawPlate.replaceAll("\\s+", " ").toUpperCase();
+        String compactPlate = rawPlate.replaceAll("[\\s-]+", "").toUpperCase();
+
+        Optional<Vehicle> existingOpt = vehicleRepository.findByNormalizedVehicleNumber(compactPlate);
+        if (existingOpt.isPresent()) {
+            Vehicle existing = existingOpt.get();
+            if (existing.getUser() != null && existing.getUser().getId().equals(vendorUserId)) {
+                throw new IllegalArgumentException("Vehicle with plate number '" + normalizedPlate + "' is already registered in your fleet roster. Duplicate vehicle entries are not allowed.");
+            } else {
+                throw new IllegalArgumentException("Vehicle with plate number '" + normalizedPlate + "' is already registered on Grab Rentals by another fleet partner. Duplicate vehicle registrations across vendors are strictly prohibited.");
+            }
+        }
+
+        String resolvedModel = (request.getVehicleModel() != null && !request.getVehicleModel().isBlank())
+                ? request.getVehicleModel().trim()
+                : "Commercial Fleet Asset";
+        Integer capacity = (request.getSeatingCapacity() != null && request.getSeatingCapacity() > 0)
+                ? request.getSeatingCapacity()
+                : 5;
+        String fuel = (request.getFuelType() != null && !request.getFuelType().isBlank())
+                ? request.getFuelType().trim()
+                : "Diesel";
+        BigDecimal daily = (request.getDailyRate() != null && request.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
+                ? request.getDailyRate()
+                : BigDecimal.valueOf(2500.0);
+        BigDecimal perKm = (request.getPerKmRate() != null && request.getPerKmRate().compareTo(BigDecimal.ZERO) >= 0)
+                ? request.getPerKmRate()
+                : BigDecimal.valueOf(14.0);
+
+        Vehicle vehicle = Vehicle.builder()
+                .user(user)
+                .vehicleType(request.getVehicleType().trim())
+                .model(resolvedModel)
+                .vehicleNumber(normalizedPlate)
+                .registrationNumber(request.getRegistrationNumber() != null ? request.getRegistrationNumber().trim().toUpperCase() : null)
+                .seatingCapacity(capacity)
+                .fuelType(fuel)
+                .acType(request.getAcType() != null ? request.getAcType().trim() : null)
+                .variant(request.getVariant() != null ? request.getVariant().trim() : null)
+                .color(request.getColor() != null ? request.getColor().trim() : null)
+                .registrationType(request.getRegistrationType() != null ? request.getRegistrationType().trim() : null)
+                .alternateFuel(request.getAlternateFuel() != null ? request.getAlternateFuel().trim() : null)
+                .transmission(request.getTransmission() != null ? request.getTransmission().trim() : null)
+                .engineCc(request.getEngineCc())
+                .parkingLocation(request.getParkingLocation() != null ? request.getParkingLocation().trim() : null)
+                .features(request.getFeatures() != null ? request.getFeatures().trim() : null)
+                .year(request.getYear())
+                .insuranceExpiry(request.getInsuranceExpiry())
+                .permitExpiry(request.getPermitExpiry())
+                .fitnessExpiry(request.getFitnessExpiry())
+                .dailyRate(daily)
+                .perKmRate(perKm)
+                .currentLocation(request.getCurrentLocation() != null ? request.getCurrentLocation().trim() : null)
+                .status(VehicleStatus.AVAILABLE)
+                .imageUrl(request.getImageUrl() != null && !request.getImageUrl().isBlank() 
+                        ? request.getImageUrl().trim() 
+                        : (request.getPhotos() != null && !request.getPhotos().isBlank() ? request.getPhotos().split(",")[0].trim() : null))
+                .photos(request.getPhotos() != null ? request.getPhotos().trim() : null)
+                .rcDocumentUrl(request.getRcDocumentUrl())
+                .insuranceDocumentUrl(request.getInsuranceDocumentUrl())
+                .permitDocumentUrl(request.getPermitDocumentUrl())
+                .fitnessDocumentUrl(request.getFitnessDocumentUrl())
+                .build();
 
         Vehicle saved = vehicleRepository.save(vehicle);
         log.info("[FLEET] Registered new vehicle {} (Plate: {}) for vendor {}", saved.getId(), saved.getVehicleNumber(), user.getEmail());
@@ -181,10 +171,21 @@ public class VendorVehicleService {
         Vehicle vehicle = vehicleRepository.findByIdAndUserId(vehicleId, vendorUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Vehicle not found or you do not have permission to edit it"));
 
-        String normalizedPlate = request.getVehicleNumber().trim().toUpperCase();
-        if (!vehicle.getVehicleNumber().equalsIgnoreCase(normalizedPlate) &&
-                vehicleRepository.existsByVehicleNumberIgnoreCase(normalizedPlate)) {
-            throw new IllegalArgumentException("Vehicle plate number '" + normalizedPlate + "' is already registered in the platform");
+        String rawPlate = request.getVehicleNumber() != null ? request.getVehicleNumber().trim() : "";
+        if (rawPlate.isBlank()) {
+            throw new IllegalArgumentException("Vehicle plate number is required");
+        }
+        String normalizedPlate = rawPlate.replaceAll("\\s+", " ").toUpperCase();
+        String compactPlate = rawPlate.replaceAll("[\\s-]+", "").toUpperCase();
+
+        Optional<Vehicle> duplicateOpt = vehicleRepository.findByNormalizedVehicleNumber(compactPlate);
+        if (duplicateOpt.isPresent() && !duplicateOpt.get().getId().equals(vehicleId)) {
+            Vehicle other = duplicateOpt.get();
+            if (other.getUser() != null && other.getUser().getId().equals(vendorUserId)) {
+                throw new IllegalArgumentException("Vehicle with plate number '" + normalizedPlate + "' is already registered to another vehicle in your fleet roster.");
+            } else {
+                throw new IllegalArgumentException("Vehicle with plate number '" + normalizedPlate + "' is already registered on Grab Rentals by another fleet partner. Duplicate vehicle registrations across vendors are strictly prohibited.");
+            }
         }
 
         vehicle.setVehicleType(request.getVehicleType().trim());

@@ -19,6 +19,12 @@ public interface DriverRepository extends JpaRepository<Driver, UUID> {
 
     boolean existsByLicenseNumberIgnoreCase(String licenseNumber);
 
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM Driver d WHERE UPPER(REPLACE(REPLACE(d.licenseNumber, ' ', ''), '-', '')) = UPPER(REPLACE(REPLACE(:licenseNumber, ' ', ''), '-', ''))")
+    Optional<Driver> findByNormalizedLicenseNumber(@org.springframework.data.repository.query.Param("licenseNumber") String licenseNumber);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(d) > 0 FROM Driver d WHERE UPPER(REPLACE(REPLACE(d.licenseNumber, ' ', ''), '-', '')) = UPPER(REPLACE(REPLACE(:licenseNumber, ' ', ''), '-', ''))")
+    boolean existsByNormalizedLicenseNumber(@org.springframework.data.repository.query.Param("licenseNumber") String licenseNumber);
+
     long countByUserId(UUID userId);
 
     List<Driver> findByUserIdAndAssignedVehicleIsNotNull(UUID userId);

@@ -83,8 +83,12 @@ export default function LoginPage() {
 
       {/* Brand header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-amber-500 shadow-xl shadow-blue-900/30 mb-4 ring-4 ring-slate-800">
-          <Car className="w-8 h-8 text-white" />
+        <div className="inline-flex items-center justify-center mb-4">
+          <img
+            src="/images/grab-rentals-logo.jpg"
+            alt="Grab Rentals"
+            className="h-16 w-auto object-contain rounded-2xl shadow-xl shadow-black/50"
+          />
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           Grab Rentals

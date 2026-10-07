@@ -41,6 +41,12 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User retrieved successfully", user));
     }
 
+    @GetMapping("/vendors/{id}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getVendorDetails(@PathVariable UUID id) {
+        Map<String, Object> details = adminService.getVendorFullDetails(id);
+        return ResponseEntity.ok(ApiResponse.success("Vendor details retrieved successfully", details));
+    }
+
     @PatchMapping("/users/{id}/status")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(
             @PathVariable UUID id,

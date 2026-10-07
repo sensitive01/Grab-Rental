@@ -38,6 +38,28 @@ export function isAuthenticated() {
   return !!getCurrentUser();
 }
 
+export function getVendorStatus() {
+  const user = getCurrentUser();
+  return user?.status || "PENDING";
+}
+
+export function isVendorApproved() {
+  const status = getVendorStatus();
+  return status === "ACTIVE";
+}
+
+export function updateSessionStatus(newStatus) {
+  if (typeof window === "undefined" || !newStatus) return;
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const session = JSON.parse(raw);
+      session.status = newStatus;
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    }
+  } catch (ignored) {}
+}
+
 export function logout() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(SESSION_KEY);
@@ -156,6 +178,8 @@ export async function verifyVendorOtp({ phone, otp, name, businessName, purpose 
       const role = beUser.role || "FLEET";
       const isNewUser = res.data.data.isNewUser ?? true;
 
+      const status = beUser?.status || "PENDING";
+
       const userObj = {
         id: beUser.id,
         email: beUser.email,
@@ -163,6 +187,7 @@ export async function verifyVendorOtp({ phone, otp, name, businessName, purpose 
         name: beUser.name || name || "Vendor Partner",
         businessName: beUser.businessName || businessName || "Fleet Partner",
         role: role,
+        status: status,
         token: token,
         loginTime: new Date().toISOString(),
       };
@@ -211,6 +236,7 @@ export async function login(email, password) {
       const token = res.data.data.accessToken;
       const beUser = res.data.data.user;
       const role = beUser.role || "FLEET";
+      const status = beUser?.status || "PENDING";
 
       const userObj = {
         id: beUser.id,
@@ -218,6 +244,7 @@ export async function login(email, password) {
         name: beUser.name || "Vendor Partner",
         businessName: beUser.businessName || "Vendor Operations",
         role: role,
+        status: status,
         token: token,
         loginTime: new Date().toISOString(),
       };

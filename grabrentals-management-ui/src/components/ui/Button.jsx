@@ -11,6 +11,7 @@ export const Button = forwardRef(function Button(
     variant = "primary",
     size = "md",
     isLoading = false,
+    loading,
     disabled = false,
     type = "button",
     icon: Icon,
@@ -19,6 +20,8 @@ export const Button = forwardRef(function Button(
   },
   ref
 ) {
+  const isButtonLoading = Boolean(isLoading || loading);
+
   const baseStyles =
     "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]";
 
@@ -52,16 +55,16 @@ export const Button = forwardRef(function Button(
     <button
       ref={ref}
       type={type}
-      disabled={disabled || isLoading}
+      disabled={disabled || isButtonLoading}
       className={cn(baseStyles, variants[variant], sizes[size], className)}
       {...props}
     >
-      {isLoading && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
-      {!isLoading && Icon && iconPosition === "left" && (
+      {isButtonLoading && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
+      {!isButtonLoading && Icon && iconPosition === "left" && (
         <Icon className="w-4 h-4 shrink-0" />
       )}
       <span>{children}</span>
-      {!isLoading && Icon && iconPosition === "right" && (
+      {!isButtonLoading && Icon && iconPosition === "right" && (
         <Icon className="w-4 h-4 shrink-0" />
       )}
     </button>

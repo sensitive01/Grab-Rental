@@ -37,6 +37,7 @@ import {
   ArrowDown,
   Filter,
   Calendar,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -520,20 +521,29 @@ function AdminVendorsContent() {
                             <Building2 className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-bold text-xs text-slate-900">{v.name}</div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyId(v.id)}
-                              className="group inline-flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-amber-600 font-mono transition-colors mt-0.5 cursor-pointer"
-                              title="Click to copy ID"
+                            <Link
+                              href={`/admin/vendors/${v.id}`}
+                              className="font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 group/link"
+                              title="Click to view full vendor details, documents & vehicles"
                             >
-                              <span>{String(v.id).slice(0, 16)}...</span>
-                              {isCopied ? (
-                                <Check className="w-3 h-3 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              )}
-                            </button>
+                              <span>{v.name}</span>
+                              <ExternalLink className="w-3 h-3 text-blue-500 opacity-70 group-hover/link:opacity-100 transition-opacity shrink-0" />
+                            </Link>
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyId(v.id)}
+                                className="group inline-flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-amber-600 font-mono transition-colors mt-0.5 cursor-pointer"
+                                title="Click to copy ID"
+                              >
+                                <span>{String(v.id).slice(0, 16)}...</span>
+                                {isCopied ? (
+                                  <Check className="w-3 h-3 text-emerald-500" />
+                                ) : (
+                                  <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </TableCell>
@@ -588,17 +598,28 @@ function AdminVendorsContent() {
 
                       {/* Action */}
                       <TableCell className="text-right">
-                        <Button
-                          size="xs"
-                          variant="primary"
-                          icon={CheckCircle2}
-                          onClick={() => {
-                            setSelectedVendor(v);
-                            setCommissionRate(v.commissionRate || 12);
-                          }}
-                        >
-                          Authorize & Set Commission
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/admin/vendors/${v.id}`}>
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              icon={Eye}
+                            >
+                              View Details
+                            </Button>
+                          </Link>
+                          <Button
+                            size="xs"
+                            variant="primary"
+                            icon={CheckCircle2}
+                            onClick={() => {
+                              setSelectedVendor(v);
+                              setCommissionRate(v.commissionRate || 12);
+                            }}
+                          >
+                            Authorize & Set Commission
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

@@ -122,19 +122,23 @@ export default function Sidebar({ isOpen, onClose }) {
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-950">
-          <Link href="/vendor/dashboard" className="flex items-center gap-3 min-w-0">
-            <div className="w-8.5 h-8.5 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-base shadow-md shadow-amber-500/20 shrink-0">
-              G
-            </div>
+        <div className="h-16 px-3.5 sm:px-4 flex items-center justify-between gap-2 border-b border-slate-800/80 bg-slate-950 shrink-0">
+          <Link href="/vendor/dashboard" className="flex items-center gap-2.5 min-w-0 flex-1">
+            <img
+              src="/images/grab-rentals-logo.jpg"
+              alt="Grab Rentals"
+              className="h-8.5 w-auto max-w-[44px] object-contain rounded-lg shrink-0 shadow-xs"
+            />
             <div className="flex flex-col min-w-0">
-              <span className="font-black text-sm tracking-tight text-white flex items-center gap-1.5 whitespace-nowrap">
-                GRAB RENTALS
+              <div className="flex items-center gap-1.5 flex-nowrap">
+                <span className="font-black text-xs tracking-tight text-white whitespace-nowrap">
+                  GRAB RENTALS
+                </span>
                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 leading-none shrink-0">
                   VENDOR
                 </span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium truncate max-w-[140px]">
                 {displayCompany}
               </span>
             </div>
@@ -143,7 +147,8 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Close button on mobile */}
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors shrink-0 -mr-1"
+            aria-label="Close sidebar"
           >
             <X className="w-5 h-5" />
           </button>

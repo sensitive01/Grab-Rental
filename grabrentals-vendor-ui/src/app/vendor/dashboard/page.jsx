@@ -32,7 +32,7 @@ import Toast from "@/components/ui/Toast";
 import DataTable from "@/components/ui/DataTable";
 import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
-import { getCurrentUser, getOnboardingData } from "@/lib/auth";
+import { getCurrentUser, getOnboardingData, updateSessionStatus } from "@/lib/auth";
 
 export default function VendorDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -59,6 +59,10 @@ export default function VendorDashboard() {
 
       if (dashRes) {
         setDashboardData(dashRes);
+        if (dashRes.status) {
+          setCurrentUser((prev) => ({ ...(prev || {}), status: dashRes.status }));
+          updateSessionStatus(dashRes.status);
+        }
         if (Array.isArray(dashRes.vehicles)) {
           setVehicles(dashRes.vehicles);
         }
@@ -207,6 +211,8 @@ export default function VendorDashboard() {
           </Link>
         </div>
       )}
+
+
 
       {/* Welcome Banner */}
       <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-slate-800">

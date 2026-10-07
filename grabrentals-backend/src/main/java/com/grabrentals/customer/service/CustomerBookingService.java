@@ -173,6 +173,10 @@ public class CustomerBookingService {
 
         validateVendorOwnership(booking, vendorUser);
 
+        if (vendorUser.getStatus() != com.grabrentals.user.entity.UserStatus.ACTIVE) {
+            throw new BadRequestException("Your vendor account is pending administrator approval. Bookings cannot be accepted until approved.");
+        }
+
         if (booking.getStatus() != BookingStatus.ASSIGNED_TO_VENDOR) {
             throw new BadRequestException("Booking cannot be accepted; current status is: " + booking.getStatus());
         }

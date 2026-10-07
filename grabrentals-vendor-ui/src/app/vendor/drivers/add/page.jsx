@@ -1,47 +1,43 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
-  Users, 
   Upload, 
   CheckCircle2, 
   ShieldCheck, 
   FileText,
   Loader2,
-  Image as ImageIcon,
-  AlertCircle,
-  Calendar,
-  Sparkles,
+  Clock,
+  Award,
   Phone,
   Mail,
   User,
-  MapPin,
-  Car,
-  Clock,
-  Award,
-  Check,
-  Star,
   FileCheck,
-  Camera
+  Camera,
+  Star
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
 import { axiosClient } from "@/lib/axiosClient";
 import { uploadSignedToCloudinary } from "@/lib/cloudinary";
 
-const LANGUAGE_OPTIONS = ["Tamil", "English", "Hindi", "Telugu", "Kannada", "Malayalam"];
+const LANGUAGE_OPTIONS = ["English", "Tamil", "Hindi", "Telugu", "Kannada", "Malayalam"];
 const ID_PROOF_TYPES = ["Aadhaar Card", "Voter ID", "Passport", "PAN Card"];
-const ADDRESS_PROOF_TYPES = ["Aadhaar Card", "Electricity Bill", "Rental Agreement", "Ration Card", "Gas Connection Bill"];
-const LICENSE_CLASSES = ["LMV-TR (Commercial Light Motor Vehicle)", "LMV (Light Motor Vehicle)", "HMV (Heavy Commercial Bus/Truck)", "Transport (Commercial Passenger)", "Maxi-Cab Permit"];
+const LICENSE_CLASSES = [
+  { value: "LMV-TR (Transport)", label: "LMV-TR (Commercial Transport)" },
+  { value: "LMV (Light Motor Vehicle)", label: "LMV (Light Motor Vehicle)" },
+  { value: "HMV / HGMV", label: "HMV / Heavy Transport" },
+  { value: "Commercial PSV Badge", label: "Commercial PSV Badge" }
+];
 const CHAUFFEUR_STATUSES = [
-  { value: "AVAILABLE", label: "Available (Ready for Dispatch)" },
-  { value: "ASSIGNED", label: "Assigned (Reserved to Vehicle)" },
-  { value: "OFF_DUTY", label: "Off-duty (Rest / Leave)" },
-  { value: "INACTIVE", label: "Inactive (Suspended)" }
+  { value: "Available", label: "Available (Default)" },
+  { value: "Assigned", label: "Assigned" },
+  { value: "Off-duty", label: "Off-duty" },
+  { value: "Inactive", label: "Inactive" }
 ];
 
 export default function AddDriverPage() {
@@ -49,29 +45,22 @@ export default function AddDriverPage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Vendor's real vehicles from backend
-  const [vehicles, setVehicles] = useState([]);
-  const [loadingVehicles, setLoadingVehicles] = useState(true);
-
   // File upload refs
   const photoInputRef = useRef(null);
   const licenseDocRef = useRef(null);
   const idProofDocRef = useRef(null);
-  const addressProofDocRef = useRef(null);
 
   const [uploading, setUploading] = useState({
     photo: false,
     licenseDoc: false,
-    idProofDoc: false,
-    addressProofDoc: false
+    idProofDoc: false
   });
 
   const [fileDetails, setFileDetails] = useState({
     photoName: "",
     photoPreview: null,
     licenseDocName: "",
-    idProofDocName: "",
-    addressProofDocName: ""
+    idProofDocName: ""
   });
 
   const [formData, setFormData] = useState({
@@ -79,7 +68,7 @@ export default function AddDriverPage() {
     name: "",
     phone: "",
     email: "",
-    dob: "",
+    dob: "1990-05-15",
     gender: "Male",
     photoUrl: "",
 
@@ -90,53 +79,24 @@ export default function AddDriverPage() {
 
     // Driving License & Experience
     licenseNumber: "",
-    licenseClass: "LMV-TR (Commercial Light Motor Vehicle)",
+    licenseClass: "LMV-TR (Transport)",
     licenseExpiry: "",
     licenseDocumentUrl: "",
-    drivingSince: "",
-    experienceYears: 0,
-    experienceLabel: "0 Years (Select driving since date)",
+    drivingSince: "2016-04-10",
+    experienceYears: 8,
+    experienceLabel: "8 Years",
 
-    // Status & Operational
-    status: "AVAILABLE",
-    assignedVehicleId: "",
-    joiningDate: new Date().toISOString().split("T")[0],
-
-    // Address & Proof
-    address: "",
-    addressProofType: "Aadhaar Card",
-    addressProofNumber: "",
-    addressProofDocumentUrl: "",
+    // Status & Joining Date
+    status: "Available",
+    joiningDate: "",
 
     // Emergency Contact
     emergencyContactName: "",
     emergencyContactPhone: "",
-    emergencyContact: "",
 
-    // Languages & Background
-    languagesSpoken: ["Tamil", "English"],
-    verificationStatus: "Verified",
-    rating: "5.0",
-    totalTrips: 0,
-    notes: ""
+    // Languages
+    languagesSpoken: ["English", "Tamil", "Hindi"]
   });
-
-  // Fetch real vendor fleet vehicles for assignment
-  useEffect(() => {
-    async function fetchVehicles() {
-      try {
-        const res = await axiosClient.get("/api/vendor/vehicles");
-        if (res.data?.success && Array.isArray(res.data.data)) {
-          setVehicles(res.data.data);
-        }
-      } catch (err) {
-        console.warn("Could not fetch fleet vehicles:", err);
-      } finally {
-        setLoadingVehicles(false);
-      }
-    }
-    fetchVehicles();
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -161,8 +121,7 @@ export default function AddDriverPage() {
       months = (months + 12) % 12;
     }
     const finalYears = Math.max(0, years);
-    const finalMonths = Math.max(0, months);
-    const label = `${finalYears} Year${finalYears !== 1 ? "s" : ""} ${finalMonths > 0 ? `${finalMonths} Month${finalMonths !== 1 ? "s" : ""}` : ""} of Commercial Driving Experience`;
+    const label = `${finalYears} Year${finalYears !== 1 ? "s" : ""}`;
 
     setFormData((prev) => ({
       ...prev,
@@ -193,8 +152,6 @@ export default function AddDriverPage() {
       setFileDetails((prev) => ({ ...prev, licenseDocName: file.name }));
     } else if (type === "idProofDoc") {
       setFileDetails((prev) => ({ ...prev, idProofDocName: file.name }));
-    } else if (type === "addressProofDoc") {
-      setFileDetails((prev) => ({ ...prev, addressProofDocName: file.name }));
     }
 
     setUploading((prev) => ({ ...prev, [type]: true }));
@@ -210,8 +167,6 @@ export default function AddDriverPage() {
           setFormData((prev) => ({ ...prev, licenseDocumentUrl: uploadedUrl }));
         } else if (type === "idProofDoc") {
           setFormData((prev) => ({ ...prev, idProofDocumentUrl: uploadedUrl }));
-        } else if (type === "addressProofDoc") {
-          setFormData((prev) => ({ ...prev, addressProofDocumentUrl: uploadedUrl }));
         }
         setToast({ message: `${type.toUpperCase()} file uploaded securely!`, type: "success" });
       }
@@ -238,8 +193,18 @@ export default function AddDriverPage() {
       return;
     }
 
+    if (!formData.dob) {
+      setToast({ message: "Please select date of birth", type: "error" });
+      return;
+    }
+
+    if (!formData.idProofNumber?.trim()) {
+      setToast({ message: "Please enter ID proof number", type: "error" });
+      return;
+    }
+
     if (!formData.licenseNumber?.trim()) {
-      setToast({ message: "Please enter the commercial driving license number", type: "error" });
+      setToast({ message: "Please enter the driving license number", type: "error" });
       return;
     }
 
@@ -248,12 +213,20 @@ export default function AddDriverPage() {
       return;
     }
 
+    if (!formData.licenseDocumentUrl) {
+      setToast({ message: "Please upload the driving license proof copy", type: "error" });
+      return;
+    }
+
+    if (!formData.emergencyContactName?.trim() || !formData.emergencyContactPhone?.trim()) {
+      setToast({ message: "Please enter emergency contact name and phone number", type: "error" });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const emergencyContactStr = formData.emergencyContactName 
-        ? `${formData.emergencyContactName} (${formData.emergencyContactPhone || ""})`
-        : formData.emergencyContact || "";
+      const emergencyContactStr = `${formData.emergencyContactName.trim()} (${formData.emergencyContactPhone.trim()})`;
 
       const payload = {
         name: formData.name.trim(),
@@ -274,30 +247,24 @@ export default function AddDriverPage() {
         drivingSince: formData.drivingSince || null,
         experienceYears: Number(formData.experienceYears) || 0,
 
-        status: formData.status || "AVAILABLE",
-        assignedVehicleId: formData.assignedVehicleId || null,
+        status: formData.status ? formData.status.toUpperCase().replace("-", "_") : "AVAILABLE",
         joiningDate: formData.joiningDate || null,
-
-        address: formData.address?.trim() || null,
-        addressProofType: formData.addressProofType || null,
-        addressProofNumber: formData.addressProofNumber?.trim() || null,
-        addressProofDocumentUrl: formData.addressProofDocumentUrl || null,
 
         emergencyContact: emergencyContactStr,
         emergencyContactName: formData.emergencyContactName?.trim() || null,
         emergencyContactPhone: formData.emergencyContactPhone?.trim() || null,
 
         languagesSpoken: Array.isArray(formData.languagesSpoken) ? formData.languagesSpoken.join(", ") : formData.languagesSpoken,
-        verificationStatus: formData.verificationStatus || "Verified",
-        rating: Number(formData.rating) || 5.0,
-        totalTrips: Number(formData.totalTrips) || 0,
-        notes: formData.notes?.trim() || null
+        verificationStatus: "Verified",
+        rating: 5.0,
+        totalTrips: 0,
+        notes: null
       };
 
       const res = await axiosClient.post("/api/vendor/drivers", payload);
 
       if (res.data?.success) {
-        setToast({ message: `Chauffeur ${payload.name} added to roster successfully!`, type: "success" });
+        setToast({ message: `Chauffeur ${payload.name} enrolled successfully!`, type: "success" });
         setTimeout(() => {
           router.push("/vendor/drivers");
         }, 1200);
@@ -312,8 +279,6 @@ export default function AddDriverPage() {
       setLoading(false);
     }
   };
-
-  const selectedVehicleObj = vehicles.find((v) => v.id === formData.assignedVehicleId);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
@@ -334,7 +299,7 @@ export default function AddDriverPage() {
               Add Professional Chauffeur
             </h1>
             <p className="text-xs sm:text-sm text-slate-500">
-              Onboard verified commercial drivers with DL license class, identity proofs, photo, and dynamic experience calculation.
+              Onboard verified commercial drivers with driving license, identity proofs, photo, and experience details.
             </p>
           </div>
           <Link
@@ -346,7 +311,7 @@ export default function AddDriverPage() {
         </div>
       </div>
 
-      {/* Page Hero Photo Banner (Requirement: Every page has at least 1 image) */}
+      {/* Page Hero Photo Banner */}
       <div className="relative rounded-3xl overflow-hidden border border-slate-200 bg-slate-900 text-white shadow-sm">
         <div className="absolute inset-0 opacity-35">
           <Image 
@@ -364,20 +329,20 @@ export default function AddDriverPage() {
             </span>
             <h2 className="text-xl sm:text-2xl font-black">Chauffeur Credentials & Background Check</h2>
             <p className="text-xs sm:text-sm text-slate-300">
-              All chauffeurs are equipped with police-verified commercial badges, multilingual communication, and highway driving certifications.
+              All chauffeurs are equipped with verified commercial driving licenses, identity proofs, and multilingual communication.
             </p>
           </div>
           <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 shrink-0">
             <ShieldCheck className="w-6 h-6 text-emerald-400" />
             <div className="text-xs">
-              <p className="font-extrabold text-white">100% Police Verified</p>
-              <p className="text-[11px] text-slate-300">Commercial Badge Shield</p>
+              <p className="font-extrabold text-white">100% Verified Profile</p>
+              <p className="text-[11px] text-slate-300">Commercial Chauffeur Shield</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Layout Grid */}
+      {/* Main Form */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* Left 2 Columns: Input Sections */}
@@ -425,19 +390,19 @@ export default function AddDriverPage() {
 
               <div className="space-y-1.5 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <h4 className="text-xs font-black text-slate-900">Driver Passport-Style Photo *</h4>
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.2 rounded-full">Required</span>
+                  <h4 className="text-xs font-black text-slate-900">Chauffeur Photo</h4>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.2 rounded-full">Professional Portrait</span>
                 </div>
                 <p className="text-[11px] text-slate-500 max-w-sm">
-                  Clear front face photo wearing chauffeur uniform or clean collared shirt. Displayed on guest booking vouchers.
+                  Clear front face photo wearing neat shirt. Displayed on guest booking vouchers.
                 </p>
                 <button
                   type="button"
                   onClick={() => photoInputRef.current?.click()}
-                  className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline pt-1 inline-flex items-center gap-1"
+                  className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline pt-1 inline-flex items-center gap-1 cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  {formData.photoUrl ? "Change Photo" : "Upload High-Resolution Photo"}
+                  {formData.photoUrl ? "Change Photo" : "Upload Professional Photo"}
                 </button>
               </div>
             </div>
@@ -446,30 +411,36 @@ export default function AddDriverPage() {
               
               {/* Chauffeur Name */}
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="font-bold text-slate-700">Chauffeur Legal Name *</label>
-                <input
-                  type="text"
-                  required
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g. Ramesh Kumar S"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
+                <label className="font-bold text-slate-700">Full Name <span className="text-rose-500">*</span></label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="e.g. Ramesh Kumar S"
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
               </div>
 
               {/* Phone Number */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Mobile Phone Number *</label>
-                <input
-                  type="tel"
-                  required
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="e.g. 9876543210"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
+                <label className="font-bold text-slate-700">Phone Number <span className="text-rose-500">*</span></label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="9876543210"
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
               </div>
 
               {/* Email (Optional) */}
@@ -478,37 +449,40 @@ export default function AddDriverPage() {
                   <span>Email Address</span>
                   <span className="text-[10px] text-slate-400">Optional</span>
                 </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="driver@grabrentals.com"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="driver@example.com"
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
               </div>
 
               {/* Date of Birth */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Date of Birth *</label>
+                <label className="font-bold text-slate-700">Date of Birth <span className="text-rose-500">*</span></label>
                 <input
                   type="date"
                   required
                   name="dob"
                   value={formData.dob}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
                 />
               </div>
 
               {/* Gender */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Gender *</label>
+                <label className="font-bold text-slate-700">Gender <span className="text-rose-500">*</span></label>
                 <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -533,12 +507,12 @@ export default function AddDriverPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">ID Proof Type *</label>
+                <label className="font-bold text-slate-700">ID Proof Type <span className="text-rose-500">*</span></label>
                 <select
                   name="idProofType"
                   value={formData.idProofType}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
                 >
                   {ID_PROOF_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -547,15 +521,15 @@ export default function AddDriverPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">ID Proof Number *</label>
+                <label className="font-bold text-slate-700">ID Proof Number <span className="text-rose-500">*</span></label>
                 <input
                   type="text"
                   required
                   name="idProofNumber"
                   value={formData.idProofNumber}
                   onChange={handleChange}
-                  placeholder="e.g. 12-digit Aadhaar / Voter ID Number"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
+                  placeholder="e.g. 1234 5678 9012"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white uppercase"
                 />
               </div>
 
@@ -579,8 +553,8 @@ export default function AddDriverPage() {
                       {uploading.idProofDoc ? <Loader2 className="w-4 h-4 animate-spin text-amber-500" /> : <FileText className="w-4 h-4 text-indigo-600" />}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800">Upload ID Proof Document Copy (PDF / Image)</p>
-                      <p className="text-[11px] text-slate-400">{fileDetails.idProofDocName || "Front & Back copy (max 10MB)"}</p>
+                      <p className="font-bold text-slate-800">Upload ID Proof Copy</p>
+                      <p className="text-[11px] text-slate-400">{fileDetails.idProofDocName || "Front & Back copy (PDF, JPG, PNG)"}</p>
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${
@@ -593,14 +567,14 @@ export default function AddDriverPage() {
             </div>
           </div>
 
-          {/* Card 3: Commercial Driving License & Automatic Experience Display */}
+          {/* Card 3: Driving License & Experience */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold shrink-0">
                 <Award className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-slate-900">Commercial Driving License & Experience</h2>
+                <h2 className="text-sm font-black text-slate-900">Driving License & Experience</h2>
                 <p className="text-xs text-slate-500">Commercial DL badge, licence class, and automated experience calculation</p>
               </div>
             </div>
@@ -609,73 +583,93 @@ export default function AddDriverPage() {
               
               {/* Driving License Number */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Commercial Driving License Number *</label>
+                <label className="font-bold text-slate-700">Driving License Number <span className="text-rose-500">*</span></label>
                 <input
                   type="text"
                   required
                   name="licenseNumber"
                   value={formData.licenseNumber}
                   onChange={handleChange}
-                  placeholder="e.g. TN-38-20150001234"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
+                  placeholder="DL-1420110012345"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white uppercase"
                 />
               </div>
 
               {/* License Class / Type */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Licence Type / Class *</label>
+                <label className="font-bold text-slate-700">Licence Type / Class <span className="text-rose-500">*</span></label>
                 <select
                   name="licenseClass"
                   value={formData.licenseClass}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
                 >
                   {LICENSE_CLASSES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
                 </select>
               </div>
 
               {/* License Expiry Date */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Licence Expiry Date *</label>
+                <label className="font-bold text-slate-700">License Expiry Date <span className="text-rose-500">*</span></label>
                 <input
                   type="date"
                   required
                   name="licenseExpiry"
                   value={formData.licenseExpiry}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
                 />
               </div>
 
               {/* Driving Since (date) */}
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Driving Since (Date) *</span>
+                  <span>Driving Since (Date)</span>
                   <span className="text-[10px] text-amber-600 font-bold">Auto Calculates Exp</span>
                 </label>
                 <input
                   type="date"
-                  required
                   name="drivingSince"
                   value={formData.drivingSince}
                   onChange={handleDrivingSinceChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
                 />
               </div>
 
               {/* Automatically Experience field should display the experience number */}
-              <div className="sm:col-span-2 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black shrink-0 text-base">
-                  {formData.experienceYears}y
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 flex items-center justify-between">
+                  <span>Experience</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                    Auto-Calculated
+                  </span>
+                </label>
+                <div className="relative">
+                  <Clock className="w-4 h-4 text-amber-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={formData.experienceLabel}
+                    readOnly
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 font-bold text-xs cursor-not-allowed"
+                  />
                 </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-amber-900">Total Driving Experience (Auto Calculated)</p>
-                  <p className="text-xs font-bold text-slate-800 mt-0.5">
-                    {formData.experienceLabel}
-                  </p>
-                </div>
+              </div>
+
+              {/* Chauffeur status */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Chauffeur Status</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-emerald-700 focus:outline-hidden focus:border-amber-500 focus:bg-white"
+                >
+                  {CHAUFFEUR_STATUSES.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Upload Driving License Copy */}
@@ -698,8 +692,8 @@ export default function AddDriverPage() {
                       {uploading.licenseDoc ? <Loader2 className="w-4 h-4 animate-spin text-amber-500" /> : <Award className="w-4 h-4 text-emerald-600" />}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800">Upload Commercial Driving License Proof *</p>
-                      <p className="text-[11px] text-slate-400">{fileDetails.licenseDocName || "Front & Back RTO Smart Card Copy"}</p>
+                      <p className="font-bold text-slate-800">Upload Driving License Proof <span className="text-rose-500">*</span></p>
+                      <p className="text-[11px] text-slate-400">{fileDetails.licenseDocName || "Front & Back RTO Smart Card Copy (PDF, JPG, PNG)"}</p>
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${
@@ -713,57 +707,49 @@ export default function AddDriverPage() {
             </div>
           </div>
 
-          {/* Card 4: Status, Assigned Vehicle & Operational Particulars */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
+          {/* Card 4: Emergency Contacts & Languages */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold shrink-0">
-                <Car className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold shrink-0">
+                <Phone className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-slate-900">Chauffeur Status & Vehicle Assignment</h2>
-                <p className="text-xs text-slate-500">Fleet vehicle link, availability status, and joining date</p>
+                <h2 className="text-sm font-black text-slate-900">Emergency Contact & Languages Spoken</h2>
+                <p className="text-xs text-slate-500">SOS kin contact details and languages spoken</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               
-              {/* Chauffeur status */}
+              {/* Emergency Contact Name */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Chauffeur Status *</label>
-                <select
-                  name="status"
-                  value={formData.status}
+                <label className="font-bold text-slate-700">Emergency Contact Name <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  name="emergencyContactName"
+                  value={formData.emergencyContactName}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-amber-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  {CHAUFFEUR_STATUSES.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
+                  placeholder="e.g. Spouse / Sibling"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
+                />
               </div>
 
-              {/* Assigned vehicle (Optional) */}
+              {/* Emergency Contact Phone */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Assigned Vehicle</span>
-                  <span className="text-[10px] text-slate-400">Optional</span>
-                </label>
-                <select
-                  name="assignedVehicleId"
-                  value={formData.assignedVehicleId}
+                <label className="font-bold text-slate-700">Emergency Contact Phone <span className="text-rose-500">*</span></label>
+                <input
+                  type="tel"
+                  required
+                  name="emergencyContactPhone"
+                  value={formData.emergencyContactPhone}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  <option value="">-- Unassigned (Standby Pool) --</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.model} ({v.vehicleNumber}) - {v.vehicleType}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="9876543210"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
+                />
               </div>
 
-              {/* Joining date (Optional) */}
+              {/* Joining Date (Optional) */}
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-700 flex items-center justify-between">
                   <span>Joining Date</span>
@@ -774,145 +760,13 @@ export default function AddDriverPage() {
                   name="joiningDate"
                   value={formData.joiningDate}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-            </div>
-          </div>
-
-          {/* Card 5: Address & Proof (Optional) */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
-            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center font-bold shrink-0">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-slate-900">Residential Address & Address Proof</h2>
-                <p className="text-xs text-slate-500">Residential domicile details and supporting utility bill / proof (Optional)</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Residential Address</span>
-                  <span className="text-[10px] text-slate-400">Optional</span>
-                </label>
-                <textarea
-                  name="address"
-                  rows={2}
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Street, Landmark, City, State, Pincode"
-                  className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Address Proof Type</span>
-                  <span className="text-[10px] text-slate-400">Optional</span>
-                </label>
-                <select
-                  name="addressProofType"
-                  value={formData.addressProofType}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  {ADDRESS_PROOF_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Address Proof Number</span>
-                  <span className="text-[10px] text-slate-400">Optional</span>
-                </label>
-                <input
-                  type="text"
-                  name="addressProofNumber"
-                  value={formData.addressProofNumber}
-                  onChange={handleChange}
-                  placeholder="e.g. EB Consumer No / Card ID"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              {/* Upload Address Proof (Optional) */}
-              <div className="sm:col-span-2">
-                <input 
-                  type="file" 
-                  ref={addressProofDocRef} 
-                  onChange={(e) => handleFileUpload("addressProofDoc", e)} 
-                  accept=".pdf,.jpg,.jpeg,.png" 
-                  className="hidden" 
-                />
-                <div 
-                  onClick={() => !uploading.addressProofDoc && addressProofDocRef.current?.click()}
-                  className={`p-3.5 rounded-2xl border-2 border-dashed flex items-center justify-between cursor-pointer transition-all ${
-                    formData.addressProofDocumentUrl ? "border-emerald-400 bg-emerald-50/30" : "border-slate-200 hover:border-amber-400 bg-slate-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-4 h-4 text-slate-500" />
-                    <div>
-                      <p className="font-bold text-slate-800">Upload Address Proof Document (Optional)</p>
-                      <p className="text-[11px] text-slate-400">{fileDetails.addressProofDocName || "PDF, JPG up to 10MB"}</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-white text-slate-700 border-slate-200">
-                    {formData.addressProofDocumentUrl ? "Uploaded ✓" : "Browse File"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 6: Emergency Contact & Languages Spoken */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold shrink-0">
-                <Phone className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-slate-900">Emergency Contact & Languages Spoken</h2>
-                <p className="text-xs text-slate-500">SOS kin contact and passenger communication abilities</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Emergency Contact Name *</label>
-                <input
-                  type="text"
-                  required
-                  name="emergencyContactName"
-                  value={formData.emergencyContactName}
-                  onChange={handleChange}
-                  placeholder="e.g. S. Kumar (Brother / Spouse)"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Emergency Contact Phone *</label>
-                <input
-                  type="tel"
-                  required
-                  name="emergencyContactPhone"
-                  value={formData.emergencyContactPhone}
-                  onChange={handleChange}
-                  placeholder="e.g. 9876500000"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 focus:bg-white"
                 />
               </div>
 
               {/* Languages Spoken Chips */}
-              <div className="sm:col-span-2 space-y-2">
-                <label className="font-bold text-slate-700 block">Languages Spoken * (Multi-select)</label>
+              <div className="sm:col-span-2 lg:col-span-3 space-y-2 pt-1">
+                <label className="font-bold text-slate-700 block">Languages Spoken</label>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGE_OPTIONS.map((lang) => {
                     const isSelected = formData.languagesSpoken.includes(lang);
@@ -921,97 +775,19 @@ export default function AddDriverPage() {
                         key={lang}
                         type="button"
                         onClick={() => handleLanguageToggle(lang)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
                           isSelected
                             ? "bg-amber-500 text-slate-950 border-amber-600 shadow-xs"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                         }`}
                       >
-                        {isSelected ? "✓ " : "+ "} {lang}
+                        {lang}
                       </button>
                     );
                   })}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Card 7: Verification, Rating, Trips & Remarks (Optional) */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
-            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-slate-500/10 text-slate-600 flex items-center justify-center font-bold shrink-0">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-slate-900">Background Verification & Platform Ratings</h2>
-                <p className="text-xs text-slate-500">Operational metadata, performance metrics & remarks</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Background Verification</span>
-                  <span className="text-[10px] text-slate-400">Optional</span>
-                </label>
-                <select
-                  name="verificationStatus"
-                  value={formData.verificationStatus}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  <option value="Verified">Verified (Police & Background Clear)</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Pending">Pending Documents</option>
-                  <option value="Not Verified">Not Verified</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Driver Rating (★)</span>
-                  <span className="text-[10px] text-slate-400">Optional</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="5"
-                  name="rating"
-                  value={formData.rating}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Total Trips Completed</span>
-                  <span className="text-[10px] text-slate-400">Auto Fetched</span>
-                </label>
-                <input
-                  type="number"
-                  name="totalTrips"
-                  value={formData.totalTrips}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              <div className="sm:col-span-3 space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Notes / Remarks</span>
-                  <span className="text-[10px] text-slate-400">Optional</span>
-                </label>
-                <input
-                  type="text"
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="e.g. Expert in Ghat roads, Bangalore-Chennai express highway specialist, night driver certified"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
             </div>
           </div>
 
@@ -1048,8 +824,8 @@ export default function AddDriverPage() {
                   <p className="text-xs font-semibold text-slate-500">{formData.phone || "+91 98765 00000"}</p>
                   <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 mt-1">
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                    <span>{formData.rating} Rating</span>
-                    <span className="text-slate-400">· {formData.totalTrips} Trips</span>
+                    <span>5.0 Rating</span>
+                    <span className="text-slate-400">· Active</span>
                   </div>
                 </div>
               </div>
@@ -1061,18 +837,16 @@ export default function AddDriverPage() {
                   <span className="font-mono font-bold text-amber-400">{formData.licenseNumber || "PENDING"}</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400 font-medium">Class:</span>
+                  <span className="font-bold text-white truncate max-w-[150px]">{formData.licenseClass}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
                   <span className="text-slate-400 font-medium">Experience:</span>
                   <span className="font-bold text-white">{formData.experienceYears} Years</span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-400 font-medium">Verification:</span>
-                  <span className="font-bold text-emerald-400">{formData.verificationStatus}</span>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-400 font-medium">Assigned Vehicle:</span>
-                  <span className="font-bold text-slate-200 truncate max-w-[150px]">
-                    {selectedVehicleObj ? `${selectedVehicleObj.model} (${selectedVehicleObj.vehicleNumber})` : "Standby Roster"}
-                  </span>
+                  <span className="text-slate-400 font-medium">ID Proof:</span>
+                  <span className="font-bold text-emerald-400">{formData.idProofType}</span>
                 </div>
               </div>
 

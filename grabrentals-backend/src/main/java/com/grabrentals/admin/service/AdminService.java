@@ -41,6 +41,49 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getVendorFullDetails(UUID id) {
+        User user = userService.getUserEntityById(id);
+        com.grabrentals.vendor.entity.VendorProfile profile = vendorProfileRepository.findByUserId(id).orElse(null);
+        List<com.grabrentals.vendor.entity.Vehicle> vehicles = vehicleRepository.findByUserIdOrderByCreatedAtDesc(id);
+        List<com.grabrentals.vendor.entity.Driver> drivers = driverRepository.findByUserIdOrderByCreatedAtDesc(id);
+
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("id", user.getId());
+        result.put("name", user.getName());
+        result.put("email", user.getEmail());
+        result.put("phone", user.getPhone());
+        result.put("role", user.getRole());
+        result.put("status", user.getStatus());
+        result.put("businessName", user.getBusinessName());
+        result.put("createdAt", user.getCreatedAt());
+
+        if (profile != null) {
+            result.put("profileId", profile.getId());
+            result.put("companyName", profile.getCompanyName());
+            result.put("contactPerson", profile.getContactPerson());
+            result.put("tradeName", profile.getTradeName());
+            result.put("address", profile.getAddress());
+            result.put("gstin", profile.getGstin());
+            result.put("pan", profile.getPan());
+            result.put("bankName", profile.getBankName());
+            result.put("accountNumber", profile.getAccountNumber());
+            result.put("ifsc", profile.getIfsc());
+            result.put("branch", profile.getBranch());
+            result.put("fleetSize", profile.getFleetSize());
+            result.put("gstDocumentUrl", profile.getGstDocumentUrl());
+            result.put("panDocumentUrl", profile.getPanDocumentUrl());
+            result.put("bankProofDocumentUrl", profile.getBankProofDocumentUrl());
+            result.put("businessProofDocumentUrl", profile.getBusinessProofDocumentUrl());
+            result.put("idProofDocumentUrl", profile.getIdProofDocumentUrl());
+            result.put("addressProofDocumentUrl", profile.getAddressProofDocumentUrl());
+        }
+
+        result.put("vehicles", vehicles);
+        result.put("drivers", drivers);
+        return result;
+    }
+
+    @Transactional(readOnly = true)
     public List<UserResponse> getUsersByRole(Role role) {
         return userRepository.findByRole(role).stream()
                 .map(UserResponse::fromEntity)

@@ -381,6 +381,50 @@ export const adminApi = {
   },
 
   async getVendorById(id) {
+    try {
+      const response = await axiosClient.get(`/api/admin/vendors/${id}`);
+      if (response.data?.success && response.data?.data) {
+        const d = response.data.data;
+        const isPending = d.status === "PENDING" || d.status === "PENDING_APPROVAL";
+        const isApproved = d.status === "ACTIVE" || d.status === "APPROVED";
+        return createApiResponse({
+          id: d.id,
+          name: d.businessName || d.companyName || d.name || "Vendor Partner",
+          businessName: d.businessName || d.companyName || d.name,
+          companyName: d.companyName || d.businessName,
+          tradeName: d.tradeName || "",
+          contactPerson: d.contactPerson || d.name,
+          ownerName: d.name,
+          email: d.email,
+          phone: d.phone || "—",
+          address: d.address || "Hub Operations",
+          city: d.address || "Primary Hub",
+          gstNumber: d.gstin || "Pending Submission",
+          gstStatus: isApproved ? "Verified Active" : "Pending Verification",
+          panNumber: d.pan || "—",
+          bankName: d.bankName || "—",
+          accountNumber: d.accountNumber || "—",
+          ifsc: d.ifsc || "—",
+          branch: d.branch || "—",
+          commissionRate: 12,
+          rating: 5.0,
+          joinedDate: d.createdAt ? d.createdAt.slice(0, 10) : "Recently",
+          createdAt: d.createdAt,
+          status: isPending ? "PENDING_APPROVAL" : (isApproved ? "APPROVED" : d.status),
+          rawStatus: d.status,
+          gstDocumentUrl: d.gstDocumentUrl,
+          panDocumentUrl: d.panDocumentUrl,
+          bankProofDocumentUrl: d.bankProofDocumentUrl,
+          businessProofDocumentUrl: d.businessProofDocumentUrl,
+          idProofDocumentUrl: d.idProofDocumentUrl,
+          addressProofDocumentUrl: d.addressProofDocumentUrl,
+          vehicles: Array.isArray(d.vehicles) ? d.vehicles : [],
+          drivers: Array.isArray(d.drivers) ? d.drivers : [],
+        });
+      }
+    } catch (err) {
+      console.warn("Direct backend getVendorById failed, checking list fallback:", err.message);
+    }
     const res = await this.getVendors();
     const vendor = (res.data || []).find((v) => String(v.id) === String(id));
     if (!vendor) throw new Error("Vendor not found in database registry");

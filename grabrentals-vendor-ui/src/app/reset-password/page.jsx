@@ -171,9 +171,11 @@ function ResetPasswordContent() {
       {/* Header */}
       <header className="w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between relative z-10">
         <Link href="/login" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-lg shadow-md shadow-amber-500/20">
-            G
-          </div>
+          <img
+            src="/images/grab-rentals-logo.jpg"
+            alt="Grab Rentals"
+            className="h-10 w-auto object-contain rounded-lg shadow-md"
+          />
           <div>
             <span className="font-black text-base tracking-tight text-white flex items-center gap-2">
               GRAB RENTALS

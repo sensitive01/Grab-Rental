@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicVehicleController {
 
     private final PublicVehicleService publicVehicleService;
+    private final com.grabrentals.vendor.repository.VehicleRepository vehicleRepository;
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<VehicleSearchResponseDto>> searchVehicles(
@@ -51,6 +52,36 @@ public class PublicVehicleController {
                 .success(true)
                 .message("Booking details retrieved successfully")
                 .data(booking)
+                .path(request.getRequestURI())
+                .build());
+    }
+
+    @GetMapping("/check-plate")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> checkPlate(
+            @RequestParam("plate") String plate,
+            HttpServletRequest request
+    ) {
+        String rawPlate = plate != null ? plate.trim() : "";
+        String compactPlate = rawPlate.replaceAll("[\\s-]+", "").toUpperCase();
+        boolean exists = false;
+        if (!compactPlate.isBlank()) {
+            exists = vehicleRepository.existsByNormalizedVehicleNumber(compactPlate);
+        }
+
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("plateNumber", rawPlate.toUpperCase());
+        data.put("available", !exists);
+        data.put("exists", exists);
+        if (exists) {
+            data.put("message", "Vehicle plate number '" + rawPlate.toUpperCase() + "' is already registered on Grab Rentals by another fleet partner. Duplicate vehicles cannot be added.");
+        } else {
+            data.put("message", "Vehicle plate number is available.");
+        }
+
+        return ResponseEntity.ok(ApiResponse.<java.util.Map<String, Object>>builder()
+                .success(true)
+                .message("Plate availability check completed")
+                .data(data)
                 .path(request.getRequestURI())
                 .build());
     }

@@ -29,5 +29,6 @@ public class LoginResponse {
         private String name;
         private String email;
         private Role role;
+        private com.grabrentals.user.entity.UserStatus status;
     }
 }

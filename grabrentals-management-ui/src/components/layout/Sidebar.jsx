@@ -197,14 +197,11 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
         {/* Brand Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800 bg-slate-950/60">
           <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-base shadow-md",
-                isOps ? "bg-amber-600 shadow-amber-900/40" : "bg-blue-600 shadow-blue-900/40"
-              )}
-            >
-              GR
-            </div>
+            <img
+              src="/images/grab-rentals-logo.jpg"
+              alt="Grab Rentals"
+              className="h-9 w-auto object-contain rounded-lg shadow-sm shrink-0"
+            />
             <div>
               <div className="font-extrabold text-white text-sm tracking-tight flex items-center gap-1.5">
                 <span>Grab Rentals</span>
@@ -217,7 +214,8 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
           {onClose && (
             <button
               onClick={onClose}
-              className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+              className="lg:hidden w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 -mr-1"
+              aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </button>

@@ -20,6 +20,7 @@ export const CLOUDINARY_CONFIG = {
  * @param {string} [customPreset] - Custom upload preset override (optional)
  * @returns {Promise<string>} The secure Cloudinary HTTPS URL
  */
+
 export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehicles", endpoint = null, customPreset = null) {
   if (!file) return null;
 

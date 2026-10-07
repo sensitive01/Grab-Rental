@@ -1,34 +1,32 @@
 "use client";
 
-import { useState, useRef } from "react";
-import Image from "next/image";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Car, 
-  Upload, 
-  FileText, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  Car,
+  FileText,
+  Upload,
+  CheckCircle2,
   AlertCircle,
+  Loader2,
   Calendar,
   Sparkles,
-  Loader2,
-  Image as ImageIcon,
   MapPin,
-  ShieldCheck,
-  Check,
-  Gauge,
-  Wind,
-  Layers,
-  Fuel,
   Compass,
-  Zap,
-  Sliders,
+  Check,
   Tv,
-  Sun,
-  Eye,
-  Camera
+  Wind,
+  Navigation,
+  Fuel,
+  Gauge,
+  ShieldCheck,
+  Flame,
+  Radio,
+  Wifi,
+  Zap,
+  Tag
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
@@ -38,93 +36,128 @@ import MultipleVehiclePhotoUploader from "@/components/ui/MultipleVehiclePhotoUp
 import { axiosClient } from "@/lib/axiosClient";
 import { uploadSignedToCloudinary } from "@/lib/cloudinary";
 
-const VEHICLE_FEATURE_OPTIONS = [
-  { id: "Sunroof", label: "Sunroof / Skyroof", icon: Sun },
-  { id: "360", label: "360° Surround Camera", icon: Eye },
-  { id: "adas", label: "ADAS (Active Driver Assist)", icon: Compass },
-  { id: "Luggage carrier", label: "Luggage Carrier / Roof Rails", icon: Layers },
-  { id: "tv", label: "TV / Entertainment Display", icon: Tv },
-  { id: "AC", label: "AC / Climate Control", icon: Wind },
-  { id: "Ventilated Seats", label: "Ventilated Cushioned Seats", icon: Sparkles },
-  { id: "Recliner Seats", label: "Maharaja Recliner Seats", icon: Sliders },
-  { id: "Airbags", label: "Front & Side Airbags (Safety)", icon: ShieldCheck },
-  { id: "GPS Tracking", label: "GPS Real-time Telematics", icon: MapPin },
-  { id: "USB Fast Charging", label: "Fast USB & Type-C Chargers", icon: Zap },
-  { id: "WiFi", label: "Complimentary Onboard WiFi", icon: Zap }
-];
+const VEHICLE_SUB_CATEGORIES = {
+  Sedan: ["Dzire", "Etios", "Aura"],
+  Hatchback: ["WagonR", "Swift"],
+  SUV: ["Xylo", "Ertiga", "Carens", "marazzo"],
+  Innova: ["6+1 Seater", "7+1 Seater"],
+  Tempo: ["12+1 Seater", "13+1 Seater"],
+  urbania: ["10+1 Seater", "12+1 Seater", "16+1 Seater"],
+};
 
 const PRESET_COLORS = [
   { name: "Pearl White", hex: "#FFFFFF" },
-  { name: "Silky Silver", hex: "#E2E8F0" },
-  { name: "Magma Grey", hex: "#64748B" },
-  { name: "Midnight Black", hex: "#0F172A" },
-  { name: "Imperial Blue", hex: "#1E3A8A" },
-  { name: "Wine Red", hex: "#991B1B" },
-  { name: "Champagne Gold", hex: "#CA8A04" }
+  { name: "Arctic Silver", hex: "#E5E7EB" },
+  { name: "Magma Grey", hex: "#4B5563" },
+  { name: "Midnight Black", hex: "#111827" },
+  { name: "Garnet Red", hex: "#991B1B" },
+  { name: "Nexa Blue", hex: "#1E3A8A" },
+  { name: "Golden Bronze", hex: "#92400E" }
 ];
 
-const PARKING_HUBS = [
-  "Airport Logistic Hub (Terminal 1 & 2 Bay)",
-  "Central Railway Station Deployment Depot",
-  "Peelamedu Commercial Transport Nagar",
-  "Electronic City / Tech Park Parking Yard",
-  "Guindy Industrial Logistics Hub"
+const VEHICLE_FEATURE_OPTIONS = [
+  { id: "Air Conditioner (AC)", label: "Climate Cooling", icon: Wind },
+  { id: "Smart TV / Screen", label: "Rear Passenger Entertainment", icon: Tv },
+  { id: "Dual-Zone AC", label: "Multi-Zone Automatic HVAC", icon: Wind },
+  { id: "Ventilated Seats", label: "Active Cooling Leather", icon: Sparkles },
+  { id: "Recliner Seats", label: "First-Class Push-Back Seats", icon: Sparkles },
+  { id: "360° Surround Camera", label: "Blind-spot Assist", icon: Navigation },
+  { id: "ADAS Safety Suite", label: "Autonomous Braking & Cruise", icon: ShieldCheck },
+  { id: "Rooftop Luggage Carrier", label: "Top Luggage Tray", icon: Car },
+  { id: "Music System (Bluetooth)", label: "Surround Audio", icon: Radio },
+  { id: "High-Speed Wi-Fi", label: "In-Cabin 4G/5G Hotspot", icon: Wifi },
+  { id: "GPS Live Tracker", label: "Real-Time Telematics", icon: Navigation },
+  { id: "Safety Airbags", label: "Dual / 6 Airbags", icon: ShieldCheck },
+  { id: "USB Rapid Charging Ports", label: "Fast Charging Sockets", icon: Zap },
+  { id: "Pure Leather Seats", label: "Premium Interior Upholstery", icon: Sparkles },
+  { id: "Ambient Cabin Lighting", label: "LED Mood Lighting", icon: Sparkles },
+  { id: "Fastag Automatic Toll Pass", label: "Automatic Electronic Toll", icon: Tag },
 ];
 
 export default function AddVehiclePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [plateWarning, setPlateWarning] = useState("");
+  const [checkingPlate, setCheckingPlate] = useState(false);
 
-  // File input refs
-  const photoInputRef = useRef(null);
-  const rcInputRef = useRef(null);
-  const insuranceInputRef = useRef(null);
-
-  // Upload progress states
-  const [uploading, setUploading] = useState({
-    photo: false,
-    rc: false,
-    insurance: false
-  });
-
-  // Local file previews / names
-  const [fileDetails, setFileDetails] = useState({
-    photoPreview: null,
-    photoName: "",
-    rcName: "",
-    insuranceName: ""
-  });
+  const verifyPlateLive = async (plate) => {
+    const clean = (plate || "").trim().toUpperCase();
+    if (!clean || clean.length < 3) {
+      setPlateWarning("");
+      return;
+    }
+    setCheckingPlate(true);
+    try {
+      const res = await axiosClient.get(`/api/vehicles/check-plate?plate=${encodeURIComponent(clean)}`);
+      if (res.data?.data && res.data.data.exists) {
+        setPlateWarning(res.data.data.message || `Vehicle '${clean}' is already registered on Grab Rentals by another fleet partner.`);
+      } else {
+        setPlateWarning("");
+      }
+    } catch {
+      setPlateWarning("");
+    } finally {
+      setCheckingPlate(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
-    vehicleType: "SUV",
+    vehicleNumber: "",
     vehicleModel: "",
     variant: "",
     color: "Pearl White",
-    registrationType: "Yellow Board",
+    registrationType: "Yellow Board (Commercial)",
+    vehicleCategory: "Sedan",
+    subCategory: "",
+    year: 2023,
     fuelType: "Diesel",
-    alternateFuel: "CNG",
+    alternateFuel: "None",
     transmission: "Automatic",
-    seatingCapacity: 7,
-    engineCc: 2393,
-    parkingLocation: "Airport Logistic Hub (Terminal 1 & 2 Bay)",
-    features: ["AC", "Sunroof", "360", "adas", "Recliner Seats", "Luggage carrier", "Airbags", "GPS Tracking"],
-    vehicleNumber: "",
-    registrationNumber: "",
-    acType: "Dual AC",
-    year: new Date().getFullYear(),
+    seatingCapacity: 4,
+    engineCc: 1498,
+    parkingLocation: "Main Fleet Yard, India",
+    features: ["Air Conditioner (AC)", "GPS Live Tracker", "Fastag Automatic Toll Pass"],
+
+    // Compliance Proofs & Expiry Dates
+    rcNumber: "",
+    rcExpiry: "",
+    rcDocumentUrl: "",
+
+    insuranceNumber: "",
     insuranceExpiry: "",
-    permitExpiry: "",
+    insuranceDocumentUrl: "",
+
+    fitnessNumber: "",
     fitnessExpiry: "",
-    dailyRate: "",
-    perKmRate: "",
-    currentLocation: "Airport Logistic Hub (Terminal 1 & 2 Bay)",
+    fitnessDocumentUrl: "",
+
+    permitNumber: "",
+    permitExpiry: "",
+    permitDocumentUrl: "",
+
+    pucNumber: "",
+    pucExpiry: "",
+    pucDocumentUrl: "",
+
+    // Photos
     imageUrl: "",
     photos: [],
-    rcDocumentUrl: "",
-    insuranceDocumentUrl: "",
-    permitDocumentUrl: ""
   });
+
+  const [photoSlots, setPhotoSlots] = useState({
+    front: "",
+    back: "",
+    left: "",
+    right: "",
+    luggage: "",
+    frontSeats: "",
+    backSeats: "",
+    handle: "",
+  });
+
+  const [uploadingDocs, setUploadingDocs] = useState({});
+  const [docFileNames, setDocFileNames] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -134,109 +167,128 @@ export default function AddVehiclePage() {
   const handleFeatureToggle = (featureId) => {
     setFormData((prev) => {
       const exists = prev.features.includes(featureId);
-      const updated = exists 
+      const updated = exists
         ? prev.features.filter((f) => f !== featureId)
         : [...prev.features, featureId];
       return { ...prev, features: updated };
     });
   };
 
-  const handleFileUpload = async (type, e) => {
-    const file = e.target.files?.[0];
+  const handleDocUpload = async (docType, file) => {
     if (!file) return;
 
-    if (type === "photo") {
-      const localUrl = URL.createObjectURL(file);
-      setFileDetails((prev) => ({ ...prev, photoPreview: localUrl, photoName: file.name }));
-    } else if (type === "rc") {
-      setFileDetails((prev) => ({ ...prev, rcName: file.name }));
-    } else if (type === "insurance") {
-      setFileDetails((prev) => ({ ...prev, insuranceName: file.name }));
-    }
-
-    setUploading((prev) => ({ ...prev, [type]: true }));
+    setDocFileNames((prev) => ({ ...prev, [docType]: file.name }));
+    setUploadingDocs((prev) => ({ ...prev, [docType]: true }));
 
     try {
-      const folder = type === "photo" ? "grabrentals/vehicles" : "grabrentals/documents";
-      const uploadedUrl = await uploadSignedToCloudinary(file, folder);
-
-      if (uploadedUrl) {
-        if (type === "photo") {
-          setFormData((prev) => ({ ...prev, imageUrl: uploadedUrl }));
-        } else if (type === "rc") {
-          setFormData((prev) => ({ ...prev, rcDocumentUrl: uploadedUrl }));
-        } else if (type === "insurance") {
-          setFormData((prev) => ({ ...prev, insuranceDocumentUrl: uploadedUrl }));
-        }
-        setToast({ message: `${type.toUpperCase()} file uploaded securely!`, type: "success" });
+      const url = await uploadSignedToCloudinary(file, "grabrentals/documents");
+      if (url) {
+        setFormData((prev) => ({ ...prev, [`${docType}DocumentUrl`]: url }));
+        setToast({ message: `${docType.toUpperCase()} document uploaded securely!`, type: "success" });
       }
     } catch (err) {
-      console.error(`Failed to upload ${type}:`, err);
-      setToast({ message: `Upload failed: ${err.message || "Could not reach storage"}`, type: "error" });
+      console.error(`Upload error for ${docType}:`, err);
+      setToast({ message: "Upload failed. Please try again.", type: "error" });
     } finally {
-      setUploading((prev) => ({ ...prev, [type]: false }));
+      setUploadingDocs((prev) => ({ ...prev, [docType]: false }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setToast(null);
 
-    if (!formData.vehicleModel?.trim()) {
-      setToast({ message: "Please enter Vehicle Make & Model", type: "error" });
-      setLoading(false);
-      return;
-    }
-
     if (!formData.vehicleNumber?.trim()) {
-      setToast({ message: "Please enter Vehicle Plate Number (e.g. TN-38-XY-9900)", type: "error" });
-      setLoading(false);
+      setToast({ message: "Please enter Vehicle Plate Number", type: "error" });
       return;
     }
 
-    if (!formData.dailyRate || Number(formData.dailyRate) <= 0) {
-      setToast({ message: "Please enter a Daily Base Rate (₹) greater than 0", type: "error" });
-      setLoading(false);
+    if (!formData.insuranceExpiry) {
+      setToast({ message: "Please provide the Vehicle Insurance expiry date", type: "error" });
       return;
     }
+
+    if (!formData.rcExpiry) {
+      setToast({ message: "Please provide the Registration Certificate (RC) expiry date", type: "error" });
+      return;
+    }
+
+    // Compulsory photo validation (4 exterior + 3 interior)
+    const missingPhotos = [];
+    if (!photoSlots.front) missingPhotos.push("Front View");
+    if (!photoSlots.back) missingPhotos.push("Back View");
+    if (!photoSlots.left) missingPhotos.push("Left Side");
+    if (!photoSlots.right) missingPhotos.push("Right Side");
+    if (!photoSlots.frontSeats) missingPhotos.push("Front Seats");
+    if (!photoSlots.backSeats) missingPhotos.push("Back Seats");
+    if (!photoSlots.handle) missingPhotos.push("Handle & Steering");
+
+    if (missingPhotos.length > 0) {
+      setToast({
+        message: `Please upload required photos (*): ${missingPhotos.join(", ")}`,
+        type: "error"
+      });
+      return;
+    }
+
+    setLoading(true);
 
     try {
+      const cleanPlate = formData.vehicleNumber.trim().toUpperCase();
+
+      // Platform-wide cross-vendor uniqueness check
+      try {
+        const checkRes = await axiosClient.get(`/api/vehicles/check-plate?plate=${encodeURIComponent(cleanPlate)}`);
+        if (checkRes.data?.data && checkRes.data.data.exists) {
+          setToast({
+            message: checkRes.data.data.message || `Vehicle with plate number '${cleanPlate}' is already registered on Grab Rentals by another fleet partner. Duplicate vehicle registrations across vendors are strictly prohibited.`,
+            type: "error"
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (ignored) {}
+
+      const mainImage = photoSlots.front || (formData.photos && formData.photos[0]) || formData.imageUrl || null;
+      const photosPayload = (photoSlots && Object.values(photoSlots).some(Boolean))
+        ? JSON.stringify({ slots: photoSlots, list: formData.photos })
+        : (formData.photos && formData.photos.length > 0 ? JSON.stringify(formData.photos) : null);
+
       const payload = {
-        vehicleType: formData.vehicleType,
-        vehicleModel: formData.vehicleModel.trim(),
+        vehicleNumber: cleanPlate,
+        vehicleModel: formData.vehicleModel?.trim() || formData.subCategory || "Commercial Vehicle",
+        vehicleType: formData.vehicleCategory,
         variant: formData.variant?.trim() || null,
         color: formData.color || "Pearl White",
-        registrationType: formData.registrationType || "Yellow Board",
-        alternateFuel: formData.alternateFuel || null,
-        transmission: formData.transmission || "Manual",
-        engineCc: formData.engineCc ? Number(formData.engineCc) : null,
-        parkingLocation: formData.parkingLocation || formData.currentLocation || "Airport Logistic Hub",
+        registrationType: formData.registrationType,
+        alternateFuel: formData.alternateFuel,
+        transmission: formData.transmission,
+        engineCc: formData.engineCc ? Number(formData.engineCc) : 1498,
+        parkingLocation: formData.parkingLocation || "Main Fleet Hub",
+        currentLocation: formData.parkingLocation || "Main Fleet Hub",
         features: Array.isArray(formData.features) ? formData.features.join(", ") : formData.features,
-        vehicleNumber: formData.vehicleNumber.trim().toUpperCase(),
-        registrationNumber: formData.registrationNumber?.trim() ? formData.registrationNumber.trim().toUpperCase() : null,
+        year: Number(formData.year) || 2023,
         seatingCapacity: Number(formData.seatingCapacity) || 4,
         fuelType: formData.fuelType || "Diesel",
-        acType: formData.acType || "Dual AC",
-        year: Number(formData.year) || new Date().getFullYear(),
+        dailyRate: 2500,
+        perKmRate: 14,
+        imageUrl: mainImage,
+        photos: photosPayload,
         insuranceExpiry: formData.insuranceExpiry || null,
-        permitExpiry: formData.permitExpiry || null,
+        rcExpiry: formData.rcExpiry || null,
         fitnessExpiry: formData.fitnessExpiry || null,
-        dailyRate: Number(formData.dailyRate),
-        perKmRate: Number(formData.perKmRate || 0),
-        currentLocation: formData.parkingLocation || formData.currentLocation || "Airport Logistic Hub",
-        imageUrl: (formData.photos && formData.photos[0]) || formData.imageUrl || null,
-        photos: formData.photos && formData.photos.length > 0 ? formData.photos.join(",") : null,
+        permitExpiry: formData.permitExpiry || null,
         rcDocumentUrl: formData.rcDocumentUrl || null,
         insuranceDocumentUrl: formData.insuranceDocumentUrl || null,
-        permitDocumentUrl: formData.permitDocumentUrl || null
+        permitDocumentUrl: formData.permitDocumentUrl || null,
+        fitnessDocumentUrl: formData.fitnessDocumentUrl || null,
       };
 
       const res = await axiosClient.post("/api/vendor/vehicles", payload);
 
       if (res.data?.success) {
         setToast({
-          message: `Vehicle ${payload.vehicleNumber} registered successfully!`,
+          message: `Vehicle ${cleanPlate} registered successfully!`,
           type: "success"
         });
         setTimeout(() => {
@@ -250,165 +302,144 @@ export default function AddVehiclePage() {
       }
     } catch (err) {
       console.error("Vehicle registration error:", err);
-      let errMsg = err.response?.data?.message || err.message || "Failed to register vehicle";
-      if (err.response?.data?.data && typeof err.response.data.data === "object") {
-        const errorList = Object.values(err.response.data.data).filter(Boolean);
-        if (errorList.length > 0) {
-          errMsg = errorList.join(" • ");
-        }
-      }
-      setToast({ message: errMsg, type: "error" });
+      setToast({
+        message: err.response?.data?.message || err.message || "Network error registering vehicle",
+        type: "error"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
 
-      {/* Header & Breadcrumbs */}
-      <div className="space-y-1">
-        <Breadcrumbs items={[{ label: "Vehicles", href: "/vendor/vehicles" }, { label: "Add Vehicle" }]} />
-        <div className="flex items-center justify-between pt-2">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Add New Fleet Vehicle
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
-              Register commercial car, van, tempo traveller or coach with complete variant, features, and map pin location.
-            </p>
-          </div>
-          <Link
-            href="/vendor/vehicles"
-            className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
-          >
-            <ArrowLeft className="w-4 h-4" /> Cancel
-          </Link>
-        </div>
-      </div>
-
-      {/* Page Hero Photo Banner (Requirement: Every page has at least 1 image) */}
-      <div className="relative rounded-3xl overflow-hidden border border-slate-200 bg-slate-900 text-white shadow-sm">
-        <div className="absolute inset-0 opacity-30">
-          <Image 
-            src="/images/fleet/suv.jpg" 
-            alt="Add Vehicle Banner" 
-            fill 
-            priority
-            className="object-cover" 
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Breadcrumbs
+            items={[
+              { label: "Dashboard", href: "/vendor/dashboard" },
+              { label: "Vehicles", href: "/vendor/vehicles" },
+              { label: "Add Commercial Vehicle" }
+            ]}
           />
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            Add Commercial Vehicle
+          </h1>
+          <p className="text-xs text-slate-500">
+            Register a commercial fleet asset with specifications, inspection photos, and compliance proofs.
+          </p>
         </div>
-        <div className="relative p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1 max-w-xl">
-            <span className="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border border-amber-400/30">
-              <Sparkles className="w-3.5 h-3.5" /> Fleet Expansion Roster
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black">Commercial Vehicle Registration & Compliance</h2>
-            <p className="text-xs sm:text-sm text-slate-300">
-              Ensure accurate variant, transmission, engine CC, alternate fuels, and commercial yellow-board documents for immediate customer booking eligibility.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 shrink-0">
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
-            <div className="text-xs">
-              <p className="font-extrabold text-white">Instant RTO Verification</p>
-              <p className="text-[11px] text-slate-300">Commercial Taxi Shield</p>
-            </div>
-          </div>
-        </div>
+
+        <Link
+          href="/vendor/vehicles"
+          className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors self-start sm:self-auto cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Vehicles
+        </Link>
       </div>
 
-      {/* Main Form & Side Space Layout */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
         {/* Left 2 Columns: Input Cards */}
         <div className="lg:col-span-2 space-y-6">
-          
-          {/* Card 1: Basic Specifications & New Fields */}
+
+          {/* Card 1: Basic Specifications */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold shrink-0">
                 <Car className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-slate-900">Vehicle Classification, Model & Variant</h2>
-                <p className="text-xs text-slate-500">Commercial make, variant, registration type & technical powertrain</p>
+                <h2 className="text-sm font-black text-slate-900">Vehicle Specifications & Attributes</h2>
+                <p className="text-xs text-slate-500">Make, model, classification, registration type and powertrain details</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-              
-              {/* Vehicle Type */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Vehicle Type *</label>
-                <select
-                  name="vehicleType"
-                  value={formData.vehicleType}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  <option value="Sedan">Sedan (4 Seater)</option>
-                  <option value="SUV">SUV (6-7 Seater)</option>
-                  <option value="Hatchback">Hatchback (4 Seater)</option>
-                  <option value="Van">Van (Force Urbania 9-13 Seater)</option>
-                  <option value="Tempo Traveller">Tempo Traveller (12-17 Seater)</option>
-                  <option value="Mini Bus">Mini Bus (21-26 Seater)</option>
-                  <option value="Bus">Bus / Tourist Coach (36-55 Seater)</option>
-                </select>
-              </div>
 
-              {/* Vehicle Make & Model */}
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="font-bold text-slate-700">Vehicle Make & Model *</label>
+              {/* Plate Number */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Vehicle Number *</label>
                 <input
                   type="text"
                   required
+                  name="vehicleNumber"
+                  value={formData.vehicleNumber}
+                  onChange={(e) => {
+                    setFormData((p) => ({ ...p, vehicleNumber: e.target.value.toUpperCase() }));
+                    if (plateWarning) setPlateWarning("");
+                  }}
+                  onBlur={(e) => verifyPlateLive(e.target.value)}
+                  placeholder="e.g. MH 02 AB 1234"
+                  className={`w-full py-2.5 px-3 bg-slate-50 border rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden uppercase transition-all ${
+                    plateWarning
+                      ? "border-rose-400 bg-rose-50/40 focus:border-rose-500"
+                      : "border-slate-200 focus:border-amber-500"
+                  }`}
+                />
+                {checkingPlate && (
+                  <p className="text-[10px] text-slate-500 flex items-center gap-1 font-medium">
+                    <Loader2 className="w-3 h-3 animate-spin text-amber-500" /> Checking plate availability...
+                  </p>
+                )}
+                {plateWarning && (
+                  <p className="text-[10px] text-rose-600 flex items-start gap-1 font-semibold bg-rose-50 p-2 rounded-lg border border-rose-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500 mt-0.5" />
+                    <span>{plateWarning}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Model */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Model</label>
+                <input
+                  type="text"
                   name="vehicleModel"
                   value={formData.vehicleModel}
                   onChange={handleChange}
-                  placeholder="e.g. Toyota Innova Crysta, Maruti Dzire"
+                  placeholder="e.g. Maruti Suzuki Dzire"
                   className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
                 />
               </div>
 
-              {/* 1. Vehicle Variant Field */}
+              {/* Variant */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Vehicle Variant *</span>
-                  <span className="text-[10px] text-amber-600 font-semibold">Trim / Badge</span>
-                </label>
+                <label className="font-bold text-slate-700">Vehicle Variant</label>
                 <input
                   type="text"
                   name="variant"
                   value={formData.variant}
                   onChange={handleChange}
-                  placeholder="e.g. 2.4 ZX, ZXi+, Alpha, Titanium"
+                  placeholder="e.g. VXI / Titanium / ZX"
                   className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
                 />
               </div>
 
-              {/* 2. Vehicle Color Field */}
+              {/* Color */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Vehicle Color *</label>
+                <label className="font-bold text-slate-700">Vehicle Color</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     name="color"
                     value={formData.color}
                     onChange={handleChange}
-                    placeholder="e.g. Pearl White, Silver"
+                    placeholder="e.g. Pearl White"
                     className="flex-1 py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
                   />
                   <select
                     onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
-                    className="py-2.5 px-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700"
+                    className="py-2.5 px-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer"
                     title="Quick pick color"
                   >
                     <option value="">Presets</option>
@@ -419,146 +450,68 @@ export default function AddVehiclePage() {
                 </div>
               </div>
 
-              {/* 3. Registration Type */}
+              {/* Registration Type */}
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-700">Registration Type *</label>
                 <select
                   name="registrationType"
                   value={formData.registrationType}
                   onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-amber-900 focus:outline-hidden focus:border-amber-500"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-amber-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
                 >
-                  <option value="Yellow Board">Yellow Board (Commercial Taxi / Tourist)</option>
-                  <option value="White Board">White Board (Private Lease / Corporate)</option>
-                  <option value="Black Board">Black Board (Self Drive Luxury Commercial)</option>
-                  <option value="EV Green Commercial">Green Board (Commercial Electric)</option>
+                  <option value="Yellow Board (Commercial)">Yellow Board (Commercial)</option>
+                  <option value="White Board (Self Drive)">White Board (Self Drive / Private)</option>
+                  <option value="All India Tourist Permit (AITP)">All India Tourist Permit (AITP)</option>
+                  <option value="Stage Carriage Permit">Stage Carriage Permit</option>
                 </select>
               </div>
 
-              {/* Vehicle Plate Number */}
+              {/* Vehicle Category */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Vehicle Plate Number *</label>
-                <input
-                  type="text"
-                  required
-                  name="vehicleNumber"
-                  value={formData.vehicleNumber}
-                  onChange={handleChange}
-                  placeholder="e.g. TN-38-AB-1234"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
-                />
-              </div>
-
-              {/* 4. Transmission */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Vehicle Transmission *</label>
+                <label className="font-bold text-slate-700">Vehicle Category</label>
                 <select
-                  name="transmission"
-                  value={formData.transmission}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                  name="vehicleCategory"
+                  value={formData.vehicleCategory}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((p) => ({ ...p, vehicleCategory: val, subCategory: "" }));
+                  }}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
                 >
-                  <option value="Automatic">Automatic (AT / DCT / CVT / AMT)</option>
-                  <option value="Manual">Manual (5/6 Speed Synchromesh)</option>
+                  <option value="Sedan">Sedan (Dzire, Etios, Aura)</option>
+                  <option value="Hatchback">Hatchback (WagonR, Swift)</option>
+                  <option value="SUV">SUV (Xylo, Ertiga, Carens, marazzo)</option>
+                  <option value="Innova">Innova (6+1 Seater, 7+1 Seater)</option>
+                  <option value="Innovacrysta">Innova Crysta</option>
+                  <option value="innovahycross">Innova Hycross</option>
+                  <option value="Tempo">Tempo Traveller (12+1 Seater, 13+1 Seater)</option>
+                  <option value="urbania">Force Urbania (10+1 Seater, 12+1 Seater, 16+1 Seater)</option>
+                  <option value="Bus">Bus</option>
+                  <option value="Benz">Benz - Executive Class</option>
                 </select>
               </div>
 
-              {/* 5. Seating Capacity */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Seating Capacity (Excl. Driver) *</label>
-                <select
-                  name="seatingCapacity"
-                  value={formData.seatingCapacity}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  <option value={4}>4 Seater (Compact / Executive Sedan)</option>
-                  <option value={5}>5 Seater</option>
-                  <option value={6}>6 Seater (Captain Seats)</option>
-                  <option value={7}>7 Seater (Innova / SUV)</option>
-                  <option value={8}>8 Seater</option>
-                  <option value={9}>9 Seater</option>
-                  <option value={12}>12 Seater (Tempo Traveller / Van)</option>
-                  <option value={16}>16-17 Seater (Tempo Traveller)</option>
-                  <option value={26}>26 Seater (Mini Bus)</option>
-                  <option value={36}>36 Seater (Coach)</option>
-                  <option value={45}>45-55 Seater (Volvo Coach)</option>
-                </select>
-              </div>
+              {/* Sub Category (Conditional) */}
+              {VEHICLE_SUB_CATEGORIES[formData.vehicleCategory] && (
+                <div className="space-y-1.5 animate-in fade-in duration-150">
+                  <label className="font-bold text-slate-700">Sub Category</label>
+                  <select
+                    name="subCategory"
+                    value={formData.subCategory}
+                    onChange={handleChange}
+                    className="w-full py-2.5 px-3 bg-amber-50/40 border border-amber-300 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="">Select Sub Category</option>
+                    {VEHICLE_SUB_CATEGORIES[formData.vehicleCategory].map((sub) => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-              {/* Primary Fuel Type */}
+              {/* Year of Manufacture */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Primary Fuel Type *</label>
-                <select
-                  name="fuelType"
-                  value={formData.fuelType}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  <option value="Diesel">Diesel</option>
-                  <option value="Petrol">Petrol</option>
-                  <option value="CNG">CNG</option>
-                  <option value="Electric">Electric (EV)</option>
-                  <option value="Petrol Hybrid">Petrol Hybrid</option>
-                </select>
-              </div>
-
-              {/* 6. Vehicle Alternate Fuel */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Alternate Fuel Option</span>
-                  <span className="text-[10px] text-emerald-600 font-semibold">Dual Fuel</span>
-                </label>
-                <select
-                  name="alternateFuel"
-                  value={formData.alternateFuel}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  <option value="None">None (Single Fuel)</option>
-                  <option value="CNG">CNG (Dual Fuel Factory / Kit)</option>
-                  <option value="Electric">Electric / Hybrid Motor</option>
-                  <option value="Petrol">Petrol (Secondary)</option>
-                  <option value="Diesel">Diesel</option>
-                </select>
-              </div>
-
-              {/* 7. Engine CC */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 flex items-center justify-between">
-                  <span>Engine Displacement (CC)</span>
-                  <span className="text-[10px] text-slate-400">Power Rating</span>
-                </label>
-                <input
-                  type="number"
-                  name="engineCc"
-                  value={formData.engineCc}
-                  onChange={handleChange}
-                  placeholder="e.g. 1197, 1498, 2393 cc"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              {/* Air Conditioning */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Air Conditioning *</label>
-                <select
-                  name="acType"
-                  value={formData.acType}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                >
-                  <option value="Dual AC">Dual AC (Front & Rear Vents)</option>
-                  <option value="Climate Control">Automatic Multi-Zone Climate Control</option>
-                  <option value="AC">Standard AC</option>
-                  <option value="Individual Vents">Individual Passenger Roof Vents</option>
-                  <option value="Non-AC">Non-AC</option>
-                </select>
-              </div>
-
-              {/* Manufacturing Year */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Manufacturing Year *</label>
+                <label className="font-bold text-slate-700">Year of Manufacture</label>
                 <input
                   type="number"
                   min="2010"
@@ -570,16 +523,82 @@ export default function AddVehiclePage() {
                 />
               </div>
 
-              {/* RTO Registration Number */}
+              {/* Primary Fuel Type */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">RTO Registration Number</label>
-                <input
-                  type="text"
-                  name="registrationNumber"
-                  value={formData.registrationNumber}
+                <label className="font-bold text-slate-700">Primary Fuel Type</label>
+                <select
+                  name="fuelType"
+                  value={formData.fuelType}
                   onChange={handleChange}
-                  placeholder="e.g. TN382024001234"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 uppercase"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="Diesel">Diesel</option>
+                  <option value="Petrol">Petrol</option>
+                  <option value="CNG">CNG</option>
+                  <option value="Electric">Electric (EV)</option>
+                </select>
+              </div>
+
+              {/* Alternate Fuel */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Vehicle Alternate Fuel</label>
+                <select
+                  name="alternateFuel"
+                  value={formData.alternateFuel}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="None">None (Single Fuel)</option>
+                  <option value="CNG">CNG (Bi-fuel)</option>
+                  <option value="Electric">Electric (Hybrid/Dual)</option>
+                  <option value="LPG">LPG</option>
+                </select>
+              </div>
+
+              {/* Transmission */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Vehicle Transmission</label>
+                <select
+                  name="transmission"
+                  value={formData.transmission}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="Automatic">Automatic</option>
+                  <option value="Manual">Manual</option>
+                </select>
+              </div>
+
+              {/* Seating Capacity */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Seating Capacity</label>
+                <select
+                  name="seatingCapacity"
+                  value={formData.seatingCapacity}
+                  onChange={handleChange}
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="4">4 Seater + Driver</option>
+                  <option value="6">6 Seater + Driver</option>
+                  <option value="7">7 Seater + Driver</option>
+                  <option value="8">8 Seater</option>
+                  <option value="12">12 Seater (Tempo)</option>
+                  <option value="18">18 Seater (Tempo)</option>
+                  <option value="26">26 Seater (Mini Bus)</option>
+                  <option value="35">35 Seater (Coach)</option>
+                </select>
+              </div>
+
+              {/* Engine CC */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Engine Displacement (CC)</label>
+                <input
+                  type="number"
+                  name="engineCc"
+                  value={formData.engineCc}
+                  onChange={handleChange}
+                  placeholder="e.g. 1498"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
                 />
               </div>
 
@@ -595,7 +614,7 @@ export default function AddVehiclePage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-slate-900">Parking Location (Map Pin)</h2>
-                  <p className="text-xs text-slate-500">Designate the base parking yard or airport bay where this fleet resides</p>
+                  <p className="text-xs text-slate-500">Designate the base parking yard or depot address</p>
                 </div>
               </div>
               <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -606,13 +625,13 @@ export default function AddVehiclePage() {
             <div className="pt-2">
               <InteractiveMapPicker
                 value={formData.parkingLocation}
-                onChange={(loc) => setFormData((p) => ({ ...p, parkingLocation: loc, currentLocation: loc }))}
+                onChange={(loc) => setFormData((p) => ({ ...p, parkingLocation: loc }))}
                 placeholder="Search or pin exact parking hub / depot address..."
               />
             </div>
           </div>
 
-          {/* Card 3: Vehicle Features & Amenities (Sunroof, 360, ADAS, Recliner Seats, etc.) */}
+          {/* Card 3: Features & Amenities */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
@@ -620,7 +639,7 @@ export default function AddVehiclePage() {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-slate-900">Vehicle Features & Luxury Options</h2>
+                  <h2 className="text-sm font-black text-slate-900">Vehicle Amenities & Features</h2>
                   <p className="text-xs text-slate-500">Select all installed features available in this vehicle</p>
                 </div>
               </div>
@@ -659,221 +678,242 @@ export default function AddVehiclePage() {
             </div>
           </div>
 
-          {/* Card 4: Compliance & Legal Expiry Dates */}
+          {/* Card 4: Inspection Photos (Exterior 5, Interior 3) */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
+            <MultipleVehiclePhotoUploader
+              photos={formData.photos}
+              photoSlots={photoSlots}
+              onChange={(newPhotos, newSlots) => {
+                setFormData((p) => ({
+                  ...p,
+                  photos: newPhotos,
+                  imageUrl: newSlots?.front || newPhotos[0] || ""
+                }));
+                if (newSlots) setPhotoSlots(newSlots);
+              }}
+            />
+          </div>
+
+          {/* Card 5: Vehicle Compliance Proofs with Expiry Dates (All 5) */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold shrink-0">
-                <Calendar className="w-4 h-4" />
+                <FileText className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-slate-900">Commercial Permits & Validity Dates</h2>
-                <p className="text-xs text-slate-500">Ensure statutory compliance to prevent dispatch blocks</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Commercial Insurance Expiry *</label>
-                <input
-                  type="date"
-                  required
-                  name="insuranceExpiry"
-                  value={formData.insuranceExpiry}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Tourist Permit Expiry (AITP)</label>
-                <input
-                  type="date"
-                  name="permitExpiry"
-                  value={formData.permitExpiry}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Fitness Certificate (FC) Expiry</label>
-                <input
-                  type="date"
-                  name="fitnessExpiry"
-                  value={formData.fitnessExpiry}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 5: Rates & Deployment Hub */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold shrink-0">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-slate-900">Base Rates & Operational Billing</h2>
-                <p className="text-xs text-slate-500">Commercial billing rates for local 8hr and outstation kilometer dispatch</p>
+                <h2 className="text-sm font-black text-slate-900">Vehicle Compliance Proofs with Expiry Dates</h2>
+                <p className="text-xs text-slate-500">All 5 statutory documents mandatory for dispatch & compliance</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Daily Base Rate (₹) *</label>
-                <input
-                  type="number"
-                  required
-                  min="500"
-                  step="50"
-                  name="dailyRate"
-                  value={formData.dailyRate}
-                  onChange={handleChange}
-                  placeholder="e.g. 3600"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
+
+              {/* 1. Registration Certificate (RC) */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">1. RC Certificate *</span>
+                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">Required</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    name="rcNumber"
+                    value={formData.rcNumber}
+                    onChange={handleChange}
+                    placeholder="RC Number"
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                  />
+                  <input
+                    type="date"
+                    required
+                    name="rcExpiry"
+                    value={formData.rcExpiry}
+                    onChange={handleChange}
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept=".pdf,image/*"
+                    className="hidden"
+                    onChange={(e) => handleDocUpload("rc", e.target.files?.[0])}
+                  />
+                  <div className={`py-2 px-3 rounded-xl border text-center font-bold cursor-pointer transition-colors ${
+                    formData.rcDocumentUrl ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-white text-slate-700 border-slate-200 hover:border-amber-400"
+                  }`}>
+                    {uploadingDocs.rc ? "Uploading..." : formData.rcDocumentUrl ? "✓ RC Uploaded" : "Upload RC Copy"}
+                  </div>
+                </label>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Extra / Per KM Rate (₹) *</label>
-                <input
-                  type="number"
-                  required
-                  min="5"
-                  step="1"
-                  name="perKmRate"
-                  value={formData.perKmRate}
-                  onChange={handleChange}
-                  placeholder="e.g. 16"
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                />
+              {/* 2. Insurance Policy */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">2. Commercial Insurance *</span>
+                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">Required</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    name="insuranceNumber"
+                    value={formData.insuranceNumber}
+                    onChange={handleChange}
+                    placeholder="Policy Number"
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                  />
+                  <input
+                    type="date"
+                    required
+                    name="insuranceExpiry"
+                    value={formData.insuranceExpiry}
+                    onChange={handleChange}
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept=".pdf,image/*"
+                    className="hidden"
+                    onChange={(e) => handleDocUpload("insurance", e.target.files?.[0])}
+                  />
+                  <div className={`py-2 px-3 rounded-xl border text-center font-bold cursor-pointer transition-colors ${
+                    formData.insuranceDocumentUrl ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-white text-slate-700 border-slate-200 hover:border-amber-400"
+                  }`}>
+                    {uploadingDocs.insurance ? "Uploading..." : formData.insuranceDocumentUrl ? "✓ Insurance Uploaded" : "Upload Insurance Copy"}
+                  </div>
+                </label>
               </div>
+
+              {/* 3. Fitness Certificate */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">3. Fitness Certificate</span>
+                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Optional</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    name="fitnessNumber"
+                    value={formData.fitnessNumber}
+                    onChange={handleChange}
+                    placeholder="Certificate Number"
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                  />
+                  <input
+                    type="date"
+                    name="fitnessExpiry"
+                    value={formData.fitnessExpiry}
+                    onChange={handleChange}
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept=".pdf,image/*"
+                    className="hidden"
+                    onChange={(e) => handleDocUpload("fitness", e.target.files?.[0])}
+                  />
+                  <div className={`py-2 px-3 rounded-xl border text-center font-bold cursor-pointer transition-colors ${
+                    formData.fitnessDocumentUrl ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-white text-slate-700 border-slate-200 hover:border-amber-400"
+                  }`}>
+                    {uploadingDocs.fitness ? "Uploading..." : formData.fitnessDocumentUrl ? "✓ Fitness Uploaded" : "Upload Fitness Copy"}
+                  </div>
+                </label>
+              </div>
+
+              {/* 4. State / Tourist Permit */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">4. Commercial Permit</span>
+                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Optional</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    name="permitNumber"
+                    value={formData.permitNumber}
+                    onChange={handleChange}
+                    placeholder="Permit Number"
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                  />
+                  <input
+                    type="date"
+                    name="permitExpiry"
+                    value={formData.permitExpiry}
+                    onChange={handleChange}
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept=".pdf,image/*"
+                    className="hidden"
+                    onChange={(e) => handleDocUpload("permit", e.target.files?.[0])}
+                  />
+                  <div className={`py-2 px-3 rounded-xl border text-center font-bold cursor-pointer transition-colors ${
+                    formData.permitDocumentUrl ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-white text-slate-700 border-slate-200 hover:border-amber-400"
+                  }`}>
+                    {uploadingDocs.permit ? "Uploading..." : formData.permitDocumentUrl ? "✓ Permit Uploaded" : "Upload Permit Copy"}
+                  </div>
+                </label>
+              </div>
+
+              {/* 5. Pollution Under Control (PUC) */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">5. PUC (Pollution Certificate)</span>
+                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Optional</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    name="pucNumber"
+                    value={formData.pucNumber}
+                    onChange={handleChange}
+                    placeholder="PUC Certificate Number"
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                  />
+                  <input
+                    type="date"
+                    name="pucExpiry"
+                    value={formData.pucExpiry}
+                    onChange={handleChange}
+                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept=".pdf,image/*"
+                    className="hidden"
+                    onChange={(e) => handleDocUpload("puc", e.target.files?.[0])}
+                  />
+                  <div className={`py-2 px-3 rounded-xl border text-center font-bold cursor-pointer transition-colors ${
+                    formData.pucDocumentUrl ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-white text-slate-700 border-slate-200 hover:border-amber-400"
+                  }`}>
+                    {uploadingDocs.puc ? "Uploading..." : formData.pucDocumentUrl ? "✓ PUC Uploaded" : "Upload PUC Copy"}
+                  </div>
+                </label>
+              </div>
+
             </div>
-          </div>
-
-          {/* Card 6: Document Uploads & Photos */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold shrink-0">
-                <FileText className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-slate-900">Document Uploads & Fleet Photos</h2>
-                <p className="text-xs text-slate-500">Securely uploaded to Cloudinary CDN for platform verification</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              
-              {/* RC Upload Box */}
-              <input 
-                type="file" 
-                ref={rcInputRef} 
-                onChange={(e) => handleFileUpload("rc", e)}
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden" 
-              />
-              <div 
-                onClick={() => !uploading.rc && rcInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors ${
-                  formData.rcDocumentUrl 
-                    ? "border-emerald-500 bg-emerald-50/30" 
-                    : "border-slate-200 hover:border-amber-400 bg-slate-50/50"
-                }`}
-              >
-                {uploading.rc ? (
-                  <Loader2 className="w-6 h-6 text-amber-500 mx-auto animate-spin" />
-                ) : formData.rcDocumentUrl ? (
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
-                ) : (
-                  <Upload className="w-6 h-6 text-slate-400 mx-auto" />
-                )}
-                <p className="font-bold text-slate-800">Vehicle RC Copy</p>
-                <p className="text-[11px] text-slate-400 truncate max-w-[180px] mx-auto">
-                  {fileDetails.rcName || "PDF, JPG up to 10MB"}
-                </p>
-                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border ${
-                  formData.rcDocumentUrl
-                    ? "text-emerald-700 bg-emerald-100 border-emerald-300"
-                    : "text-amber-600 bg-amber-50 border-amber-200"
-                }`}>
-                  {uploading.rc ? "Uploading..." : formData.rcDocumentUrl ? "Uploaded" : "Browse File"}
-                </span>
-              </div>
-
-              {/* Insurance Upload Box */}
-              <input 
-                type="file" 
-                ref={insuranceInputRef} 
-                onChange={(e) => handleFileUpload("insurance", e)}
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden" 
-              />
-              <div 
-                onClick={() => !uploading.insurance && insuranceInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-5 text-center space-y-2 cursor-pointer transition-colors ${
-                  formData.insuranceDocumentUrl 
-                    ? "border-emerald-500 bg-emerald-50/30" 
-                    : "border-slate-200 hover:border-amber-400 bg-slate-50/50"
-                }`}
-              >
-                {uploading.insurance ? (
-                  <Loader2 className="w-6 h-6 text-amber-500 mx-auto animate-spin" />
-                ) : formData.insuranceDocumentUrl ? (
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
-                ) : (
-                  <Upload className="w-6 h-6 text-slate-400 mx-auto" />
-                )}
-                <p className="font-bold text-slate-800">Insurance Certificate</p>
-                <p className="text-[11px] text-slate-400 truncate max-w-[180px] mx-auto">
-                  {fileDetails.insuranceName || "PDF, JPG up to 10MB"}
-                </p>
-                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border ${
-                  formData.insuranceDocumentUrl
-                    ? "text-emerald-700 bg-emerald-100 border-emerald-300"
-                    : "text-amber-600 bg-amber-50 border-amber-200"
-                }`}>
-                  {uploading.insurance ? "Uploading..." : formData.insuranceDocumentUrl ? "Uploaded" : "Browse File"}
-                </span>
-              </div>
-
-            </div>
-          </div>
-
-          {/* Card: Multiple Vehicle Photos (Exterior, Interior, Angles) */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-4">
-            <MultipleVehiclePhotoUploader
-              photos={formData.photos && formData.photos.length > 0 ? formData.photos : (formData.imageUrl ? [formData.imageUrl] : [])}
-              onChange={(newPhotos) => {
-                setFormData((p) => ({
-                  ...p,
-                  photos: newPhotos,
-                  imageUrl: newPhotos[0] || ""
-                }));
-                setFileDetails((f) => ({
-                  ...f,
-                  photoPreview: newPhotos[0] || null
-                }));
-              }}
-              maxPhotos={8}
-              label="Vehicle Photos (Exterior & Interior Gallery)"
-              subtitle="Upload multiple high-resolution photos (front, rear, side profile, dashboard, and passenger seats)."
-            />
           </div>
 
         </div>
 
-        {/* Right 1 Column: Side Space Panels (Preview & Actions) */}
+        {/* Right Column: Preview & Action Box */}
         <div className="space-y-6 lg:sticky lg:top-20">
-          
-          {/* Side Card 1: Live Vehicle Fleet Preview */}
+
+          {/* Vehicle Live Preview Card */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Live Vehicle Preview</h3>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Live Preview</h3>
               </div>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
                 {formData.registrationType}
@@ -881,62 +921,59 @@ export default function AddVehiclePage() {
             </div>
 
             <div className="space-y-3">
-              {/* Photo Banner if available */}
-              {(fileDetails.photoPreview || formData.imageUrl) && (
+              {/* Cover Photo */}
+              {(photoSlots.front || formData.imageUrl) && (
                 <div className="relative h-36 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
-                  <img 
-                    src={fileDetails.photoPreview || formData.imageUrl} 
-                    alt="Vehicle preview"
+                  <img
+                    src={photoSlots.front || formData.imageUrl}
+                    alt="Vehicle Front"
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-2 left-2 text-[10px] font-bold bg-slate-900/80 text-white px-2 py-0.5 rounded-md backdrop-blur-xs">
-                    Live Photo
+                    Front Cover
                   </span>
                 </div>
               )}
 
               <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2">
                 <div className="flex items-center justify-between">
-                  <NumberPlate number={formData.vehicleNumber || "TN-00-XX-0000"} />
+                  <NumberPlate number={formData.vehicleNumber || "MH 00 XX 0000"} />
                   <span className="text-[10px] text-slate-400 font-bold">
                     {formData.year} Model
                   </span>
                 </div>
                 <h4 className="text-sm font-black tracking-tight line-clamp-1">
-                  {formData.vehicleModel || "Vehicle Make & Model"} {formData.variant ? `(${formData.variant})` : ""}
+                  {formData.vehicleModel || "Commercial Vehicle"} {formData.subCategory ? `(${formData.subCategory})` : ""}
                 </h4>
                 <div className="flex items-center gap-1.5 text-xs text-slate-300">
                   <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                  <span className="truncate">{formData.parkingLocation || "Base Hub"}</span>
+                  <span className="truncate">{formData.parkingLocation || "Parking Hub"}</span>
                 </div>
               </div>
 
               {/* Spec Badges Grid */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
-                  <p className="text-[10px] text-slate-400">Color & Trim</p>
+                  <p className="text-[10px] text-slate-400">Color & Variant</p>
                   <p className="font-bold text-slate-800 truncate">{formData.color} {formData.variant ? `· ${formData.variant}` : ""}</p>
                 </div>
 
                 <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
-                  <p className="text-[10px] text-slate-400">Capacity & Powertrain</p>
-                  <p className="font-bold text-slate-800">{formData.seatingCapacity}S · {formData.transmission}</p>
+                  <p className="text-[10px] text-slate-400">Capacity & Transmission</p>
+                  <p className="font-bold text-slate-800">{formData.seatingCapacity} Seater · {formData.transmission}</p>
                 </div>
 
-                <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
-                  <p className="text-[10px] text-slate-400">Fuel & Alternate</p>
+                <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50 col-span-2">
+                  <p className="text-[10px] text-slate-400">Fuel System</p>
                   <p className="font-bold text-slate-800 truncate">{formData.fuelType} {formData.alternateFuel !== "None" ? `+ ${formData.alternateFuel}` : ""}</p>
-                </div>
-
-                <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50">
-                  <p className="text-[10px] text-slate-400">Daily Base Rate</p>
-                  <p className="font-bold text-amber-600">₹{Number(formData.dailyRate || 0).toLocaleString("en-IN")}</p>
                 </div>
               </div>
 
               {/* Selected Features Pill Tags */}
               <div className="pt-2 border-t border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Active Amenities ({formData.features.length})</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Amenities ({formData.features.length})
+                </p>
                 <div className="flex flex-wrap gap-1">
                   {formData.features.map((f) => (
                     <span key={f} className="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md">
@@ -949,78 +986,42 @@ export default function AddVehiclePage() {
             </div>
           </div>
 
-          {/* Side Card 2: Quick Action & Registration Controls */}
+          {/* Registration Submit Action Box */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
-              Registration Controls
+              Submit & Register
             </h3>
 
-            <div className="space-y-3">
-              <button
-                type="submit"
-                disabled={loading || uploading.photo || uploading.rc || uploading.insurance}
-                className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 active:scale-98 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Registering Vehicle...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    Register & Activate Vehicle
-                  </>
-                )}
-              </button>
-
-              <Link
-                href="/vendor/vehicles"
-                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
-              >
-                Cancel & Return
-              </Link>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-2.5 text-xs text-emerald-900">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold">Fast-Track Verification</p>
-                <p className="text-[11px] text-emerald-700 mt-0.5">
-                  Yellow board commercial documents verified by Grab-Rental operations team within 2 hours.
-                </p>
+            <div className="space-y-2 text-xs text-slate-600">
+              <div className="flex items-center justify-between">
+                <span>RC Expiry:</span>
+                <span className="font-bold font-mono text-slate-900">{formData.rcExpiry || "Pending"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Insurance Expiry:</span>
+                <span className="font-bold font-mono text-slate-900">{formData.insuranceExpiry || "Pending"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Inspection Photos:</span>
+                <span className="font-bold text-slate-900">{formData.photos.length} Uploaded</span>
               </div>
             </div>
-          </div>
 
-          {/* Side Card 3: Commercial Compliance Checklist */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3 text-xs">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
-              Compliance Checklist
-            </h3>
-            
-            <ul className="space-y-2 text-slate-600">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-                <span>Commercial Yellow Board Registration</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-                <span>Active All-India Tourist Permit (AITP)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-                <span>Commercial Passenger Taxi Insurance</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-                <span>Speed governor & fitness certificate</span>
-              </li>
-            </ul>
-
-            <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-400">
-              Need assistance? Call Partner SOS helpline <span className="font-bold text-slate-700">+91 1800 209 8899</span>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving Vehicle...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" /> Save & Register Commercial Vehicle
+                </>
+              )}
+            </button>
           </div>
 
         </div>

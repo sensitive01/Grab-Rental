@@ -56,6 +56,19 @@ import InteractiveMapPicker from "@/components/ui/InteractiveMapPicker";
 import MultipleVehiclePhotoUploader from "@/components/ui/MultipleVehiclePhotoUploader";
 import CitySelectorModal from "@/components/ui/CitySelectorModal";
 
+const VEHICLE_SUB_CATEGORIES = {
+  Sedan: ["Dzire", "Etios", "Aura"],
+  Hatchback: ["WagonR", "Swift"],
+  SUV: ["Xylo", "Ertiga", "Carens", "Marazzo"],
+  Innova: ["6+1 Seater", "7+1 Seater"],
+  Innovacrysta: ["6+1 Seater", "7+1 Seater"],
+  innovahycross: ["6+1 Seater", "7+1 Seater"],
+  Tempo: ["12+1 Seater", "13+1 Seater"],
+  urbania: ["10+1 Seater", "12+1 Seater", "16+1 Seater"],
+  Bus: ["21 Seater", "32 Seater", "40 Seater", "45 Seater"],
+  Benz: ["E-Class", "S-Class", "C-Class"],
+};
+
 function VendorOnboardingFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,8 +99,8 @@ function VendorOnboardingFlow() {
   const [idProofDocument, setIdProofDocument] = useState("");
   const [addressProofDocument, setAddressProofDocument] = useState("");
 
-  // Step 1: Business Profile State
-  const [ownsBusiness, setOwnsBusiness] = useState(null); // true | false
+  // Step 1: Business Profile State (Default: Individual Partner)
+  const [ownsBusiness, setOwnsBusiness] = useState(false); // false = Individual Partner
   const [businessName, setBusinessName] = useState("");
   const [gstNumber, setGstNumber] = useState("");
   const [panNumber, setPanNumber] = useState("");
@@ -113,11 +126,25 @@ function VendorOnboardingFlow() {
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [vehicleCategory, setVehicleCategory] = useState("Sedan");
-  const [vehicleYear, setVehicleYear] = useState("2023");
+  const [vehicleSubCategory, setVehicleSubCategory] = useState("");
+  const [vehicleYear, setVehicleYear] = useState("");
   const [seatingCapacity, setSeatingCapacity] = useState("4");
   const [fuelType, setFuelType] = useState("Diesel");
   const [vehicleImage, setVehicleImage] = useState("");
   const [vehiclePhotos, setVehiclePhotos] = useState([]);
+  const [vehiclePhotoSlots, setVehiclePhotoSlots] = useState({
+    front: "",
+    back: "",
+    left: "",
+    right: "",
+    luggage: "",
+    frontSeats: "",
+    backSeats: "",
+    handle: "",
+  });
+
+  const [plateCheckWarning, setPlateCheckWarning] = useState("");
+  const [checkingPlate, setCheckingPlate] = useState(false);
 
   // Proofs with Expiry Dates (for Model 1 and Model 2)
   const [rcNumber, setRcNumber] = useState("");
@@ -146,30 +173,24 @@ function VendorOnboardingFlow() {
   const [showAddVehicleForm, setShowAddVehicleForm] = useState(true);
   const [showAddDriverForm, setShowAddDriverForm] = useState(false);
   const [savingVehicle, setSavingVehicle] = useState(false);
+  const [savingDriver, setSavingDriver] = useState(false);
 
   // New Driver Form (for Model 2)
   const [newDriverName, setNewDriverName] = useState("");
   const [newDriverPhone, setNewDriverPhone] = useState("");
   const [newDriverLicense, setNewDriverLicense] = useState("");
+  const [newDriverLicenseDoc, setNewDriverLicenseDoc] = useState("");
   const [newDriverExpiry, setNewDriverExpiry] = useState("");
 
   // Additional requested Vehicle Fields
-  const [vehicleVariant, setVehicleVariant] = useState("Top Spec / Titanium");
-  const [vehicleColor, setVehicleColor] = useState("Pearl White");
-  const [registrationType, setRegistrationType] = useState("Yellow Board (Commercial)");
-  const [alternateFuel, setAlternateFuel] = useState("None");
-  const [transmission, setTransmission] = useState("Automatic");
-  const [engineCc, setEngineCc] = useState("1498");
-  const [parkingLocation, setParkingLocation] = useState("Airport Hub - T2 Parking, Bay 4B");
-  const [vehicleFeatures, setVehicleFeatures] = useState([
-    "Sunroof",
-    "360 Camera",
-    "ADAS Level 2",
-    "Luggage Carrier",
-    "Dual-Zone AC",
-    "Ventilated Seats",
-    "Recliner Seats",
-  ]);
+  const [vehicleVariant, setVehicleVariant] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
+  const [registrationType, setRegistrationType] = useState("");
+  const [alternateFuel, setAlternateFuel] = useState("");
+  const [transmission, setTransmission] = useState("");
+  const [engineCc, setEngineCc] = useState("");
+  const [parkingLocation, setParkingLocation] = useState("");
+  const [vehicleFeatures, setVehicleFeatures] = useState([]);
 
   // Additional requested Chauffeur Fields (Model 1)
   const [driverPhoto, setDriverPhoto] = useState("");
@@ -314,9 +335,12 @@ function VendorOnboardingFlow() {
         if (existing.vehicleImage) setVehicleImage(existing.vehicleImage);
         if (existing.pucDocument) setPucDocument(existing.pucDocument);
         if (existing.pucExpiry) setPucExpiry(existing.pucExpiry);
+        if (existing.vehicleCategory) setVehicleCategory(existing.vehicleCategory);
+        if (existing.vehicleSubCategory) setVehicleSubCategory(existing.vehicleSubCategory);
+        if (existing.vehiclePhotoSlots) setVehiclePhotoSlots(existing.vehiclePhotoSlots);
 
         if (existing.step) {
-          setCurrentStep(existing.step);
+          setCurrentStep(existing.step === 2 ? 3 : existing.step);
         } else {
           setCurrentStep(1);
         }
@@ -337,6 +361,13 @@ function VendorOnboardingFlow() {
 
 
   }, [router]);
+
+  // Step 2 (Business Registration) is bypassed by default for Individual Partners
+  useEffect(() => {
+    if (currentStep === 2) {
+      setCurrentStep(3);
+    }
+  }, [currentStep]);
 
   // --- Step 0 Handlers: Phone OTP Verification ---
   const handleSendOtp = async (e) => {
@@ -524,13 +555,16 @@ function VendorOnboardingFlow() {
     setLoading(true);
     try {
       const step1Data = {
-        step: 2,
+        step: 3,
         partnerName: partnerName.trim(),
         phone: phone.trim(),
         alternatePhone: alternatePhone.trim(),
         email: email.trim(),
         userCity: userCity.trim(),
         userAddress: userAddress.trim(),
+        ownsBusiness: false,
+        businessName: partnerName.trim() || "Individual Partner",
+        businessCity: userCity.trim(),
         idProofDocument: idProofDocument || undefined,
         addressProofDocument: addressProofDocument || undefined,
       };
@@ -540,6 +574,7 @@ function VendorOnboardingFlow() {
       await vendorApi.updateProfile({
         name: partnerName.trim(),
         ownerName: partnerName.trim(),
+        businessName: partnerName.trim() || "Individual Partner",
         alternatePhone: alternatePhone.trim() || undefined,
         altPhone: alternatePhone.trim() || undefined,
         city: userCity.trim(),
@@ -551,8 +586,8 @@ function VendorOnboardingFlow() {
 
       setBusinessCity(userCity.trim());
 
-      setCurrentStep(2);
-      setSuccessNotice("Personal details saved. Let's configure your business profile.");
+      setCurrentStep(3);
+      setSuccessNotice("Personal details saved. Let's select your fleet operating model.");
     } catch (err) {
       console.error(err);
       setError("Failed to save personal details. Please try again.");
@@ -645,7 +680,7 @@ function VendorOnboardingFlow() {
     setError("");
 
     try {
-      const isDriver = docType === "license" || docType === "driverPhoto" || docType === "driverIdProof" || docType === "driverAddressProof" || docType === "newDriverPhoto" || docType === "newDriverLicense" || docType === "newDriverIdProof" || docType === "newDriverAddressProof";
+      const isDriver = docType === "license" || docType === "driverPhoto" || docType === "driverIdProof" || docType === "driverAddressProof" || docType === "newDriverPhoto" || docType === "newDriverLicenseDoc" || docType === "newDriverLicense" || docType === "newDriverIdProof" || docType === "newDriverAddressProof";
       const isCompliance = docType === "idProof" || docType === "addressProof" || docType === "businessProof" || docType === "gst" || docType === "pan";
       const isVehiclePhoto = docType === "vehicleImage";
       const folder = isCompliance
@@ -667,7 +702,7 @@ function VendorOnboardingFlow() {
         else if (docType === "driverIdProof") setDriverIdProofDocument(uploadedUrl);
         else if (docType === "driverAddressProof") setAddressProofDocumentUrl(uploadedUrl);
         else if (docType === "newDriverPhoto") setNewDriverPhoto(uploadedUrl);
-        else if (docType === "newDriverLicense") setNewDriverLicense(uploadedUrl);
+        else if (docType === "newDriverLicenseDoc" || docType === "newDriverLicense") setNewDriverLicenseDoc(uploadedUrl);
         else if (docType === "newDriverIdProof") setNewDriverIdProofDocument(uploadedUrl);
         else if (docType === "newDriverAddressProof") setNewDriverAddressProofDocument(uploadedUrl);
         else if (docType === "vehicleImage") setVehicleImage(uploadedUrl);
@@ -698,6 +733,22 @@ function VendorOnboardingFlow() {
       setError("Please enter the vehicle registration plate number.");
       return;
     }
+
+    // Compulsory photo validation (4 exterior + 3 interior)
+    const missingPhotos = [];
+    if (!vehiclePhotoSlots.front) missingPhotos.push("Front View");
+    if (!vehiclePhotoSlots.back) missingPhotos.push("Back View");
+    if (!vehiclePhotoSlots.left) missingPhotos.push("Left Side");
+    if (!vehiclePhotoSlots.right) missingPhotos.push("Right Side");
+    if (!vehiclePhotoSlots.frontSeats) missingPhotos.push("Front Seats");
+    if (!vehiclePhotoSlots.backSeats) missingPhotos.push("Back Seats");
+    if (!vehiclePhotoSlots.handle) missingPhotos.push("Handle & Steering");
+
+    if (missingPhotos.length > 0) {
+      setError(`Please upload all required vehicle photos (*): ${missingPhotos.join(", ")}.`);
+      return;
+    }
+
     if (!insuranceExpiry) {
       setError("Please provide the vehicle insurance expiry date.");
       return;
@@ -711,6 +762,16 @@ function VendorOnboardingFlow() {
     try {
       const user = getCurrentUser();
       const cleanPlate = vehicleNumber.trim().toUpperCase();
+
+      // Platform-wide cross-vendor uniqueness verification
+      try {
+        const plateCheck = await vendorApi.checkPlateAvailability(cleanPlate);
+        if (plateCheck && plateCheck.exists) {
+          setError(plateCheck.message || `Vehicle with plate number '${cleanPlate}' is already registered on Grab Rentals by another fleet partner. Duplicate vehicle registrations across vendors are strictly prohibited.`);
+          setLoading(false);
+          return;
+        }
+      } catch (ignored) {}
 
       // Ensure address and emergency contact are present
       const driverAddress =
@@ -761,27 +822,35 @@ function VendorOnboardingFlow() {
           notes: driverNotes || undefined,
         });
       } catch (dErr) {
-        console.warn("Chauffeur registration notice:", dErr?.response?.data || dErr?.message);
+        const errMsg = dErr?.response?.data?.message || dErr?.message || "";
+        if (errMsg && (errMsg.toLowerCase().includes("already registered") || errMsg.toLowerCase().includes("duplicate") || errMsg.toLowerCase().includes("license") || errMsg.toLowerCase().includes("driver"))) {
+          setError(errMsg || "Driver with this license is already registered on Grab Rentals.");
+          setLoading(false);
+          return;
+        }
+        console.warn("Chauffeur registration notice:", errMsg);
       }
 
       // 2. Register Vehicle
       try {
-        const photosPayload = (vehiclePhotos && vehiclePhotos.length > 0) ? JSON.stringify(vehiclePhotos) : undefined;
-        const mainImage = (vehiclePhotos && vehiclePhotos.length > 0) ? vehiclePhotos[0] : (vehicleImage || undefined);
+        const photosPayload = (vehiclePhotoSlots && Object.values(vehiclePhotoSlots).some(Boolean))
+          ? JSON.stringify({ slots: vehiclePhotoSlots, list: vehiclePhotos })
+          : ((vehiclePhotos && vehiclePhotos.length > 0) ? JSON.stringify(vehiclePhotos) : undefined);
+        const mainImage = vehiclePhotoSlots?.front || (vehiclePhotos && vehiclePhotos.length > 0 ? vehiclePhotos[0] : (vehicleImage || undefined));
         await vendorApi.createVehicle({
           vehicleNumber: cleanPlate,
-          vehicleModel: vehicleModel?.trim() || "Commercial Vehicle",
+          vehicleModel: vehicleModel?.trim() || vehicleSubCategory || "Commercial Vehicle",
           vehicleType: vehicleCategory || "SUV",
-          variant: vehicleVariant,
-          color: vehicleColor,
-          registrationType: registrationType,
-          alternateFuel: alternateFuel,
-          transmission: transmission,
-          engineCc: engineCc ? parseInt(engineCc) : 1498,
-          parkingLocation: parkingLocation,
-          features: Array.isArray(vehicleFeatures) ? vehicleFeatures.join(", ") : vehicleFeatures,
-          year: Math.max(2000, parseInt(vehicleYear) || 2023),
-          seatingCapacity: Math.max(1, parseInt(seatingCapacity) || 4),
+          variant: vehicleVariant || undefined,
+          color: vehicleColor || undefined,
+          registrationType: registrationType || undefined,
+          alternateFuel: alternateFuel || undefined,
+          transmission: transmission || undefined,
+          engineCc: engineCc ? parseInt(engineCc) : undefined,
+          parkingLocation: parkingLocation || undefined,
+          features: Array.isArray(vehicleFeatures) && vehicleFeatures.length > 0 ? vehicleFeatures.join(", ") : undefined,
+          year: vehicleYear ? parseInt(vehicleYear) : undefined,
+          seatingCapacity: seatingCapacity ? Math.max(1, parseInt(seatingCapacity) || 5) : 5,
           fuelType: fuelType || "Diesel",
           dailyRate: 2500,
           perKmRate: 14,
@@ -796,7 +865,13 @@ function VendorOnboardingFlow() {
           fitnessDocumentUrl: fitnessDocument || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
         });
       } catch (vErr) {
-        console.warn("Vehicle registration notice:", vErr?.response?.data || vErr?.message);
+        const errMsg = vErr?.response?.data?.message || vErr?.message || "";
+        if (errMsg && (errMsg.toLowerCase().includes("already registered") || errMsg.toLowerCase().includes("duplicate") || errMsg.toLowerCase().includes("plate") || errMsg.toLowerCase().includes("vehicle"))) {
+          setError(errMsg || `Vehicle with plate number '${cleanPlate}' is already registered on Grab Rentals. Duplicate vehicles are not allowed.`);
+          setLoading(false);
+          return;
+        }
+        console.warn("Vehicle registration notice:", errMsg);
       }
 
       // Mark complete
@@ -805,7 +880,11 @@ function VendorOnboardingFlow() {
         completed: true,
         fleetModel: 1,
         vehicleNumber: cleanPlate,
+        vehicleCategory,
+        vehicleSubCategory,
         vehicleImage,
+        vehiclePhotos,
+        vehiclePhotoSlots,
         driverAssigned: true,
         rcDocument,
         insuranceDocument,
@@ -825,13 +904,151 @@ function VendorOnboardingFlow() {
     }
   };
 
-  // --- Step 3 Handler: Add Vehicle to Multiple Fleet List (Model 2) ---
+  const verifyPlateLive = async (plate) => {
+    const clean = (plate || "").trim().toUpperCase();
+    if (!clean || clean.length < 3) {
+      setPlateCheckWarning("");
+      return;
+    }
+    const compact = clean.replace(/[\s-]+/g, "");
+    const localDup = vehiclesList.some(
+      (v) => (v.vehicleNumber || "").replace(/[\s-]+/g, "").toUpperCase() === compact
+    );
+    if (localDup) {
+      setPlateCheckWarning(`Vehicle with plate '${clean}' is already in your fleet roster.`);
+      return;
+    }
+    setCheckingPlate(true);
+    try {
+      const res = await vendorApi.checkPlateAvailability(clean);
+      if (res && res.exists) {
+        setPlateCheckWarning(res.message || `Vehicle '${clean}' is already registered on Grab Rentals by another fleet partner.`);
+      } else {
+        setPlateCheckWarning("");
+      }
+    } catch {
+      setPlateCheckWarning("");
+    } finally {
+      setCheckingPlate(false);
+    }
+  };
+
+  const resetVehicleForm = () => {
+    setPlateCheckWarning("");
+    setCheckingPlate(false);
+    setVehicleNumber("");
+    setVehicleModel("");
+    setVehicleImage("");
+    setVehiclePhotos([]);
+    setVehiclePhotoSlots({
+      front: "",
+      back: "",
+      left: "",
+      right: "",
+      luggage: "",
+      frontSeats: "",
+      backSeats: "",
+      handle: "",
+    });
+    setInsuranceExpiry("");
+    setRcExpiry("");
+    setFitnessExpiry("");
+    setPermitExpiry("");
+    setPucExpiry("");
+    setRcDocument("");
+    setInsuranceDocument("");
+    setPermitDocument("");
+    setFitnessDocument("");
+    setPucDocument("");
+    setDocFileNames((prev) => ({
+      ...prev,
+      vehicleImage: null,
+      rc: null,
+      insurance: null,
+      permit: null,
+      fitness: null,
+      puc: null,
+    }));
+  };
+
+  const resetDriverForm = () => {
+    setNewDriverName("");
+    setNewDriverPhone("");
+    setNewDriverEmail("");
+    setNewDriverLicense("");
+    setNewDriverLicenseDoc("");
+    setNewDriverExpiry("");
+    setNewDriverPhoto("");
+    setNewDriverDob("1992-08-20");
+    setNewDriverGender("Male");
+    setNewDriverStatus("Available");
+    setNewDriverLicenseClass("LMV-TR (Transport)");
+    setNewDrivingSince("2018-05-10");
+    setNewDriverExperienceYears("6 Years");
+    setNewDriverIdProofType("Aadhaar Card");
+    setNewDriverIdProofNumber("");
+    setNewDriverIdProofDocument("");
+    setNewDriverAddress("");
+    setNewDriverAddressProofType("Aadhaar Card");
+    setNewDriverAddressProofNumber("");
+    setNewDriverAddressProofDocument("");
+    setNewEmergencyContactName("");
+    setNewEmergencyContactPhone("");
+    setNewDriverLanguages(["English", "Tamil"]);
+    setNewDriverNotes("");
+    setDriverLicenseDocument("");
+    setDocFileNames((prev) => ({
+      ...prev,
+      newDriverPhoto: null,
+      newDriverLicenseDoc: null,
+      license: null,
+      newDriverIdProof: null,
+      newDriverAddressProof: null,
+      driverPhoto: null,
+      driverIdProof: null,
+    }));
+  };
+
   const handleAddVehicleToList = async (e) => {
     e?.preventDefault();
-    if (!vehicleNumber.trim()) {
+    const cleanPlate = vehicleNumber.trim().toUpperCase();
+    if (!cleanPlate) {
       setError("Please enter vehicle plate number.");
       return;
     }
+
+    const isDuplicate = vehiclesList.some(
+      (v) => (v.vehicleNumber || "").replace(/[\s-]+/g, "").toUpperCase() === cleanPlate.replace(/[\s-]+/g, "")
+    );
+    if (isDuplicate) {
+      setError(`Vehicle with plate number '${cleanPlate}' is already in your fleet roster. Duplicate vehicle plates are not permitted.`);
+      return;
+    }
+
+    // Platform-wide cross-vendor uniqueness verification
+    try {
+      const plateCheck = await vendorApi.checkPlateAvailability(cleanPlate);
+      if (plateCheck && plateCheck.exists) {
+        setError(plateCheck.message || `Vehicle with plate number '${cleanPlate}' is already registered on Grab Rentals by another fleet partner. Duplicate vehicle registrations across vendors are strictly prohibited.`);
+        return;
+      }
+    } catch (ignored) {}
+
+    // Compulsory photo validation (4 exterior + 3 interior)
+    const missingPhotos = [];
+    if (!vehiclePhotoSlots.front) missingPhotos.push("Front View");
+    if (!vehiclePhotoSlots.back) missingPhotos.push("Back View");
+    if (!vehiclePhotoSlots.left) missingPhotos.push("Left Side");
+    if (!vehiclePhotoSlots.right) missingPhotos.push("Right Side");
+    if (!vehiclePhotoSlots.frontSeats) missingPhotos.push("Front Seats");
+    if (!vehiclePhotoSlots.backSeats) missingPhotos.push("Back Seats");
+    if (!vehiclePhotoSlots.handle) missingPhotos.push("Handle & Steering");
+
+    if (missingPhotos.length > 0) {
+      setError(`Please upload all required vehicle photos (*): ${missingPhotos.join(", ")}.`);
+      return;
+    }
+
     if (!insuranceExpiry || !rcExpiry) {
       setError("Please provide insurance and RC expiry dates.");
       return;
@@ -841,9 +1058,10 @@ function VendorOnboardingFlow() {
     try {
       const newVeh = {
         id: "v-" + Date.now(),
-        vehicleNumber: vehicleNumber.trim().toUpperCase(),
-        vehicleModel: vehicleModel?.trim() || "Commercial Vehicle",
+        vehicleNumber: cleanPlate,
+        vehicleModel: vehicleModel?.trim() || vehicleSubCategory || "Commercial Vehicle",
         vehicleType: vehicleCategory,
+        subCategory: vehicleSubCategory || undefined,
         variant: vehicleVariant,
         color: vehicleColor,
         registrationType,
@@ -870,22 +1088,24 @@ function VendorOnboardingFlow() {
 
       // Save to direct records
       try {
-        const photosPayload = (vehiclePhotos && vehiclePhotos.length > 0) ? JSON.stringify(vehiclePhotos) : undefined;
-        const mainImage = (vehiclePhotos && vehiclePhotos.length > 0) ? vehiclePhotos[0] : (newVeh.imageUrl || undefined);
+        const photosPayload = (vehiclePhotoSlots && Object.values(vehiclePhotoSlots).some(Boolean))
+          ? JSON.stringify({ slots: vehiclePhotoSlots, list: vehiclePhotos })
+          : ((vehiclePhotos && vehiclePhotos.length > 0) ? JSON.stringify(vehiclePhotos) : undefined);
+        const mainImage = vehiclePhotoSlots?.front || (vehiclePhotos && vehiclePhotos.length > 0 ? vehiclePhotos[0] : (newVeh.imageUrl || undefined));
         await vendorApi.createVehicle({
           vehicleNumber: newVeh.vehicleNumber,
           vehicleModel: newVeh.vehicleModel,
           vehicleType: newVeh.vehicleType || "SUV",
-          variant: newVeh.variant,
-          color: newVeh.color,
-          registrationType: newVeh.registrationType,
-          alternateFuel: newVeh.alternateFuel,
-          transmission: newVeh.transmission,
-          engineCc: newVeh.engineCc,
-          parkingLocation: newVeh.parkingLocation,
-          features: newVeh.features,
-          year: Math.max(2000, parseInt(newVeh.year) || 2023),
-          seatingCapacity: Math.max(1, parseInt(newVeh.seatingCapacity) || 4),
+          variant: newVeh.variant || undefined,
+          color: newVeh.color || undefined,
+          registrationType: newVeh.registrationType || undefined,
+          alternateFuel: newVeh.alternateFuel || undefined,
+          transmission: newVeh.transmission || undefined,
+          engineCc: newVeh.engineCc ? parseInt(newVeh.engineCc) : undefined,
+          parkingLocation: newVeh.parkingLocation || undefined,
+          features: newVeh.features || undefined,
+          year: newVeh.year ? parseInt(newVeh.year) : 2024,
+          seatingCapacity: newVeh.seatingCapacity ? Math.max(1, parseInt(newVeh.seatingCapacity) || 5) : 5,
           fuelType: newVeh.fuelType || "Diesel",
           dailyRate: 2500,
           perKmRate: 14,
@@ -898,45 +1118,33 @@ function VendorOnboardingFlow() {
           insuranceDocumentUrl: insuranceDocument || undefined,
           permitDocumentUrl: permitDocument || undefined,
           fitnessDocumentUrl: fitnessDocument || undefined,
-        }).catch((err) => {
-          console.warn("Vehicle registration notice:", err?.response?.data || err?.message);
         });
-      } catch (ignored) {}
+        newVeh.savedToBackend = true;
+      } catch (apiErr) {
+        const errMsg = apiErr?.response?.data?.message || apiErr?.message || "";
+        if (errMsg && (errMsg.toLowerCase().includes("already registered") || errMsg.toLowerCase().includes("duplicate") || errMsg.toLowerCase().includes("plate"))) {
+          setError(errMsg || `Vehicle with plate number '${cleanPlate}' is already registered on Grab Rentals. Duplicate vehicles are not allowed.`);
+          setSavingVehicle(false);
+          return;
+        }
+        console.warn("Vehicle registration notice:", errMsg);
+      }
 
       const updated = [...vehiclesList, newVeh];
       setVehiclesList(updated);
       saveOnboardingData({ vehiclesList: updated });
 
-    // Reset vehicle fields
-    setVehicleNumber("");
-    setVehicleModel("");
-    setVehicleImage("");
-    setVehiclePhotos([]);
-    setInsuranceExpiry("");
-    setRcExpiry("");
-    setFitnessExpiry("");
-    setPermitExpiry("");
-    setPucExpiry("");
-    setRcDocument("");
-    setInsuranceDocument("");
-    setPermitDocument("");
-    setFitnessDocument("");
-    setPucDocument("");
-    setDocFileNames((prev) => ({
-      ...prev,
-      vehicleImage: null,
-      rc: null,
-      insurance: null,
-      permit: null,
-      fitness: null,
-      puc: null,
-    }));
-    setShowAddVehicleForm(false);
-    setError("");
-  } finally {
-    setSavingVehicle(false);
-  }
-};
+      // Reset vehicle fields
+      setVehicleNumber("");
+      setVehicleModel("");
+      setVehicleSubCategory("");
+      resetVehicleForm();
+      setShowAddVehicleForm(false);
+      setError("");
+    } finally {
+      setSavingVehicle(false);
+    }
+  };
 
   const handleAddDriverToList = async (e) => {
     e?.preventDefault();
@@ -945,113 +1153,200 @@ function VendorOnboardingFlow() {
       return;
     }
 
-    const driverAddress =
-      userAddress?.trim() ||
-      (userCity ? `${userCity}, India` : "") ||
-      businessAddress?.trim() ||
-      "Registered Fleet Partner Address, India";
+    const cleanLicense = newDriverLicense?.trim().toUpperCase();
+    if (cleanLicense && driversList.some((d) => (d.licenseNumber || "").replace(/\s+/g, "").toUpperCase() === cleanLicense.replace(/\s+/g, ""))) {
+      setError(`Chauffeur with license '${cleanLicense}' is already in your chauffeur roster. Duplicate drivers are not allowed.`);
+      return;
+    }
 
-    const emergencyContactNumber =
-      alternatePhone?.trim() ||
-      phone?.trim() ||
-      "9876543210";
-
-    const expYears = parseInt(newDriverExperienceYears) || 6;
-    const newDrv = {
-      id: "d-" + Date.now(),
-      name: newDriverName.trim(),
-      phone: newDriverPhone.trim() || phone || "9999999999",
-      email: newDriverEmail.trim() || undefined,
-      licenseNumber: newDriverLicense?.trim() ? newDriverLicense.trim().toUpperCase() : ("DL-PENDING-" + Date.now().toString().slice(-6)),
-      licenseExpiry: newDriverExpiry || "2035-12-31",
-      licenseClass: newDriverLicenseClass || "LMV-TR (Transport)",
-      drivingSince: newDrivingSince || undefined,
-      experienceYears: expYears,
-      photoUrl: newDriverPhoto || undefined,
-      gender: newDriverGender,
-      dateOfBirth: newDriverDob || undefined,
-      idProofType: newDriverIdProofType,
-      idProofNumber: newDriverIdProofNumber || undefined,
-      idProofDocumentUrl: newDriverIdProofDocument || undefined,
-      status: newDriverStatus || "Available",
-      assignedVehicle: newDriverAssignedVehicle || undefined,
-      joiningDate: newDriverJoiningDate || undefined,
-      address: newDriverAddress.trim() || driverAddress,
-      addressProofType: newDriverAddressProofType || undefined,
-      addressProofNumber: newDriverAddressProofNumber || undefined,
-      addressProofDocumentUrl: newDriverAddressProofDocument || undefined,
-      emergencyContact: newEmergencyContactPhone.trim() || emergencyContactNumber,
-      emergencyContactName: newEmergencyContactName.trim() || undefined,
-      languagesSpoken: Array.isArray(newDriverLanguages) ? newDriverLanguages.join(", ") : newDriverLanguages,
-      verificationStatus: newDriverBgvStatus || "Verified",
-      rating: newDriverRating ? parseFloat(newDriverRating) : 5.0,
-      totalTrips: newDriverTotalTrips ? parseInt(newDriverTotalTrips) : 85,
-      notes: newDriverNotes || undefined,
-    };
-
-    // Save to direct records
+    setSavingDriver(true);
     try {
-      await vendorApi.createDriver({
-        name: newDrv.name,
-        phone: newDrv.phone,
-        email: newDrv.email,
-        address: newDrv.address,
-        emergencyContact: newDrv.emergencyContact,
-        emergencyContactName: newDrv.emergencyContactName,
-        emergencyContactPhone: newDrv.emergencyContact,
-        licenseNumber: newDrv.licenseNumber,
-        licenseExpiry: newDrv.licenseExpiry,
-        licenseClass: newDrv.licenseClass,
-        experienceYears: newDrv.experienceYears,
-        drivingSince: newDrv.drivingSince,
-        photoUrl: newDrv.photoUrl,
-        gender: newDrv.gender,
-        dob: newDrv.dateOfBirth,
-        dateOfBirth: newDrv.dateOfBirth,
-        idProofType: newDrv.idProofType,
-        idProofNumber: newDrv.idProofNumber,
-        idProofDocumentUrl: newDrv.idProofDocumentUrl,
-        status: newDrv.status,
-        assignedVehicle: newDrv.assignedVehicle,
-        joiningDate: newDrv.joiningDate,
-        addressProofType: newDrv.addressProofType,
-        addressProofNumber: newDrv.addressProofNumber,
-        addressProofDocumentUrl: newDrv.addressProofDocumentUrl,
-        languagesSpoken: newDrv.languagesSpoken,
-        verificationStatus: newDrv.verificationStatus,
-        rating: newDrv.rating,
-        totalTrips: newDrv.totalTrips,
-        notes: newDrv.notes,
-        licenseDocumentUrl: newDriverLicense || undefined,
-      }).catch((err) => {
-        console.warn("Chauffeur registration notice:", err?.response?.data || err?.message);
-      });
-    } catch (ignored) {}
+      const driverAddress =
+        userAddress?.trim() ||
+        (userCity ? `${userCity}, India` : "") ||
+        businessAddress?.trim() ||
+        "Registered Fleet Partner Address, India";
 
-    const updated = [...driversList, newDrv];
-    setDriversList(updated);
-    saveOnboardingData({ driversList: updated });
+      const emergencyContactNumber =
+        alternatePhone?.trim() ||
+        phone?.trim() ||
+        "9876543210";
 
-    // Reset driver fields
-    setNewDriverName("");
-    setNewDriverPhone("");
-    setNewDriverEmail("");
-    setNewDriverLicense("");
-    setNewDriverExpiry("");
-    setNewDriverPhoto("");
-    setNewDriverIdProofNumber("");
-    setNewDriverIdProofDocument("");
-    setNewDriverAddressProofNumber("");
-    setNewDriverAddressProofDocument("");
-    setNewEmergencyContactName("");
-    setNewEmergencyContactPhone("");
-    setNewDriverNotes("");
-    setShowAddDriverForm(false);
-    setError("");
+      const expYears = parseInt(newDriverExperienceYears) || 6;
+      const newDrv = {
+        id: "d-" + Date.now(),
+        name: newDriverName.trim(),
+        phone: newDriverPhone.trim() || phone || "9999999999",
+        email: newDriverEmail.trim() || undefined,
+        licenseNumber: cleanLicense || ("DL-PENDING-" + Date.now().toString().slice(-6)),
+        licenseExpiry: newDriverExpiry || "2035-12-31",
+        licenseClass: newDriverLicenseClass || "LMV-TR (Transport)",
+        drivingSince: newDrivingSince || undefined,
+        experienceYears: expYears,
+        photoUrl: newDriverPhoto || undefined,
+        gender: newDriverGender,
+        dateOfBirth: newDriverDob || undefined,
+        idProofType: newDriverIdProofType,
+        idProofNumber: newDriverIdProofNumber || undefined,
+        idProofDocumentUrl: newDriverIdProofDocument || undefined,
+        status: newDriverStatus || "Available",
+        assignedVehicle: newDriverAssignedVehicle || undefined,
+        joiningDate: newDriverJoiningDate || undefined,
+        address: newDriverAddress.trim() || driverAddress,
+        addressProofType: newDriverAddressProofType || undefined,
+        addressProofNumber: newDriverAddressProofNumber || undefined,
+        addressProofDocumentUrl: newDriverAddressProofDocument || undefined,
+        emergencyContact: newEmergencyContactPhone.trim() || emergencyContactNumber,
+        emergencyContactName: newEmergencyContactName.trim() || undefined,
+        languagesSpoken: Array.isArray(newDriverLanguages) ? newDriverLanguages.join(", ") : newDriverLanguages,
+        verificationStatus: newDriverBgvStatus || "Verified",
+        rating: newDriverRating ? parseFloat(newDriverRating) : 5.0,
+        totalTrips: newDriverTotalTrips ? parseInt(newDriverTotalTrips) : 85,
+        notes: newDriverNotes || undefined,
+      };
+
+      // Save to direct records
+      try {
+        await vendorApi.createDriver({
+          name: newDrv.name,
+          phone: newDrv.phone,
+          email: newDrv.email,
+          address: newDrv.address,
+          emergencyContact: newDrv.emergencyContact,
+          emergencyContactName: newDrv.emergencyContactName,
+          emergencyContactPhone: newDrv.emergencyContact,
+          licenseNumber: newDrv.licenseNumber,
+          licenseExpiry: newDrv.licenseExpiry,
+          licenseClass: newDrv.licenseClass,
+          experienceYears: newDrv.experienceYears,
+          drivingSince: newDrv.drivingSince,
+          photoUrl: newDrv.photoUrl,
+          gender: newDrv.gender,
+          dob: newDrv.dateOfBirth,
+          dateOfBirth: newDrv.dateOfBirth,
+          idProofType: newDrv.idProofType,
+          idProofNumber: newDrv.idProofNumber,
+          idProofDocumentUrl: newDrv.idProofDocumentUrl,
+          status: newDrv.status,
+          assignedVehicle: newDrv.assignedVehicle,
+          joiningDate: newDrv.joiningDate,
+          addressProofType: newDrv.addressProofType,
+          addressProofNumber: newDrv.addressProofNumber,
+          addressProofDocumentUrl: newDrv.addressProofDocumentUrl,
+          languagesSpoken: newDrv.languagesSpoken,
+          verificationStatus: newDrv.verificationStatus,
+          rating: newDrv.rating,
+          totalTrips: newDrv.totalTrips,
+          notes: newDrv.notes,
+          licenseDocumentUrl: newDriverLicenseDoc || driverLicenseDocument || undefined,
+        });
+        newDrv.savedToBackend = true;
+      } catch (err) {
+        const errMsg = err?.response?.data?.message || err?.message || "";
+        if (errMsg && (errMsg.toLowerCase().includes("already registered") || errMsg.toLowerCase().includes("duplicate") || errMsg.toLowerCase().includes("license"))) {
+          setError(errMsg || `Chauffeur with license '${cleanLicense}' is already registered. Duplicate drivers are not allowed.`);
+          setSavingDriver(false);
+          return;
+        }
+        console.warn("Chauffeur registration notice:", errMsg);
+      }
+
+      const updated = [...driversList, newDrv];
+      setDriversList(updated);
+      saveOnboardingData({ driversList: updated });
+
+      resetDriverForm();
+      setShowAddDriverForm(false);
+      setError("");
+    } catch (err) {
+      console.error("Error saving driver:", err);
+      setError("Failed to save chauffeur details. Please try again.");
+    } finally {
+      setSavingDriver(false);
+    }
   };
 
   // Finish Multi-Fleet Setup
-  const handleFinishMultiFleet = () => {
+  const handleFinishMultiFleet = async () => {
+    setLoading(true);
+    for (const v of vehiclesList) {
+      if (v.savedToBackend) continue;
+      try {
+        await vendorApi.createVehicle({
+          vehicleNumber: v.vehicleNumber,
+          vehicleModel: v.vehicleModel || "Commercial Fleet Asset",
+          vehicleType: v.vehicleType || "SUV",
+          variant: v.variant || undefined,
+          color: v.color || undefined,
+          registrationType: v.registrationType || undefined,
+          alternateFuel: v.alternateFuel || undefined,
+          transmission: v.transmission || undefined,
+          engineCc: v.engineCc ? parseInt(v.engineCc) : undefined,
+          parkingLocation: v.parkingLocation || undefined,
+          features: v.features || undefined,
+          year: v.year ? parseInt(v.year) : 2024,
+          seatingCapacity: v.seatingCapacity ? Math.max(1, parseInt(v.seatingCapacity) || 5) : 5,
+          fuelType: v.fuelType || "Diesel",
+          dailyRate: 2500,
+          perKmRate: 14,
+          imageUrl: v.imageUrl || (v.photos && v.photos[0]) || undefined,
+          photos: Array.isArray(v.photos) ? JSON.stringify(v.photos) : (typeof v.photos === "object" ? JSON.stringify(v.photos) : v.photos),
+          insuranceExpiry: v.insuranceExpiry || undefined,
+          fitnessExpiry: v.fitnessExpiry || undefined,
+          permitExpiry: v.permitExpiry || undefined,
+          rcDocumentUrl: v.rcDocumentUrl || undefined,
+          insuranceDocumentUrl: v.insuranceDocumentUrl || undefined,
+          permitDocumentUrl: v.permitDocumentUrl || undefined,
+          fitnessDocumentUrl: v.fitnessDocumentUrl || undefined,
+        });
+        v.savedToBackend = true;
+      } catch (err) {
+        console.warn("Finish multi-fleet vehicle sync notice:", err?.response?.data || err?.message);
+      }
+    }
+
+    for (const d of driversList) {
+      if (d.savedToBackend) continue;
+      try {
+        await vendorApi.createDriver({
+          name: d.name,
+          phone: d.phone,
+          email: d.email,
+          address: d.address,
+          emergencyContact: d.emergencyContact,
+          emergencyContactName: d.emergencyContactName,
+          emergencyContactPhone: d.emergencyContact,
+          licenseNumber: d.licenseNumber,
+          licenseExpiry: d.licenseExpiry,
+          licenseClass: d.licenseClass,
+          experienceYears: d.experienceYears,
+          drivingSince: d.drivingSince,
+          photoUrl: d.photoUrl,
+          gender: d.gender,
+          dob: d.dateOfBirth,
+          dateOfBirth: d.dateOfBirth,
+          idProofType: d.idProofType,
+          idProofNumber: d.idProofNumber,
+          idProofDocumentUrl: d.idProofDocumentUrl,
+          status: d.status || "Available",
+          assignedVehicle: d.assignedVehicle,
+          joiningDate: d.joiningDate,
+          addressProofType: d.addressProofType,
+          addressProofNumber: d.addressProofNumber,
+          addressProofDocumentUrl: d.addressProofDocumentUrl,
+          languagesSpoken: d.languagesSpoken,
+          verificationStatus: d.verificationStatus,
+          rating: d.rating,
+          totalTrips: d.totalTrips,
+          notes: d.notes,
+          licenseDocumentUrl: d.licenseDocumentUrl || undefined,
+        });
+        d.savedToBackend = true;
+      } catch (err) {
+        console.warn("Finish multi-fleet driver sync notice:", err?.response?.data || err?.message);
+      }
+    }
+
     saveOnboardingData({
       step: 4,
       completed: true,
@@ -1059,21 +1354,24 @@ function VendorOnboardingFlow() {
       vehiclesList,
       driversList,
     });
+    setLoading(false);
     router.push("/vendor/dashboard?onboarding=complete");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900 flex flex-col justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-[#FAF4E5] via-[#F6EED8] to-[#FAF4E5] text-slate-900 flex flex-col justify-between relative">
       {/* Top Navigation Bar with Skip to Dashboard */}
-      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30">
+      <header className="border-b border-amber-200/70 bg-white/85 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center font-black text-slate-950 text-sm shadow-xs">
-                GR
-              </span>
-              <span className="font-extrabold text-base tracking-tight text-slate-900">
-                Grab Rentals <span className="text-amber-600 font-semibold text-xs ml-1">Fleet Partner</span>
+            <Link href="/" className="flex items-center gap-2.5">
+              <img
+                src="/images/grab-rentals-logo.jpg"
+                alt="Grab Rentals"
+                className="h-10 sm:h-11 w-auto object-contain rounded-lg shadow-2xs"
+              />
+              <span className="font-extrabold text-base tracking-tight text-slate-900 hidden sm:inline-flex items-center">
+                Grab Rentals <span className="text-amber-600 font-semibold text-xs ml-1.5 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200">Fleet Partner</span>
               </span>
             </Link>
           </div>
@@ -1081,8 +1379,8 @@ function VendorOnboardingFlow() {
           {/* Right section: Enquiries Contact + Skip to Dashboard / Sign In */}
           <div className="flex items-center gap-3 sm:gap-4">
             {/* For enquiries: WhatsApp + Phone */}
-            <div className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 px-3 py-1.5 rounded-full transition-all shadow-2xs">
-              <span className="text-slate-500 text-xs font-semibold hidden sm:inline">For enquiries</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 px-2 sm:px-3 py-1.5 rounded-full transition-all shadow-2xs shrink-0">
+              <span className="text-slate-500 text-xs font-semibold hidden md:inline">For enquiries</span>
               <div className="flex items-center gap-1.5">
                 <a
                   href="https://wa.me/919071100200?text=Hi,%20I%20have%20an%20enquiry%20regarding%20Grab%20Rentals%20Fleet%20Partner%20onboarding."
@@ -1105,7 +1403,7 @@ function VendorOnboardingFlow() {
               </div>
               <a
                 href="tel:9071100200"
-                className="font-black text-xs text-slate-900 hover:text-amber-600 transition-colors tracking-tight"
+                className="font-black text-xs text-slate-900 hover:text-amber-600 transition-colors tracking-tight hidden sm:inline"
               >
                 9071100200
               </a>
@@ -1118,10 +1416,10 @@ function VendorOnboardingFlow() {
                 type="button"
                 onClick={handleSkipToDashboard}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800 px-3.5 py-1.5 rounded-full border border-amber-200 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800 px-2.5 sm:px-3.5 py-1.5 rounded-full border border-amber-200 transition-all cursor-pointer whitespace-nowrap shrink-0"
                 title="Save your current progress and head to the dashboard"
               >
-                <span>Skip to Dashboard</span>
+                <span>Skip<span className="hidden sm:inline"> to Dashboard</span></span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -1129,9 +1427,9 @@ function VendorOnboardingFlow() {
             {currentStep === 0 && (
               <Link
                 href="/login"
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900 shrink-0"
+                className="text-xs font-bold text-slate-700 hover:text-slate-950 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0"
               >
-                Already registered? Sign In
+                Sign In
               </Link>
             )}
           </div>
@@ -1145,39 +1443,32 @@ function VendorOnboardingFlow() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Step {currentStep} of 4
+                Step {currentStep === 1 ? 1 : currentStep === 3 ? 2 : 3} of 3
               </span>
               <span className="text-xs font-semibold text-amber-600">
                 {currentStep === 1 && "Personal Details"}
-                {currentStep === 2 && "Business Profile"}
                 {currentStep === 3 && "Fleet Operating Model"}
                 {currentStep === 4 && "Vehicle & Driver Assets"}
               </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div
                 className={cn(
                   "h-2 rounded-full transition-all",
-                  currentStep >= 1 ? "bg-amber-500" : "bg-slate-200"
+                  currentStep >= 1 ? "bg-amber-500" : "bg-amber-200/70"
                 )}
               />
               <div
                 className={cn(
                   "h-2 rounded-full transition-all",
-                  currentStep >= 2 ? "bg-amber-500" : "bg-slate-200"
+                  currentStep >= 3 ? "bg-amber-500" : "bg-amber-200/70"
                 )}
               />
               <div
                 className={cn(
                   "h-2 rounded-full transition-all",
-                  currentStep >= 3 ? "bg-amber-500" : "bg-slate-200"
-                )}
-              />
-              <div
-                className={cn(
-                  "h-2 rounded-full transition-all",
-                  currentStep >= 4 ? "bg-amber-500" : "bg-slate-200"
+                  currentStep >= 4 ? "bg-amber-500" : "bg-amber-200/70"
                 )}
               />
             </div>
@@ -1415,7 +1706,7 @@ function VendorOnboardingFlow() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 1 of 4</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 1 of 3</span>
                 <h3 className="text-base font-bold text-white">Partner Identity & Verification</h3>
                 <p className="text-[11px] text-slate-200">Verified identity credentials ensure fast fleet onboarding & immediate trip assignment</p>
               </div>
@@ -1844,9 +2135,10 @@ function VendorOnboardingFlow() {
         )}
 
         {/* ======================================================== */}
-        {/* STEP 2: BUSINESS PROFILE & REGISTRATION (YES / NO)       */}
+        {/* STEP 2: BUSINESS PROFILE & REGISTRATION (BYPASSED / DEFAULT INDIVIDUAL PARTNER) */}
         {/* ======================================================== */}
-        {currentStep === 2 && (
+        {/* Individual Partner is set as default; bypassing this step */}
+        {false && currentStep === 2 && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8">
             {/* Step 2 Photo Banner */}
             <div className="relative h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-xs">
@@ -2018,7 +2310,7 @@ function VendorOnboardingFlow() {
                     />
                   </div>
 
-                    <div className="sm:col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Registered Office Address
                     </label>
@@ -2284,7 +2576,7 @@ function VendorOnboardingFlow() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 3 of 4</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 2 of 3</span>
                 <h3 className="text-base font-bold text-white">Select Fleet Operating Model</h3>
                 <p className="text-[11px] text-slate-200">Tailored dispatch configurations for owner-operators and commercial multi-fleet companies</p>
               </div>
@@ -2292,7 +2584,7 @@ function VendorOnboardingFlow() {
 
             <div className="border-b border-slate-100 pb-5">
               <h2 className="text-xl font-black text-slate-950">
-                Step 3: Fleet Operating Structure
+                Step 2: Fleet Operating Structure
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Choose how your fleet operates with Grab Rentals.
@@ -2417,10 +2709,10 @@ function VendorOnboardingFlow() {
             <div className="flex items-center justify-start pt-4 border-t border-slate-100">
               <button
                 type="button"
-                onClick={() => setCurrentStep(2)}
+                onClick={() => setCurrentStep(1)}
                 className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Step 2
+                <ArrowLeft className="w-4 h-4" /> Back to Step 1
               </button>
             </div>
           </div>
@@ -2439,7 +2731,7 @@ function VendorOnboardingFlow() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 4 of 4</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Step 3 of 3</span>
                 <h3 className="text-base font-bold text-white">Owner-Driver Vehicle & Chauffeur Profile</h3>
                 <p className="text-[11px] text-slate-200">Register your primary vehicle, luxury amenities, and commercial chauffeur qualifications</p>
               </div>
@@ -2450,7 +2742,7 @@ function VendorOnboardingFlow() {
                 <Car className="w-3 h-3" /> Owner-Driver Setup
               </div>
               <h2 className="text-xl font-black text-slate-950">
-                Step 4: Vehicle Details & Chauffeur Profile
+                Step 3: Vehicle Details & Chauffeur Profile
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Add your vehicle specifications, luxury features, chauffeur credentials, and verify compliance proofs.
@@ -2608,72 +2900,77 @@ function VendorOnboardingFlow() {
                     </select>
                   </div>
 
-                  {/* ID Proof Type */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      ID Proof Type <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={driverIdProofType}
-                      onChange={(e) => setDriverIdProofType(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    >
-                      <option value="Aadhaar Card">Aadhaar Card</option>
-                      <option value="Voter ID">Voter ID</option>
-                      <option value="Passport">Passport</option>
-                      <option value="PAN Card">PAN Card</option>
-                    </select>
-                  </div>
+                  {/* COMMENTED OUT: ID Proof Type, ID Proof Number, Upload ID Proof Copy, Driving License Number */}
+                  {false && (
+                    <>
+                      {/* ID Proof Type */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          ID Proof Type <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={driverIdProofType}
+                          onChange={(e) => setDriverIdProofType(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        >
+                          <option value="Aadhaar Card">Aadhaar Card</option>
+                          <option value="Voter ID">Voter ID</option>
+                          <option value="Passport">Passport</option>
+                          <option value="PAN Card">PAN Card</option>
+                        </select>
+                      </div>
 
-                  {/* ID Proof Number */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      ID Proof Number
-                    </label>
-                    <input
-                      type="text"
-                      value={driverIdProofNumber}
-                      onChange={(e) => setDriverIdProofNumber(e.target.value.toUpperCase())}
-                      placeholder="e.g. 1234 5678 9012"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                      {/* ID Proof Number */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          ID Proof Number
+                        </label>
+                        <input
+                          type="text"
+                          value={driverIdProofNumber}
+                          onChange={(e) => setDriverIdProofNumber(e.target.value.toUpperCase())}
+                          placeholder="e.g. 1234 5678 9012"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
 
-                  {/* Upload ID Proof */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Upload ID Proof Copy
-                    </label>
-                    <label className={cn(
-                      "flex items-center justify-between p-2 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                      docFileNames.driverIdProof ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 hover:border-amber-400 bg-white"
-                    )}>
-                      <input
-                        type="file"
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        className="hidden"
-                        onChange={(e) => handleDocumentUpload("driverIdProof", e.target.files?.[0])}
-                      />
-                      <span className="text-[11px] text-slate-700 truncate">
-                        {docFileNames.driverIdProof || "Upload ID Proof"}
-                      </span>
-                      <UploadCloud className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    </label>
-                  </div>
+                      {/* Upload ID Proof */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Upload ID Proof Copy
+                        </label>
+                        <label className={cn(
+                          "flex items-center justify-between p-2 border-2 border-dashed rounded-xl cursor-pointer transition-all",
+                          docFileNames.driverIdProof ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 hover:border-amber-400 bg-white"
+                        )}>
+                          <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            className="hidden"
+                            onChange={(e) => handleDocumentUpload("driverIdProof", e.target.files?.[0])}
+                          />
+                          <span className="text-[11px] text-slate-700 truncate">
+                            {docFileNames.driverIdProof || "Upload ID Proof"}
+                          </span>
+                          <UploadCloud className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        </label>
+                      </div>
 
-                  {/* Commercial Driving License Number */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Driving License Number
-                    </label>
-                    <input
-                      type="text"
-                      value={driverLicenseNumber}
-                      onChange={(e) => setDriverLicenseNumber(e.target.value.toUpperCase())}
-                      placeholder="DL-1420110012345"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                      {/* Commercial Driving License Number */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Driving License Number
+                        </label>
+                        <input
+                          type="text"
+                          value={driverLicenseNumber}
+                          onChange={(e) => setDriverLicenseNumber(e.target.value.toUpperCase())}
+                          placeholder="DL-1420110012345"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {/* License Class */}
                   <div>
@@ -2692,50 +2989,55 @@ function VendorOnboardingFlow() {
                     </select>
                   </div>
 
-                  {/* License Expiry Date */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      License Expiry Date
-                    </label>
-                    <input
-                      type="date"
-                      value={driverLicenseExpiry}
-                      onChange={(e) => setDriverLicenseExpiry(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                  {/* COMMENTED OUT: License Expiry Date, Driving Since (Date), Experience */}
+                  {false && (
+                    <>
+                      {/* License Expiry Date */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          License Expiry Date
+                        </label>
+                        <input
+                          type="date"
+                          value={driverLicenseExpiry}
+                          onChange={(e) => setDriverLicenseExpiry(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
 
-                  {/* Driving Since (date) */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                      <span>Driving Since (Date)</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={drivingSince}
-                      onChange={(e) => handleDrivingSinceChange(e.target.value, false)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                      {/* Driving Since (date) */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                          <span>Driving Since (Date)</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={drivingSince}
+                          onChange={(e) => handleDrivingSinceChange(e.target.value, false)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
 
-                  {/* Automatically Experience field should display the experience number */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                      <span>Experience</span>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                        Auto-Calculated
-                      </span>
-                    </label>
-                    <div className="relative">
-                      <Clock className="w-4 h-4 text-amber-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={driverExperienceYears}
-                        readOnly
-                        className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 font-bold text-xs cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
+                      {/* Automatically Experience field should display the experience number */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                          <span>Experience</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                            Auto-Calculated
+                          </span>
+                        </label>
+                        <div className="relative">
+                          <Clock className="w-4 h-4 text-amber-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={driverExperienceYears}
+                            readOnly
+                            className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 font-bold text-xs cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Chauffeur Status */}
                   <div>
@@ -2782,18 +3084,20 @@ function VendorOnboardingFlow() {
                     />
                   </div>
 
-                  {/* Joining Date (Optional) */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Joining Date <span className="text-slate-400 font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={joiningDate}
-                      onChange={(e) => setJoiningDate(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                  {/* COMMENTED OUT: Joining Date (Optional) */}
+                  {false && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Joining Date <span className="text-slate-400 font-normal">(Optional)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={joiningDate}
+                        onChange={(e) => setJoiningDate(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
 
                   {/* Upload Driver License Copy */}
                   <div className="sm:col-span-2 md:col-span-3">
@@ -2888,59 +3192,84 @@ function VendorOnboardingFlow() {
                   {/* Plate Number */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Vehicle Number <span className="text-rose-500">*</span>
+                      Vehicle Number <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={vehicleNumber}
-                      onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+                      onChange={(e) => {
+                        setVehicleNumber(e.target.value.toUpperCase());
+                        if (plateCheckWarning) setPlateCheckWarning("");
+                      }}
+                      onBlur={(e) => verifyPlateLive(e.target.value)}
                       placeholder="MH 02 AB 1234"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      className={cn(
+                        "w-full px-3.5 py-2 rounded-xl border text-xs font-mono font-bold bg-white focus:ring-2 focus:outline-none transition-all",
+                        plateCheckWarning
+                          ? "border-rose-400 focus:ring-rose-400 bg-rose-50/30"
+                          : "border-slate-200 focus:ring-amber-500"
+                      )}
                       required
                     />
+                    {checkingPlate && (
+                      <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
+                        <Loader2 className="w-3 h-3 animate-spin text-amber-500" /> Checking plate availability...
+                      </p>
+                    )}
+                    {plateCheckWarning && (
+                      <p className="text-[10px] text-rose-600 mt-1 flex items-start gap-1 font-semibold bg-rose-50 p-1.5 rounded-lg border border-rose-200">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500 mt-0.5" />
+                        <span>{plateCheckWarning}</span>
+                      </p>
+                    )}
                   </div>
 
-                  {/* Make & Model */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Model
-                    </label>
-                    <input
-                      type="text"
-                      value={vehicleModel}
-                      onChange={(e) => setVehicleModel(e.target.value)}
-                      placeholder="e.g. Maruti Suzuki Dzire"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                  {/* COMMENTED OUT: Model, Vehicle Variant, Vehicle Color */}
+                  {false && (
+                    <>
+                      {/* Make & Model */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Model
+                        </label>
+                        <input
+                          type="text"
+                          value={vehicleModel}
+                          onChange={(e) => setVehicleModel(e.target.value)}
+                          placeholder="e.g. Maruti Suzuki Dzire"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
 
-                  {/* Vehicle Variant Field */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Vehicle Variant
-                    </label>
-                    <input
-                      type="text"
-                      value={vehicleVariant}
-                      onChange={(e) => setVehicleVariant(e.target.value)}
-                      placeholder="e.g. VXI / Titanium / ZX"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                      {/* Vehicle Variant Field */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Vehicle Variant
+                        </label>
+                        <input
+                          type="text"
+                          value={vehicleVariant}
+                          onChange={(e) => setVehicleVariant(e.target.value)}
+                          placeholder="e.g. VXI / Titanium / ZX"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
 
-                  {/* Vehicle Color Field */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Vehicle Color
-                    </label>
-                    <input
-                      type="text"
-                      value={vehicleColor}
-                      onChange={(e) => setVehicleColor(e.target.value)}
-                      placeholder="e.g. Pearl White / Arctic Silver"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                      {/* Vehicle Color Field */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Vehicle Color
+                        </label>
+                        <input
+                          type="text"
+                          value={vehicleColor}
+                          onChange={(e) => setVehicleColor(e.target.value)}
+                          placeholder="e.g. Pearl White / Arctic Silver"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {/* Registration Type */}
                   <div>
@@ -2966,7 +3295,10 @@ function VendorOnboardingFlow() {
                     </label>
                     <select
                       value={vehicleCategory}
-                      onChange={(e) => setVehicleCategory(e.target.value)}
+                      onChange={(e) => {
+                        setVehicleCategory(e.target.value);
+                        setVehicleSubCategory("");
+                      }}
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                     >
                       <option value="Sedan">Sedan (Dzire, Etios, Aura)</option>
@@ -2978,25 +3310,47 @@ function VendorOnboardingFlow() {
                       {/*<option value="Premium">Premium Executive (Camry, Fortuner)</option>*/}
                       <option value="Tempo">Tempo Traveller (12+1 Seater, 13+1 Seater)</option>
                       <option value="urbania">Force Urbania (10+1 Seater, 12+1 Seater, 16+1 Seater)</option>
-                      <option value="Bus">Bus</option> 
+                      <option value="Bus">Bus</option>
                       <option value="Benz">Benz - Executive Class</option>
-                       
                     </select>
                   </div>
 
-                  {/* Year of Manufacture */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Year of Manufacture
-                    </label>
-                    <input
-                      type="number"
-                      value={vehicleYear}
-                      onChange={(e) => setVehicleYear(e.target.value)}
-                      placeholder="2023"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    />
-                  </div>
+                  {/* Sub Category */}
+                  {VEHICLE_SUB_CATEGORIES[vehicleCategory] && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Sub Category
+                      </label>
+                      <select
+                        value={vehicleSubCategory}
+                        onChange={(e) => setVehicleSubCategory(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium text-slate-800"
+                      >
+                        <option value="">Select Sub Category</option>
+                        {VEHICLE_SUB_CATEGORIES[vehicleCategory].map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* COMMENTED OUT: Year of Manufacture */}
+                  {false && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Year of Manufacture
+                      </label>
+                      <input
+                        type="number"
+                        value={vehicleYear}
+                        onChange={(e) => setVehicleYear(e.target.value)}
+                        placeholder="2023"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
 
                   {/* Fuel Type */}
                   <div>
@@ -3032,20 +3386,22 @@ function VendorOnboardingFlow() {
                     </select>
                   </div>
 
-                  {/* Vehicle Transmission */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Vehicle Transmission
-                    </label>
-                    <select
-                      value={transmission}
-                      onChange={(e) => setTransmission(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    >
-                      <option value="Automatic">Automatic</option>
-                      <option value="Manual">Manual</option>
-                    </select>
-                  </div>
+                  {/* COMMENTED OUT: Vehicle Transmission */}
+                  {false && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Vehicle Transmission
+                      </label>
+                      <select
+                        value={transmission}
+                        onChange={(e) => setTransmission(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      >
+                        <option value="Automatic">Automatic</option>
+                        <option value="Manual">Manual</option>
+                      </select>
+                    </div>
+                  )}
 
                   {/* Seating Capacity */}
                   <div>
@@ -3068,93 +3424,99 @@ function VendorOnboardingFlow() {
                     </select>
                   </div>
 
-                  {/* Engine CC */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Engine Displacement (CC)
-                    </label>
-                    <div className="relative">
-                      <Gauge className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="number"
-                        value={engineCc}
-                        onChange={(e) => setEngineCc(e.target.value)}
-                        placeholder="e.g. 1498"
-                        className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
+                  {/* COMMENTED OUT: Engine Displacement (CC), Parking Location with map */}
+                  {false && (
+                    <>
+                      {/* Engine CC */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Engine Displacement (CC)
+                        </label>
+                        <div className="relative">
+                          <Gauge className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="number"
+                            value={engineCc}
+                            onChange={(e) => setEngineCc(e.target.value)}
+                            placeholder="e.g. 1498"
+                            className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Parking Location (interactive map pin) */}
+                      <div className="sm:col-span-2 md:col-span-3">
+                        <InteractiveMapPicker
+                          value={parkingLocation}
+                          onChange={(loc) => setParkingLocation(loc)}
+                          placeholder="Pin parking hub or street address (e.g. Airport Bay 4B, Chennai)"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* COMMENTED OUT: Vehicle Features & Luxury Amenities */}
+                {false && (
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-600" />
+                        Vehicle Features & Luxury Amenities
+                      </label>
+                      <span className="text-[10px] font-semibold text-slate-500">
+                        Select all installed options
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {[
+                        { name: "Sunroof", icon: Sparkles },
+                        { name: "360 Camera", icon: Eye },
+                        { name: "ADAS Level 2", icon: Zap },
+                        { name: "Luggage Carrier", icon: Car },
+                        { name: "Smart TV / Screen", icon: Tv },
+                        { name: "Dual-Zone AC", icon: Wind },
+                        { name: "Ventilated Seats", icon: Award },
+                        { name: "Recliner Seats", icon: Star },
+                      ].map(({ name, icon: IconComp }) => {
+                        const isChecked = vehicleFeatures.includes(name);
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => toggleFeature(name)}
+                            className={cn(
+                              "flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all cursor-pointer",
+                              isChecked
+                                ? "bg-amber-500 text-slate-950 font-bold border-amber-600 shadow-xs"
+                                : "bg-white text-slate-700 border-slate-200 hover:border-amber-300"
+                            )}
+                          >
+                            <div className={cn(
+                              "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
+                              isChecked ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-500"
+                            )}>
+                              <IconComp className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-xs truncate">{name}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
+                )}
 
-                  {/* Parking Location (interactive map pin) */}
-                  <div className="sm:col-span-2 md:col-span-3">
-                    <InteractiveMapPicker
-                      value={parkingLocation}
-                      onChange={(loc) => setParkingLocation(loc)}
-                      placeholder="Pin parking hub or street address (e.g. Airport Bay 4B, Chennai)"
-                    />
-                  </div>
-                </div>
-
-                {/* Add Vehicle Features Options for every vehicle */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-600" />
-                      Vehicle Features & Luxury Amenities
-                    </label>
-                    <span className="text-[10px] font-semibold text-slate-500">
-                      Select all installed options
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {[
-                      { name: "Sunroof", icon: Sparkles },
-                      { name: "360 Camera", icon: Eye },
-                      { name: "ADAS Level 2", icon: Zap },
-                      { name: "Luggage Carrier", icon: Car },
-                      { name: "Smart TV / Screen", icon: Tv },
-                      { name: "Dual-Zone AC", icon: Wind },
-                      { name: "Ventilated Seats", icon: Award },
-                      { name: "Recliner Seats", icon: Star },
-                    ].map(({ name, icon: IconComp }) => {
-                      const isChecked = vehicleFeatures.includes(name);
-                      return (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => toggleFeature(name)}
-                          className={cn(
-                            "flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all cursor-pointer",
-                            isChecked
-                              ? "bg-amber-500 text-slate-950 font-bold border-amber-600 shadow-xs"
-                              : "bg-white text-slate-700 border-slate-200 hover:border-amber-300"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
-                            isChecked ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-500"
-                          )}>
-                            <IconComp className="w-3.5 h-3.5" />
-                          </div>
-                          <span className="text-xs truncate">{name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Multiple Vehicle Photos Upload */}
+                {/* Multiple Vehicle Photos Upload (Exterior & Interior) */}
                 <div className="pt-2">
                   <MultipleVehiclePhotoUploader
                     photos={vehiclePhotos}
-                    onChange={(newPhotos) => {
+                    photoSlots={vehiclePhotoSlots}
+                    onChange={(newPhotos, newSlots) => {
                       setVehiclePhotos(newPhotos);
-                      setVehicleImage(newPhotos[0] || "");
+                      if (newSlots) setVehiclePhotoSlots(newSlots);
+                      setVehicleImage(newSlots?.front || newPhotos[0] || "");
                     }}
-                    maxPhotos={8}
-                    label="Vehicle Exterior & Interior Photos"
-                    subtitle="Upload multiple photos (front, rear, side profile, dashboard, and passenger seats)."
                   />
                 </div>
               </div>
@@ -3252,7 +3614,7 @@ function VendorOnboardingFlow() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                        2. Commercial Insurance Policy
+                        2. Insurance Policy
                       </span>
                       {docFileNames.insurance && (
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
@@ -3464,79 +3826,81 @@ function VendorOnboardingFlow() {
                     </div>
                   </div>
 
-                  {/* 5. Pollution Under Control (PUC) */}
-                  <div className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3 shadow-xs sm:col-span-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-teal-600" />
-                        5. Pollution Under Control (PUC) Certificate
-                      </span>
-                      {docFileNames.puc && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                          <Check className="w-3 h-3 stroke-[3]" /> Uploaded
+                  {/* COMMENTED OUT: 5. Pollution Under Control (PUC) Certificate */}
+                  {false && (
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3 shadow-xs sm:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-teal-600" />
+                          5. Pollution Under Control (PUC) Certificate
                         </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          PUC Expiry Date
-                        </label>
-                        <input
-                          type="date"
-                          value={pucExpiry}
-                          onChange={(e) => setPucExpiry(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                        />
+                        {docFileNames.puc && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                            <Check className="w-3 h-3 stroke-[3]" /> Uploaded
+                          </span>
+                        )}
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Upload PUC Proof Document
-                        </label>
-                        <label className={cn(
-                          "flex items-center justify-between p-2.5 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                          docFileNames.puc
-                            ? "border-emerald-300 bg-emerald-50/40"
-                            : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
-                        )}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            PUC Expiry Date
+                          </label>
                           <input
-                            type="file"
-                            accept=".pdf,.png,.jpg,.jpeg"
-                            className="hidden"
-                            onChange={(e) => handleDocumentUpload("puc", e.target.files?.[0])}
+                            type="date"
+                            value={pucExpiry}
+                            onChange={(e) => setPucExpiry(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                           />
-                          {uploadingDocs.puc ? (
-                            <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span>Uploading document...</span>
-                            </div>
-                          ) : docFileNames.puc ? (
-                            <div className="flex items-center justify-between w-full text-left gap-2">
-                              <div className="flex items-center gap-2 truncate">
-                                <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-                                <span className="text-xs font-semibold text-slate-900 truncate">
-                                  {docFileNames.puc}
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Upload PUC Proof Document
+                          </label>
+                          <label className={cn(
+                            "flex items-center justify-between p-2.5 border-2 border-dashed rounded-xl cursor-pointer transition-all",
+                            docFileNames.puc
+                              ? "border-emerald-300 bg-emerald-50/40"
+                              : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
+                          )}>
+                            <input
+                              type="file"
+                              accept=".pdf,.png,.jpg,.jpeg"
+                              className="hidden"
+                              onChange={(e) => handleDocumentUpload("puc", e.target.files?.[0])}
+                            />
+                            {uploadingDocs.puc ? (
+                              <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Uploading document...</span>
+                              </div>
+                            ) : docFileNames.puc ? (
+                              <div className="flex items-center justify-between w-full text-left gap-2">
+                                <div className="flex items-center gap-2 truncate">
+                                  <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                                  <span className="text-xs font-semibold text-slate-900 truncate">
+                                    {docFileNames.puc}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-bold text-amber-700 hover:underline shrink-0">
+                                  Change
                                 </span>
                               </div>
-                              <span className="text-[10px] font-bold text-amber-700 hover:underline shrink-0">
-                                Change
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between w-full text-slate-600">
-                              <div className="flex items-center gap-1.5">
-                                <UploadCloud className="w-4 h-4 text-amber-600" />
-                                <span className="text-xs font-semibold">Upload PUC File</span>
+                            ) : (
+                              <div className="flex items-center justify-between w-full text-slate-600">
+                                <div className="flex items-center gap-1.5">
+                                  <UploadCloud className="w-4 h-4 text-amber-600" />
+                                  <span className="text-xs font-semibold">Upload PUC File</span>
+                                </div>
+                                <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
                               </div>
-                              <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
-                            </div>
-                          )}
-                        </label>
+                            )}
+                          </label>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -3584,7 +3948,7 @@ function VendorOnboardingFlow() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-4 text-white">
-                <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">Step 4 of 4</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">Step 3 of 3</span>
                 <h3 className="text-base font-bold text-white">Multi-Fleet & Driver Roster Management</h3>
                 <p className="text-[11px] text-slate-200">Scale your commercial rental operations with multiple vehicles and verified chauffeurs</p>
               </div>
@@ -3595,7 +3959,7 @@ function VendorOnboardingFlow() {
                 <Users className="w-3 h-3" /> Multi-Vehicle Fleet Setup
               </div>
               <h2 className="text-xl font-black text-slate-950">
-                Step 4: Register Fleet Vehicles & Drivers
+                Step 3: Register Fleet Vehicles & Drivers
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Add commercial vehicles with proofs and expiry dates, along with your chauffeur roster.
@@ -3612,7 +3976,10 @@ function VendorOnboardingFlow() {
                 {!showAddVehicleForm && (
                   <button
                     type="button"
-                    onClick={() => setShowAddVehicleForm(true)}
+                    onClick={() => {
+                      resetVehicleForm();
+                      setShowAddVehicleForm(true);
+                    }}
                     className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Another Vehicle
@@ -3672,47 +4039,72 @@ function VendorOnboardingFlow() {
                       <input
                         type="text"
                         value={vehicleNumber}
-                        onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+                        onChange={(e) => {
+                          setVehicleNumber(e.target.value.toUpperCase());
+                          if (plateCheckWarning) setPlateCheckWarning("");
+                        }}
+                        onBlur={(e) => verifyPlateLive(e.target.value)}
                         placeholder="MH 02 CD 1234"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        className={cn(
+                          "w-full px-3 py-1.5 rounded-xl border text-xs font-mono font-bold bg-white focus:ring-2 focus:outline-none transition-all",
+                          plateCheckWarning
+                            ? "border-rose-400 focus:ring-rose-400 bg-rose-50/30"
+                            : "border-slate-200 focus:ring-amber-500"
+                        )}
                       />
+                      {checkingPlate && (
+                        <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
+                          <Loader2 className="w-3 h-3 animate-spin text-amber-500" /> Checking plate availability...
+                        </p>
+                      )}
+                      {plateCheckWarning && (
+                        <p className="text-[10px] text-rose-600 mt-1 flex items-start gap-1 font-semibold bg-rose-50 p-1.5 rounded-lg border border-rose-200">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500 mt-0.5" />
+                          <span>{plateCheckWarning}</span>
+                        </p>
+                      )}
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Model
-                      </label>
-                      <input
-                        type="text"
-                        value={vehicleModel}
-                        onChange={(e) => setVehicleModel(e.target.value)}
-                        placeholder="e.g. Toyota Innova Crysta"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Vehicle Variant
-                      </label>
-                      <input
-                        type="text"
-                        value={vehicleVariant}
-                        onChange={(e) => setVehicleVariant(e.target.value)}
-                        placeholder="e.g. ZX 2.4 / Titanium"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Vehicle Color
-                      </label>
-                      <input
-                        type="text"
-                        value={vehicleColor}
-                        onChange={(e) => setVehicleColor(e.target.value)}
-                        placeholder="e.g. Garnet Red / Pearl White"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
+                    {/* COMMENTED OUT: Model, Vehicle Variant, Vehicle Color */}
+                    {false && (
+                      <>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Model
+                          </label>
+                          <input
+                            type="text"
+                            value={vehicleModel}
+                            onChange={(e) => setVehicleModel(e.target.value)}
+                            placeholder="e.g. Toyota Innova Crysta"
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Vehicle Variant
+                          </label>
+                          <input
+                            type="text"
+                            value={vehicleVariant}
+                            onChange={(e) => setVehicleVariant(e.target.value)}
+                            placeholder="e.g. ZX 2.4 / Titanium"
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Vehicle Color
+                          </label>
+                          <input
+                            type="text"
+                            value={vehicleColor}
+                            onChange={(e) => setVehicleColor(e.target.value)}
+                            placeholder="e.g. Garnet Red / Pearl White"
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          />
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Registration Type *
@@ -3734,30 +4126,60 @@ function VendorOnboardingFlow() {
                       </label>
                       <select
                         value={vehicleCategory}
-                        onChange={(e) => setVehicleCategory(e.target.value)}
+                        onChange={(e) => {
+                          setVehicleCategory(e.target.value);
+                          setVehicleSubCategory("");
+                        }}
                         className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                       >
-                        <option value="SUV">SUV (Innova, Ertiga, Carens)</option>
                         <option value="Sedan">Sedan (Dzire, Etios, Aura)</option>
                         <option value="Hatchback">Hatchback (WagonR, Swift)</option>
-                        <option value="Premium">Premium Executive (Fortuner, Camry)</option>
-                        <option value="Tempo">Tempo Traveller (12-26 Seater)</option>
-                        <option value="Bus">Luxury Coach / Bus</option>
+                        <option value="SUV">SUV (Xylo, Ertiga, Carens, marazzo)</option>
+                        <option value="Innova">Innova (6+1 Seater, 7+1 Seater)</option>
+                        <option value="Innovacrysta">Innova Crysta</option>
+                        <option value="innovahycross">Innova Hycross</option>
+                        <option value="Tempo">Tempo Traveller (12+1 Seater, 13+1 Seater)</option>
+                        <option value="urbania">Force Urbania (10+1 Seater, 12+1 Seater, 16+1 Seater)</option>
+                        <option value="Bus">Bus</option>
+                        <option value="Benz">Benz - Executive Class</option>
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Year of Manufacture
-                      </label>
-                      <input
-                        type="number"
-                        value={vehicleYear}
-                        onChange={(e) => setVehicleYear(e.target.value)}
-                        placeholder="2023"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
+                    {VEHICLE_SUB_CATEGORIES[vehicleCategory] && (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Sub Category
+                        </label>
+                        <select
+                          value={vehicleSubCategory}
+                          onChange={(e) => setVehicleSubCategory(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium text-slate-800"
+                        >
+                          <option value="">Select Sub Category</option>
+                          {VEHICLE_SUB_CATEGORIES[vehicleCategory].map((sub) => (
+                            <option key={sub} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* COMMENTED OUT: Year of Manufacture */}
+                    {false && (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Year of Manufacture
+                        </label>
+                        <input
+                          type="number"
+                          value={vehicleYear}
+                          onChange={(e) => setVehicleYear(e.target.value)}
+                          placeholder="2023"
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    )}
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Seating Capacity
@@ -3807,90 +4229,94 @@ function VendorOnboardingFlow() {
                         <option value="LPG">LPG</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Transmission
-                      </label>
-                      <select
-                        value={transmission}
-                        onChange={(e) => setTransmission(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      >
-                        <option value="Automatic">Automatic</option>
-                        <option value="Manual">Manual</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Engine CC
-                      </label>
-                      <input
-                        type="number"
-                        value={engineCc}
-                        onChange={(e) => setEngineCc(e.target.value)}
-                        placeholder="e.g. 1998"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
+                    {/* COMMENTED OUT: Vehicle Transmission, Engine Displacement (CC), Parking Location with map, Vehicle Features & Luxury Amenities */}
+                    {false && (
+                      <>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Transmission
+                          </label>
+                          <select
+                            value={transmission}
+                            onChange={(e) => setTransmission(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          >
+                            <option value="Automatic">Automatic</option>
+                            <option value="Manual">Manual</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Engine CC
+                          </label>
+                          <input
+                            type="number"
+                            value={engineCc}
+                            onChange={(e) => setEngineCc(e.target.value)}
+                            placeholder="e.g. 1998"
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          />
+                        </div>
 
-                    <div className="sm:col-span-2 md:col-span-3">
-                      <InteractiveMapPicker
-                        value={parkingLocation}
-                        onChange={(loc) => setParkingLocation(loc)}
-                        placeholder="Pin parking hub or depot address"
-                      />
-                    </div>
+                        <div className="sm:col-span-2 md:col-span-3">
+                          <InteractiveMapPicker
+                            value={parkingLocation}
+                            onChange={(loc) => setParkingLocation(loc)}
+                            placeholder="Pin parking hub or depot address"
+                          />
+                        </div>
 
-                    {/* Features options for Model 2 */}
-                    <div className="sm:col-span-2 md:col-span-3 pt-2">
-                      <label className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                        Vehicle Features & Amenities
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {[
-                          { name: "Sunroof", icon: Sparkles },
-                          { name: "360 Camera", icon: Eye },
-                          { name: "ADAS Level 2", icon: Zap },
-                          { name: "Luggage Carrier", icon: Car },
-                          { name: "Smart TV / Screen", icon: Tv },
-                          { name: "Dual-Zone AC", icon: Wind },
-                          { name: "Ventilated Seats", icon: Award },
-                          { name: "Recliner Seats", icon: Star },
-                        ].map(({ name, icon: IconComp }) => {
-                          const isChecked = vehicleFeatures.includes(name);
-                          return (
-                            <button
-                              key={name}
-                              type="button"
-                              onClick={() => toggleFeature(name)}
-                              className={cn(
-                                "flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all cursor-pointer text-xs",
-                                isChecked
-                                  ? "bg-amber-500 text-slate-950 font-bold border-amber-600"
-                                  : "bg-white text-slate-700 border-slate-200 hover:border-amber-300"
-                              )}
-                            >
-                              <IconComp className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                        {/* Features options for Model 2 */}
+                        <div className="sm:col-span-2 md:col-span-3 pt-2">
+                          <label className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                            Vehicle Features & Amenities
+                          </label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {[
+                              { name: "Sunroof", icon: Sparkles },
+                              { name: "360 Camera", icon: Eye },
+                              { name: "ADAS Level 2", icon: Zap },
+                              { name: "Luggage Carrier", icon: Car },
+                              { name: "Smart TV / Screen", icon: Tv },
+                              { name: "Dual-Zone AC", icon: Wind },
+                              { name: "Ventilated Seats", icon: Award },
+                              { name: "Recliner Seats", icon: Star },
+                            ].map(({ name, icon: IconComp }) => {
+                              const isChecked = vehicleFeatures.includes(name);
+                              return (
+                                <button
+                                  key={name}
+                                  type="button"
+                                  onClick={() => toggleFeature(name)}
+                                  className={cn(
+                                    "flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all cursor-pointer text-xs",
+                                    isChecked
+                                      ? "bg-amber-500 text-slate-950 font-bold border-amber-600"
+                                      : "bg-white text-slate-700 border-slate-200 hover:border-amber-300"
+                                  )}
+                                >
+                                  <IconComp className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {/* Section B: Multiple Vehicle Photos */}
+                  {/* Section B: Multiple Vehicle Photos (Exterior & Interior) */}
                   <div className="pt-2 border-t border-slate-200/80">
                     <MultipleVehiclePhotoUploader
                       photos={vehiclePhotos}
-                      onChange={(newPhotos) => {
+                      photoSlots={vehiclePhotoSlots}
+                      onChange={(newPhotos, newSlots) => {
                         setVehiclePhotos(newPhotos);
-                        setVehicleImage(newPhotos[0] || "");
+                        if (newSlots) setVehiclePhotoSlots(newSlots);
+                        setVehicleImage(newSlots?.front || newPhotos[0] || "");
                       }}
-                      maxPhotos={8}
-                      label="Vehicle Photos (Exterior & Interior)"
-                      subtitle="Upload multiple photos (front, rear, side profile, dashboard, and passenger seats)."
                     />
                   </div>
 
@@ -4169,72 +4595,74 @@ function VendorOnboardingFlow() {
                         </div>
                       </div>
 
-                      {/* 5. Pollution Under Control (PUC) */}
-                      <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-2.5 shadow-2xs sm:col-span-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                            <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-                            5. Pollution Under Control (PUC) Certificate
-                          </span>
-                          {docFileNames.puc && (
-                            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                              <Check className="w-2.5 h-2.5 stroke-[3]" /> Uploaded
+                      {/* COMMENTED OUT: 5. Pollution Under Control (PUC) Certificate */}
+                      {false && (
+                        <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-2.5 shadow-2xs sm:col-span-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+                              5. Pollution Under Control (PUC) Certificate
                             </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                              PUC Expiry Date
-                            </label>
-                            <input
-                              type="date"
-                              value={pucExpiry}
-                              onChange={(e) => setPucExpiry(e.target.value)}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                            />
+                            {docFileNames.puc && (
+                              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5 stroke-[3]" /> Uploaded
+                              </span>
+                            )}
                           </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                              Upload PUC Certificate Proof
-                            </label>
-                            <label className={cn(
-                              "flex items-center justify-between p-2 border-2 border-dashed rounded-lg cursor-pointer transition-all",
-                              docFileNames.puc
-                                ? "border-emerald-300 bg-emerald-50/40"
-                                : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
-                            )}>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                                PUC Expiry Date
+                              </label>
                               <input
-                                type="file"
-                                accept=".pdf,.png,.jpg,.jpeg"
-                                className="hidden"
-                                onChange={(e) => handleDocumentUpload("puc", e.target.files?.[0])}
+                                type="date"
+                                value={pucExpiry}
+                                onChange={(e) => setPucExpiry(e.target.value)}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
                               />
-                              {uploadingDocs.puc ? (
-                                <div className="flex items-center gap-1.5 text-xs text-amber-700">
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Uploading...</span>
-                                </div>
-                              ) : docFileNames.puc ? (
-                                <div className="flex items-center justify-between w-full text-left gap-1.5 truncate">
-                                  <span className="text-xs text-slate-900 truncate font-medium">
-                                    {docFileNames.puc}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-amber-700 shrink-0">Change</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center justify-between w-full text-slate-500 text-xs">
-                                  <div className="flex items-center gap-1.5">
-                                    <UploadCloud className="w-3.5 h-3.5 text-amber-600" />
-                                    <span>Upload PUC Copy</span>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                                Upload PUC Certificate Proof
+                              </label>
+                              <label className={cn(
+                                "flex items-center justify-between p-2 border-2 border-dashed rounded-lg cursor-pointer transition-all",
+                                docFileNames.puc
+                                  ? "border-emerald-300 bg-emerald-50/40"
+                                  : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
+                              )}>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.png,.jpg,.jpeg"
+                                  className="hidden"
+                                  onChange={(e) => handleDocumentUpload("puc", e.target.files?.[0])}
+                                />
+                                {uploadingDocs.puc ? (
+                                  <div className="flex items-center gap-1.5 text-xs text-amber-700">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Uploading...</span>
                                   </div>
-                                  <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
-                                </div>
-                              )}
-                            </label>
+                                ) : docFileNames.puc ? (
+                                  <div className="flex items-center justify-between w-full text-left gap-1.5 truncate">
+                                    <span className="text-xs text-slate-900 truncate font-medium">
+                                      {docFileNames.puc}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-amber-700 shrink-0">Change</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-between w-full text-slate-500 text-xs">
+                                    <div className="flex items-center gap-1.5">
+                                      <UploadCloud className="w-3.5 h-3.5 text-amber-600" />
+                                      <span>Upload PUC Copy</span>
+                                    </div>
+                                    <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
+                                  </div>
+                                )}
+                              </label>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
@@ -4243,7 +4671,10 @@ function VendorOnboardingFlow() {
                       <button
                         type="button"
                         disabled={savingVehicle}
-                        onClick={() => setShowAddVehicleForm(false)}
+                        onClick={() => {
+                          resetVehicleForm();
+                          setShowAddVehicleForm(false);
+                        }}
                         className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 disabled:opacity-50"
                       >
                         Cancel
@@ -4258,10 +4689,10 @@ function VendorOnboardingFlow() {
                       {savingVehicle ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
-                          <span>Saving Vehicle...</span>
+                          <span>Adding Vehicle...</span>
                         </>
                       ) : (
-                        <span>Save Vehicle</span>
+                        <span>Add Vehicle</span>
                       )}
                     </button>
                   </div>
@@ -4279,7 +4710,10 @@ function VendorOnboardingFlow() {
                 {!showAddDriverForm && (
                   <button
                     type="button"
-                    onClick={() => setShowAddDriverForm(true)}
+                    onClick={() => {
+                      resetDriverForm();
+                      setShowAddDriverForm(true);
+                    }}
                     className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Chauffeur
@@ -4422,65 +4856,70 @@ function VendorOnboardingFlow() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        ID Proof Type *
-                      </label>
-                      <select
-                        value={newDriverIdProofType}
-                        onChange={(e) => setNewDriverIdProofType(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
-                      >
-                        <option value="Aadhaar Card">Aadhaar Card</option>
-                        <option value="Voter ID">Voter ID</option>
-                        <option value="Passport">Passport</option>
-                        <option value="PAN Card">PAN Card</option>
-                      </select>
-                    </div>
+                    {/* COMMENTED OUT: ID Proof Type, ID Proof Number, Upload ID Proof, Driving License Number */}
+                    {false && (
+                      <>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            ID Proof Type *
+                          </label>
+                          <select
+                            value={newDriverIdProofType}
+                            onChange={(e) => setNewDriverIdProofType(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                          >
+                            <option value="Aadhaar Card">Aadhaar Card</option>
+                            <option value="Voter ID">Voter ID</option>
+                            <option value="Passport">Passport</option>
+                            <option value="PAN Card">PAN Card</option>
+                          </select>
+                        </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        ID Proof Number *
-                      </label>
-                      <input
-                        type="text"
-                        value={newDriverIdProofNumber}
-                        onChange={(e) => setNewDriverIdProofNumber(e.target.value.toUpperCase())}
-                        placeholder="e.g. 5678 9012 3456"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono bg-white"
-                      />
-                    </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            ID Proof Number *
+                          </label>
+                          <input
+                            type="text"
+                            value={newDriverIdProofNumber}
+                            onChange={(e) => setNewDriverIdProofNumber(e.target.value.toUpperCase())}
+                            placeholder="e.g. 5678 9012 3456"
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+                          />
+                        </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Upload ID Proof
-                      </label>
-                      <label className="flex items-center justify-between p-2 border-2 border-dashed border-slate-200 hover:border-purple-400 rounded-xl cursor-pointer bg-white text-xs">
-                        <input
-                          type="file"
-                          accept=".pdf,.png,.jpg,.jpeg"
-                          className="hidden"
-                          onChange={(e) => handleDocumentUpload("newDriverIdProof", e.target.files?.[0])}
-                        />
-                        <span className="truncate text-[11px] text-slate-600">
-                          {docFileNames.newDriverIdProof || "Upload ID Document"}
-                        </span>
-                        <UploadCloud className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      </label>
-                    </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Upload ID Proof
+                          </label>
+                          <label className="flex items-center justify-between p-2 border-2 border-dashed border-slate-200 hover:border-purple-400 rounded-xl cursor-pointer bg-white text-xs">
+                            <input
+                              type="file"
+                              accept=".pdf,.png,.jpg,.jpeg"
+                              className="hidden"
+                              onChange={(e) => handleDocumentUpload("newDriverIdProof", e.target.files?.[0])}
+                            />
+                            <span className="truncate text-[11px] text-slate-600">
+                              {docFileNames.newDriverIdProof || "Upload ID Document"}
+                            </span>
+                            <UploadCloud className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                          </label>
+                        </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Driving License Number
-                      </label>
-                      <input
-                        type="text"
-                        value={newDriverLicense}
-                        onChange={(e) => setNewDriverLicense(e.target.value.toUpperCase())}
-                        placeholder="DL-0420190012345"
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white"
-                      />
-                    </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Driving License Number
+                          </label>
+                          <input
+                            type="text"
+                            value={newDriverLicense}
+                            onChange={(e) => setNewDriverLicense(e.target.value.toUpperCase())}
+                            placeholder="DL-0420190012345"
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white"
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4498,48 +4937,53 @@ function VendorOnboardingFlow() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        License Expiry Date
-                      </label>
-                      <input
-                        type="date"
-                        value={newDriverExpiry}
-                        onChange={(e) => setNewDriverExpiry(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
-                      />
-                    </div>
+                    {/* COMMENTED OUT: License Expiry Date, Driving Since (Date), Experience */}
+                    {false && (
+                      <>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            License Expiry Date
+                          </label>
+                          <input
+                            type="date"
+                            value={newDriverExpiry}
+                            onChange={(e) => setNewDriverExpiry(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                          />
+                        </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
-                        <span>Driving Since (Date)</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={newDrivingSince}
-                        onChange={(e) => handleDrivingSinceChange(e.target.value, true)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
-                      />
-                    </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                            <span>Driving Since (Date)</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={newDrivingSince}
+                            onChange={(e) => handleDrivingSinceChange(e.target.value, true)}
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                          />
+                        </div>
 
-                    {/* Automatically Experience field should display the experience number */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
-                        <span>Experience</span>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                          Auto
-                        </span>
-                      </label>
-                      <div className="relative">
-                        <Clock className="w-3.5 h-3.5 text-purple-600 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={newDriverExperienceYears}
-                          readOnly
-                          className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-950 font-bold text-xs cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
+                        {/* Automatically Experience field should display the experience number */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                            <span>Experience</span>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                              Auto
+                            </span>
+                          </label>
+                          <div className="relative">
+                            <Clock className="w-3.5 h-3.5 text-purple-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={newDriverExperienceYears}
+                              readOnly
+                              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-950 font-bold text-xs cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -4592,10 +5036,10 @@ function VendorOnboardingFlow() {
                           type="file"
                           accept=".pdf,.png,.jpg,.jpeg"
                           className="hidden"
-                          onChange={(e) => handleDocumentUpload("license", e.target.files?.[0])}
+                          onChange={(e) => handleDocumentUpload("newDriverLicenseDoc", e.target.files?.[0])}
                         />
                         <span className="truncate text-[11px] text-slate-600">
-                          {docFileNames.license || "Upload License Document"}
+                          {docFileNames.newDriverLicenseDoc || docFileNames.license || "Upload License Document"}
                         </span>
                         <UploadCloud className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                       </label>
@@ -4633,17 +5077,29 @@ function VendorOnboardingFlow() {
                   <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
-                      onClick={() => setShowAddDriverForm(false)}
-                      className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
+                      disabled={savingDriver}
+                      onClick={() => {
+                        resetDriverForm();
+                        setShowAddDriverForm(false);
+                      }}
+                      className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 disabled:opacity-50"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
+                      disabled={savingDriver}
                       onClick={handleAddDriverToList}
-                      className="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer shadow-xs"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-xs"
                     >
-                      Save Chauffeur
+                      {savingDriver ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                          <span>Saving Chauffeur...</span>
+                        </>
+                      ) : (
+                        <span>Save Chauffeur</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -4695,7 +5151,7 @@ function VendorOnboardingFlow() {
       />
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-amber-200/70 py-6 text-center text-xs text-slate-500">
         Grab Rentals Partner Network &copy; {new Date().getFullYear()} · All rights reserved
       </footer>
     </div>
@@ -4706,7 +5162,7 @@ export default function VendorRegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="min-h-screen flex items-center justify-center bg-[#FAF4E5]">
           <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
         </div>
       }
