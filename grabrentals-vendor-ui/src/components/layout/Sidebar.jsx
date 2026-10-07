@@ -252,7 +252,7 @@ export default function Sidebar({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Chauffeurs / Drivers</span>
+                <span>Drivers</span>
               </div>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
@@ -272,7 +272,7 @@ export default function Sidebar({ isOpen, onClose }) {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  All Chauffeurs
+                  All Drivers
                 </Link>
                 <Link
                   href="/vendor/drivers/add"
@@ -283,7 +283,7 @@ export default function Sidebar({ isOpen, onClose }) {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  + Add Chauffeur
+                  + Add Drivers
                 </Link>
               </div>
             )}

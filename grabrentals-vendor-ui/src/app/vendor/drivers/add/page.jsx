@@ -292,11 +292,11 @@ export default function AddDriverPage() {
 
       {/* Breadcrumbs & Header */}
       <div className="space-y-1">
-        <Breadcrumbs items={[{ label: "Drivers & Chauffeurs", href: "/vendor/drivers" }, { label: "Add Chauffeur" }]} />
+        <Breadcrumbs items={[{ label: "All Drivers", href: "/vendor/drivers" }, { label: "Add Drivers" }]} />
         <div className="flex items-center justify-between pt-2">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Add Professional Chauffeur
+              Add Professional Driver
             </h1>
             <p className="text-xs sm:text-sm text-slate-500">
               Onboard verified commercial drivers with driving license, identity proofs, photo, and experience details.
@@ -880,12 +880,12 @@ export default function AddDriverPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Enrolling Chauffeur...
+                    Enrolling Driver...
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    Save & Activate Chauffeur
+                    Save & Activate Driver
                   </>
                 )}
               </button>

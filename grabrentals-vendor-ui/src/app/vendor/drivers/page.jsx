@@ -277,7 +277,7 @@ export default function VendorDriversPage() {
         isOpen={!!driverToDelete}
         onClose={() => setDriverToDelete(null)}
         onConfirm={handleDeleteDriver}
-        title="Remove Chauffeur?"
+        title="Remove Driver?"
         message={`Are you sure you want to remove ${driverToDelete?.name} (${driverToDelete?.phone}) from your driver roster?`}
         confirmText="Remove Driver"
         type="danger"
@@ -286,9 +286,9 @@ export default function VendorDriversPage() {
       {/* Header & Breadcrumbs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <Breadcrumbs items={[{ label: "Chauffeurs" }]} />
+          <Breadcrumbs items={[{ label: "All Drivers" }]} />
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            Chauffeur & Driver Roster
+            All Drivers
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
               {loading ? "..." : `${drivers.length} Drivers`}
             </span>
@@ -302,7 +302,7 @@ export default function VendorDriversPage() {
           href="/vendor/drivers/add"
           className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 shrink-0 text-center"
         >
-          <Plus className="w-4 h-4" /> Add Chauffeur
+          <Plus className="w-4 h-4" /> Add Drivers
         </Link>
       </div>
 
@@ -310,11 +310,11 @@ export default function VendorDriversPage() {
       <div className="relative h-44 rounded-3xl overflow-hidden border border-slate-200/80 shadow-xs">
         <img
           src="/images/login-hero.jpg"
-          alt="Chauffeur & Driver Management"
+          alt="Driver Management"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
-          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Verified Chauffeur Force</span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Verified Driver Force</span>
           <h2 className="text-xl font-black text-white">Professional & Verified Drivers</h2>
           <p className="text-xs text-slate-200">Track commercial licenses, background checks, road experience, and active duty assignments.</p>
         </div>
@@ -331,8 +331,8 @@ export default function VendorDriversPage() {
         searchPlaceholder="Search driver name, phone, license..."
         searchKeys={["name", "phone", "licenseNumber", "assignedVehicle", "status"]}
         exportFileName="GrabRentals_Drivers_Roster"
-        emptyTitle="No Chauffeurs Found"
-        emptyDescription="You haven't registered any chauffeurs in your roster or no drivers match your criteria."
+        emptyTitle="No Drivers Found"
+        emptyDescription="You haven't registered any drivers in your roster or no drivers match your criteria."
         renderMobileCard={renderMobileCard}
         filters={
           <div className="flex items-center gap-1.5 text-slate-600">

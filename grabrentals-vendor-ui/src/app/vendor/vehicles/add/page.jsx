@@ -697,7 +697,7 @@ export default function AddVehiclePage() {
           {/* Card 5: Vehicle Compliance Proofs with Expiry Dates (All 5) */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold shrink-0">
                 <FileText className="w-4 h-4" />
               </div>
               <div>

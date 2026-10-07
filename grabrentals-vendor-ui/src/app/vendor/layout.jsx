@@ -76,7 +76,7 @@ export default function VendorLayout({ children }) {
               <div className="min-w-0">
                 <span className="font-extrabold text-amber-900">Account Pending Admin Approval: </span>
                 <span className="text-amber-800">
-                  Your registered fleet vehicles, chauffeurs, and compliance credentials have been submitted for administrator review. You can inspect all details what you added below. Live customer bookings will be enabled once approved.
+                  Your registered fleet vehicles, drivers, and compliance credentials have been submitted for administrator review. You can inspect all details what you added below. Live customer bookings will be enabled once approved.
                 </span>
               </div>
             </div>

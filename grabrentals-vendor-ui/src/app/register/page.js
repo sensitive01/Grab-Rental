@@ -4716,7 +4716,7 @@ function VendorOnboardingFlow() {
                     }}
                     className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1 cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Add Chauffeur
+                    <Plus className="w-3.5 h-3.5" /> Add Drivers
                   </button>
                 )}
               </div>
@@ -4746,7 +4746,7 @@ function VendorOnboardingFlow() {
                   <div className="flex items-center justify-between">
                     <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-purple-600" />
-                      <span>Add Chauffeur Profile & Credentials</span>
+                      <span>Add Driver Profile & Credentials</span>
                     </div>
                     <span className="text-[10px] text-purple-700 bg-purple-50 font-bold px-2 py-0.5 rounded-full border border-purple-200">
                       Roster Member

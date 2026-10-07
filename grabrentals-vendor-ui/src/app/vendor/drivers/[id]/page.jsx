@@ -69,13 +69,13 @@ export default function DriverDetailsPage({ params }) {
         <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-slate-900">Chauffeur Not Found</h2>
-        <p className="text-xs text-slate-500">{error || "The requested chauffeur could not be found."}</p>
+        <h2 className="text-lg font-bold text-slate-900">Driver Not Found</h2>
+        <p className="text-xs text-slate-500">{error || "The requested driver could not be found."}</p>
         <Link
           href="/vendor/drivers"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Chauffeurs
+          <ArrowLeft className="w-4 h-4" /> Back to All Drivers
         </Link>
       </div>
     );
@@ -89,7 +89,7 @@ export default function DriverDetailsPage({ params }) {
         <div className="space-y-1">
           <Breadcrumbs
             items={[
-              { label: "Chauffeurs", href: "/vendor/drivers" },
+              { label: "All Drivers", href: "/vendor/drivers" },
               { label: driver.name }
             ]}
           />
@@ -115,7 +115,7 @@ export default function DriverDetailsPage({ params }) {
             href={`/vendor/drivers/${driver.id}/edit`}
             className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5"
           >
-            <Edit3 className="w-4 h-4" /> Edit Chauffeur
+            <Edit3 className="w-4 h-4" /> Edit Driver
           </Link>
         </div>
       </div>

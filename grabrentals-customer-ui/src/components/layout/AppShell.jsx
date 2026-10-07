@@ -90,14 +90,19 @@ export default function AppShell({ children }) {
         <div className="flex items-center gap-4 lg:gap-8 h-full min-w-0 flex-1">
           
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
-            <div className="w-10 h-10 bg-brand-navy rounded-lg flex items-center justify-center border-b-2 border-brand-sky-dark relative overflow-hidden hidden sm:flex">
-              <span className="w-4 h-1.5 bg-brand-sky-dark absolute bottom-2 rounded-full"></span>
-              <span className="w-6 h-3 bg-brand-amber absolute top-2.5 rounded-t-full"></span>
-            </div>
+          <Link href="/" className="flex items-center gap-2.5 lg:gap-3 flex-shrink-0">
+            <img
+              src="/images/grab-rentals-logo.jpg"
+              alt="Grab Rentals"
+              className="h-11 sm:h-12 w-auto object-contain rounded-xl shadow-xs"
+            />
             <div className="flex flex-col">
-              <span className="font-extrabold text-lg lg:text-xl tracking-tight text-brand-navy">GRAB RENTALS</span>
-              <span className="text-[8px] lg:text-[9px] font-bold text-brand-orange uppercase tracking-widest leading-none">Chauffeur & Intercity</span>
+              <span className="font-black text-base sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight">
+                GRAB RENTALS
+              </span>
+              <span className="text-[8px] sm:text-[9px] font-bold text-amber-600 uppercase tracking-widest leading-tight">
+                Grab Comfort in Every Mile
+              </span>
             </div>
           </Link>
 
@@ -311,11 +316,16 @@ export default function AppShell({ children }) {
           
           {/* Column 1 */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-white rounded flex items-center justify-center font-bold text-brand-navy border-b-2 border-brand-sky-dark">
-                GR
+            <div className="flex items-center gap-3">
+              <img
+                src="/images/grab-rentals-logo.jpg"
+                alt="Grab Rentals"
+                className="h-10 w-auto object-contain rounded-xl shadow-xs"
+              />
+              <div className="flex flex-col">
+                <span className="font-black text-lg text-white leading-tight">GRAB RENTALS</span>
+                <span className="text-[9px] font-bold text-amber-400 tracking-wider uppercase">Grab Comfort in Every Mile</span>
               </div>
-              <span className="font-extrabold text-lg text-white">GRAB RENTALS</span>
             </div>
             <p className="text-sm leading-relaxed mt-2 text-slate-400">
               Grab Rentals — India's dedicated premier outstation, local, and group mobility chauffeur network with guaranteed fixed rates and sanitized fleet.

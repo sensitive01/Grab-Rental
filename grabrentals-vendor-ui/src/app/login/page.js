@@ -183,9 +183,9 @@ function LoginContent() {
             Become a Partner
           </Link>
           <a
-            href="http://localhost:3000"
+            href="https://grabrentals.in/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="hidden sm:flex text-xs font-medium text-slate-400 hover:text-amber-400 transition-colors items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-900/60 border border-transparent hover:border-slate-800 whitespace-nowrap"
           >
             <span>Customer App</span>

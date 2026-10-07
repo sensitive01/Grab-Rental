@@ -178,9 +178,11 @@ export default function LoginPage() {
       {/* Top Brand Bar */}
       <header className="w-full border-b border-slate-800/80 bg-[#0B101B]/80 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 lg:px-12 py-3 sm:py-3.5 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform shrink-0">
-            <Car className="w-5 h-5" />
-          </div>
+          <img
+            src="/images/grab-rentals-logo.jpg"
+            alt="Grab Rentals"
+            className="h-9 sm:h-10 w-auto object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform shrink-0"
+          />
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-base sm:text-lg tracking-tight text-white whitespace-nowrap">GRAB RENTALS</span>
             <span className="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400">

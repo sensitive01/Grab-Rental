@@ -484,7 +484,7 @@ export default function VendorVehiclesPage() {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => handleTypeToggle(name)}
-                        className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                        className="w-4 h-4 rounded text-amber-500 accent-amber-500 border-slate-300 focus:ring-amber-500 cursor-pointer"
                       />
                       <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       <span>{name}</span>
@@ -505,7 +505,7 @@ export default function VendorVehiclesPage() {
             <label className="text-xs font-bold text-slate-700 block">Availability Status</label>
             <div className="space-y-1.5">
               {[
-                { key: "all", label: "All", dot: "bg-blue-600", count: counts.statusCount.all },
+                { key: "all", label: "All", dot: "bg-slate-900", count: counts.statusCount.all },
                 { key: "available", label: "Available", dot: "bg-emerald-500", count: counts.statusCount.Available },
                 { key: "rented", label: "Rented", dot: "bg-amber-500", count: counts.statusCount.Rented },
                 { key: "reserved", label: "Reserved", dot: "bg-sky-500", count: counts.statusCount.Reserved },
@@ -527,7 +527,7 @@ export default function VendorVehiclesPage() {
                           setSelectedStatus(key);
                           setCurrentPage(1);
                         }}
-                        className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                        className="w-4 h-4 text-amber-500 accent-amber-500 border-slate-300 focus:ring-amber-500 cursor-pointer"
                       />
                       <span className={`w-2 h-2 rounded-full ${dot} shrink-0`} />
                       <span>{label}</span>
@@ -565,7 +565,7 @@ export default function VendorVehiclesPage() {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => handleFuelToggle(name)}
-                        className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                        className="w-4 h-4 rounded text-amber-500 accent-amber-500 border-slate-300 focus:ring-amber-500 cursor-pointer"
                       />
                       <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       <span>{name}</span>
@@ -600,7 +600,7 @@ export default function VendorVehiclesPage() {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => handleTransmissionToggle(name)}
-                        className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                        className="w-4 h-4 rounded text-amber-500 accent-amber-500 border-slate-300 focus:ring-amber-500 cursor-pointer"
                       />
                       <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                       <span>{name}</span>
@@ -688,7 +688,7 @@ export default function VendorVehiclesPage() {
                   onClick={() => setViewMode("grid")}
                   className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                     viewMode === "grid"
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-slate-900 text-amber-400 shadow-xs"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                   title="Grid View"
@@ -699,7 +699,7 @@ export default function VendorVehiclesPage() {
                   onClick={() => setViewMode("list")}
                   className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                     viewMode === "list"
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-slate-900 text-amber-400 shadow-xs"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                   title="List View"
@@ -805,7 +805,7 @@ export default function VendorVehiclesPage() {
               {vehicles.length === 0 ? (
                 <Link
                   href="/vendor/vehicles/add"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 transition-colors shadow-xs"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md shadow-amber-500/20"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Your First Vehicle</span>
@@ -860,7 +860,7 @@ export default function VendorVehiclesPage() {
                         <div>
                           <Link
                             href={`/vendor/vehicles/${v.id}`}
-                            className="font-extrabold text-sm text-slate-900 hover:text-blue-600 transition-colors line-clamp-1"
+                            className="font-extrabold text-sm text-slate-900 hover:text-amber-600 transition-colors line-clamp-1"
                           >
                             {v.model}
                           </Link>
@@ -902,16 +902,16 @@ export default function VendorVehiclesPage() {
                         <span>{v.currentLocation || "Bangalore"}</span>
                       </div>
 
-                      {/* Chauffeur Indicator */}
+                      {/* Driver Indicator */}
                       <div className="flex items-center gap-1.5 text-[11px] font-medium mb-3">
                         <Users className="w-3.5 h-3.5 text-slate-400" />
                         {v.driverName ? (
                           <span className="text-slate-700">
-                            Chauffeur: <span className="font-bold text-slate-900">{v.driverName}</span>
+                            Driver: <span className="font-bold text-slate-900">{v.driverName}</span>
                           </span>
                         ) : (
                           <span className="text-rose-600 font-bold">
-                            Chauffeur: Not Assigned
+                            Driver: Not Assigned
                           </span>
                         )}
                       </div>
@@ -927,7 +927,7 @@ export default function VendorVehiclesPage() {
                       </Link>
                       <Link
                         href={`/vendor/vehicles/${v.id}/edit`}
-                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs"
+                        className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-xs shadow-amber-500/20"
                       >
                         Edit
                       </Link>
@@ -991,7 +991,7 @@ export default function VendorVehiclesPage() {
                       className="w-20 h-14 rounded-xl object-cover shrink-0 border border-slate-200"
                     />
                     <div>
-                      <Link href={`/vendor/vehicles/${v.id}`} className="font-extrabold text-sm text-slate-900 hover:text-blue-600">
+                      <Link href={`/vendor/vehicles/${v.id}`} className="font-extrabold text-sm text-slate-900 hover:text-amber-600">
                         {v.model}
                       </Link>
                       <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
@@ -1004,7 +1004,7 @@ export default function VendorVehiclesPage() {
                         <span>{v.transmission}</span>
                       </div>
                       <div className="text-[11px] text-slate-500 mt-1">
-                        {v.driverName ? `Chauffeur: ${v.driverName}` : <span className="text-rose-600 font-bold">Chauffeur: Not Assigned</span>}
+                        {v.driverName ? `Driver: ${v.driverName}` : <span className="text-rose-600 font-bold">Driver: Not Assigned</span>}
                       </div>
                     </div>
                   </div>
@@ -1020,7 +1020,7 @@ export default function VendorVehiclesPage() {
                       <Link href={`/vendor/vehicles/${v.id}`} className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50">
                         View
                       </Link>
-                      <Link href={`/vendor/vehicles/${v.id}/edit`} className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700">
+                      <Link href={`/vendor/vehicles/${v.id}/edit`} className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-xs shadow-amber-500/20">
                         Edit
                       </Link>
                     </div>
@@ -1050,7 +1050,7 @@ export default function VendorVehiclesPage() {
                     onClick={() => setCurrentPage(pg)}
                     className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       currentPage === pg
-                        ? "bg-blue-600 text-white shadow-2xs"
+                        ? "bg-amber-500 text-slate-950 font-black shadow-xs"
                         : "border border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -1064,7 +1064,7 @@ export default function VendorVehiclesPage() {
                     <button
                       onClick={() => setCurrentPage(totalPages)}
                       className={`w-8 h-8 rounded-lg text-xs font-bold border border-slate-200 transition-all cursor-pointer ${
-                        currentPage === totalPages ? "bg-blue-600 text-white" : "text-slate-700 hover:bg-slate-50"
+                        currentPage === totalPages ? "bg-amber-500 text-slate-950 font-black shadow-xs" : "text-slate-700 hover:bg-slate-50"
                       }`}
                     >
                       {totalPages}

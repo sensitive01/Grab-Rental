@@ -257,7 +257,7 @@ export default function VendorVehicleDetailsPage({ params }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
         <p className="text-sm font-bold text-slate-600">Loading vehicle details & photos...</p>
       </div>
     );
@@ -357,9 +357,9 @@ export default function VendorVehicleDetailsPage({ params }) {
       {/* ========================================================= */}
       <div className="flex items-center justify-between">
         <nav className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
+          <Link href="/" className="hover:text-amber-600 transition-colors">Home</Link>
           <span>&gt;</span>
-          <Link href="/vendor/vehicles" className="hover:text-blue-600 transition-colors">Cars</Link>
+          <Link href="/vendor/vehicles" className="hover:text-amber-600 transition-colors">Cars</Link>
           <span>&gt;</span>
           <span className="text-slate-500">{vData.type}</span>
           <span>&gt;</span>
@@ -368,7 +368,7 @@ export default function VendorVehicleDetailsPage({ params }) {
 
         <Link
           href={`/vendor/vehicles/${vData.id}/edit`}
-          className="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-2xs"
+          className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-xs shadow-amber-500/20 flex items-center gap-1.5"
         >
           <Edit3 className="w-3.5 h-3.5" />
           Edit Vehicle
@@ -441,7 +441,7 @@ export default function VendorVehicleDetailsPage({ params }) {
                 const idx = combinedPhotos.findIndex((p) => p.url === currentPhotoUrl);
                 setLightboxIndex(idx >= 0 ? idx : 0);
               }}
-              className="text-xs text-blue-600 hover:text-blue-700 font-bold px-2 py-1 flex items-center gap-1 cursor-pointer"
+              className="text-xs text-amber-600 hover:text-amber-700 font-bold px-2 py-1 flex items-center gap-1 cursor-pointer"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Fullscreen</span>
@@ -520,7 +520,7 @@ export default function VendorVehicleDetailsPage({ params }) {
                       isSelected
                         ? isInterior 
                           ? "border-purple-600 ring-2 ring-purple-500/20 shadow-md scale-102"
-                          : "border-blue-600 ring-2 ring-blue-500/20 shadow-md scale-102"
+                          : "border-amber-500 ring-2 ring-amber-500/20 shadow-md scale-102"
                         : "border-slate-200 opacity-75 hover:opacity-100"
                     }`}
                   >
@@ -560,8 +560,8 @@ export default function VendorVehicleDetailsPage({ params }) {
           {/* Header Title & Fleet Status */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                <Car className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-900 border border-amber-500/30">
+                <Car className="w-3.5 h-3.5 text-amber-600" />
                 {vData.type || "Fleet Vehicle"}
               </span>
               {vendorStatus === "PENDING" ? (
@@ -700,7 +700,7 @@ export default function VendorVehicleDetailsPage({ params }) {
               </Link>
               <Link
                 href="/vendor/vehicles/availability"
-                className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl border border-blue-200 transition-colors text-center"
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl transition-all shadow-xs shadow-amber-500/20 text-center"
               >
                 Availability Calendar
               </Link>
@@ -927,7 +927,7 @@ export default function VendorVehicleDetailsPage({ params }) {
                 onClick={() => setActiveTab(tab.id)}
                 className={`pb-3 text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 ${
                   isActive
-                    ? "border-blue-600 text-blue-600"
+                    ? "border-amber-500 text-amber-600"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >

@@ -36,15 +36,18 @@ export default function TopNavigation() {
       <div className="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm h-16 flex items-center justify-between px-6">
         <div className="flex items-center gap-8 h-full">
           {/* Logo */}
-          <Link href="/" className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <div className="bg-brand-navy text-white px-2 py-0.5 rounded flex items-center font-bold tracking-tight">
-                FLEETRIDE
-              </div>
+          <Link href="/" className="flex items-center gap-2.5">
+            <img
+              src="/images/grab-rentals-logo.jpg"
+              alt="Grab Rentals"
+              className="h-10 w-auto object-contain rounded-xl shadow-xs"
+            />
+            <div className="flex flex-col">
+              <span className="font-extrabold text-sm tracking-tight text-brand-navy">GRAB RENTALS</span>
+              <span className="text-[8px] text-amber-600 font-bold uppercase tracking-wider">
+                Grab Comfort in Every Mile
+              </span>
             </div>
-            <span className="text-[10px] text-slate-500 font-semibold tracking-widest uppercase mt-0.5">
-              Chauffeur & Intercity
-            </span>
           </Link>
 
           {/* Navigation Tabs */}

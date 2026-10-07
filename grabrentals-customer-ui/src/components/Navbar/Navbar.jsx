@@ -6,9 +6,12 @@ export default function Navbar() {
     <nav className={styles.navbar}>
       <div className={styles.navContainer}>
         <div className={styles.logo}>
-          <Link href="/">
-            <span style={{ color: "var(--primary-color)", fontWeight: "bold", fontSize: "28px" }}>Grab</span>
-            <span style={{ color: "var(--secondary-color)", fontWeight: "bold", fontSize: "28px" }}>Rentals</span>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+            <img src="/images/grab-rentals-logo.jpg" alt="Grab Rentals" style={{ height: "40px", width: "auto", borderRadius: "10px" }} />
+            <div>
+              <span style={{ color: "var(--primary-color)", fontWeight: "bold", fontSize: "24px" }}>Grab</span>
+              <span style={{ color: "var(--secondary-color)", fontWeight: "bold", fontSize: "24px" }}>Rentals</span>
+            </div>
           </Link>
         </div>
         

@@ -283,7 +283,7 @@ export default function EditDriverPage({ params }) {
       <div className="space-y-1">
         <Breadcrumbs
           items={[
-            { label: "Chauffeurs", href: "/vendor/drivers" },
+            { label: "All Drivers", href: "/vendor/drivers" },
             { label: formData.name || "Driver Profile", href: `/vendor/drivers/${driverId}` },
             { label: "Edit" }
           ]}
@@ -291,7 +291,7 @@ export default function EditDriverPage({ params }) {
         <div className="flex items-center justify-between pt-2">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Edit Chauffeur: {formData.name || "Driver"}
+              Edit Driver: {formData.name || "Driver"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500">
               Update verified commercial driver details, assigned vehicle, and badge photo.
