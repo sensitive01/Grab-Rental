@@ -30,7 +30,7 @@ export const EXTERIOR_SLOTS = [
 export const INTERIOR_SLOTS = [
   { id: "frontSeats", label: "Front Seats", subtitle: "Driver & co-passenger seats", required: true },
   { id: "backSeats", label: "Back Seats", subtitle: "Rear passenger cabin & legroom", required: true },
-  { id: "handle", label: "Handle & Steering", subtitle: "Steering wheel & dashboard", required: true },
+  // { id: "handle", label: "Handle & Steering", subtitle: "Steering wheel & dashboard", required: false },
 ];
 
 export default function MultipleVehiclePhotoUploader({
@@ -129,10 +129,13 @@ export default function MultipleVehiclePhotoUploader({
   };
 
   // Counts
-  const exteriorCompulsoryCount = EXTERIOR_SLOTS.filter(s => s.required && currentSlots[s.id]).length;
-  const interiorCompulsoryCount = INTERIOR_SLOTS.filter(s => s.required && currentSlots[s.id]).length;
+  const requiredExteriorSlots = EXTERIOR_SLOTS.filter(s => s.required);
+  const requiredInteriorSlots = INTERIOR_SLOTS.filter(s => s.required);
+  const totalRequiredCount = requiredExteriorSlots.length + requiredInteriorSlots.length;
+  const exteriorCompulsoryCount = requiredExteriorSlots.filter(s => currentSlots[s.id]).length;
+  const interiorCompulsoryCount = requiredInteriorSlots.filter(s => currentSlots[s.id]).length;
   const totalCompulsoryDone = exteriorCompulsoryCount + interiorCompulsoryCount;
-  const allCompulsoryDone = totalCompulsoryDone === 7;
+  const allCompulsoryDone = totalCompulsoryDone === totalRequiredCount;
 
   const renderSlotCard = (slot, index) => {
     const imgUrl = currentSlots[slot.id];
@@ -325,12 +328,12 @@ export default function MultipleVehiclePhotoUploader({
             {allCompulsoryDone ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                All 7 Photos Added *
+                All {totalRequiredCount} Photos Added *
               </>
             ) : (
               <>
                 <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                {totalCompulsoryDone}/7 Photos Added *
+                {totalCompulsoryDone}/{totalRequiredCount} Photos Added *
               </>
             )}
           </span>
@@ -388,21 +391,21 @@ export default function MultipleVehiclePhotoUploader({
           <div className="flex items-center gap-2">
             <Armchair className="w-4 h-4 text-amber-600" />
             <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">
-              2. Interior Photos (3 Angles)
+              2. Interior Photos ({INTERIOR_SLOTS.length} Angles)
             </span>
           </div>
           <span className={cn(
             "text-[11px] font-bold px-2.5 py-0.5 rounded-full border",
-            interiorCompulsoryCount === 3
+            interiorCompulsoryCount === requiredInteriorSlots.length
               ? "bg-emerald-100 text-emerald-800 border-emerald-300"
               : "bg-amber-100 text-amber-800 border-amber-300"
           )}>
-            {interiorCompulsoryCount}/3 *
+            {interiorCompulsoryCount}/{requiredInteriorSlots.length} *
           </span>
         </div>
 
-        {/* Responsive Grid for 3 Interior slots */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+        {/* Responsive Grid for Interior slots */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3.5">
           {INTERIOR_SLOTS.map((slot, idx) => renderSlotCard(slot, idx))}
         </div>
       </div>

@@ -185,7 +185,7 @@ function VendorOnboardingFlow() {
   // Additional requested Vehicle Fields
   const [vehicleVariant, setVehicleVariant] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
-  const [registrationType, setRegistrationType] = useState("");
+  const [registrationType, setRegistrationType] = useState("Yellow Board (Commercial)");
   const [alternateFuel, setAlternateFuel] = useState("");
   const [transmission, setTransmission] = useState("");
   const [engineCc, setEngineCc] = useState("");
@@ -742,7 +742,7 @@ function VendorOnboardingFlow() {
     if (!vehiclePhotoSlots.right) missingPhotos.push("Right Side");
     if (!vehiclePhotoSlots.frontSeats) missingPhotos.push("Front Seats");
     if (!vehiclePhotoSlots.backSeats) missingPhotos.push("Back Seats");
-    if (!vehiclePhotoSlots.handle) missingPhotos.push("Handle & Steering");
+    // Handle & Steering is optional
 
     if (missingPhotos.length > 0) {
       setError(`Please upload all required vehicle photos (*): ${missingPhotos.join(", ")}.`);
@@ -751,10 +751,6 @@ function VendorOnboardingFlow() {
 
     if (!insuranceExpiry) {
       setError("Please provide the vehicle insurance expiry date.");
-      return;
-    }
-    if (!rcExpiry) {
-      setError("Please provide the registration certificate (RC) expiry date.");
       return;
     }
 
@@ -861,7 +857,7 @@ function VendorOnboardingFlow() {
           permitExpiry: permitExpiry || undefined,
           rcDocumentUrl: rcDocument || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
           insuranceDocumentUrl: insuranceDocument || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
-          permitDocumentUrl: permitDocument || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
+          permitDocumentUrl: permitDocument || undefined,
           fitnessDocumentUrl: fitnessDocument || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
         });
       } catch (vErr) {
@@ -1042,15 +1038,15 @@ function VendorOnboardingFlow() {
     if (!vehiclePhotoSlots.right) missingPhotos.push("Right Side");
     if (!vehiclePhotoSlots.frontSeats) missingPhotos.push("Front Seats");
     if (!vehiclePhotoSlots.backSeats) missingPhotos.push("Back Seats");
-    if (!vehiclePhotoSlots.handle) missingPhotos.push("Handle & Steering");
+    // Handle & Steering is optional
 
     if (missingPhotos.length > 0) {
       setError(`Please upload all required vehicle photos (*): ${missingPhotos.join(", ")}.`);
       return;
     }
 
-    if (!insuranceExpiry || !rcExpiry) {
-      setError("Please provide insurance and RC expiry dates.");
+    if (!insuranceExpiry) {
+      setError("Please provide the vehicle insurance expiry date.");
       return;
     }
 
@@ -3039,22 +3035,24 @@ function VendorOnboardingFlow() {
                     </>
                   )}
 
-                  {/* Chauffeur Status */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Chauffeur Status
-                    </label>
-                    <select
-                      value={driverStatus}
-                      onChange={(e) => setDriverStatus(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-emerald-700"
-                    >
-                      <option value="Available">Available (Default)</option>
-                      <option value="Assigned">Assigned</option>
-                      <option value="Off-duty">Off-duty</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  </div>
+                  {/* COMMENTED OUT: Chauffeur Status */}
+                  {false && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Chauffeur Status
+                      </label>
+                      <select
+                        value={driverStatus}
+                        onChange={(e) => setDriverStatus(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-emerald-700"
+                      >
+                        <option value="Available">Available (Default)</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Off-duty">Off-duty</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                    </div>
+                  )}
 
                   {/* Emergency Contact Name */}
                   <div>
@@ -3180,7 +3178,7 @@ function VendorOnboardingFlow() {
                   <div className="flex items-center gap-2">
                     <Car className="w-4 h-4 text-amber-600" />
                     <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                      Vehicle Specifications & Amenities
+                      Vehicle Details
                     </span>
                   </div>
                   <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
@@ -3271,22 +3269,24 @@ function VendorOnboardingFlow() {
                     </>
                   )}
 
-                  {/* Registration Type */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Registration Type <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={registrationType}
-                      onChange={(e) => setRegistrationType(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-amber-800"
-                    >
-                      <option value="Yellow Board (Commercial)">Yellow Board (Commercial)</option>
-                      <option value="White Board (Self Drive)">White Board (Self Drive / Private)</option>
-                      <option value="All India Tourist Permit (AITP)">All India Tourist Permit (AITP)</option>
-                      <option value="Stage Carriage Permit">Stage Carriage Permit</option>
-                    </select>
-                  </div>
+                  {/* COMMENTED OUT: Registration Type */}
+                  {false && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Registration Type
+                      </label>
+                      <select
+                        value={registrationType}
+                        onChange={(e) => setRegistrationType(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-amber-800"
+                      >
+                        <option value="Yellow Board (Commercial)">Yellow Board (Commercial)</option>
+                        <option value="White Board (Self Drive)">White Board (Self Drive / Private)</option>
+                        <option value="All India Tourist Permit (AITP)">All India Tourist Permit (AITP)</option>
+                        <option value="Stage Carriage Permit">Stage Carriage Permit</option>
+                      </select>
+                    </div>
+                  )}
 
                   {/* Vehicle Category */}
                   <div>
@@ -3315,8 +3315,8 @@ function VendorOnboardingFlow() {
                     </select>
                   </div>
 
-                  {/* Sub Category */}
-                  {VEHICLE_SUB_CATEGORIES[vehicleCategory] && (
+                  {/* COMMENTED OUT: Sub Category */}
+                  {false && VEHICLE_SUB_CATEGORIES[vehicleCategory] && (
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
                         Sub Category
@@ -3355,34 +3355,18 @@ function VendorOnboardingFlow() {
                   {/* Fuel Type */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Primary Fuel Type
+                      Fuel Type
                     </label>
                     <select
                       value={fuelType}
                       onChange={(e) => setFuelType(e.target.value)}
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                     >
-                      <option value="Diesel">Diesel</option>
                       <option value="Petrol">Petrol</option>
-                      <option value="CNG">CNG</option>
-                      <option value="Electric">Electric (EV)</option>
-                    </select>
-                  </div>
-
-                  {/* Vehicle Alternate Fuel */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Vehicle Alternate Fuel
-                    </label>
-                    <select
-                      value={alternateFuel}
-                      onChange={(e) => setAlternateFuel(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    >
-                      <option value="None">None (Single Fuel)</option>
-                      <option value="CNG">CNG (Bi-fuel)</option>
-                      <option value="Electric">Electric (Hybrid/Dual)</option>
-                      <option value="LPG">LPG</option>
+                      <option value="Diesel">Diesel</option>
+                      <option value="Petrol + CNG">Petrol + CNG</option>
+                      <option value="Electric">Electric</option>
+                      <option value="Hybrid">Hybrid</option>
                     </select>
                   </div>
 
@@ -3550,18 +3534,20 @@ function VendorOnboardingFlow() {
                       )}
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        RC Expiry Date <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={rcExpiry}
-                        onChange={(e) => setRcExpiry(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                        required
-                      />
-                    </div>
+                    {/* COMMENTED OUT: RC Expiry Date */}
+                    {false && (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          RC Expiry Date
+                        </label>
+                        <input
+                          type="date"
+                          value={rcExpiry}
+                          onChange={(e) => setRcExpiry(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -3754,77 +3740,79 @@ function VendorOnboardingFlow() {
                     </div>
                   </div>
 
-                  {/* 4. Commercial Tourist Permit */}
-                  <div className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-purple-600" />
-                        4. Commercial Tourist Permit
-                      </span>
-                      {docFileNames.permit && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                          <Check className="w-3 h-3 stroke-[3]" /> Uploaded
+                  {/* COMMENTED OUT: 4. Commercial Tourist Permit */}
+                  {false && (
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-purple-600" />
+                          4. Commercial Tourist Permit
                         </span>
-                      )}
-                    </div>
+                        {docFileNames.permit && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                            <Check className="w-3 h-3 stroke-[3]" /> Uploaded
+                          </span>
+                        )}
+                      </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Permit Expiry Date
-                      </label>
-                      <input
-                        type="date"
-                        value={permitExpiry}
-                        onChange={(e) => setPermitExpiry(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Upload Permit Proof Document
-                      </label>
-                      <label className={cn(
-                        "flex items-center justify-between p-2.5 border-2 border-dashed rounded-xl cursor-pointer transition-all",
-                        docFileNames.permit
-                          ? "border-emerald-300 bg-emerald-50/40"
-                          : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
-                      )}>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Permit Expiry Date
+                        </label>
                         <input
-                          type="file"
-                          accept=".pdf,.png,.jpg,.jpeg"
-                          className="hidden"
-                          onChange={(e) => handleDocumentUpload("permit", e.target.files?.[0])}
+                          type="date"
+                          value={permitExpiry}
+                          onChange={(e) => setPermitExpiry(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                         />
-                        {uploadingDocs.permit ? (
-                          <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Uploading document...</span>
-                          </div>
-                        ) : docFileNames.permit ? (
-                          <div className="flex items-center justify-between w-full text-left gap-2">
-                            <div className="flex items-center gap-2 truncate">
-                              <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <span className="text-xs font-semibold text-slate-900 truncate">
-                                {docFileNames.permit}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Upload Permit Proof Document
+                        </label>
+                        <label className={cn(
+                          "flex items-center justify-between p-2.5 border-2 border-dashed rounded-xl cursor-pointer transition-all",
+                          docFileNames.permit
+                            ? "border-emerald-300 bg-emerald-50/40"
+                            : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
+                        )}>
+                          <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            className="hidden"
+                            onChange={(e) => handleDocumentUpload("permit", e.target.files?.[0])}
+                          />
+                          {uploadingDocs.permit ? (
+                            <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Uploading document...</span>
+                            </div>
+                          ) : docFileNames.permit ? (
+                            <div className="flex items-center justify-between w-full text-left gap-2">
+                              <div className="flex items-center gap-2 truncate">
+                                <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span className="text-xs font-semibold text-slate-900 truncate">
+                                  {docFileNames.permit}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-amber-700 hover:underline shrink-0">
+                                Change
                               </span>
                             </div>
-                            <span className="text-[10px] font-bold text-amber-700 hover:underline shrink-0">
-                              Change
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between w-full text-slate-600">
-                            <div className="flex items-center gap-1.5">
-                              <UploadCloud className="w-4 h-4 text-amber-600" />
-                              <span className="text-xs font-semibold">Upload Permit File</span>
+                          ) : (
+                            <div className="flex items-center justify-between w-full text-slate-600">
+                              <div className="flex items-center gap-1.5">
+                                <UploadCloud className="w-4 h-4 text-amber-600" />
+                                <span className="text-xs font-semibold">Upload Permit File</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
                             </div>
-                            <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
-                          </div>
-                        )}
-                      </label>
+                          )}
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* COMMENTED OUT: 5. Pollution Under Control (PUC) Certificate */}
                   {false && (
@@ -4004,7 +3992,7 @@ function VendorOnboardingFlow() {
                           <span className="text-slate-500 ml-2">· {v.vehicleModel} ({v.vehicleType})</span>
                           <div className="text-[11px] text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2">
                             <span>Insurance: {v.insuranceExpiry}</span>
-                            <span>· RC: {v.rcExpiry}</span>
+                            {v.rcExpiry && <span>· RC: {v.rcExpiry}</span>}
                             {v.permitExpiry && <span>· Permit: {v.permitExpiry}</span>}
                             {v.fitnessExpiry && <span>· Fitness: {v.fitnessExpiry}</span>}
                             {v.pucExpiry && <span>· PUC: {v.pucExpiry}</span>}
@@ -4105,21 +4093,24 @@ function VendorOnboardingFlow() {
                         </div>
                       </>
                     )}
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Registration Type *
-                      </label>
-                      <select
-                        value={registrationType}
-                        onChange={(e) => setRegistrationType(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-amber-800"
-                      >
-                        <option value="Yellow Board (Commercial)">Yellow Board (Commercial)</option>
-                        <option value="White Board (Self Drive)">White Board (Self Drive)</option>
-                        <option value="All India Tourist Permit (AITP)">All India Tourist Permit (AITP)</option>
-                        <option value="Stage Carriage Permit">Stage Carriage Permit</option>
-                      </select>
-                    </div>
+                    {/* COMMENTED OUT: Registration Type */}
+                    {false && (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Registration Type
+                        </label>
+                        <select
+                          value={registrationType}
+                          onChange={(e) => setRegistrationType(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-amber-800"
+                        >
+                          <option value="Yellow Board (Commercial)">Yellow Board (Commercial)</option>
+                          <option value="White Board (Self Drive)">White Board (Self Drive)</option>
+                          <option value="All India Tourist Permit (AITP)">All India Tourist Permit (AITP)</option>
+                          <option value="Stage Carriage Permit">Stage Carriage Permit</option>
+                        </select>
+                      </div>
+                    )}
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Category
@@ -4145,7 +4136,8 @@ function VendorOnboardingFlow() {
                       </select>
                     </div>
 
-                    {VEHICLE_SUB_CATEGORIES[vehicleCategory] && (
+                    {/* COMMENTED OUT: Sub Category */}
+                    {false && VEHICLE_SUB_CATEGORIES[vehicleCategory] && (
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">
                           Sub Category
@@ -4208,25 +4200,11 @@ function VendorOnboardingFlow() {
                         onChange={(e) => setFuelType(e.target.value)}
                         className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                       >
-                        <option value="Diesel">Diesel</option>
                         <option value="Petrol">Petrol</option>
-                        <option value="CNG">CNG</option>
-                        <option value="Electric">Electric (EV)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Alternate Fuel
-                      </label>
-                      <select
-                        value={alternateFuel}
-                        onChange={(e) => setAlternateFuel(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      >
-                        <option value="None">None (Single Fuel)</option>
-                        <option value="CNG">CNG</option>
-                        <option value="Electric">Electric (Hybrid)</option>
-                        <option value="LPG">LPG</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="Petrol + CNG">Petrol + CNG</option>
+                        <option value="Electric">Electric</option>
+                        <option value="Hybrid">Hybrid</option>
                       </select>
                     </div>
                     {/* COMMENTED OUT: Vehicle Transmission, Engine Displacement (CC), Parking Location with map, Vehicle Features & Luxury Amenities */}
@@ -4346,18 +4324,20 @@ function VendorOnboardingFlow() {
                             </span>
                           )}
                         </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                            RC Expiry Date <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="date"
-                            value={rcExpiry}
-                            onChange={(e) => setRcExpiry(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                            required
-                          />
-                        </div>
+                        {/* COMMENTED OUT: RC Expiry Date */}
+                        {false && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                              RC Expiry Date
+                            </label>
+                            <input
+                              type="date"
+                              value={rcExpiry}
+                              onChange={(e) => setRcExpiry(e.target.value)}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                            />
+                          </div>
+                        )}
                         <div>
                           <label className="block text-[10px] font-bold text-slate-600 mb-1">
                             Upload RC Proof Document
@@ -4404,7 +4384,7 @@ function VendorOnboardingFlow() {
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
                             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                            2. Commercial Insurance Policy
+                            2. Insurance Policy
                           </span>
                           {docFileNames.insurance && (
                             <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
@@ -4465,70 +4445,72 @@ function VendorOnboardingFlow() {
                         </div>
                       </div>
 
-                      {/* 3. Commercial Permit */}
-                      <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-2.5 shadow-2xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                            3. Commercial Permit
-                          </span>
-                          {docFileNames.permit && (
-                            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                              <Check className="w-2.5 h-2.5 stroke-[3]" /> Uploaded
+                      {/* COMMENTED OUT: 3. Commercial Permit */}
+                      {false && (
+                        <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-2.5 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                              3. Commercial Permit
                             </span>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                            Permit Expiry Date
-                          </label>
-                          <input
-                            type="date"
-                            value={permitExpiry}
-                            onChange={(e) => setPermitExpiry(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                            Upload Commercial Permit Proof
-                          </label>
-                          <label className={cn(
-                            "flex items-center justify-between p-2 border-2 border-dashed rounded-lg cursor-pointer transition-all",
-                            docFileNames.permit
-                              ? "border-emerald-300 bg-emerald-50/40"
-                              : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
-                          )}>
-                            <input
-                              type="file"
-                              accept=".pdf,.png,.jpg,.jpeg"
-                              className="hidden"
-                              onChange={(e) => handleDocumentUpload("permit", e.target.files?.[0])}
-                            />
-                            {uploadingDocs.permit ? (
-                              <div className="flex items-center gap-1.5 text-xs text-amber-700">
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                <span>Uploading...</span>
-                              </div>
-                            ) : docFileNames.permit ? (
-                              <div className="flex items-center justify-between w-full text-left gap-1.5 truncate">
-                                <span className="text-xs text-slate-900 truncate font-medium">
-                                  {docFileNames.permit}
-                                </span>
-                                <span className="text-[10px] font-bold text-amber-700 shrink-0">Change</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-between w-full text-slate-500 text-xs">
-                                <div className="flex items-center gap-1.5">
-                                  <UploadCloud className="w-3.5 h-3.5 text-amber-600" />
-                                  <span>Upload Permit Copy</span>
-                                </div>
-                                <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
-                              </div>
+                            {docFileNames.permit && (
+                              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5 stroke-[3]" /> Uploaded
+                              </span>
                             )}
-                          </label>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                              Permit Expiry Date
+                            </label>
+                            <input
+                              type="date"
+                              value={permitExpiry}
+                              onChange={(e) => setPermitExpiry(e.target.value)}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                              Upload Commercial Permit Proof
+                            </label>
+                            <label className={cn(
+                              "flex items-center justify-between p-2 border-2 border-dashed rounded-lg cursor-pointer transition-all",
+                              docFileNames.permit
+                                ? "border-emerald-300 bg-emerald-50/40"
+                                : "border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/20"
+                            )}>
+                              <input
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg"
+                                className="hidden"
+                                onChange={(e) => handleDocumentUpload("permit", e.target.files?.[0])}
+                              />
+                              {uploadingDocs.permit ? (
+                                <div className="flex items-center gap-1.5 text-xs text-amber-700">
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Uploading...</span>
+                                </div>
+                              ) : docFileNames.permit ? (
+                                <div className="flex items-center justify-between w-full text-left gap-1.5 truncate">
+                                  <span className="text-xs text-slate-900 truncate font-medium">
+                                    {docFileNames.permit}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-amber-700 shrink-0">Change</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between w-full text-slate-500 text-xs">
+                                  <div className="flex items-center gap-1.5">
+                                    <UploadCloud className="w-3.5 h-3.5 text-amber-600" />
+                                    <span>Upload Permit Copy</span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400">PDF, JPG, PNG</span>
+                                </div>
+                              )}
+                            </label>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* 4. Vehicle Fitness Certificate */}
                       <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-2.5 shadow-2xs">
@@ -4985,21 +4967,24 @@ function VendorOnboardingFlow() {
                       </>
                     )}
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Chauffeur Status
-                      </label>
-                      <select
-                        value={newDriverStatus}
-                        onChange={(e) => setNewDriverStatus(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-semibold text-emerald-700"
-                      >
-                        <option value="Available">Available (Default)</option>
-                        <option value="Assigned">Assigned</option>
-                        <option value="Off-duty">Off-duty</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    </div>
+                    {/* COMMENTED OUT: Chauffeur Status */}
+                    {false && (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Chauffeur Status
+                        </label>
+                        <select
+                          value={newDriverStatus}
+                          onChange={(e) => setNewDriverStatus(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-semibold text-emerald-700"
+                        >
+                          <option value="Available">Available (Default)</option>
+                          <option value="Assigned">Assigned</option>
+                          <option value="Off-duty">Off-duty</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">

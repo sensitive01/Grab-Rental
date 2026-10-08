@@ -221,7 +221,7 @@ export default function AddVehiclePage() {
     if (!photoSlots.right) missingPhotos.push("Right Side");
     if (!photoSlots.frontSeats) missingPhotos.push("Front Seats");
     if (!photoSlots.backSeats) missingPhotos.push("Back Seats");
-    if (!photoSlots.handle) missingPhotos.push("Handle & Steering");
+    // Handle & Steering is optional
 
     if (missingPhotos.length > 0) {
       setToast({
@@ -428,26 +428,20 @@ export default function AddVehiclePage() {
               {/* Color */}
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-700">Vehicle Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleChange}
-                    placeholder="e.g. Pearl White"
-                    className="flex-1 py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
-                  />
-                  <select
-                    onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
-                    className="py-2.5 px-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer"
-                    title="Quick pick color"
-                  >
-                    <option value="">Presets</option>
-                    {PRESET_COLORS.map((c) => (
-                      <option key={c.name} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  type="text"
+                  name="color"
+                  list="vehicle-color-presets"
+                  value={formData.color}
+                  onChange={handleChange}
+                  placeholder="e.g. Pearl White"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500"
+                />
+                <datalist id="vehicle-color-presets">
+                  {PRESET_COLORS.map((c) => (
+                    <option key={c.name} value={c.name} />
+                  ))}
+                </datalist>
               </div>
 
               {/* Registration Type */}
@@ -523,35 +517,20 @@ export default function AddVehiclePage() {
                 />
               </div>
 
-              {/* Primary Fuel Type */}
+              {/* Fuel Type */}
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Primary Fuel Type</label>
+                <label className="font-bold text-slate-700">Fuel Type</label>
                 <select
                   name="fuelType"
                   value={formData.fuelType}
                   onChange={handleChange}
                   className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
                 >
-                  <option value="Diesel">Diesel</option>
                   <option value="Petrol">Petrol</option>
-                  <option value="CNG">CNG</option>
-                  <option value="Electric">Electric (EV)</option>
-                </select>
-              </div>
-
-              {/* Alternate Fuel */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Vehicle Alternate Fuel</label>
-                <select
-                  name="alternateFuel"
-                  value={formData.alternateFuel}
-                  onChange={handleChange}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-amber-500 cursor-pointer"
-                >
-                  <option value="None">None (Single Fuel)</option>
-                  <option value="CNG">CNG (Bi-fuel)</option>
-                  <option value="Electric">Electric (Hybrid/Dual)</option>
-                  <option value="LPG">LPG</option>
+                  <option value="Diesel">Diesel</option>
+                  <option value="Petrol + CNG">Petrol + CNG</option>
+                  <option value="Electric">Electric</option>
+                  <option value="Hybrid">Hybrid</option>
                 </select>
               </div>
 
@@ -965,7 +944,7 @@ export default function AddVehiclePage() {
 
                 <div className="p-2.5 rounded-xl border border-slate-100 bg-slate-50 col-span-2">
                   <p className="text-[10px] text-slate-400">Fuel System</p>
-                  <p className="font-bold text-slate-800 truncate">{formData.fuelType} {formData.alternateFuel !== "None" ? `+ ${formData.alternateFuel}` : ""}</p>
+                  <p className="font-bold text-slate-800 truncate">{formData.fuelType}</p>
                 </div>
               </div>
 
