@@ -9,6 +9,7 @@ import com.grabrentals.common.exception.ResourceNotFoundException;
 import com.grabrentals.vendor.entity.Vehicle;
 import com.grabrentals.vendor.entity.VehicleStatus;
 import com.grabrentals.vendor.repository.VehicleRepository;
+import com.grabrentals.tariff.dto.VehicleModelConfigResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class PublicVehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final BookingRepository bookingRepository;
+    private final com.grabrentals.tariff.service.VehicleTariffService vehicleTariffService;
 
     public BookingResponse getBookingByReference(String bookingReference) {
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
@@ -55,62 +57,60 @@ public class PublicVehicleService {
 
         int distanceKm = calculateDistanceWithStops(cleanFrom, cleanTo, parsedStops, normalizedTripType);
 
-        // Fetch live available vehicles from database
-        List<Vehicle> availableVehicles = vehicleRepository.findByStatus(VehicleStatus.AVAILABLE);
+        // Priority 1: Use active Vehicle Models configured by Admin in the catalog
+        List<VehicleModelConfigResponse> activeConfigs = vehicleTariffService.getActiveModelConfigs();
 
         List<PublicVehicleCardDto> cards = new ArrayList<>();
 
-        if (availableVehicles.isEmpty()) {
-            // Fallback cards if no vehicles registered in database yet
-            cards.add(buildCategoryCard("hatchback", "Wagon R or Equivalent", "Hatchback • AC • 4 Seats", "HATCHBACK",
-                    4.84, 1420, 4, "/images/cars/wagon_r.jpg", distanceKm, new BigDecimal("11.70"), new BigDecimal("12.50"),
-                    List.of("CNG", "Diesel"), 4, "Most Economical"));
-            cards.add(buildCategoryCard("sedan", "Maruti Dzire or Equivalent", "Sedan • AC • 4 Seats", "SEDAN",
-                    4.88, 2840, 4, "/images/cars/dzire.jpg", distanceKm, new BigDecimal("12.00"), new BigDecimal("13.00"),
-                    List.of("CNG", "Diesel"), 7, "Customer Choice"));
-            cards.add(buildCategoryCard("suv_6", "Maruti Ertiga or Equivalent", "SUV • AC • 6 Seats", "SUV_6",
-                    4.81, 980, 6, "/images/cars/ertiga.jpg", distanceKm, new BigDecimal("15.60"), new BigDecimal("16.50"),
-                    List.of("CNG", "Diesel"), 3, "Family Favorite"));
-            cards.add(buildCategoryCard("suv_7", "Toyota Innova Crysta or Equivalent", "Executive SUV • AC • 7 Seats", "SUV_7",
-                    4.92, 1650, 7, "/images/cars/innova.jpg", distanceKm, new BigDecimal("19.50"), new BigDecimal("21.00"),
-                    List.of("Diesel"), 5, "Premium Comfort"));
-        } else {
-            // Map live database vehicles
-            for (Vehicle v : availableVehicles) {
-                String model = (v.getModel() != null && !v.getModel().isBlank()) ? v.getModel().trim() : "Standard Fleet";
-                BigDecimal rate = (v.getPerKmRate() != null && v.getPerKmRate().compareTo(BigDecimal.ZERO) > 0)
-                        ? v.getPerKmRate()
-                        : getDefaultRateForType(v.getVehicleType(), v.getSeatingCapacity());
+        if (activeConfigs != null && !activeConfigs.isEmpty()) {
+            for (VehicleModelConfigResponse config : activeConfigs) {
+                String model = (config.getModelName() != null && !config.getModelName().isBlank())
+                        ? config.getModelName().trim()
+                        : "Standard Fleet";
+                int seats = 4;
+                try {
+                    if (config.getSeatingCapacity() != null && !config.getSeatingCapacity().isBlank()) {
+                        seats = Integer.parseInt(config.getSeatingCapacity().trim());
+                    }
+                } catch (Exception ignored) {}
+
+                // Dynamically resolve rate using Tariff Engine (checks seasonal, weekday/weekend, day/night)
+                Map<String, Object> rateContext = vehicleTariffService.calculateRate(
+                        config.getCategory(), model, String.valueOf(seats), pickupDate, pickupTime
+                );
+                BigDecimal rate = (BigDecimal) rateContext.get("ratePerKm");
+                if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
+                    rate = getDefaultRateForType(config.getCategory(), seats);
+                }
                 BigDecimal postRate = rate.add(new BigDecimal("1.00"));
 
-                int seats = v.getSeatingCapacity() != null ? v.getSeatingCapacity() : 4;
-                String category = mapVehicleCategory(v.getVehicleType(), seats);
-                String typeTitle = (v.getVehicleType() != null && !v.getVehicleType().isBlank())
-                        ? v.getVehicleType()
+                String category = mapVehicleCategory(config.getCategory(), seats);
+                String typeTitle = (config.getCategory() != null && !config.getCategory().isBlank())
+                        ? config.getCategory()
                         : (category.contains("SUV") ? "SUV" : category.contains("SEDAN") ? "Sedan" : "Hatchback");
 
-                String image = resolveVehicleImage(model, category, v.getImageUrl());
-                String badge = getVehicleBadge(model, category);
+                String image = (config.getCommonPhotoUrl() != null && !config.getCommonPhotoUrl().isBlank())
+                        ? config.getCommonPhotoUrl()
+                        : resolveVehicleImage(model, category, null);
+
+                String badge = (Boolean.TRUE.equals(rateContext.get("isSeasonal")))
+                        ? (rateContext.get("seasonName") != null ? rateContext.get("seasonName").toString() : "Festive Special")
+                        : getVehicleBadge(model, category);
                 double rating = getVehicleRating(model, category);
                 int ratingCount = 500;
-                String cardId = v.getId() != null ? v.getId().toString() : model.toLowerCase().replaceAll("[^a-z0-9]+", "_");
+                String cardId = config.getId() != null ? config.getId().toString() : model.toLowerCase().replaceAll("[^a-z0-9]+", "_");
 
-                String fuel = (v.getFuelType() != null && !v.getFuelType().isBlank()) ? v.getFuelType() : "Diesel";
-                String trans = (v.getTransmission() != null && !v.getTransmission().isBlank()) ? v.getTransmission() : "Manual";
-                int yr = v.getYear() != null ? v.getYear() : 2023;
-                BigDecimal dailyPrice = (v.getDailyRate() != null && v.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
-                        ? v.getDailyRate()
-                        : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
-                String loc = v.getParkingLocation() != null && !v.getParkingLocation().isBlank()
-                        ? v.getParkingLocation()
-                        : (v.getCurrentLocation() != null && !v.getCurrentLocation().isBlank() ? v.getCurrentLocation() : cleanFrom);
-                String chauffeurName = (v.getUser() != null && v.getUser().getName() != null && !v.getUser().getName().isBlank())
-                        ? v.getUser().getName()
-                        : "Verified Commercial Chauffeur";
+                String fuel = (config.getFuelType() != null && !config.getFuelType().isBlank()) ? config.getFuelType() : "Diesel";
+                BigDecimal baseFare = (BigDecimal) rateContext.get("baseFare");
+                Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : 250;
+                if (baseKm == null || baseKm <= 0) baseKm = 250;
+                BigDecimal dailyPrice = (baseFare != null && baseFare.compareTo(BigDecimal.ZERO) > 0)
+                        ? baseFare
+                        : rate.multiply(BigDecimal.valueOf(baseKm)).setScale(0, RoundingMode.HALF_UP);
 
                 PublicVehicleCardDto card = buildCategoryCard(
                         cardId,
-                        model,
+                        model + " or Equivalent",
                         typeTitle + " • AC • " + seats + " Seats",
                         category,
                         rating,
@@ -121,23 +121,113 @@ public class PublicVehicleService {
                         rate,
                         postRate,
                         List.of(fuel),
-                        1,
+                        5,
                         badge
                 );
-                card.setVehicleNumber(v.getVehicleNumber());
-                card.setRegNumber(v.getRegistrationNumber() != null && !v.getRegistrationNumber().isBlank() ? v.getRegistrationNumber() : v.getVehicleNumber());
                 card.setVehicleType(typeTitle);
                 card.setFuelType(fuel);
-                card.setTransmission(trans);
-                card.setYear(yr);
+                card.setTransmission("Manual / Automatic");
+                card.setYear(2024);
                 card.setDailyPrice(dailyPrice);
                 card.setPerKmRate(rate);
-                card.setLocation(loc);
-                card.setStatus(v.getStatus() != null ? v.getStatus().name() : "AVAILABLE");
-                card.setChauffeur(chauffeurName);
+                card.setLocation(cleanFrom);
+                card.setStatus("AVAILABLE");
+                card.setChauffeur("Verified Commercial Chauffeur");
                 card.setChauffeurRating(4.9);
 
                 cards.add(card);
+            }
+        } else {
+            // Fallback if no admin vehicle models are configured yet
+            List<Vehicle> availableVehicles = vehicleRepository.findByStatus(VehicleStatus.AVAILABLE);
+
+            if (availableVehicles.isEmpty()) {
+                cards.add(buildCategoryCard("hatchback", "Wagon R or Equivalent", "Hatchback • AC • 4 Seats", "HATCHBACK",
+                        4.84, 1420, 4, vehicleTariffService.resolveCommonPhoto("Hatchback", "WagonR", "4"), distanceKm, new BigDecimal("11.70"), new BigDecimal("12.50"),
+                        List.of("CNG", "Diesel"), 4, "Most Economical"));
+                cards.add(buildCategoryCard("sedan", "Maruti Dzire or Equivalent", "Sedan • AC • 4 Seats", "SEDAN",
+                        4.88, 2840, 4, vehicleTariffService.resolveCommonPhoto("Sedan", "Dzire", "4"), distanceKm, new BigDecimal("12.00"), new BigDecimal("13.00"),
+                        List.of("CNG", "Diesel"), 7, "Customer Choice"));
+                cards.add(buildCategoryCard("suv_6", "Maruti Ertiga or Equivalent", "SUV • AC • 6 Seats", "SUV_6",
+                        4.81, 980, 6, vehicleTariffService.resolveCommonPhoto("SUV", "Ertiga", "6"), distanceKm, new BigDecimal("15.60"), new BigDecimal("16.50"),
+                        List.of("CNG", "Diesel"), 3, "Family Favorite"));
+                cards.add(buildCategoryCard("suv_7", "Toyota Innova Crysta or Equivalent", "Executive SUV • AC • 7 Seats", "SUV_7",
+                        4.92, 1650, 7, vehicleTariffService.resolveCommonPhoto("Innovacrysta", "Innova Crysta", "7"), distanceKm, new BigDecimal("19.50"), new BigDecimal("21.00"),
+                        List.of("Diesel"), 5, "Premium Comfort"));
+            } else {
+                for (Vehicle v : availableVehicles) {
+                    String model = (v.getModel() != null && !v.getModel().isBlank()) ? v.getModel().trim() : "Standard Fleet";
+                    int seats = v.getSeatingCapacity() != null ? v.getSeatingCapacity() : 4;
+
+                    Map<String, Object> rateContext = vehicleTariffService.calculateRate(
+                            v.getVehicleType(), model, String.valueOf(seats), pickupDate, pickupTime
+                    );
+                    BigDecimal rate = (BigDecimal) rateContext.get("ratePerKm");
+                    if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
+                        rate = (v.getPerKmRate() != null && v.getPerKmRate().compareTo(BigDecimal.ZERO) > 0)
+                                ? v.getPerKmRate()
+                                : getDefaultRateForType(v.getVehicleType(), seats);
+                    }
+                    BigDecimal postRate = rate.add(new BigDecimal("1.00"));
+
+                    String category = mapVehicleCategory(v.getVehicleType(), seats);
+                    String typeTitle = (v.getVehicleType() != null && !v.getVehicleType().isBlank())
+                            ? v.getVehicleType()
+                            : (category.contains("SUV") ? "SUV" : category.contains("SEDAN") ? "Sedan" : "Hatchback");
+
+                    String commonPhoto = vehicleTariffService.resolveCommonPhoto(v.getVehicleType(), model, String.valueOf(seats));
+                    String image = (commonPhoto != null && !commonPhoto.isBlank()) ? commonPhoto : resolveVehicleImage(model, category, v.getImageUrl());
+                    String badge = (Boolean.TRUE.equals(rateContext.get("isSeasonal")))
+                            ? (rateContext.get("seasonName") != null ? rateContext.get("seasonName").toString() : "Festive Special")
+                            : getVehicleBadge(model, category);
+                    double rating = getVehicleRating(model, category);
+                    int ratingCount = 500;
+                    String cardId = v.getId() != null ? v.getId().toString() : model.toLowerCase().replaceAll("[^a-z0-9]+", "_");
+
+                    String fuel = (v.getFuelType() != null && !v.getFuelType().isBlank()) ? v.getFuelType() : "Diesel";
+                    String trans = (v.getTransmission() != null && !v.getTransmission().isBlank()) ? v.getTransmission() : "Manual";
+                    int yr = v.getYear() != null ? v.getYear() : 2023;
+                    BigDecimal dailyPrice = (v.getDailyRate() != null && v.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
+                            ? v.getDailyRate()
+                            : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
+                    String loc = v.getParkingLocation() != null && !v.getParkingLocation().isBlank()
+                            ? v.getParkingLocation()
+                            : (v.getCurrentLocation() != null && !v.getCurrentLocation().isBlank() ? v.getCurrentLocation() : cleanFrom);
+                    String chauffeurName = (v.getUser() != null && v.getUser().getName() != null && !v.getUser().getName().isBlank())
+                            ? v.getUser().getName()
+                            : "Verified Commercial Chauffeur";
+
+                    PublicVehicleCardDto card = buildCategoryCard(
+                            cardId,
+                            model,
+                            typeTitle + " • AC • " + seats + " Seats",
+                            category,
+                            rating,
+                            ratingCount,
+                            seats,
+                            image,
+                            distanceKm,
+                            rate,
+                            postRate,
+                            List.of(fuel),
+                            1,
+                            badge
+                    );
+                    card.setVehicleNumber(v.getVehicleNumber());
+                    card.setRegNumber(v.getRegistrationNumber() != null && !v.getRegistrationNumber().isBlank() ? v.getRegistrationNumber() : v.getVehicleNumber());
+                    card.setVehicleType(typeTitle);
+                    card.setFuelType(fuel);
+                    card.setTransmission(trans);
+                    card.setYear(yr);
+                    card.setDailyPrice(dailyPrice);
+                    card.setPerKmRate(rate);
+                    card.setLocation(loc);
+                    card.setStatus(v.getStatus() != null ? v.getStatus().name() : "AVAILABLE");
+                    card.setChauffeur(chauffeurName);
+                    card.setChauffeurRating(4.9);
+
+                    cards.add(card);
+                }
             }
         }
 
@@ -171,8 +261,8 @@ public class PublicVehicleService {
     ) {
         BigDecimal discounted = perKmRate.multiply(BigDecimal.valueOf(distanceKm)).setScale(0, RoundingMode.HALF_UP);
         BigDecimal original = discounted.multiply(new BigDecimal("1.14")).setScale(0, RoundingMode.HALF_UP);
-        BigDecimal taxes = discounted.multiply(new BigDecimal("0.36")).setScale(0, RoundingMode.HALF_UP);
-        BigDecimal advance = (discounted.add(taxes)).multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal taxes = BigDecimal.ZERO; // GST set to 0 for now
+        BigDecimal advance = discounted.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
 
         return PublicVehicleCardDto.builder()
                 .id(id)
@@ -246,10 +336,104 @@ public class PublicVehicleService {
         return isRound ? oneWay * 2 : oneWay;
     }
 
+    private static final Map<String, double[]> CITY_COORDS = new HashMap<>();
+
+    static {
+        // Karnataka
+        CITY_COORDS.put("bangalore", new double[]{12.9716, 77.5946});
+        CITY_COORDS.put("bengaluru", new double[]{12.9716, 77.5946});
+        CITY_COORDS.put("mysore", new double[]{12.2958, 76.6394});
+        CITY_COORDS.put("mysuru", new double[]{12.2958, 76.6394});
+        CITY_COORDS.put("mangalore", new double[]{12.9141, 74.8560});
+        CITY_COORDS.put("mangaluru", new double[]{12.9141, 74.8560});
+        CITY_COORDS.put("coorg", new double[]{12.4244, 75.7382});
+        CITY_COORDS.put("madikeri", new double[]{12.4244, 75.7382});
+        CITY_COORDS.put("chikmagalur", new double[]{13.3161, 75.7720});
+        CITY_COORDS.put("hubli", new double[]{15.3647, 75.1240});
+        CITY_COORDS.put("belgaum", new double[]{15.8497, 74.4977});
+        CITY_COORDS.put("hampi", new double[]{15.3350, 76.4600});
+        CITY_COORDS.put("shimoga", new double[]{13.9299, 75.5681});
+        CITY_COORDS.put("udupi", new double[]{13.3409, 74.7421});
+        CITY_COORDS.put("gokarna", new double[]{14.5479, 74.3188});
+        CITY_COORDS.put("hassan", new double[]{13.0033, 76.1004});
+
+        // Tamil Nadu
+        CITY_COORDS.put("coimbatore", new double[]{11.0168, 76.9558});
+        CITY_COORDS.put("chennai", new double[]{13.0827, 80.2707});
+        CITY_COORDS.put("madras", new double[]{13.0827, 80.2707});
+        CITY_COORDS.put("ooty", new double[]{11.4102, 76.6950});
+        CITY_COORDS.put("madurai", new double[]{9.9252, 78.1198});
+        CITY_COORDS.put("salem", new double[]{11.6643, 78.1460});
+        CITY_COORDS.put("trichy", new double[]{10.7905, 78.7047});
+        CITY_COORDS.put("tiruchirappalli", new double[]{10.7905, 78.7047});
+        CITY_COORDS.put("pondicherry", new double[]{11.9416, 79.8083});
+        CITY_COORDS.put("puducherry", new double[]{11.9416, 79.8083});
+        CITY_COORDS.put("kodaikanal", new double[]{10.2381, 77.4892});
+        CITY_COORDS.put("tirupur", new double[]{11.1085, 77.3411});
+        CITY_COORDS.put("erode", new double[]{11.3410, 77.7172});
+        CITY_COORDS.put("vellore", new double[]{12.9165, 79.1325});
+        CITY_COORDS.put("thanjavur", new double[]{10.7870, 79.1378});
+        CITY_COORDS.put("tirunelveli", new double[]{8.7139, 77.7567});
+        CITY_COORDS.put("rameswaram", new double[]{9.2876, 79.3129});
+        CITY_COORDS.put("kanyakumari", new double[]{8.0883, 77.5385});
+        CITY_COORDS.put("hosur", new double[]{12.7409, 77.8253});
+
+        // Kerala
+        CITY_COORDS.put("kochi", new double[]{9.9312, 76.2673});
+        CITY_COORDS.put("cochin", new double[]{9.9312, 76.2673});
+        CITY_COORDS.put("trivandrum", new double[]{8.5241, 76.9366});
+        CITY_COORDS.put("thiruvananthapuram", new double[]{8.5241, 76.9366});
+        CITY_COORDS.put("kozhikode", new double[]{11.2588, 75.7804});
+        CITY_COORDS.put("calicut", new double[]{11.2588, 75.7804});
+        CITY_COORDS.put("munnar", new double[]{10.0889, 77.0595});
+        CITY_COORDS.put("wayanad", new double[]{11.6854, 76.1320});
+        CITY_COORDS.put("alleppey", new double[]{9.4981, 76.3388});
+        CITY_COORDS.put("alappuzha", new double[]{9.4981, 76.3388});
+        CITY_COORDS.put("thrissur", new double[]{10.5276, 76.2144});
+
+        // Andhra Pradesh & Telangana
+        CITY_COORDS.put("hyderabad", new double[]{17.3850, 78.4867});
+        CITY_COORDS.put("visakhapatnam", new double[]{17.6868, 83.2185});
+        CITY_COORDS.put("vizag", new double[]{17.6868, 83.2185});
+        CITY_COORDS.put("vijayawada", new double[]{16.5062, 80.6480});
+        CITY_COORDS.put("tirupati", new double[]{13.6288, 79.4192});
+
+        // Maharashtra & Goa
+        CITY_COORDS.put("mumbai", new double[]{19.0760, 72.8777});
+        CITY_COORDS.put("pune", new double[]{18.5204, 73.8567});
+        CITY_COORDS.put("nagpur", new double[]{21.1458, 79.0882});
+        CITY_COORDS.put("nashik", new double[]{19.9975, 73.7898});
+        CITY_COORDS.put("shirdi", new double[]{19.7668, 74.4762});
+        CITY_COORDS.put("mahabaleshwar", new double[]{17.9307, 73.6477});
+        CITY_COORDS.put("lonavala", new double[]{18.7557, 73.4091});
+        CITY_COORDS.put("goa", new double[]{15.2993, 74.1240});
+        CITY_COORDS.put("panaji", new double[]{15.4909, 73.8278});
+
+        // North & Other
+        CITY_COORDS.put("delhi", new double[]{28.6139, 77.2090});
+        CITY_COORDS.put("noida", new double[]{28.5355, 77.3910});
+        CITY_COORDS.put("gurgaon", new double[]{28.4595, 77.0266});
+        CITY_COORDS.put("gurugram", new double[]{28.4595, 77.0266});
+        CITY_COORDS.put("jaipur", new double[]{26.9124, 75.7873});
+        CITY_COORDS.put("agra", new double[]{27.1767, 78.0081});
+        CITY_COORDS.put("chandigarh", new double[]{30.7333, 76.7794});
+        CITY_COORDS.put("amritsar", new double[]{31.6340, 74.8723});
+        CITY_COORDS.put("dehradun", new double[]{30.3165, 78.0322});
+        CITY_COORDS.put("haridwar", new double[]{29.9457, 78.1642});
+        CITY_COORDS.put("rishikesh", new double[]{30.0869, 78.2676});
+        CITY_COORDS.put("shimla", new double[]{31.1048, 77.1734});
+        CITY_COORDS.put("manali", new double[]{32.2432, 77.1892});
+        CITY_COORDS.put("udaipur", new double[]{24.5854, 73.7125});
+        CITY_COORDS.put("kolkata", new double[]{22.5726, 88.3639});
+        CITY_COORDS.put("ahmedabad", new double[]{23.0225, 72.5714});
+        CITY_COORDS.put("surat", new double[]{21.1702, 72.8311});
+    }
+
     private int getSegmentDistance(String from, String to) {
         String f = (from != null ? from : "").toLowerCase();
         String t = (to != null ? to : "").toLowerCase();
 
+        // 1. Explicit highway overrides
         if (matchesPair(f, t, "bangalore", "coimbatore") || matchesPair(f, t, "bengaluru", "coimbatore")) return 365;
         if (matchesPair(f, t, "bangalore", "chennai") || matchesPair(f, t, "bengaluru", "chennai")) return 347;
         if (matchesPair(f, t, "bangalore", "mysore") || matchesPair(f, t, "bengaluru", "mysore")) return 145;
@@ -275,7 +459,38 @@ public class PublicVehicleService {
         if (matchesPair(f, t, "agra", "jaipur")) return 240;
         if (matchesPair(f, t, "kochi", "trivandrum")) return 205;
 
-        return 180;
+        // 2. Automatic GPS Coordinate Haversine + road winding factor (1.28x)
+        double[] c1 = lookupCoordinates(f);
+        double[] c2 = lookupCoordinates(t);
+        if (c1 != null && c2 != null) {
+            double airKm = haversineKm(c1[0], c1[1], c2[0], c2[1]);
+            int roadKm = (int) Math.round(airKm * 1.28);
+            return Math.max(roadKm, 40);
+        }
+
+        return 220;
+    }
+
+    private double[] lookupCoordinates(String cityName) {
+        if (cityName == null || cityName.isBlank()) return null;
+        String clean = cityName.toLowerCase().split(",")[0].replaceAll("\\(.*?\\)", "").trim();
+        for (Map.Entry<String, double[]> entry : CITY_COORDS.entrySet()) {
+            if (clean.contains(entry.getKey()) || entry.getKey().contains(clean)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
+        double r = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return r * c;
     }
 
     private boolean matchesPair(String a, String b, String city1, String city2) {

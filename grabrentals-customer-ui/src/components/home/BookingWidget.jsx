@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
+import { detectRouteDistance } from "@/lib/cities";
 
 export default function BookingWidget() {
   const router = useRouter();
@@ -25,6 +27,11 @@ export default function BookingWidget() {
   const [pickupTime, setPickupTime] = useState("07:00");
 
   const allowsStops = activeTab === "outstation" || activeTab === "van" || activeTab === "bus";
+
+  // Automatic KM & Route Duration Detection
+  const routeEstimate = useMemo(() => {
+    return detectRouteDistance(pickupCity, dropCity, stops, tripType);
+  }, [pickupCity, dropCity, stops, tripType]);
 
   // Stop management
   const handleAddStop = (index) => {
@@ -160,16 +167,13 @@ export default function BookingWidget() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
                 FROM (Pickup City)
               </label>
-              <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-emerald w-5 h-5 pointer-events-none" />
-                <input 
-                  type="text" 
-                  value={pickupCity}
-                  onChange={(e) => setPickupCity(e.target.value)}
-                  placeholder="e.g. Bangalore, Karnataka" 
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm"
-                />
-              </div>
+              <CityAutocompleteInput 
+                value={pickupCity}
+                onChange={setPickupCity}
+                placeholder="e.g. Bangalore (Bengaluru)" 
+                iconColor="text-brand-emerald"
+                inputClassName="rounded-xl"
+              />
             </div>
 
             {/* Swap Button (between pickup & stops/drop) */}
@@ -178,7 +182,7 @@ export default function BookingWidget() {
                 type="button"
                 onClick={handleSwap}
                 title="Swap Pickup & Destination"
-                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-sm group"
+                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-sm group cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
@@ -196,43 +200,41 @@ export default function BookingWidget() {
                   <button
                     type="button"
                     onClick={() => handleRemoveStop(index)}
-                    className="text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors"
+                    className="text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                   >
                     Remove
                   </button>
                 </div>
 
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-amber w-5 h-5 pointer-events-none" />
-                  <input 
-                    type="text" 
-                    value={stop}
-                    onChange={(e) => handleStopChange(index, e.target.value)}
-                    placeholder="Type stop city (e.g. Salem)"
-                    className="w-full pl-11 pr-20 py-3.5 bg-amber-50/40 border border-amber-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm"
-                  />
-                  {/* Action buttons (- and +) like Savaari */}
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveStop(index)}
-                      title="Remove this stop"
-                      className="w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 transition-colors shadow-2xs"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    {stops.length < 3 && (
+                <CityAutocompleteInput
+                  value={stop}
+                  onChange={(val) => handleStopChange(index, val)}
+                  placeholder="Type stop city (e.g. Salem)"
+                  iconColor="text-brand-amber"
+                  inputClassName="bg-amber-50/40 border-amber-200 rounded-xl"
+                  rightElement={
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => handleAddStop(index)}
-                        title="Add another stop"
-                        className="w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-colors shadow-2xs"
+                        onClick={() => handleRemoveStop(index)}
+                        title="Remove this stop"
+                        className="w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 transition-colors shadow-2xs cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Minus className="w-3.5 h-3.5" />
                       </button>
-                    )}
-                  </div>
-                </div>
+                      {stops.length < 3 && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddStop(index)}
+                          title="Add another stop"
+                          className="w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  }
+                />
 
                 {/* Quick suggestion chips */}
                 {!stop && (
@@ -243,7 +245,7 @@ export default function BookingWidget() {
                         key={city}
                         type="button"
                         onClick={() => handleStopChange(index, city)}
-                        className="text-[10px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-0.5 rounded-md transition-colors"
+                        className="text-[10px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
                       >
                         + {city}
                       </button>
@@ -264,26 +266,23 @@ export default function BookingWidget() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
                 TO (Drop Destination)
               </label>
-              <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-orange w-5 h-5 pointer-events-none" />
-                <input 
-                  type="text" 
-                  value={dropCity}
-                  onChange={(e) => setDropCity(e.target.value)}
-                  placeholder="e.g. Coimbatore, Tamil Nadu" 
-                  className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm"
-                />
-                {stops.length < 3 && (
+              <CityAutocompleteInput 
+                value={dropCity}
+                onChange={setDropCity}
+                placeholder="e.g. Coimbatore, Tamil Nadu" 
+                iconColor="text-brand-orange"
+                inputClassName="rounded-xl"
+                rightElement={stops.length < 3 && (
                   <button
                     type="button"
                     onClick={() => handleAddStop()}
                     title="Add intermediate stop (Optional)"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-2xs group"
+                    className="w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-2xs group cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                   </button>
                 )}
-              </div>
+              />
             </div>
 
           </div>
@@ -362,16 +361,12 @@ export default function BookingWidget() {
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
               Pickup City
             </label>
-            <div className="relative">
-              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-emerald w-5 h-5 pointer-events-none" />
-              <input 
-                type="text" 
-                value={pickupCity}
-                onChange={(e) => setPickupCity(e.target.value)}
-                placeholder="e.g. Bangalore (Bengaluru)" 
-                className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm"
-              />
-            </div>
+            <CityAutocompleteInput 
+              value={pickupCity}
+              onChange={setPickupCity}
+              placeholder="e.g. Bangalore (Bengaluru)" 
+              iconColor="text-brand-emerald"
+            />
           </div>
 
           {/* Swap Button */}
@@ -381,7 +376,7 @@ export default function BookingWidget() {
                 type="button"
                 onClick={handleSwap}
                 title="Swap Pickup & Destination"
-                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-sm group"
+                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-sm group cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
@@ -400,26 +395,22 @@ export default function BookingWidget() {
                 <option>From Kempegowda Airport (BLR)</option>
               </select>
             ) : (
-              <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-orange w-5 h-5 pointer-events-none" />
-                <input 
-                  type="text" 
-                  value={dropCity}
-                  onChange={(e) => setDropCity(e.target.value)}
-                  placeholder={activeTab === "local" ? "e.g. Indiranagar / Koramangala" : "e.g. Mysore (145 km)"} 
-                  className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm"
-                />
-                {allowsStops && (
+              <CityAutocompleteInput
+                value={dropCity}
+                onChange={setDropCity}
+                placeholder={activeTab === "local" ? "e.g. Indiranagar / Koramangala" : "e.g. Coimbatore, Tamil Nadu"}
+                iconColor="text-brand-orange"
+                rightElement={allowsStops ? (
                   <button
                     type="button"
                     onClick={() => handleAddStop()}
                     title="Add intermediate stop (Optional)"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-2xs group"
+                    className="w-7 h-7 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-2xs group cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                   </button>
-                )}
-              </div>
+                ) : null}
+              />
             )}
           </div>
 
@@ -460,6 +451,31 @@ export default function BookingWidget() {
             >
               Explore <ArrowRight className="w-4 h-4" />
             </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Automatic Route Distance & Driving Time Detection Banner */}
+      {routeEstimate.isDetected && routeEstimate.distanceKm > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-amber-50/70 border border-amber-200/80 px-4 py-2.5 rounded-xl">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs font-semibold text-slate-600">
+              Auto-Detected Route:
+            </span>
+            <span className="text-sm font-extrabold text-slate-900">
+              {routeEstimate.distanceKm} km
+            </span>
+            <span className="text-xs font-semibold text-slate-500 capitalize">
+              ({tripType.replace(/-/g, " ")})
+            </span>
+          </div>
+          <div className="text-xs font-bold text-amber-800 bg-white/90 px-3 py-1 rounded-lg border border-amber-200/60 flex items-center gap-1.5 shadow-2xs">
+            <span>⏱️ Estimated Driving Time:</span>
+            <span className="text-slate-900 font-extrabold">~{routeEstimate.durationHours} hrs</span>
           </div>
         </div>
       )}

@@ -6,6 +6,15 @@ import { Star, ChevronDown, ChevronUp, CheckCircle2, ShieldCheck } from "lucide-
 
 function resolveCarImage(car) {
   if (!car) return "/images/cars/dzire.jpg";
+
+  // Priority 1: Use explicit photo from admin model catalog or vehicle record
+  if (car.image && typeof car.image === "string" && !car.image.includes("blob:")) {
+    return car.image;
+  }
+  if (car.imageUrl && typeof car.imageUrl === "string" && !car.imageUrl.includes("blob:")) {
+    return car.imageUrl;
+  }
+
   const title = (car.title || "").toLowerCase();
   const category = (car.category || "").toLowerCase();
   
@@ -23,11 +32,6 @@ function resolveCarImage(car) {
   }
   if (title.includes("dzire") || title.includes("etios") || title.includes("amaze") || title.includes("verna") || title.includes("aura") || title.includes("city")) {
     return "/images/cars/dzire.jpg";
-  }
-
-  // If car has an explicit valid internal image or clean custom URL
-  if (car.image && typeof car.image === "string" && !car.image.includes("unsplash.com") && !car.image.includes("blob:")) {
-    return car.image;
   }
 
   if (category.includes("hatchback")) return "/images/cars/wagon_r.jpg";

@@ -32,6 +32,9 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
         executeSafe("ALTER TABLE fleet_profiles ALTER COLUMN pan_document_url TYPE TEXT");
         executeSafe("ALTER TABLE fleet_profiles ALTER COLUMN bank_proof_document_url TYPE TEXT");
 
+        // Ensure distinct dynamic rates for vehicle categories in tariffs
+        executeSafe("UPDATE vehicle_tariffs SET weekday_day_rate = 16.00, weekday_night_rate = 18.00, weekend_day_rate = 18.00, weekend_night_rate = 20.00, base_fare = 4500.00 WHERE LOWER(model_name) LIKE '%ertiga%' AND is_seasonal = false");
+        executeSafe("UPDATE vehicle_tariffs SET weekday_day_rate = 11.50, weekday_night_rate = 12.50, weekend_day_rate = 12.50, weekend_night_rate = 14.00, base_fare = 2800.00 WHERE LOWER(model_name) LIKE '%wagon%' AND is_seasonal = false");
         log.info("DatabaseSchemaFixer column verification completed.");
     }
 

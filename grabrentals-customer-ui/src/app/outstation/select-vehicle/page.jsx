@@ -31,47 +31,11 @@ import {
   Loader2
 } from "lucide-react";
 
+import { detectRouteDistance } from "@/lib/cities";
+
 function estimateRouteDistance(from, to, stops, tripType) {
-  const points = [from || ""];
-  if (stops) {
-    const list = Array.isArray(stops) ? stops : stops.split(/[|,]/);
-    list.forEach((s) => { if (s && s.trim()) points.push(s.trim()); });
-  }
-  points.push(to || "");
-
-  const getLegKm = (src, dst) => {
-    const f = (src || "").toLowerCase();
-    const t = (dst || "").toLowerCase();
-    const match = (c1, c2) => (f.includes(c1) && t.includes(c2)) || (f.includes(c2) && t.includes(c1));
-
-    if (match("bangalore", "coimbatore") || match("bengaluru", "coimbatore")) return 365;
-    if (match("bangalore", "chennai") || match("bengaluru", "chennai")) return 347;
-    if (match("bangalore", "mysore") || match("bengaluru", "mysore")) return 145;
-    if (match("bangalore", "hyderabad") || match("bengaluru", "hyderabad")) return 575;
-    if (match("bangalore", "ooty") || match("bengaluru", "ooty")) return 275;
-    if (match("bangalore", "pondicherry") || match("bengaluru", "pondicherry")) return 315;
-    if (match("bangalore", "salem") || match("bengaluru", "salem")) return 200;
-    if (match("bangalore", "madurai") || match("bengaluru", "madurai")) return 435;
-    if (match("salem", "coimbatore")) return 165;
-    if (match("chennai", "coimbatore")) return 505;
-    if (match("mumbai", "pune")) return 155;
-    if (match("delhi", "jaipur")) return 280;
-    if (match("delhi", "agra")) return 235;
-    return 180;
-  };
-
-  let oneWayKm = 0;
-  if (points.length <= 2) {
-    oneWayKm = getLegKm(points[0], points[1]);
-    if (oneWayKm === 180) oneWayKm = 320;
-  } else {
-    for (let i = 0; i < points.length - 1; i++) {
-      oneWayKm += getLegKm(points[i], points[i + 1]);
-    }
-  }
-
-  const isRound = (tripType || "").toLowerCase().includes("round");
-  return isRound ? oneWayKm * 2 : oneWayKm;
+  const result = detectRouteDistance(from, to, stops, tripType);
+  return result.distanceKm || 320;
 }
 
 function formatDateDisplay(rawDate) {
@@ -254,9 +218,9 @@ function SelectVehicleContent() {
       const reg = car.regNumber || car.vehicleNumber || "Commercial Fleet";
       const perKmRate = car.perKmRate || (type === "SUV" ? 19.5 : type === "Hatchback" ? 11.5 : 13.0);
 
-      const tripDiscountedFare = car.pricing?.discountedPrice || Math.round(activeDistance * perKmRate);
+      const tripDiscountedFare = car.pricing?.discountedPrice || Math.round((activeDistance || 250) * perKmRate);
       const originalFare = car.pricing?.originalPrice || Math.round(tripDiscountedFare * 1.14);
-      const taxes = car.pricing?.chargesAndTaxes || Math.round(tripDiscountedFare * 0.35);
+      const taxes = car.pricing?.chargesAndTaxes || 0; // GST set to 0 for now
       const advance = car.pricing?.advanceAmount || Math.round((tripDiscountedFare + taxes) * 0.20);
       const dailyPrice = car.dailyPrice || Math.round(tripDiscountedFare / 1.15);
 
@@ -271,6 +235,7 @@ function SelectVehicleContent() {
         seatingCapacity: seats,
         year,
         dailyPrice,
+        tripFare: tripDiscountedFare,
         perKmRate,
         location: car.location || cleanCityName(trip.from) || "Bangalore",
         chauffeur: car.chauffeur || "Assigned Commercial Chauffeur",
@@ -340,8 +305,9 @@ function SelectVehicleContent() {
       }
 
       // Price Range Filter
-      if (minPrice && car.dailyPrice < Number(minPrice)) return false;
-      if (maxPrice && car.dailyPrice > Number(maxPrice)) return false;
+      const effectiveFare = car.tripFare || car.pricing?.discountedPrice || 0;
+      if (minPrice && effectiveFare < Number(minPrice)) return false;
+      if (maxPrice && effectiveFare > Number(maxPrice)) return false;
 
       // Seating Capacity Filter
       if (seatingCapacity !== "all") {
@@ -355,9 +321,9 @@ function SelectVehicleContent() {
 
     // Sorting
     if (sortBy === "price_asc") {
-      result.sort((a, b) => a.dailyPrice - b.dailyPrice);
+      result.sort((a, b) => (a.tripFare || 0) - (b.tripFare || 0));
     } else if (sortBy === "price_desc") {
-      result.sort((a, b) => b.dailyPrice - a.dailyPrice);
+      result.sort((a, b) => (b.tripFare || 0) - (a.tripFare || 0));
     } else if (sortBy === "seats_desc") {
       result.sort((a, b) => b.seatingCapacity - a.seatingCapacity);
     } else if (sortBy === "rating") {
@@ -413,10 +379,11 @@ function SelectVehicleContent() {
           fuel: vehicle.fuelType,
           withLuggageCarrier: false,
           seating: vehicle.seatingCapacity,
-          fare: vehicle.pricing?.discountedPrice || (vehicle.dailyPrice * 1.2),
-          taxes: vehicle.pricing?.chargesAndTaxes || Math.round((vehicle.dailyPrice * 1.2) * 0.35),
-          totalFare: (vehicle.pricing?.discountedPrice || (vehicle.dailyPrice * 1.2)) + (vehicle.pricing?.chargesAndTaxes || 1200),
-          advancePaid: vehicle.pricing?.advanceAmount || Math.round((vehicle.dailyPrice * 1.2) * 0.20),
+          perKmRate: vehicle.perKmRate ?? 0,
+          fare: vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
+          taxes: vehicle.pricing?.chargesAndTaxes ?? 0,
+          totalFare: (vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2)) + (vehicle.pricing?.chargesAndTaxes ?? 0),
+          advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2)) * 0.20),
           image: vehicle.image,
           regNumber: vehicle.regNumber,
           chauffeur: vehicle.chauffeur
@@ -607,7 +574,7 @@ function SelectVehicleContent() {
 
             {/* 6. Price Range Inputs */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">Price / Day (₹)</label>
+              <label className="text-xs font-bold text-slate-700 block">Trip Fare Range (₹)</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -775,6 +742,7 @@ function SelectVehicleContent() {
                           src={car.image}
                           alt={car.title}
                           fill
+                          unoptimized={typeof car.image === "string" && car.image.startsWith("http")}
                           className="object-contain p-1 group-hover:scale-105 transition-transform duration-300"
                           sizes="(max-width: 640px) 176px, 192px"
                         />
@@ -842,13 +810,20 @@ function SelectVehicleContent() {
                       
                       {/* Price & Location */}
                       <div>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-lg sm:text-xl font-black text-blue-600">
-                            ₹{car.dailyPrice.toLocaleString()}
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="text-xl sm:text-2xl font-black text-blue-600">
+                            ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </span>
-                          <span className="text-xs font-semibold text-slate-400">/ day</span>
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                        {activeDistance > 0 && (
+                          <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                            Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-0.5">
                           <span className="flex items-center gap-0.5">
                             <MapPin className="w-3 h-3 text-slate-400" />
                             {car.location}
@@ -906,6 +881,7 @@ function SelectVehicleContent() {
                           src={car.image}
                           alt={car.title}
                           fill
+                          unoptimized={typeof car.image === "string" && car.image.startsWith("http")}
                           className="object-contain p-1 group-hover:scale-105 transition-transform"
                           sizes="160px"
                         />
@@ -951,11 +927,19 @@ function SelectVehicleContent() {
                     {/* Price & Action */}
                     <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 gap-2 shrink-0">
                       <div className="text-left md:text-right">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-blue-600">₹{car.dailyPrice.toLocaleString()}</span>
-                          <span className="text-xs font-semibold text-slate-400">/ day</span>
+                        <div className="flex items-baseline gap-2 justify-start md:justify-end flex-wrap">
+                          <span className="text-2xl sm:text-3xl font-black text-blue-600">
+                            ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
+                          </span>
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
+                          </span>
                         </div>
-                        <p className="text-[10px] font-bold text-slate-400">Route Est: ₹{Math.round(activeDistance * car.perKmRate).toLocaleString()}</p>
+                        {activeDistance > 0 && (
+                          <p className="text-[11px] font-medium text-slate-500">
+                            Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">

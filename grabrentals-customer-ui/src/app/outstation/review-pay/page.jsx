@@ -25,6 +25,10 @@ import { customerApi } from "@/lib/customerApi";
 import { isAuthenticated, getCurrentUser } from "@/lib/auth";
 
 function resolveCarImage(title, category, rawImage) {
+  if (rawImage && typeof rawImage === "string" && !rawImage.includes("blob:")) {
+    return rawImage;
+  }
+
   const t = (title || "").toLowerCase();
   const c = (category || "").toLowerCase();
   
@@ -42,10 +46,6 @@ function resolveCarImage(title, category, rawImage) {
   }
   if (t.includes("dzire") || t.includes("etios") || t.includes("amaze") || t.includes("verna") || t.includes("aura") || t.includes("city")) {
     return "/images/cars/dzire.jpg";
-  }
-
-  if (rawImage && typeof rawImage === "string" && !rawImage.includes("unsplash.com") && !rawImage.includes("blob:")) {
-    return rawImage;
   }
 
   if (c.includes("hatchback")) return "/images/cars/wagon_r.jpg";
@@ -95,10 +95,15 @@ export default function ReviewPayPage() {
     }
   }, []);
 
-  // Total amounts derived dynamically from selected car
-  const totalAmount = bookingConfig?.car?.totalFare || 5660;
-  const advanceAmount = Math.round(totalAmount * 0.20);
+  // Dynamic pricing from backend tariff engine (stored in sessionStorage by select-vehicle page)
+  const baseFare = bookingConfig?.car?.fare || 0;
+  const taxes = bookingConfig?.car?.taxes || 0;
+  const luggageCarrierFee = bookingConfig?.car?.withLuggageCarrier ? 149 : 0;
+  const totalAmount = bookingConfig?.car?.totalFare || (baseFare + taxes + luggageCarrierFee);
+  const advanceAmount = bookingConfig?.car?.advancePaid || Math.round(totalAmount * 0.20);
   const driverLaterAmount = totalAmount - advanceAmount;
+  const distanceKm = bookingConfig?.distanceKm || 0;
+  const perKmRate = bookingConfig?.car?.perKmRate || 0;
 
   const handlePayAndBook = async (e) => {
     e.preventDefault();
@@ -173,7 +178,7 @@ export default function ReviewPayPage() {
         totalFare: totalAmount,
         advancePaid,
         paymentStatus: paymentPlan === "advance" ? "ADVANCE_PAID" : "FULL_PAID",
-        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Fuel: ${bookingConfig?.car?.fuel || "CNG"}${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
+        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km | Rate: ₹${perKmRate}/km${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
       };
 
       const res = await customerApi.createBooking(bookingPayload);
@@ -423,19 +428,19 @@ export default function ReviewPayPage() {
                   <div>
                     <h4 className="font-black text-slate-900 text-sm">{bookingConfig.car?.title}</h4>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                      {bookingConfig.car?.seating} • {bookingConfig.car?.fuel}
+                      {bookingConfig.car?.seating} Seats • {bookingConfig.car?.fuel}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Dynamic Fare Breakdown */}
+              {/* Dynamic Fare Breakdown — all values from backend tariff engine */}
               <div className="p-5 border-b border-slate-100 space-y-3">
                 <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider">Fare Breakdown</h4>
                 <div className="space-y-2 text-xs font-semibold text-slate-600">
                   <div className="flex justify-between items-center">
-                    <span>Base Outstation Fare ({bookingConfig.distanceKm || 365} km)</span>
-                    <span className="text-slate-900 font-bold">₹{(bookingConfig.car?.fare || 4168).toLocaleString()}</span>
+                    <span>Base Outstation Fare ({distanceKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
+                    <span className="text-slate-900 font-bold">₹{baseFare.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Driver Allowance & Night Charges</span>
@@ -444,12 +449,12 @@ export default function ReviewPayPage() {
                   {bookingConfig.car?.withLuggageCarrier && (
                     <div className="flex justify-between items-center text-amber-800">
                       <span>Rooftop Luggage Carrier</span>
-                      <span className="font-bold">+ ₹149</span>
+                      <span className="font-bold">+ ₹{luggageCarrierFee}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
                     <span>GST, Tolls & State Passenger Tax</span>
-                    <span className="text-slate-900 font-bold">₹{(bookingConfig.car?.taxes || 1492).toLocaleString()}</span>
+                    <span className="text-slate-900 font-bold">₹{taxes.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

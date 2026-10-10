@@ -37,6 +37,7 @@ import {
   History,
   CheckCircle,
   X,
+  Layers,
 } from "lucide-react";
 
 export const OPERATIONS_NAV = [
@@ -98,6 +99,7 @@ export const ADMIN_NAV = [
     title: "Fleet Governance",
     items: [
       { label: "Platform Vehicles", href: "/admin/vehicles", icon: Car },
+      { label: "Vehicle Models & Photos", href: "/admin/vehicle-models", icon: Layers },
       { label: "Platform Drivers", href: "/admin/drivers", icon: UserCheck },
       { label: "Master Bookings", href: "/admin/bookings", icon: CalendarCheck },
     ],

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, MapPin, Calendar, Clock, ArrowRight } from "lucide-react";
+import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 
 export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSave }) {
   const [from, setFrom] = useState(currentTrip?.from || "Bangalore, Karnataka");
@@ -63,30 +64,26 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="font-bold text-slate-700 block mb-1">Pickup City</label>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-emerald-600 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </div>
+              <CityAutocompleteInput
+                value={from}
+                onChange={setFrom}
+                placeholder="Enter pickup city..."
+                iconColor="text-emerald-600"
+                inputClassName="py-2.5 rounded-xl"
+                required
+              />
             </div>
 
             <div>
               <label className="font-bold text-slate-700 block mb-1">Destination City</label>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-rose-600 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </div>
+              <CityAutocompleteInput
+                value={to}
+                onChange={setTo}
+                placeholder="Enter destination city..."
+                iconColor="text-rose-600"
+                inputClassName="py-2.5 rounded-xl"
+                required
+              />
             </div>
           </div>
 

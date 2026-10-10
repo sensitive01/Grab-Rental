@@ -113,6 +113,7 @@ export default function VehicleDetailModal({
                   src={vehicle.image || "/images/cars/innova.jpg"}
                   alt={title}
                   fill
+                  unoptimized={typeof vehicle.image === "string" && vehicle.image.startsWith("http")}
                   className="object-contain"
                   sizes="(max-width: 768px) 100vw, 380px"
                   priority
@@ -284,10 +285,11 @@ export default function VehicleDetailModal({
         {/* Modal Footer / Price & Book CTA */}
         <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-auto">
           <div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-blue-600">₹{dailyPrice.toLocaleString()}</span>
-              <span className="text-xs font-bold text-slate-500">/ day</span>
-              <span className="text-xs text-slate-400 font-medium">| Trip Fare: ₹{Math.round(estTripFare).toLocaleString()}</span>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-2xl sm:text-3xl font-black text-blue-600">₹{Math.round(estTripFare).toLocaleString()}</span>
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                ₹{vehicle.perKmRate || 12}/km
+              </span>
             </div>
             <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
               Pay 20% (₹{advanceAmount.toLocaleString()}) to confirm • Balance after trip completion

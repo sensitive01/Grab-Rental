@@ -500,18 +500,97 @@ export const adminApi = {
     return createApiResponse(ref, "Refund authorized and processed");
   },
 
+  async getModelConfigs() {
+    try {
+      const res = await axiosClient.get("/api/admin/models");
+      return res.data;
+    } catch (err) {
+      console.warn("Falling back to local models:", err.message);
+      const res = await axiosClient.get("/api/vehicles/models");
+      return res.data;
+    }
+  },
+
+  async saveModelConfig(data) {
+    const res = await axiosClient.post("/api/admin/models", data);
+    return res.data;
+  },
+
+  async uploadModelPhoto(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await axiosClient.post("/api/admin/models/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  async deleteAllModels() {
+    const res = await axiosClient.delete("/api/admin/models/all");
+    return res.data;
+  },
+
+  async deleteModelConfig(id) {
+    const res = await axiosClient.delete(`/api/admin/models/${id}`);
+    return res.data;
+  },
+
+  async getTariffs() {
+    try {
+      const res = await axiosClient.get("/api/admin/tariffs");
+      return res.data;
+    } catch (err) {
+      console.warn("Failed to fetch tariffs from backend:", err.message);
+      return { success: true, data: [] };
+    }
+  },
+
+  async getStandardTariffs() {
+    try {
+      const res = await axiosClient.get("/api/admin/tariffs/standard");
+      return res.data;
+    } catch (err) {
+      console.warn("Failed to fetch standard tariffs from backend:", err.message);
+      return { success: true, data: [] };
+    }
+  },
+
+  async getSeasonalTariffs() {
+    try {
+      const res = await axiosClient.get("/api/admin/tariffs/seasonal");
+      return res.data;
+    } catch (err) {
+      console.warn("Failed to fetch seasonal tariffs from backend:", err.message);
+      return { success: true, data: [] };
+    }
+  },
+
+  async saveTariff(data) {
+    const res = await axiosClient.post("/api/admin/tariffs", data);
+    return res.data;
+  },
+
+  async deleteAllTariffs() {
+    const res = await axiosClient.delete("/api/admin/tariffs/all");
+    return res.data;
+  },
+
+  async deleteTariff(id) {
+    const res = await axiosClient.delete(`/api/admin/tariffs/${id}`);
+    return res.data;
+  },
+
+  async calculateRate(params) {
+    const res = await axiosClient.get("/api/vehicles/rate-calculator", { params });
+    return res.data;
+  },
+
   async getPricing() {
-    await simulateLatency();
-    return createApiResponse(pricing);
+    return this.getTariffs();
   },
 
   async updatePricing(category, updatedData) {
-    await simulateLatency();
-    const idx = pricing.findIndex((p) => p.category === category);
-    if (idx !== -1) {
-      pricing[idx] = { ...pricing[idx], ...updatedData };
-    }
-    return createApiResponse(pricing[idx], "Pricing matrix updated");
+    return this.saveTariff(updatedData);
   },
 
   async getLocations() {

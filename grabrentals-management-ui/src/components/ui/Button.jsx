@@ -23,7 +23,7 @@ export const Button = forwardRef(function Button(
   const isButtonLoading = Boolean(isLoading || loading);
 
   const baseStyles =
-    "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]";
+    "inline-flex items-center justify-center whitespace-nowrap font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]";
 
   const variants = {
     primary:
@@ -63,7 +63,7 @@ export const Button = forwardRef(function Button(
       {!isButtonLoading && Icon && iconPosition === "left" && (
         <Icon className="w-4 h-4 shrink-0" />
       )}
-      <span>{children}</span>
+      {children}
       {!isButtonLoading && Icon && iconPosition === "right" && (
         <Icon className="w-4 h-4 shrink-0" />
       )}

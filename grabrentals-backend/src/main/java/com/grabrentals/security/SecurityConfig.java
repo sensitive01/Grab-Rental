@@ -69,7 +69,8 @@ public class SecurityConfig {
                     "/api/vendor/drivers/upload",
                     "/api/fleet/drivers/upload",
                     "/api/vendor/profile/upload",
-                    "/api/vendor/compliance/upload"
+                    "/api/vendor/compliance/upload",
+                    "/api/admin/models/upload"
                 ).permitAll()
                 // Public vehicle search & catalog
                 .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
