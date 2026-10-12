@@ -8,6 +8,8 @@ import com.grabrentals.customer.dto.*;
 import com.grabrentals.customer.entity.Booking;
 import com.grabrentals.customer.entity.BookingStatus;
 import com.grabrentals.customer.repository.BookingRepository;
+import com.grabrentals.notification.service.NotificationService;
+import com.grabrentals.user.entity.Role;
 import com.grabrentals.vendor.entity.Driver;
 import com.grabrentals.vendor.entity.DriverStatus;
 import com.grabrentals.vendor.entity.Vehicle;
@@ -38,6 +40,7 @@ public class CustomerBookingService {
     private final DriverRepository driverRepository;
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -100,6 +103,20 @@ public class CustomerBookingService {
             log.warn("Failed to log audit event: {}", ex.getMessage());
         }
 
+        try {
+            notificationService.createNotification(
+                    Role.OPERATIONS,
+                    "Fast Dispatch Alert",
+                    "New booking #" + ref + " (" + (request.getPickupCity() != null ? request.getPickupCity() : "Origin") + " to " + (request.getDropCity() != null ? request.getDropCity() : "Destination") + ") requires vehicle allocation.",
+                    "HIGH",
+                    "BOOKING_CREATED",
+                    ref,
+                    "/operations/assignments/vehicle?bookingId=" + ref
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create notification: {}", ex.getMessage());
+        }
+
         return BookingResponse.fromEntity(saved);
     }
 
@@ -126,8 +143,10 @@ public class CustomerBookingService {
         Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + request.getVehicleId()));
 
-        Driver driver = driverRepository.findById(request.getDriverId())
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found: " + request.getDriverId()));
+        Driver driver = null;
+        if (request.getDriverId() != null) {
+            driver = driverRepository.findById(request.getDriverId()).orElse(null);
+        }
 
         // The vendor is the owner of the vehicle (or explicit vendor if provided)
         User vendor = vehicle.getUser();
@@ -145,6 +164,7 @@ public class CustomerBookingService {
         Booking updated = bookingRepository.save(booking);
 
         try {
+            String driverText = driver != null ? (" & Driver " + driver.getName()) : " (Chauffeur to be assigned by Fleet Owner)";
             auditLogService.logEvent(CreateAuditLogRequest.builder()
                     .category("DISPATCH")
                     .event("BOOKING_ASSIGNED")
@@ -153,11 +173,26 @@ public class CustomerBookingService {
                     .userRole(operationsUser.getRole().name())
                     .module("OPERATIONS_DISPATCH")
                     .targetEntity("Booking: " + booking.getBookingReference())
-                    .details("Vehicle " + vehicle.getVehicleNumber() + " & Driver " + driver.getName() + " assigned to booking " + booking.getBookingReference() + " for vendor " + vendor.getName())
+                    .details("Vehicle " + vehicle.getVehicleNumber() + driverText + " assigned to booking " + booking.getBookingReference() + " for vendor " + (vendor != null ? vendor.getName() : "N/A"))
                     .status("SUCCESS")
                     .build());
         } catch (Exception ex) {
             log.warn("Failed to log audit event: {}", ex.getMessage());
+        }
+
+        try {
+            String vName = vendor != null ? vendor.getName() : "Fleet Owner";
+            notificationService.createNotification(
+                    Role.OPERATIONS,
+                    "Dispatched to Partner",
+                    "Booking #" + booking.getBookingReference() + " assigned vehicle " + vehicle.getVehicleNumber() + " (" + vehicle.getModel() + ") and routed to " + vName + " for chauffeur appointment.",
+                    "INFO",
+                    "VEHICLE_ASSIGNED",
+                    booking.getBookingReference(),
+                    "/operations/bookings/" + booking.getBookingReference()
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create notification: {}", ex.getMessage());
         }
 
         return BookingResponse.fromEntity(updated);
@@ -167,7 +202,7 @@ public class CustomerBookingService {
      * 3. Vendor ACCEPTS the booking -> transitions to CONFIRMED and generates ride OTP
      */
     @Transactional
-    public BookingResponse vendorAcceptBooking(UUID bookingId, User vendorUser) {
+    public BookingResponse vendorAcceptBooking(UUID bookingId, UUID driverId, User vendorUser) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
 
@@ -179,6 +214,12 @@ public class CustomerBookingService {
 
         if (booking.getStatus() != BookingStatus.ASSIGNED_TO_VENDOR) {
             throw new BadRequestException("Booking cannot be accepted; current status is: " + booking.getStatus());
+        }
+
+        if (driverId != null) {
+            Driver driver = driverRepository.findById(driverId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Driver not found: " + driverId));
+            booking.setAssignedDriver(driver);
         }
 
         // Generate 4-digit ride OTP
@@ -199,6 +240,7 @@ public class CustomerBookingService {
         Booking confirmed = bookingRepository.save(booking);
 
         try {
+            String driverName = confirmed.getAssignedDriver() != null ? confirmed.getAssignedDriver().getName() : "None";
             auditLogService.logEvent(CreateAuditLogRequest.builder()
                     .category("VENDOR")
                     .event("BOOKING_ACCEPTED_BY_VENDOR")
@@ -207,14 +249,48 @@ public class CustomerBookingService {
                     .userRole(vendorUser.getRole().name())
                     .module("VENDOR_PORTAL")
                     .targetEntity("Booking: " + booking.getBookingReference())
-                    .details("Vendor " + vendorUser.getName() + " confirmed booking " + booking.getBookingReference())
+                    .details("Vendor " + vendorUser.getName() + " confirmed booking " + booking.getBookingReference() + " with driver " + driverName)
                     .status("SUCCESS")
                     .build());
         } catch (Exception ex) {
             log.warn("Failed to log audit event: {}", ex.getMessage());
         }
 
+        try {
+            String driverName = confirmed.getAssignedDriver() != null ? confirmed.getAssignedDriver().getName() : "Chauffeur";
+            notificationService.createNotification(
+                    Role.OPERATIONS,
+                    "Partner Vendor Confirmed Dispatch",
+                    "Vendor " + vendorUser.getName() + " confirmed booking #" + booking.getBookingReference() + " and appointed driver " + driverName + ".",
+                    "MEDIUM",
+                    "VENDOR_ACCEPTED",
+                    booking.getBookingReference(),
+                    "/operations/bookings/" + booking.getBookingReference()
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create notification: {}", ex.getMessage());
+        }
+
         return BookingResponse.fromEntity(confirmed);
+    }
+
+    @Transactional
+    public BookingResponse vendorAcceptBooking(UUID bookingId, User vendorUser) {
+        return vendorAcceptBooking(bookingId, null, vendorUser);
+    }
+
+    @Transactional
+    public BookingResponse vendorAssignDriver(UUID bookingId, UUID driverId, User vendorUser) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
+        validateVendorOwnership(booking, vendorUser);
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found: " + driverId));
+        booking.setAssignedDriver(driver);
+        driver.setStatus(DriverStatus.BOOKED);
+        driverRepository.save(driver);
+        Booking saved = bookingRepository.save(booking);
+        return BookingResponse.fromEntity(saved);
     }
 
     /**
@@ -250,6 +326,20 @@ public class CustomerBookingService {
                     .build());
         } catch (Exception ex) {
             log.warn("Failed to log audit event: {}", ex.getMessage());
+        }
+
+        try {
+            notificationService.createNotification(
+                    Role.OPERATIONS,
+                    "Partner Vendor Declined Assignment",
+                    "Vendor " + vendorUser.getName() + " declined booking #" + booking.getBookingReference() + ". Reason: " + request.getReason(),
+                    "HIGH",
+                    "VENDOR_DECLINED",
+                    booking.getBookingReference(),
+                    "/operations/assignments/vehicle?bookingId=" + booking.getBookingReference()
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create notification: {}", ex.getMessage());
         }
 
         return BookingResponse.fromEntity(saved);
@@ -456,6 +546,33 @@ public class CustomerBookingService {
                     .build());
         } catch (Exception ex) {
             log.warn("Failed to log audit event: {}", ex.getMessage());
+        }
+
+        try {
+            String ref = booking.getBookingReference();
+            if (newStatus == BookingStatus.IN_TRANSIT || newStatus == BookingStatus.ON_THE_WAY) {
+                notificationService.createNotification(
+                        Role.OPERATIONS,
+                        "Trip Dispatched (In Transit)",
+                        "Booking #" + ref + " departed base depot and is currently in transit.",
+                        "INFO",
+                        "TRIP_DISPATCHED",
+                        ref,
+                        "/operations/trips/" + ref
+                );
+            } else if (newStatus == BookingStatus.COMPLETED) {
+                notificationService.createNotification(
+                        Role.OPERATIONS,
+                        "Trip Completed",
+                        "Booking #" + ref + " successfully completed journey. Vehicle & chauffeur released to available roster.",
+                        "INFO",
+                        "TRIP_COMPLETED",
+                        ref,
+                        "/operations/bookings/" + ref
+                );
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to create notification: {}", ex.getMessage());
         }
 
         return BookingResponse.fromEntity(saved);

@@ -134,6 +134,7 @@ public class PublicVehicleService {
                 card.setStatus("AVAILABLE");
                 card.setChauffeur("Verified Commercial Chauffeur");
                 card.setChauffeurRating(4.9);
+                card.setDescription(config.getDescription());
 
                 cards.add(card);
             }

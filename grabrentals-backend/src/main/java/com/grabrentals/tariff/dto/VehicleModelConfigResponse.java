@@ -19,6 +19,7 @@ public class VehicleModelConfigResponse {
     private String seatingCapacity;
     private String fuelType;
     private String commonPhotoUrl;
+    private String description;
     private Boolean active;
     private Instant createdAt;
     private Instant updatedAt;
@@ -32,6 +33,7 @@ public class VehicleModelConfigResponse {
                 .seatingCapacity(entity.getSeatingCapacity())
                 .fuelType(entity.getFuelType())
                 .commonPhotoUrl(entity.getCommonPhotoUrl())
+                .description(entity.getDescription())
                 .active(entity.getActive())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

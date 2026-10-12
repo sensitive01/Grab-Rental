@@ -16,6 +16,7 @@ import {
   Send,
   Printer,
   Compass,
+  Building2,
 } from "lucide-react";
 import { formatINR, getStatusStyle } from "@/lib/utils";
 
@@ -208,16 +209,37 @@ export default function TripTrackingDetailPage({ params }) {
             <div className="space-y-3 text-xs">
               <div>
                 <p className="text-slate-400 font-medium">Assigned Driver</p>
-                <p className="text-sm font-bold text-slate-900">{booking.assignedDriverName || "Assigned"}</p>
-                <p className="text-slate-600 flex items-center gap-1.5 mt-1 font-semibold">
-                  <Phone className="w-3.5 h-3.5 text-blue-600" />
-                  <span>+91 98401 23456</span>
+                <p className="text-sm font-bold text-slate-900">{booking.assignedDriverName || "Pending Driver"}</p>
+                {(booking.assignedDriverPhone || booking.driverPhone) ? (
+                  <p className="text-slate-600 flex items-center gap-1.5 mt-1 font-semibold">
+                    <Phone className="w-3.5 h-3.5 text-blue-600" />
+                    <a href={`tel:${booking.assignedDriverPhone || booking.driverPhone}`} className="hover:underline">
+                      {booking.assignedDriverPhone || booking.driverPhone}
+                    </a>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-400 mt-0.5">Phone not registered</p>
+                )}
+              </div>
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-slate-400 font-medium mb-1">Partner Vendor</p>
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{booking.vendorName || "In-House Fleet"}</span>
                 </p>
+                {booking.vendorPhone && (
+                  <p className="text-emerald-700 flex items-center gap-1.5 mt-1 font-semibold">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                    <a href={`tel:${booking.vendorPhone}`} className="hover:underline">
+                      {booking.vendorPhone}
+                    </a>
+                  </p>
+                )}
               </div>
               <div className="pt-2 border-t border-slate-100">
                 <p className="text-slate-400 font-medium mb-1">Vehicle Registration</p>
                 <NumberPlate registrationNumber={booking.assignedVehicleNumber} />
-                <p className="text-xs font-semibold text-slate-800 mt-1">{booking.preferredVehicle}</p>
+                <p className="text-xs font-semibold text-slate-800 mt-1">{booking.preferredVehicle || booking.vehicleModel}</p>
               </div>
             </div>
           </Card>

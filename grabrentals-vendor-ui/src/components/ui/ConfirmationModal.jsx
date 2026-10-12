@@ -11,7 +11,8 @@ export default function ConfirmationModal({
   message = "Are you sure you want to proceed?",
   confirmText = "Confirm",
   cancelText = "Cancel",
-  type = "danger" // "danger" | "warning" | "info" | "success"
+  type = "danger", // "danger" | "warning" | "info" | "success"
+  children,
 }) {
   const isDanger = type === "danger";
 
@@ -38,6 +39,8 @@ export default function ConfirmationModal({
             <p className="text-sm text-slate-600 leading-relaxed">{message}</p>
           </div>
         </div>
+
+        {children}
 
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
           <button

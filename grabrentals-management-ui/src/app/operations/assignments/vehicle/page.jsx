@@ -18,10 +18,8 @@ export default function VehicleAssignmentPage() {
 
   const [bookings, setBookings] = useState([]);
   const [vehicles, setVehicles] = useState([]);
-  const [drivers, setDrivers] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [selectedDriver, setSelectedDriver] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
@@ -29,14 +27,12 @@ export default function VehicleAssignmentPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [bookRes, vehRes, drvRes] = await Promise.all([
+        const [bookRes, vehRes] = await Promise.all([
           operationsApi.getBookings(),
           operationsApi.getVehicles("AVAILABLE"),
-          operationsApi.getDrivers("AVAILABLE"),
         ]);
         setBookings(bookRes.data.filter((b) => b.status === "PENDING_ALLOCATION" || b.id === preselectedBookingId));
         setVehicles(vehRes.data);
-        setDrivers(drvRes.data);
 
         if (preselectedBookingId) {
           const match = bookRes.data.find((b) => b.id === preselectedBookingId);
@@ -54,10 +50,10 @@ export default function VehicleAssignmentPage() {
   }, [preselectedBookingId]);
 
   async function handleConfirmDispatch() {
-    if (!selectedBooking || !selectedVehicle || !selectedDriver) {
+    if (!selectedBooking || !selectedVehicle) {
       setToast({
         type: "warning",
-        message: "Please select both an available Vehicle and Driver to confirm dispatch.",
+        message: "Please select an available vehicle to confirm dispatch.",
       });
       return;
     }
@@ -66,18 +62,17 @@ export default function VehicleAssignmentPage() {
     try {
       const bId = selectedBooking.rawId || selectedBooking.id;
       const vId = selectedVehicle.rawId || selectedVehicle.id;
-      const dId = selectedDriver.rawId || selectedDriver.id;
 
-      await operationsApi.assignVehicleAndDriver(bId, vId, dId);
+      await operationsApi.assignVehicle(bId, vId);
       setToast({
         type: "success",
-        message: `Dispatched ${selectedVehicle.model} with driver ${selectedDriver.name} to booking ${selectedBooking.id}! Routed to Vendor for confirmation.`,
+        message: `Vehicle ${selectedVehicle.model} (${selectedVehicle.registrationNumber}) assigned to booking ${selectedBooking.id}! Routed to Fleet Owner (${selectedVehicle.vendorName || "Vendor"}) to assign chauffeur and confirm.`,
       });
       setTimeout(() => {
         router.push(`/operations/bookings/${selectedBooking.id}`);
       }, 1200);
     } catch {
-      setToast({ type: "error", message: "Failed to allocate fleet" });
+      setToast({ type: "error", message: "Failed to allocate vehicle" });
       setSubmitting(false);
     }
   }
@@ -86,8 +81,8 @@ export default function VehicleAssignmentPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Fleet & Chauffeur Fast Allocator"
-          subtitle="Split-screen dual dispatch workflow for pending customer bookings"
+          title="Fleet Vehicle Fast Allocator"
+          subtitle="Assign commercial vehicles to customer bookings. Chauffeurs are assigned by the fleet owner."
           breadcrumbs={[
             { label: "Operations", href: "/operations/dashboard" },
             { label: "Assignments", href: "/operations/assignments/vehicle" },
@@ -111,7 +106,7 @@ export default function VehicleAssignmentPage() {
             Loading Fast Allocator
           </h3>
           <p className="mt-1.5 text-xs text-slate-500 max-w-sm">
-            Fetching unassigned bookings, available commercial fleet, and active chauffeurs...
+            Fetching unassigned bookings and available commercial fleet...
           </p>
 
           {/* Skeleton progress pills */}
@@ -123,10 +118,6 @@ export default function VehicleAssignmentPage() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
               Scanning fleet
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              Verifying drivers
             </span>
           </div>
         </div>
@@ -145,8 +136,8 @@ export default function VehicleAssignmentPage() {
       )}
 
       <PageHeader
-        title="Fleet & Chauffeur Fast Allocator"
-        subtitle="Split-screen dual dispatch workflow for pending customer bookings"
+        title="Fleet Vehicle Fast Allocator"
+        subtitle="Assign commercial vehicles to customer bookings. Chauffeurs are assigned by the fleet owner upon dispatch acceptance."
         breadcrumbs={[
           { label: "Operations", href: "/operations/dashboard" },
           { label: "Assignments", href: "/operations/assignments/vehicle" },
@@ -253,49 +244,44 @@ export default function VehicleAssignmentPage() {
             )}
           </Card>
 
-          {/* 3. Choose Available Chauffeur */}
-          <Card
-            title="3. Choose Available Chauffeur"
-            subtitle={`${drivers.length} commercial licensed drivers available`}
-          >
-            {drivers.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-500">
-                No driver available
+          {/* 3. Fleet Owner Chauffeur Delegation Workflow */}
+          <div className="p-4 rounded-xl border border-slate-200 bg-gradient-to-r from-blue-50/70 via-slate-50 to-indigo-50/50 shadow-xs">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                <UserCheck className="w-5 h-5" />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
-                {drivers.map((d) => {
-                  const isChosen = selectedDriver?.id === d.id;
-                  return (
-                    <div
-                      key={d.id}
-                      onClick={() => setSelectedDriver(d)}
-                      className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
-                        isChosen
-                          ? "border-emerald-500 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-400"
-                          : "border-slate-200 hover:border-slate-300 bg-white"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">{d.name}</span>
-                        <span className="text-[11px] font-bold text-amber-600">★ {d.rating}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-600 font-mono mt-0.5">{d.phone}</div>
-                      <div className="text-[10px] text-slate-500 mt-1">
-                        {d.experienceYears} Yrs Exp • {d.languages?.join(", ")}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <span>Chauffeur Assignment Delegated to Fleet Owner</span>
+                  <Badge variant="info" size="sm" className="text-[10px]">Standard Workflow</Badge>
+                </h4>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Chauffeur selection by operations is not required. Operations assigns the commercial vehicle, and the Fleet Owner (
+                  <strong className="text-slate-900">{selectedVehicle?.vendorName || "Assigned Fleet Vendor"}</strong>
+                  ) will allocate their verified commercial driver upon accepting the booking.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-500 font-medium">
+                  <span className="flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Step 1: Operations Assigns Vehicle
+                  </span>
+                  <span>➔</span>
+                  <span className="flex items-center gap-1 text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                    Step 2: Fleet Owner Assigns Chauffeur & Confirms
+                  </span>
+                </div>
               </div>
-            )}
-          </Card>
+            </div>
+          </div>
 
           {/* Confirm Button Bar */}
           <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="text-xs text-slate-600">
-              Vehicle: <strong>{selectedVehicle?.registrationNumber || "Not chosen"}</strong> • Chauffeur:{" "}
-              <strong>{selectedDriver?.name || "Not chosen"}</strong>
+            <div className="text-xs text-slate-600 space-y-0.5">
+              <div>
+                Vehicle: <strong>{selectedVehicle?.registrationNumber ? `${selectedVehicle.registrationNumber} (${selectedVehicle.model})` : "Not chosen"}</strong>
+              </div>
+              <div className="text-[11px] text-slate-500">
+                Fleet Owner: <strong className="text-slate-800">{selectedVehicle?.vendorName || "Pending vehicle selection"}</strong> • Chauffeur: <span className="text-blue-600 font-medium italic">Assigned by Fleet Owner</span>
+              </div>
             </div>
             <Button
               variant="emerald"
@@ -303,9 +289,9 @@ export default function VehicleAssignmentPage() {
               icon={CheckCircle2}
               onClick={handleConfirmDispatch}
               isLoading={submitting}
-              disabled={submitting || !selectedBooking || !selectedVehicle || !selectedDriver}
+              disabled={submitting || !selectedBooking || !selectedVehicle}
             >
-              {submitting ? "Dispatching Fleet..." : "Confirm & Dispatch Fleet"}
+              {submitting ? "Dispatching to Fleet Owner..." : "Confirm & Dispatch Vehicle"}
             </Button>
           </div>
         </div>

@@ -2,14 +2,15 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getAuthToken } from "@/lib/auth";
 
 export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
     const user = getCurrentUser();
-    if (!user) {
+    const token = getAuthToken();
+    if (!user || !token) {
       router.replace("/login");
     } else if (user.role === "ADMIN") {
       router.replace("/admin/dashboard");

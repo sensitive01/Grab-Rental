@@ -68,6 +68,9 @@ public class VehicleTariffService {
         if (req.getCommonPhotoUrl() != null && !req.getCommonPhotoUrl().isBlank()) {
             entity.setCommonPhotoUrl(req.getCommonPhotoUrl().trim());
         }
+        if (req.getDescription() != null) {
+            entity.setDescription(req.getDescription().trim());
+        }
         if (req.getActive() != null) {
             entity.setActive(req.getActive());
         }

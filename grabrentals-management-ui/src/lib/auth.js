@@ -117,10 +117,12 @@ export async function login(email, password) {
       avatar: "SA",
       badge: "Admin Access",
       loginTime: new Date().toISOString(),
+      token: "demo-admin-token",
       source: "local",
     };
     if (typeof window !== "undefined") {
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      localStorage.setItem(TOKEN_KEY, "demo-admin-token");
     }
     return { success: true, user, redirectUrl: "/admin/dashboard" };
   }
@@ -133,10 +135,12 @@ export async function login(email, password) {
       avatar: DEMO_ACCOUNTS.operations.avatar,
       badge: DEMO_ACCOUNTS.operations.badge,
       loginTime: new Date().toISOString(),
+      token: "demo-ops-token",
       source: "local",
     };
     if (typeof window !== "undefined") {
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      localStorage.setItem(TOKEN_KEY, "demo-ops-token");
     }
     return { success: true, user, redirectUrl: "/operations/dashboard" };
   }

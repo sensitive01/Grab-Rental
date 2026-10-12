@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { login, getCurrentUser, DEMO_ACCOUNTS } from "@/lib/auth";
+import { login, getCurrentUser, getAuthToken, DEMO_ACCOUNTS } from "@/lib/auth";
 import {
   Car,
   Lock,
@@ -29,7 +29,8 @@ export default function LoginPage() {
   // If already logged in, redirect directly to target or dashboard
   useEffect(() => {
     const user = getCurrentUser();
-    if (user) {
+    const token = getAuthToken();
+    if (user && token) {
       const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
       const redirectParam = params?.get("redirect");
       if (redirectParam && redirectParam.startsWith("/")) {

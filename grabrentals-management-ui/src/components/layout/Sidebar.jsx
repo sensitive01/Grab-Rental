@@ -54,7 +54,7 @@ export const OPERATIONS_NAV = [
     items: [
       { label: "Vehicles Roster", href: "/operations/vehicles", icon: Car },
       { label: "Chauffeur Roster", href: "/operations/drivers", icon: UserCheck },
-      { label: "Assign Vehicle & Driver", href: "/operations/assignments/vehicle", icon: GitPullRequest },
+      { label: "Assign Vehicle", href: "/operations/assignments/vehicle", icon: GitPullRequest },
     ],
   },
   {

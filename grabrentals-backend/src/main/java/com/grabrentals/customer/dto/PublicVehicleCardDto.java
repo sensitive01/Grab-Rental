@@ -41,6 +41,7 @@ public class PublicVehicleCardDto {
     private String chauffeur;
     private Double chauffeurRating;
     private String status;
+    private String description;
 
     @Data
     @Builder

@@ -2,6 +2,7 @@ package com.grabrentals.customer.dto;
 
 import com.grabrentals.customer.entity.Booking;
 import com.grabrentals.customer.entity.BookingStatus;
+import com.grabrentals.user.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -104,11 +105,18 @@ public class BookingResponse {
                 .updatedAt(b.getUpdatedAt());
 
         // Vendor
-        if (b.getVendor() != null) {
-            builder.vendorId(b.getVendor().getId())
-                   .vendorBusinessName(b.getVendor().getBusinessName() != null ? b.getVendor().getBusinessName() : b.getVendor().getName())
-                   .vendorName(b.getVendor().getName())
-                   .vendorPhone(b.getVendor().getPhone());
+        User vendor = b.getVendor();
+        if (vendor == null && b.getAssignedVehicle() != null && b.getAssignedVehicle().getUser() != null) {
+            vendor = b.getAssignedVehicle().getUser();
+        }
+        if (vendor != null) {
+            String vPhone = (vendor.getPhone() != null && !vendor.getPhone().isBlank()) 
+                    ? vendor.getPhone() 
+                    : vendor.getAlternatePhone();
+            builder.vendorId(vendor.getId())
+                   .vendorBusinessName(vendor.getBusinessName() != null ? vendor.getBusinessName() : vendor.getName())
+                   .vendorName(vendor.getName())
+                   .vendorPhone(vPhone);
         }
 
         // Vehicle

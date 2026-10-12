@@ -60,7 +60,7 @@ export default function AdminBookingDetailPage({ params }) {
     <div className="space-y-6">
       <PageHeader
         title={`Audit Dossier: Booking #${booking.id}`}
-        subtitle={`Logged on ${booking.startDate || "N/A"} • Partner: ${booking.vendorName || "Fleet Partner"}`}
+        subtitle={`Logged on ${booking.startDate || "N/A"} • Partner: ${booking.vendorName || "Fleet Partner"}${booking.vendorPhone ? ` (${booking.vendorPhone})` : ""}`}
         breadcrumbs={[
           { label: "Admin", href: "/admin/dashboard" },
           { label: "Bookings", href: "/admin/bookings" },
@@ -118,6 +118,12 @@ export default function AdminBookingDetailPage({ params }) {
           <div className="space-y-2 text-xs">
             <NumberPlate registrationNumber={booking.assignedVehicleNumber} />
             <p className="font-semibold text-slate-800">{booking.preferredVehicle || booking.vehicleCategory || "Standard"}</p>
+            <div className="py-1 border-y border-slate-100 my-1 space-y-0.5">
+              <p className="text-slate-700 font-semibold">Vendor: {booking.vendorName || "Fleet Partner"}</p>
+              {booking.vendorPhone && (
+                <p className="text-emerald-700 font-medium">{booking.vendorPhone}</p>
+              )}
+            </div>
             <p className="text-slate-500">Chauffeur: {booking.assignedDriverName || "Pending"}</p>
             <div className="pt-2">
               <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}>

@@ -11,7 +11,8 @@ import {
   Phone, 
   Star, 
   Car,
-  Filter
+  Filter,
+  Navigation
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -120,19 +121,42 @@ export default function VendorDriversPage() {
       className: "text-slate-600"
     },
     {
-      key: "assignedVehicle",
-      label: "Assigned Vehicle",
+      key: "currentDuty",
+      label: "Current Duty / Trip",
       sortable: true,
-      render: (d) => (
-        d.assignedVehicle ? (
-          <span className="flex items-center gap-1 font-medium text-slate-800">
-            <Car className="w-3.5 h-3.5 text-slate-400" />
-            {d.assignedVehicle}
+      render: (d) => {
+        const isBusy = d.status === "BOOKED" || d.status === "ON_TRIP" || Boolean(d.currentTripRef || d.currentBookingId || d.assignedVehicle);
+        if (isBusy && (d.currentTripRef || d.assignedVehicle)) {
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 w-fit">
+                <Navigation className="w-3 h-3 text-blue-600" />
+                {d.currentTripRef || "Active Dispatch"}
+              </span>
+              {d.assignedVehicle && (
+                <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                  <Car className="w-3 h-3 text-slate-400" /> {d.assignedVehicle}
+                </span>
+              )}
+            </div>
+          );
+        }
+
+        if (d.status === "OFF_DUTY" || d.status === "INACTIVE") {
+          return (
+            <span className="text-slate-400 text-xs italic">
+              Off Duty
+            </span>
+          );
+        }
+
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Available for Duty
           </span>
-        ) : (
-          <span className="text-slate-400 italic">Floating / Unassigned</span>
-        )
-      )
+        );
+      }
     },
     {
       key: "status",

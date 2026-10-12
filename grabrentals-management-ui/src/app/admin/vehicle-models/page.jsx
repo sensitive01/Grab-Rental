@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { FormattedTextarea } from "@/components/ui/FormattedTextarea";
 import {
   Table,
   TableHeader,
@@ -81,6 +82,7 @@ export default function AdminVehicleModelsPage() {
   const [photoMode, setPhotoMode] = useState("upload"); // 'upload' or 'url'
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState("");
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [isCustomModel, setIsCustomModel] = useState(false);
   const [viewMode, setViewMode] = useState("table"); // 'table' or 'grid'
   const fileInputRef = useRef(null);
@@ -91,6 +93,7 @@ export default function AdminVehicleModelsPage() {
     modelName: "Dzire",
     seatingCapacity: "4",
     fuelType: "Diesel",
+    description: "",
     commonPhotoUrl: "",
     active: true,
   });
@@ -123,9 +126,11 @@ export default function AdminVehicleModelsPage() {
       modelName: defaultModels[0] || "",
       seatingCapacity: "4",
       fuelType: "Diesel",
+      description: "",
       commonPhotoUrl: "",
       active: true,
     });
+    setIsCustomCategory(false);
     setIsCustomModel(false);
     setPreviewPhoto("");
     setPhotoMode("upload");
@@ -136,7 +141,8 @@ export default function AdminVehicleModelsPage() {
     setEditingItem(item);
     const cat = item.category || "Sedan";
     const presets = CATEGORY_MODEL_PRESETS[cat] || [];
-    const isPreset = presets.includes(item.modelName);
+    const isPresetModel = presets.includes(item.modelName);
+    const isPresetCat = Boolean(CATEGORY_MODEL_PRESETS[cat]);
 
     setFormData({
       id: item.id,
@@ -144,10 +150,12 @@ export default function AdminVehicleModelsPage() {
       modelName: item.modelName || "",
       seatingCapacity: item.seatingCapacity || "4",
       fuelType: item.fuelType || "Diesel",
+      description: item.description || "",
       commonPhotoUrl: item.commonPhotoUrl || "",
       active: item.active ?? true,
     });
-    setIsCustomModel(!isPreset && Boolean(item.modelName));
+    setIsCustomCategory(!isPresetCat);
+    setIsCustomModel(!isPresetModel && Boolean(item.modelName));
     setPreviewPhoto(item.commonPhotoUrl || "");
     setPhotoMode(item.commonPhotoUrl ? "url" : "upload");
     setIsModalOpen(true);
@@ -268,10 +276,17 @@ export default function AdminVehicleModelsPage() {
     });
   }, [models, selectedCategory, search]);
 
+  const dynamicCategories = useMemo(() => {
+    const set = new Set(Object.keys(CATEGORY_MODEL_PRESETS));
+    models.forEach((m) => {
+      if (m.category && m.category.trim()) set.add(m.category.trim());
+    });
+    return Array.from(set);
+  }, [models]);
+
   const categories = useMemo(() => {
-    const list = Object.keys(CATEGORY_MODEL_PRESETS);
-    return ["ALL", ...list];
-  }, []);
+    return ["ALL", ...dynamicCategories];
+  }, [dynamicCategories]);
 
   return (
     <div className="space-y-6">
@@ -427,7 +442,13 @@ export default function AdminVehicleModelsPage() {
                   {/* Vehicle Model Column */}
                   <TableCell>
                     <div className="font-bold text-slate-900 text-sm">{item.modelName}</div>
-                    <div className="text-[11px] text-slate-400 font-medium">Master Catalog Asset</div>
+                    {item.description ? (
+                      <div className="text-[11px] text-slate-600 line-clamp-1 max-w-xs font-normal mt-0.5" title={item.description}>
+                        {item.description.replace(/[•\*\#\[\]]/g, "").trim()}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 font-medium">Master Catalog Asset</div>
+                    )}
                   </TableCell>
 
                   {/* Category Column */}
@@ -542,6 +563,12 @@ export default function AdminVehicleModelsPage() {
                     <Fuel className="w-3.5 h-3.5 text-amber-500" />
                     <span>Fuel: <strong className="text-slate-800">{item.fuelType || "Diesel"}</strong></span>
                   </div>
+
+                  {item.description && (
+                    <div className="text-[11px] text-slate-600 bg-slate-50/80 p-2 rounded-lg border border-slate-100 line-clamp-2 leading-relaxed" title={item.description}>
+                      {item.description.replace(/[•\*\#\[\]]/g, "").trim()}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -573,33 +600,87 @@ export default function AdminVehicleModelsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingItem ? `Edit Model: ${editingItem.modelName}` : "Add Vehicle Model & Upload Common Photo"}
-        size="md"
+        size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* STEP 1: CATEGORY */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              1. Vehicle Category <span className="text-rose-500">*</span>
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => {
-                const cat = e.target.value;
-                const presets = CATEGORY_MODEL_PRESETS[cat] || [];
-                setFormData((prev) => ({
-                  ...prev,
-                  category: cat,
-                  modelName: prev.modelName || (presets[0] || ""),
-                }));
-              }}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-            >
-              {Object.keys(CATEGORY_MODEL_PRESETS).map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-700">
+                1. Vehicle Category <span className="text-rose-500">*</span>
+              </label>
+              {!isCustomCategory ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCategory(true);
+                    setFormData((prev) => ({ ...prev, category: "", modelName: "" }));
+                    setIsCustomModel(true);
+                  }}
+                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  + Add Category
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCategory(false);
+                    const defaultCat = "Sedan";
+                    const presets = CATEGORY_MODEL_PRESETS[defaultCat] || [];
+                    setFormData((prev) => ({
+                      ...prev,
+                      category: defaultCat,
+                      modelName: presets[0] || "",
+                    }));
+                    setIsCustomModel(false);
+                  }}
+                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                >
+                  ← Select from Dropdown
+                </button>
+              )}
+            </div>
+
+            {!isCustomCategory ? (
+              <select
+                value={formData.category}
+                onChange={(e) => {
+                  if (e.target.value === "__custom_category__") {
+                    setIsCustomCategory(true);
+                    setFormData((prev) => ({ ...prev, category: "", modelName: "" }));
+                    setIsCustomModel(true);
+                    return;
+                  }
+                  const cat = e.target.value;
+                  const presets = CATEGORY_MODEL_PRESETS[cat] || [];
+                  setFormData((prev) => ({
+                    ...prev,
+                    category: cat,
+                    modelName: prev.modelName && presets.includes(prev.modelName) ? prev.modelName : (presets[0] || ""),
+                  }));
+                }}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              >
+                {dynamicCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+                <option value="__custom_category__">+ Add New Category...</option>
+              </select>
+            ) : (
+              <input
+                key="custom-vehicle-category-input"
+                type="text"
+                placeholder="Type new vehicle category (e.g. Luxury, Electric, Convertible)..."
+                value={formData.category || ""}
+                onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
+                autoFocus
+                required
+              />
+            )}
           </div>
 
           {/* STEP 2: MODEL NAME DROPDOWN */}
@@ -615,7 +696,7 @@ export default function AdminVehicleModelsPage() {
                     setIsCustomModel(true);
                     setFormData((prev) => ({ ...prev, modelName: "" }));
                   }}
-                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800"
+                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
                 >
                   + Custom Model
                 </button>
@@ -627,7 +708,7 @@ export default function AdminVehicleModelsPage() {
                     const presets = CATEGORY_MODEL_PRESETS[formData.category] || [];
                     setFormData((prev) => ({ ...prev, modelName: presets[0] || "" }));
                   }}
-                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800"
+                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
                 >
                   ← Select from Dropdown
                 </button>
@@ -648,7 +729,7 @@ export default function AdminVehicleModelsPage() {
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900 cursor-pointer"
                 required
               >
-                <option value="">-- Choose Model for {formData.category} --</option>
+                <option value="">-- Choose Model for {formData.category || "Category"} --</option>
                 {(CATEGORY_MODEL_PRESETS[formData.category] || []).map((model) => (
                   <option key={model} value={model}>
                     {model}
@@ -664,7 +745,7 @@ export default function AdminVehicleModelsPage() {
                 value={formData.modelName || ""}
                 onChange={(e) => setFormData((prev) => ({ ...prev, modelName: e.target.value }))}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
-                autoFocus
+                autoFocus={isCustomCategory ? false : true}
                 required
               />
             )}
@@ -707,11 +788,22 @@ export default function AdminVehicleModelsPage() {
             </div>
           </div>
 
-          {/* STEP 4: UPLOAD COMMON PHOTO (FILE UPLOAD OR URL) */}
+          {/* STEP 4: DESCRIPTION */}
+          <div>
+            <FormattedTextarea
+              label="4. Description"
+              value={formData.description || ""}
+              onChange={(val) => setFormData((prev) => ({ ...prev, description: val }))}
+              placeholder="Add vehicle model highlights, boot space, luxury amenities, or passenger suitability..."
+              rows={3}
+            />
+          </div>
+
+          {/* STEP 5: UPLOAD COMMON PHOTO (FILE UPLOAD OR URL) */}
           <div className="space-y-3 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-bold text-slate-700">
-                4. Common Master Photo <span className="text-rose-500">*</span>
+                5. Common Master Photo <span className="text-rose-500">*</span>
               </label>
               <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px]">
                 <button

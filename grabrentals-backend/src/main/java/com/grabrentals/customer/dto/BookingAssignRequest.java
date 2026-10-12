@@ -17,7 +17,6 @@ public class BookingAssignRequest {
     @NotNull(message = "Vehicle ID is required")
     private UUID vehicleId;
 
-    @NotNull(message = "Driver ID is required")
     private UUID driverId;
 
     private UUID vendorId;

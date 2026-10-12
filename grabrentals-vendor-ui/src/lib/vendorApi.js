@@ -305,9 +305,10 @@ export const vendorApi = {
     }
   },
 
-  acceptBooking: async (bookingId) => {
+  acceptBooking: async (bookingId, driverId = null) => {
     try {
-      const res = await axiosClient.post(`/api/vendor/bookings/${bookingId}/accept`);
+      const payload = driverId ? { driverId } : {};
+      const res = await axiosClient.post(`/api/vendor/bookings/${bookingId}/accept`, payload);
       return normalizeBooking(res.data?.data);
     } catch (err) {
       console.error(`vendorApi.acceptBooking(${bookingId}) error:`, err);

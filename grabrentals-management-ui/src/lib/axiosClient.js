@@ -32,25 +32,24 @@ axiosClient.interceptors.request.use(
 );
 
 // === RESPONSE INTERCEPTOR ===
+let isRedirectingToLogin = false;
+
 axiosClient.interceptors.response.use(
   (response) => {
-    // Return the response data directly or the full response
     return response;
   },
   (error) => {
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       const status = error.response.status;
 
       if (status === 401 && typeof window !== "undefined") {
-        // If session expired or unauthorized and not already on the login page
-        if (!window.location.pathname.startsWith("/login")) {
+        if (!window.location.pathname.startsWith("/login") && !isRedirectingToLogin) {
+          isRedirectingToLogin = true;
           console.warn("Session expired or unauthorized (401). Redirecting to login...");
-          // Optional: clear stale session
           localStorage.removeItem("grabrentals_jwt_token");
           localStorage.removeItem("grabrentals_mgmt_session");
-          window.location.href = "/login";
+          const target = window.location.pathname;
+          window.location.href = `/login?redirect=${encodeURIComponent(target)}`;
         }
       }
     } else if (error.request) {

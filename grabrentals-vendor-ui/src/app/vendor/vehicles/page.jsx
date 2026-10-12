@@ -902,16 +902,16 @@ export default function VendorVehiclesPage() {
                         <span>{v.currentLocation || "Bangalore"}</span>
                       </div>
 
-                      {/* Driver Indicator */}
+                      {/* Chauffeur / Duty Indicator */}
                       <div className="flex items-center gap-1.5 text-[11px] font-medium mb-3">
                         <Users className="w-3.5 h-3.5 text-slate-400" />
                         {v.driverName ? (
                           <span className="text-slate-700">
-                            Driver: <span className="font-bold text-slate-900">{v.driverName}</span>
+                            On Duty Driver: <span className="font-bold text-slate-900">{v.driverName}</span>
                           </span>
                         ) : (
-                          <span className="text-rose-600 font-bold">
-                            Driver: Not Assigned
+                          <span className="text-slate-500 font-medium">
+                            Chauffeur: <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Assigned per trip</span>
                           </span>
                         )}
                       </div>
@@ -1004,7 +1004,11 @@ export default function VendorVehiclesPage() {
                         <span>{v.transmission}</span>
                       </div>
                       <div className="text-[11px] text-slate-500 mt-1">
-                        {v.driverName ? `Driver: ${v.driverName}` : <span className="text-rose-600 font-bold">Driver: Not Assigned</span>}
+                        {v.driverName ? (
+                          <span>On Duty Driver: <strong className="text-slate-800">{v.driverName}</strong></span>
+                        ) : (
+                          <span>Chauffeur: <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Assigned per trip</span></span>
+                        )}
                       </div>
                     </div>
                   </div>

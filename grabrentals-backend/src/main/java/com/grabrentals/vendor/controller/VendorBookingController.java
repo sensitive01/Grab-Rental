@@ -64,12 +64,34 @@ public class VendorBookingController {
     @PostMapping("/{id}/accept")
     public ResponseEntity<ApiResponse<BookingResponse>> acceptBooking(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            @RequestBody(required = false) java.util.Map<String, Object> body
     ) {
         User vendor = getUser(userDetails);
-        log.info("[HTTP API] POST /api/fleet/bookings/{}/accept by vendor '{}'", id, vendor.getEmail());
-        BookingResponse response = bookingService.vendorAcceptBooking(id, vendor);
-        return ResponseEntity.ok(ApiResponse.success("Booking accepted and confirmed successfully! Driver and car dispatched.", response));
+        UUID driverId = null;
+        if (body != null && body.get("driverId") != null && !body.get("driverId").toString().isBlank()) {
+            try {
+                driverId = UUID.fromString(body.get("driverId").toString());
+            } catch (Exception ignored) {}
+        }
+        log.info("[HTTP API] POST /api/fleet/bookings/{}/accept by vendor '{}' with driverId '{}'", id, vendor.getEmail(), driverId);
+        BookingResponse response = bookingService.vendorAcceptBooking(id, driverId, vendor);
+        return ResponseEntity.ok(ApiResponse.success("Booking accepted and confirmed successfully! Chauffeur assigned and dispatched.", response));
+    }
+
+    @PostMapping("/{id}/assign-driver")
+    public ResponseEntity<ApiResponse<BookingResponse>> assignDriver(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable UUID id,
+            @RequestBody java.util.Map<String, Object> body
+    ) {
+        User vendor = getUser(userDetails);
+        UUID driverId = null;
+        if (body != null && body.get("driverId") != null && !body.get("driverId").toString().isBlank()) {
+            driverId = UUID.fromString(body.get("driverId").toString());
+        }
+        BookingResponse response = bookingService.vendorAssignDriver(id, driverId, vendor);
+        return ResponseEntity.ok(ApiResponse.success("Chauffeur assigned successfully by fleet owner.", response));
     }
 
     @PostMapping("/{id}/decline")

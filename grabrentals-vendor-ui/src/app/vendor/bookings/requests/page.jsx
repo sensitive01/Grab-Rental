@@ -25,6 +25,8 @@ import { formatINR } from "@/lib/utils";
 export default function VendorBookingRequestsPage() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [drivers, setDrivers] = useState([]);
+  const [selectedDriverId, setSelectedDriverId] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionType, setActionType] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -33,8 +35,15 @@ export default function VendorBookingRequestsPage() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const data = await vendorApi.getBookingRequests();
-      setRequests(data || []);
+      const [reqData, drvData] = await Promise.all([
+        vendorApi.getBookingRequests(),
+        vendorApi.getDrivers(),
+      ]);
+      setRequests(reqData || []);
+      setDrivers(drvData || []);
+      if (drvData && drvData.length > 0) {
+        setSelectedDriverId(drvData[0].id);
+      }
     } catch (err) {
       console.error("Could not fetch live booking requests:", err);
       setRequests([]);
@@ -54,8 +63,10 @@ export default function VendorBookingRequestsPage() {
 
     try {
       if (actionType === "accept") {
-        await vendorApi.acceptBooking(targetId);
-        setToastMessage(`Booking #${selectedRequest.bookingReference || selectedRequest.id} accepted! Ride OTP generated & dispatched.`);
+        await vendorApi.acceptBooking(targetId, selectedDriverId || null);
+        const assignedDriver = drivers.find((d) => d.id === selectedDriverId);
+        const driverName = assignedDriver ? assignedDriver.name : "Assigned";
+        setToastMessage(`Booking #${selectedRequest.bookingReference || selectedRequest.id} accepted! Chauffeur (${driverName}) assigned & customer notified.`);
       } else {
         await vendorApi.declineBooking(targetId, "Vendor vehicle unavailable or schedule conflict");
         setToastMessage(`Booking #${selectedRequest.bookingReference || selectedRequest.id} declined and returned to dispatch queue.`);
@@ -88,15 +99,44 @@ export default function VendorBookingRequestsPage() {
           }
         }}
         onConfirm={handleConfirmAction}
-        title={actionType === "accept" ? "Accept Booking Request?" : "Decline Booking Request?"}
+        title={actionType === "accept" ? "Accept Booking & Assign Chauffeur" : "Decline Booking Request?"}
         message={
           actionType === "accept"
             ? `Confirm accepting #${selectedRequest?.bookingReference || selectedRequest?.id} for ₹${(selectedRequest?.totalFare || selectedRequest?.estimatedAmount || 0).toLocaleString("en-IN")}? Your net earnings will be ₹${(selectedRequest?.vendorNet || 0).toLocaleString("en-IN")}.`
             : `Are you sure you want to decline #${selectedRequest?.bookingReference || selectedRequest?.id}? It will be returned to operations.`
         }
-        confirmText={actionLoading ? "Processing..." : (actionType === "accept" ? "Accept & Dispatch" : "Decline Request")}
+        confirmText={actionLoading ? "Processing..." : (actionType === "accept" ? "Assign Chauffeur & Dispatch" : "Decline Request")}
         type={actionType === "accept" ? "success" : "danger"}
-      />
+      >
+        {actionType === "accept" && (
+          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-2 text-left">
+            <label className="block text-xs font-bold text-slate-800">
+              Assign Your Chauffeur <span className="text-emerald-600">(Fleet Owner Action)</span>
+            </label>
+            <p className="text-[11px] text-slate-500">
+              Operations assigned the vehicle. Select which of your drivers will fulfill this duty:
+            </p>
+            {drivers.length === 0 ? (
+              <div className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                No active drivers registered in your fleet yet. Please add a driver in Fleet Management or accept now to assign later.
+              </div>
+            ) : (
+              <select
+                value={selectedDriverId}
+                onChange={(e) => setSelectedDriverId(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-900 cursor-pointer"
+              >
+                <option value="">-- Choose Chauffeur from your roster --</option>
+                {drivers.map((drv) => (
+                  <option key={drv.id} value={drv.id}>
+                    {drv.name} ({drv.phone || "No phone"}) • Rating: {drv.rating || 5}★
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+      </ConfirmationModal>
 
       {/* Header & Breadcrumbs */}
       <div className="space-y-1">

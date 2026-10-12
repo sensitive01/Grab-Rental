@@ -104,6 +104,9 @@ export const operationsApi = {
             assignedVehicleNumber: b.vehicleNumber,
             assignedVehicleRegistration: b.vehicleNumber,
             assignedDriverName: b.driverName,
+            assignedDriverPhone: b.driverPhone,
+            vendorName: b.vendorBusinessName || b.vendorName || (b.vendor && (b.vendor.businessName || b.vendor.name)) || "",
+            vendorPhone: b.vendorPhone || (b.vendor && b.vendor.phone) || "",
           };
         });
         return createApiResponse(mapped);
@@ -150,6 +153,9 @@ export const operationsApi = {
           assignedVehicleNumber: b.vehicleNumber,
           assignedVehicleRegistration: b.vehicleNumber,
           assignedDriverName: b.driverName,
+          assignedDriverPhone: b.driverPhone,
+          vendorName: b.vendorBusinessName || b.vendorName || (b.vendor && (b.vendor.businessName || b.vendor.name)) || "",
+          vendorPhone: b.vendorPhone || (b.vendor && b.vendor.phone) || "",
         });
       }
     } catch {
@@ -213,6 +219,36 @@ export const operationsApi = {
       // Fallback
     }
     return createApiResponse([]);
+  },
+
+  async assignVehicle(bookingId, vehicleId) {
+    try {
+      const targetId = bookingId;
+      const res = await axiosClient.post(`/api/operations/bookings/${targetId}/assign`, {
+        vehicleId,
+        driverId: null,
+      });
+      if (res.data && res.data.success) {
+        return createApiResponse(res.data.data, "Vehicle assigned and forwarded to fleet owner");
+      }
+    } catch {
+      // Fallback
+    }
+    await simulateLatency();
+    const bIndex = bookings.findIndex((b) => b.id === bookingId);
+    if (bIndex !== -1) {
+      const vehicle = vehicles.find((v) => v.id === vehicleId);
+      if (vehicle) {
+        vehicle.status = "ON_DUTY";
+        bookings[bIndex].assignedVehicleId = vehicle.id;
+        bookings[bIndex].assignedVehicleNumber = vehicle.registrationNumber;
+        bookings[bIndex].assignedVehicleModel = vehicle.model;
+        bookings[bIndex].vendorName = vehicle.vendorName;
+      }
+      bookings[bIndex].status = "ASSIGNED_TO_VENDOR";
+      return createApiResponse(bookings[bIndex], "Vehicle dispatched to fleet owner");
+    }
+    return createApiResponse(null, "Booking not found");
   },
 
   async assignVehicleAndDriver(bookingId, vehicleId, driverId) {
@@ -321,5 +357,47 @@ export const operationsApi = {
     };
     coordinations.unshift(record);
     return createApiResponse(record, "Coordination log created");
+  },
+
+  async getNotifications() {
+    try {
+      const res = await axiosClient.get("/api/operations/notifications");
+      if (res.data && res.data.success && Array.isArray(res.data.data)) {
+        return createApiResponse(res.data.data);
+      }
+    } catch {
+      // Fallback
+    }
+    return createApiResponse([]);
+  },
+
+  async markNotificationRead(id) {
+    try {
+      const res = await axiosClient.patch(`/api/operations/notifications/${id}/read`);
+      return createApiResponse(res.data?.data || "OK");
+    } catch {
+      return createApiResponse("OK");
+    }
+  },
+
+  async markAllNotificationsRead() {
+    try {
+      const res = await axiosClient.post("/api/operations/notifications/mark-all-read");
+      return createApiResponse(res.data?.data || "OK");
+    } catch {
+      return createApiResponse("OK");
+    }
+  },
+
+  async getUnreadNotificationCount() {
+    try {
+      const res = await axiosClient.get("/api/operations/notifications/unread-count");
+      if (res.data && res.data.success && res.data.data) {
+        return createApiResponse(res.data.data.unreadCount || 0);
+      }
+    } catch {
+      // Fallback
+    }
+    return createApiResponse(0);
   },
 };

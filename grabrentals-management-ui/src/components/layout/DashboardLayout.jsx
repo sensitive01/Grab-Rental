@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { TopNavbar } from "./TopNavbar";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getAuthToken } from "@/lib/auth";
 
 export function DashboardLayout({ children, role = "OPERATIONS" }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -14,7 +14,8 @@ export function DashboardLayout({ children, role = "OPERATIONS" }) {
 
   useEffect(() => {
     const user = getCurrentUser();
-    if (!user) {
+    const token = getAuthToken();
+    if (!user || !token) {
       const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
       router.replace(redirectUrl);
       return;

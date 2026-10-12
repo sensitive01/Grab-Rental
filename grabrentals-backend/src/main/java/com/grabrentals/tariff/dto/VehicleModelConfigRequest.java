@@ -27,6 +27,8 @@ public class VehicleModelConfigRequest {
 
     private String commonPhotoUrl;
 
+    private String description;
+
     @Builder.Default
     private Boolean active = true;
 }

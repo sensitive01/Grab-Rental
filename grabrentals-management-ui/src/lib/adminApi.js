@@ -55,8 +55,11 @@ export const adminApi = {
       }
       throw new Error(json.message || "Invalid response format from database");
     } catch (err) {
+      if (err.response?.status === 401) {
+        return { success: false, source: "unauthorized", data: [] };
+      }
       const msg = err.response?.data?.message || err.message;
-      console.error("Backend database request failed for getAllUsers:", msg);
+      console.warn("Backend database request failed for getAllUsers:", msg);
       const cached = this.getCachedUsers();
       if (cached.length > 0) {
         return {
