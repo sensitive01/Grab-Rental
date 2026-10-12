@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ShieldCheck, Star, BadgeCheck, CheckCircle, Navigation, Phone, Briefcase, ChevronDown, User, Shield, CreditCard, Lock, LogOut, Settings, Menu, X, Bell } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
@@ -42,13 +43,23 @@ export default function AppShell({ children }) {
     router.push("/");
   };
 
+  const { t, language, setLanguage } = useLanguage();
+
+  const TOP_LANGUAGES = [
+    { code: "en", label: "English", name: "English" },
+    { code: "kn", label: "ಕನ್ನಡ", name: "Kannada" },
+    { code: "ta", label: "தமிழ்", name: "Tamil" },
+    { code: "te", label: "తెలుగు", name: "Telugu" },
+    { code: "hi", label: "हिंदी", name: "Hindi" },
+  ];
+
   const navLinks = [
-    { name: "Outstation Cabs", href: "/" },
-    { name: "Hourly / Local", href: "/local" },
-    { name: "Airport Transfers", href: "/airport" },
-    { name: "Tempo Traveller", href: "/vans" },
-    { name: "Luxury Buses", href: "/buses" },
-    { name: "Corporate & Events", href: "/corporate" },
+    { name: t("outstation_cabs"), href: "/" },
+    { name: t("hourly_local"), href: "/local" },
+    { name: t("airport_transfers"), href: "/airport" },
+    { name: t("tempo_traveller"), href: "/vans" },
+    { name: t("luxury_buses"), href: "/buses" },
+    { name: t("corporate_events"), href: "/corporate" },
   ];
 
   // Auth pages like /login use a dedicated focused layout
@@ -59,48 +70,88 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-slate-50">
       
-      {/* A. Top Trust & Guarantee Ticker */}
-      <div className="bg-brand-navy-dark text-slate-300 text-xs py-2 px-6 hidden md:flex items-center justify-between">
-        <div className="flex items-center gap-6 max-w-7xl mx-auto w-full">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-brand-emerald" />
-            <span>Zero Cancellation Fee up to 6 hrs</span>
+      {/* A. Top Trust & Guarantee Ticker with Language Options */}
+      <div className="bg-brand-navy-dark text-slate-300 text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-slate-800/80">
+        <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
+          
+          {/* Trust Guarantees on Desktop, Helpline on Mobile */}
+          <div className="flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none">
+            {/* Mobile Quick Helpline */}
+            <a 
+              href="tel:+919045450000" 
+              className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition-colors"
+            >
+              <Phone className="w-3 h-3 text-amber-400" />
+              <span>+91 90454 50000</span>
+            </a>
+
+            <div className="hidden md:flex items-center gap-1.5 shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-emerald shrink-0" />
+              <span>{t("zero_cancellation")}</span>
+            </div>
+            <div className="hidden md:flex items-center gap-1.5 shrink-0">
+              <Star className="w-3.5 h-3.5 text-brand-amber shrink-0" />
+              <span>{t("expert_chauffeurs")}</span>
+            </div>
+            <div className="hidden lg:flex items-center gap-1.5 shrink-0">
+              <BadgeCheck className="w-3.5 h-3.5 text-brand-sky shrink-0" />
+              <span>{t("all_inclusive")}</span>
+            </div>
+            <div className="hidden xl:flex items-center gap-1.5 shrink-0">
+              <CheckCircle className="w-3.5 h-3.5 text-brand-emerald shrink-0" />
+              <span>{t("sanitized_fleet")}</span>
+            </div>
+            <div className="hidden 2xl:flex items-center gap-1.5 shrink-0">
+              <Shield className="w-3.5 h-3.5 text-brand-amber shrink-0" />
+              <span>{t("executive_standards")}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Star className="w-4 h-4 text-brand-amber" />
-            <span>Expert Chauffeurs (4.8★ Avg)</span>
+
+          {/* Top Bar Language Selector */}
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold shrink-0 ml-auto pl-2 sm:pl-4 border-l border-slate-700/60 whitespace-nowrap">
+            {TOP_LANGUAGES.map((lang, idx) => {
+              const isActive = language === lang.code;
+              return (
+                <span key={lang.code} className="inline-flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setLanguage(lang.code)}
+                    className={`transition-all cursor-pointer ${
+                      isActive
+                        ? "text-brand-amber font-extrabold underline underline-offset-4 decoration-2"
+                        : "text-white/90 hover:text-amber-400 font-semibold"
+                    }`}
+                    title={lang.name}
+                  >
+                    {lang.label}
+                  </button>
+                  {idx < TOP_LANGUAGES.length - 1 && (
+                    <span className="text-slate-500 font-bold select-none text-[10px]">|</span>
+                  )}
+                </span>
+              );
+            })}
           </div>
-          <div className="flex items-center gap-1.5">
-            <BadgeCheck className="w-4 h-4 text-brand-sky" />
-            <span>Transparent All-Inclusive Fares</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-brand-emerald" />
-            <span>Sanitized & GPS Tracked Fleet</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-brand-amber" />
-            <span>Executive Standards Verified</span>
-          </div>
+
         </div>
       </div>
 
       {/* B. Sticky Main Header */}
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-50 h-20 px-4 lg:px-8 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-4 lg:gap-8 h-full min-w-0 flex-1">
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-50 h-16 sm:h-20 px-3 sm:px-6 lg:px-8 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3 lg:gap-8 h-full min-w-0 flex-1">
           
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2.5 lg:gap-3 flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
             <img
-              src="/images/grab-rentals-logo.jpg"
+              src="/images/brand-logo.png"
               alt="Grab Rentals"
-              className="h-11 sm:h-12 w-auto object-contain rounded-xl shadow-xs"
+              className="h-9 sm:h-12 w-auto object-contain drop-shadow-sm shrink-0"
             />
-            <div className="flex flex-col">
-              <span className="font-black text-base sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight">
+            <div className="flex flex-col min-w-0">
+              <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight truncate">
                 GRAB RENTALS
               </span>
-              <span className="text-[8px] sm:text-[9px] font-bold text-amber-600 uppercase tracking-widest leading-tight">
+              <span className="hidden sm:block text-[8px] sm:text-[9px] font-bold text-amber-600 uppercase tracking-widest leading-tight truncate">
                 Grab Comfort in Every Mile
               </span>
             </div>
@@ -125,30 +176,46 @@ export default function AppShell({ children }) {
         </div>
 
         {/* Header Actions */}
-        <div className="flex items-center gap-2.5 ml-auto whitespace-nowrap flex-shrink-0">
-          {/* Notifications Link */}
-          <Link
-            href="/account/notifications"
-            className="relative p-2 rounded-xl text-slate-600 hover:text-slate-950 hover:bg-slate-100 transition-colors"
-            title="Activity & Trip Notifications"
+        <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto whitespace-nowrap flex-shrink-0">
+          
+          {/* Call 24/7 Helpline Icon (Visible sm and up) */}
+          <a
+            href="tel:+919045450000"
+            className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-600 border border-slate-200/90 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            title="Call 24/7 Helpline (+91 90454 50000)"
+            aria-label="Call 24/7 Helpline"
           >
-            <Bell className="w-4.5 h-4.5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white animate-pulse"></span>
-          </Link>
+            <Phone className="w-4 h-4 text-slate-600 group-hover:text-amber-600 transition-colors" />
+          </a>
+
+          {/* WhatsApp Support Icon */}
+          <a
+            href="https://wa.me/919045450000?text=Hi%20Grab%20Rentals,%20I%20have%20an%20enquiry%20regarding%20booking%20a%20cab%20or%20bus."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            title="Chat on WhatsApp (+91 90454 50000)"
+            aria-label="Chat on WhatsApp"
+          >
+            <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+          </a>
+
           {currentUser ? (
             <div className="flex items-center gap-2">
               <div className="relative">
                 <button 
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white px-3.5 py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-1 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
-                  <div className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-[10px]">
-                    {currentUser.name && currentUser.name !== "Customer" ? currentUser.name.charAt(0).toUpperCase() : "C"}
+                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-[11px] sm:text-[10px]">
+                    {(currentUser.name && currentUser.name !== "Customer" ? currentUser.name : t("customer_badge") || "Customer").charAt(0).toUpperCase()}
                   </div>
-                  <span className="max-w-[130px] truncate">
-                    {currentUser.name && currentUser.name !== "Customer" ? currentUser.name : currentUser.phone || "Customer"}
+                  <span className="hidden sm:inline max-w-[110px] truncate">
+                    {currentUser.name && currentUser.name !== "Customer" ? currentUser.name : currentUser.phone || t("customer_badge") || "Customer"}
                   </span>
-                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`hidden sm:block w-3 h-3 text-slate-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {userMenuOpen && (
@@ -168,7 +235,7 @@ export default function AppShell({ children }) {
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
                           <Settings className="w-4 h-4 text-amber-400" />
-                          <span>Account Settings</span>
+                          <span>{t("my_account") || "Account Settings"}</span>
                         </Link>
                         <Link 
                           href="/dashboard" 
@@ -176,7 +243,7 @@ export default function AppShell({ children }) {
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
                           <User className="w-4 h-4 text-amber-400" />
-                          <span>My Trips</span>
+                          <span>{t("my_bookings") || "My Trips"}</span>
                         </Link>
                         <Link 
                           href="/account/notifications" 
@@ -201,7 +268,7 @@ export default function AppShell({ children }) {
                           className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-red-950/40 text-red-400 transition-colors cursor-pointer font-semibold"
                         >
                           <LogOut className="w-4 h-4 text-red-400" />
-                          <span>Log Out</span>
+                          <span>{t("log_out") || "Log Out"}</span>
                         </button>
                       </div>
                     </div>
@@ -212,12 +279,12 @@ export default function AppShell({ children }) {
           ) : (
             <Link 
               href="/login"
-              className="flex items-center gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white px-4 py-2 rounded-full text-xs font-extrabold uppercase tracking-wide transition-all shadow-sm group"
+              className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold uppercase tracking-wide transition-all shadow-sm group"
             >
-              <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
                 <User className="w-3.5 h-3.5" />
               </div>
-              <span>Sign In</span>
+              <span className="hidden sm:inline">{t("sign_in_register")}</span>
             </Link>
           )}
 
@@ -225,7 +292,7 @@ export default function AppShell({ children }) {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="lg:hidden p-1.5 sm:p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5 text-slate-900" /> : <Menu className="w-5 h-5 text-slate-900" />}
@@ -235,13 +302,40 @@ export default function AppShell({ children }) {
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div 
-            className="lg:hidden fixed inset-x-0 top-20 bottom-0 bg-slate-950/60 backdrop-blur-xs z-50 animate-fade-in"
+            className="lg:hidden fixed inset-x-0 top-16 sm:top-20 bottom-0 bg-slate-950/60 backdrop-blur-xs z-50 animate-fade-in"
             onClick={() => setMobileMenuOpen(false)}
           >
             <div 
-              className="bg-white border-b border-slate-200 px-5 py-4 shadow-2xl space-y-4 max-h-[calc(100vh-80px)] overflow-y-auto"
+              className="bg-white border-b border-slate-200 px-5 py-4 shadow-2xl space-y-4 max-h-[calc(100vh-64px)] sm:max-h-[calc(100vh-80px)] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Mobile Language Switcher */}
+              <div className="p-3 bg-slate-900 text-white rounded-2xl">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">
+                  Select Language
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {TOP_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => {
+                        setLanguage(lang.code);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        language === lang.code
+                          ? "bg-amber-500 text-slate-950 font-black shadow-xs"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                      title={lang.name}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">Services & Fleet</span>
                 {navLinks.map((link) => (
@@ -266,7 +360,7 @@ export default function AppShell({ children }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
                 >
-                  <User className="w-4 h-4 text-amber-500" /> My Trips & Bookings
+                  <User className="w-4 h-4 text-amber-500" /> {t("my_trips_title")}
                 </Link>
                 <Link
                   href="/account/notifications"
@@ -290,14 +384,14 @@ export default function AppShell({ children }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
                 >
-                  <Phone className="w-4 h-4 text-emerald-500" /> 24/7 Helpline & Support
+                  <Phone className="w-4 h-4 text-emerald-500" /> {t("helpline_support")}
                 </Link>
                 <Link
                   href="/account/settings"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
                 >
-                  <Settings className="w-4 h-4 text-slate-500" /> Account Settings
+                  <Settings className="w-4 h-4 text-slate-500" /> {t("profile_settings")}
                 </Link>
               </div>
             </div>
@@ -311,16 +405,16 @@ export default function AppShell({ children }) {
       </div>
 
       {/* C. Enterprise Multi-Column Footer */}
-      <footer className="bg-brand-navy-dark text-slate-400 pt-16 pb-10 px-10 border-t border-slate-900">
+      <footer className="bg-brand-navy-dark text-slate-400 pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-slate-900">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           
           {/* Column 1 */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <img
-                src="/images/grab-rentals-logo.jpg"
+                src="/images/brand-logo.png"
                 alt="Grab Rentals"
-                className="h-10 w-auto object-contain rounded-xl shadow-xs"
+                className="h-10 w-auto object-contain drop-shadow-sm"
               />
               <div className="flex flex-col">
                 <span className="font-black text-lg text-white leading-tight">GRAB RENTALS</span>
@@ -328,7 +422,7 @@ export default function AppShell({ children }) {
               </div>
             </div>
             <p className="text-sm leading-relaxed mt-2 text-slate-400">
-              Grab Rentals — India's dedicated premier outstation, local, and group mobility chauffeur network with guaranteed fixed rates and sanitized fleet.
+              {t("footer_tagline") || "Grab Rentals — India's dedicated premier outstation, local, and group mobility chauffeur network with guaranteed fixed rates and sanitized fleet."}
             </p>
             <div className="inline-flex items-center gap-2 mt-2 border border-slate-800 bg-slate-900 px-3 py-1.5 rounded w-max text-brand-emerald">
               <ShieldCheck className="w-4 h-4" />
@@ -338,7 +432,7 @@ export default function AppShell({ children }) {
 
           {/* Column 2 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">Intercity Routes</h3>
+            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("top_routes") || "Intercity Routes"}</h3>
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/" className="hover:text-brand-amber transition-colors">Delhi to Agra</Link></li>
               <li><Link href="/" className="hover:text-brand-amber transition-colors">Bangalore to Ooty</Link></li>
@@ -351,7 +445,7 @@ export default function AppShell({ children }) {
 
           {/* Column 3 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">Fleet Portfolio</h3>
+            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("our_fleet") || "Fleet Portfolio"}</h3>
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/" className="hover:text-brand-amber transition-colors">Executive Sedan (Dzire, Etios)</Link></li>
               <li><Link href="/" className="hover:text-brand-amber transition-colors">Maruti Ertiga 6-Seater</Link></li>
@@ -364,7 +458,7 @@ export default function AppShell({ children }) {
 
           {/* Column 4 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">For Partners & B2B</h3>
+            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("corporate_events") || "For Partners & B2B"}</h3>
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/" className="hover:text-brand-amber transition-colors">Attach Taxi & Fleet</Link></li>
               <li><Link href="/" className="hover:text-brand-amber transition-colors">Travel Agent Partner Login</Link></li>
@@ -377,7 +471,7 @@ export default function AppShell({ children }) {
 
           {/* Column 5 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">Contact & Trust</h3>
+            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("helpline_support") || "Contact & Trust"}</h3>
             <ul className="space-y-3 text-sm">
               <li><a href="tel:+919045450000" className="flex items-center gap-2 text-white font-medium hover:text-brand-amber transition-colors"><Phone className="w-4 h-4 text-brand-orange" /> +91 90454 50000</a><span className="block text-xs text-slate-500 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span></li>
               <li><a href="mailto:bookings@grabrentals.com" className="hover:text-brand-amber transition-colors ml-6">bookings@grabrentals.com</a></li>

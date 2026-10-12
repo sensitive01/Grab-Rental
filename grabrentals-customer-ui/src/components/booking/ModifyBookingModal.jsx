@@ -1,21 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { X, MapPin, Calendar, Clock, ArrowRight } from "lucide-react";
+import { X, MapPin, Calendar, Clock, ArrowRight, Plus, Minus } from "lucide-react";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 
 export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSave }) {
   const [from, setFrom] = useState(currentTrip?.from || "Bangalore, Karnataka");
   const [to, setTo] = useState(currentTrip?.to || "Coimbatore, Tamil Nadu");
+  const [stops, setStops] = useState(() => {
+    if (Array.isArray(currentTrip?.stops)) return currentTrip.stops;
+    if (typeof currentTrip?.stops === "string" && currentTrip.stops.trim()) {
+      return currentTrip.stops.split(/[|,]/).map((s) => s.trim()).filter(Boolean);
+    }
+    return [];
+  });
   const [tripType, setTripType] = useState(currentTrip?.tripType || "One way");
   const [date, setDate] = useState(currentTrip?.date || "2026-09-28");
   const [time, setTime] = useState(currentTrip?.time || "07:00");
 
   if (!isOpen) return null;
 
+  const handleAddStop = () => {
+    if (stops.length >= 3) return;
+    setStops([...stops, ""]);
+  };
+
+  const handleRemoveStop = (idx) => {
+    setStops(stops.filter((_, i) => i !== idx));
+  };
+
+  const handleStopChange = (idx, val) => {
+    const updated = [...stops];
+    updated[idx] = val;
+    setStops(updated);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ from, to, tripType, date, time });
+    const validStops = stops.filter((s) => s && s.trim());
+    onSave({ from, to, stops: validStops.join("|"), tripType, date, time });
     onClose();
   };
 
@@ -31,7 +54,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
           <button 
             type="button" 
             onClick={onClose} 
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -41,14 +64,26 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
           
           {/* Trip Type */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1.5">Trip Type</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="font-bold text-slate-700 block">Trip Type</label>
+              {stops.length < 3 && (
+                <button
+                  type="button"
+                  onClick={handleAddStop}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Stop</span>
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {["One way", "Round trip"].map((type) => (
                 <button
                   type="button"
                   key={type}
                   onClick={() => setTripType(type)}
-                  className={`py-2.5 px-3 rounded-xl font-extrabold border transition-all text-center ${
+                  className={`py-2.5 px-3 rounded-xl font-extrabold border transition-all text-center cursor-pointer ${
                     tripType.toLowerCase().includes(type.toLowerCase().slice(0, 3)) 
                       ? "border-amber-500 bg-amber-50 text-amber-800" 
                       : "border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -60,31 +95,56 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
             </div>
           </div>
 
-          {/* Cities */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Pickup City</label>
-              <CityAutocompleteInput
-                value={from}
-                onChange={setFrom}
-                placeholder="Enter pickup city..."
-                iconColor="text-emerald-600"
-                inputClassName="py-2.5 rounded-xl"
-                required
-              />
-            </div>
+          {/* Route: Pickup City */}
+          <div>
+            <label className="font-bold text-slate-700 block mb-1">Pickup City</label>
+            <CityAutocompleteInput
+              value={from}
+              onChange={setFrom}
+              placeholder="Enter pickup city..."
+              iconColor="text-emerald-600"
+              inputClassName="py-2.5 rounded-xl"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Destination City</label>
+          {/* Intermediate Stops */}
+          {stops.map((stop, index) => (
+            <div key={index} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-purple-700 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
+                  Stop {index + 1}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveStop(index)}
+                  className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                >
+                  Remove
+                </button>
+              </div>
               <CityAutocompleteInput
-                value={to}
-                onChange={setTo}
-                placeholder="Enter destination city..."
-                iconColor="text-rose-600"
-                inputClassName="py-2.5 rounded-xl"
-                required
+                value={stop}
+                onChange={(val) => handleStopChange(index, val)}
+                placeholder="Enter stop city (e.g. Salem)..."
+                iconColor="text-purple-600"
+                inputClassName="py-2.5 rounded-xl bg-purple-50/30 border-purple-200"
               />
             </div>
+          ))}
+
+          {/* Destination City */}
+          <div>
+            <label className="font-bold text-slate-700 block mb-1">Destination City</label>
+            <CityAutocompleteInput
+              value={to}
+              onChange={setTo}
+              placeholder="Enter destination city..."
+              iconColor="text-amber-600"
+              inputClassName="py-2.5 rounded-xl"
+              required
+            />
           </div>
 
           {/* Date & Time */}

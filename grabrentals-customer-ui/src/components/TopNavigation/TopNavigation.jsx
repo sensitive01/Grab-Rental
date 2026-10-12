@@ -38,9 +38,9 @@ export default function TopNavigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <img
-              src="/images/grab-rentals-logo.jpg"
+              src="/images/brand-logo.png"
               alt="Grab Rentals"
-              className="h-10 w-auto object-contain rounded-xl shadow-xs"
+              className="h-10 w-auto object-contain drop-shadow-sm"
             />
             <div className="flex flex-col">
               <span className="font-extrabold text-sm tracking-tight text-brand-navy">GRAB RENTALS</span>

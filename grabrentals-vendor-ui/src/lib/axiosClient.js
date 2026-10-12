@@ -32,6 +32,8 @@ axiosClient.interceptors.request.use(
 );
 
 // === RESPONSE INTERCEPTOR ===
+let isRedirecting = false;
+
 axiosClient.interceptors.response.use(
   (response) => {
     return response;
@@ -41,20 +43,30 @@ axiosClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401 && typeof window !== "undefined") {
+        const pathname = window.location.pathname;
         const isAuthPage =
-          window.location.pathname.startsWith("/login") ||
-          window.location.pathname.startsWith("/register") ||
-          window.location.pathname.startsWith("/reset-password");
+          pathname.startsWith("/login") ||
+          pathname.startsWith("/register") ||
+          pathname.startsWith("/reset-password");
 
         if (!isAuthPage) {
-          console.warn("Vendor session expired or unauthorized (401). Redirecting to login...");
           localStorage.removeItem("grabrentals_vendor_token");
           localStorage.removeItem("grabrentals_vendor_session");
-          window.location.href = "/login";
+          localStorage.removeItem("grab_portal_role");
+          localStorage.removeItem("grab_portal_email");
+
+          if (!isRedirecting) {
+            isRedirecting = true;
+            console.warn("Vendor session expired or unauthorized (401). Redirecting to login...");
+            const redirectUrl = pathname && pathname !== "/" ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
+            window.location.href = redirectUrl;
+          }
         }
       }
     } else if (error.request) {
-      console.error("No response received from backend:", error.message);
+      if (error.code !== "ERR_CANCELED") {
+        console.error("No response received from backend:", error.message);
+      }
     } else {
       console.error("Axios setup error:", error.message);
     }

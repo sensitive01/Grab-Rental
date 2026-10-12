@@ -55,6 +55,7 @@ import { cn } from "@/lib/utils";
 import InteractiveMapPicker from "@/components/ui/InteractiveMapPicker";
 import MultipleVehiclePhotoUploader from "@/components/ui/MultipleVehiclePhotoUploader";
 import CitySelectorModal from "@/components/ui/CitySelectorModal";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
 
 const VEHICLE_SUB_CATEGORIES = {
   Sedan: ["Dzire", "Etios", "Aura"],
@@ -1357,14 +1358,14 @@ function VendorOnboardingFlow() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FAF4E5] via-[#F6EED8] to-[#FAF4E5] text-slate-900 flex flex-col justify-between relative">
       {/* Top Navigation Bar with Skip to Dashboard */}
-      <header className="border-b border-amber-200/70 bg-white/85 backdrop-blur-md sticky top-0 z-30">
+      <header className="border-b border-amber-200/70 bg-white/85 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5">
               <img
-                src="/images/grab-rentals-logo.jpg"
+                src="/images/brand-logo.png"
                 alt="Grab Rentals"
-                className="h-10 sm:h-11 w-auto object-contain rounded-lg shadow-2xs"
+                className="h-10 sm:h-11 w-auto object-contain drop-shadow-sm"
               />
               <span className="font-extrabold text-base tracking-tight text-slate-900 hidden sm:inline-flex items-center">
                 Grab Rentals <span className="text-amber-600 font-semibold text-xs ml-1.5 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200">Fleet Partner</span>
@@ -1374,6 +1375,8 @@ function VendorOnboardingFlow() {
 
           {/* Right section: Enquiries Contact + Skip to Dashboard / Sign In */}
           <div className="flex items-center gap-3 sm:gap-4">
+            <LanguageSelector />
+
             {/* For enquiries: WhatsApp + Phone */}
             <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 px-2 sm:px-3 py-1.5 rounded-full transition-all shadow-2xs shrink-0">
               <span className="text-slate-500 text-xs font-semibold hidden md:inline">For enquiries</span>

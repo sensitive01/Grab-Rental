@@ -86,9 +86,9 @@ export default function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center">
         <div className="inline-flex items-center justify-center mb-4">
           <img
-            src="/images/grab-rentals-logo.jpg"
+            src="/images/brand-logo.png"
             alt="Grab Rentals"
-            className="h-16 w-auto object-contain rounded-2xl shadow-xl shadow-black/50"
+            className="h-16 w-auto object-contain drop-shadow-xl"
           />
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">

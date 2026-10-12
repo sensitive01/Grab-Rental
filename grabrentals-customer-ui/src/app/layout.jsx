@@ -1,5 +1,6 @@
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 export const metadata = {
   title: "Grab Rentals | Chauffeur & Intercity",
@@ -10,9 +11,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="overflow-x-hidden">
       <body className="antialiased overflow-x-hidden max-w-[100vw]">
-        <AppShell>
-          {children}
-        </AppShell>
+        <LanguageProvider>
+          <AppShell>
+            {children}
+          </AppShell>
+        </LanguageProvider>
       </body>
     </html>
   );

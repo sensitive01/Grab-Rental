@@ -202,7 +202,7 @@ export default function CityAutocompleteInput({
                       </span>
                     )}
                     {city.custom && (
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100/70 px-1.5 py-0.5 rounded">
                         Custom
                       </span>
                     )}
@@ -217,11 +217,11 @@ export default function CityAutocompleteInput({
               <button
                 type="button"
                 onClick={handleAddCustom}
-                className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 bg-blue-50/60 hover:bg-blue-100/80 text-blue-700 transition-colors border-t border-blue-100 cursor-pointer"
+                className="w-full px-3.5 py-2.5 text-left flex items-center gap-2.5 bg-amber-50/60 hover:bg-amber-100/80 text-amber-700 transition-colors border-t border-amber-100 cursor-pointer"
               >
-                <Plus className="w-4 h-4 shrink-0 text-blue-600" />
+                <Plus className="w-4 h-4 shrink-0 text-amber-600" />
                 <div className="text-xs font-semibold truncate">
-                  Use custom city: <strong className="text-blue-900">"{inputValue.trim()}"</strong>
+                  Use custom city: <strong className="text-amber-950">"{inputValue.trim()}"</strong>
                 </div>
               </button>
             )}

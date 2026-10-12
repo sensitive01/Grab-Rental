@@ -78,6 +78,12 @@ export function normalizeBooking(b) {
   };
 }
 
+function logApiError(msg, err) {
+  if (err?.response?.status !== 401) {
+    console.error(msg, err);
+  }
+}
+
 export const vendorApi = {
   // --- Dashboard ---
   getDashboard: async () => {
@@ -85,7 +91,7 @@ export const vendorApi = {
       const res = await axiosClient.get("/api/vendor/dashboard");
       return res.data?.data || null;
     } catch (err) {
-      console.error("vendorApi.getDashboard error:", err);
+      logApiError("vendorApi.getDashboard error:", err);
       throw err;
     }
   },
@@ -96,7 +102,7 @@ export const vendorApi = {
       const res = await axiosClient.get("/api/vendor/profile");
       return res.data?.data || null;
     } catch (err) {
-      console.error("vendorApi.getProfile error:", err);
+      logApiError("vendorApi.getProfile error:", err);
       throw err;
     }
   },
@@ -147,7 +153,7 @@ export const vendorApi = {
       const res = await axiosClient.get("/api/vendor/vehicles");
       return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (err) {
-      console.error("vendorApi.getVehicles error:", err);
+      logApiError("vendorApi.getVehicles error:", err);
       return [];
     }
   },
@@ -157,7 +163,7 @@ export const vendorApi = {
       const res = await axiosClient.get(`/api/vendor/vehicles/${id}`);
       return res.data?.data || null;
     } catch (err) {
-      console.error(`vendorApi.getVehicleById(${id}) error:`, err);
+      logApiError(`vendorApi.getVehicleById(${id}) error:`, err);
       throw err;
     }
   },
@@ -187,7 +193,7 @@ export const vendorApi = {
       const res = await axiosClient.put(`/api/vendor/vehicles/${id}`, data);
       return res.data?.data || null;
     } catch (err) {
-      console.error(`vendorApi.updateVehicle(${id}) error:`, err);
+      logApiError(`vendorApi.updateVehicle(${id}) error:`, err);
       throw err;
     }
   },
@@ -197,7 +203,7 @@ export const vendorApi = {
       const res = await axiosClient.patch(`/api/vendor/vehicles/${id}/status?status=${status}`);
       return res.data?.data || null;
     } catch (err) {
-      console.error(`vendorApi.updateVehicleStatus(${id}) error:`, err);
+      logApiError(`vendorApi.updateVehicleStatus(${id}) error:`, err);
       throw err;
     }
   },
@@ -207,7 +213,7 @@ export const vendorApi = {
       const res = await axiosClient.delete(`/api/vendor/vehicles/${id}`);
       return res.data;
     } catch (err) {
-      console.error(`vendorApi.deleteVehicle(${id}) error:`, err);
+      logApiError(`vendorApi.deleteVehicle(${id}) error:`, err);
       throw err;
     }
   },
@@ -218,7 +224,7 @@ export const vendorApi = {
       const res = await axiosClient.get("/api/vendor/drivers");
       return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (err) {
-      console.error("vendorApi.getDrivers error:", err);
+      logApiError("vendorApi.getDrivers error:", err);
       return [];
     }
   },
@@ -228,7 +234,7 @@ export const vendorApi = {
       const res = await axiosClient.get(`/api/vendor/drivers/${id}`);
       return res.data?.data || null;
     } catch (err) {
-      console.error(`vendorApi.getDriverById(${id}) error:`, err);
+      logApiError(`vendorApi.getDriverById(${id}) error:`, err);
       throw err;
     }
   },
@@ -248,7 +254,7 @@ export const vendorApi = {
       const res = await axiosClient.put(`/api/vendor/drivers/${id}`, data);
       return res.data?.data || null;
     } catch (err) {
-      console.error(`vendorApi.updateDriver(${id}) error:`, err);
+      logApiError(`vendorApi.updateDriver(${id}) error:`, err);
       throw err;
     }
   },
@@ -258,7 +264,7 @@ export const vendorApi = {
       const res = await axiosClient.delete(`/api/vendor/drivers/${id}`);
       return res.data;
     } catch (err) {
-      console.error(`vendorApi.deleteDriver(${id}) error:`, err);
+      logApiError(`vendorApi.deleteDriver(${id}) error:`, err);
       throw err;
     }
   },
@@ -271,7 +277,7 @@ export const vendorApi = {
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       return list.map(normalizeBooking);
     } catch (err) {
-      console.error("vendorApi.getBookings error:", err);
+      logApiError("vendorApi.getBookings error:", err);
       return [];
     }
   },
@@ -282,7 +288,7 @@ export const vendorApi = {
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       return list.map(normalizeBooking);
     } catch (err) {
-      console.error("vendorApi.getBookingRequests error:", err);
+      logApiError("vendorApi.getBookingRequests error:", err);
       return [];
     }
   },
@@ -292,14 +298,14 @@ export const vendorApi = {
       const res = await axiosClient.get(`/api/vendor/bookings/${idOrRef}`);
       return normalizeBooking(res.data?.data);
     } catch (err) {
-      console.error(`vendorApi.getBookingById(${idOrRef}) error:`, err);
+      logApiError(`vendorApi.getBookingById(${idOrRef}) error:`, err);
       // Fallback: look up in list
       try {
         const all = await vendorApi.getBookings();
         const found = all.find(b => b.id === idOrRef || b.rawId === idOrRef || b.bookingReference === idOrRef);
         if (found) return found;
       } catch (inner) {
-        console.error("Fallback lookup failed:", inner);
+        logApiError("Fallback lookup failed:", inner);
       }
       throw err;
     }
@@ -311,7 +317,7 @@ export const vendorApi = {
       const res = await axiosClient.post(`/api/vendor/bookings/${bookingId}/accept`, payload);
       return normalizeBooking(res.data?.data);
     } catch (err) {
-      console.error(`vendorApi.acceptBooking(${bookingId}) error:`, err);
+      logApiError(`vendorApi.acceptBooking(${bookingId}) error:`, err);
       throw err;
     }
   },
@@ -321,7 +327,7 @@ export const vendorApi = {
       const res = await axiosClient.post(`/api/vendor/bookings/${bookingId}/decline`, { reason: reason || "Vehicle unavailable" });
       return normalizeBooking(res.data?.data);
     } catch (err) {
-      console.error(`vendorApi.declineBooking(${bookingId}) error:`, err);
+      logApiError(`vendorApi.declineBooking(${bookingId}) error:`, err);
       throw err;
     }
   },
@@ -485,7 +491,7 @@ export const vendorApi = {
 
       return notifs;
     } catch (err) {
-      console.error("vendorApi.getNotifications error:", err);
+      logApiError("vendorApi.getNotifications error:", err);
       return [];
     }
   }

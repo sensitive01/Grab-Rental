@@ -200,9 +200,9 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800 bg-slate-950/60">
           <div className="flex items-center gap-3">
             <img
-              src="/images/grab-rentals-logo.jpg"
+              src="/images/brand-logo.png"
               alt="Grab Rentals"
-              className="h-9 w-auto object-contain rounded-lg shadow-sm shrink-0"
+              className="h-9 w-auto object-contain drop-shadow-sm shrink-0"
             />
             <div>
               <div className="font-extrabold text-white text-sm tracking-tight flex items-center gap-1.5">

@@ -16,15 +16,18 @@ import {
   ShieldAlert,
   Car
 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function FleetIndexPage() {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* 1. Hero Header with Image */}
       <section className="relative bg-slate-900 text-white py-16 px-6 overflow-hidden">
         <div className="absolute inset-0 opacity-20">
           <Image 
-            src="/images/hero-bg.jpg" 
+            src="/images/customer-hero-banner.png" 
             alt="Grab Rentals Premium Fleet" 
             fill 
             priority
@@ -34,11 +37,11 @@ export default function FleetIndexPage() {
         <div className="relative max-w-7xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border border-amber-400/30">
             <Sparkles className="w-3.5 h-3.5" />
-            Certified Commercial Fleet 2026
+            {t("hero_badge")}
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Our Premium Chauffeur Fleet</h1>
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">{t("choose_travel_class")}</h1>
           <p className="text-slate-300 font-medium max-w-2xl mx-auto text-base">
-            From executive business sedans to 55-seater Volvo luxury coaches. Every vehicle is GPS monitored, commercially licensed (Yellow Board), and sanitized before dispatch.
+            {t("choose_travel_class_sub")}
           </p>
         </div>
       </section>
@@ -121,7 +124,7 @@ export default function FleetIndexPage() {
                     href={`/?fleet=${fleet.slug}`}
                     className="flex-1 py-3 px-4 rounded-xl bg-brand-navy hover:bg-slate-800 text-white text-xs font-black text-center transition-all flex items-center justify-center gap-1 shadow-md"
                   >
-                    <span>Book Now</span>
+                    <span>{t("select_car_button")}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

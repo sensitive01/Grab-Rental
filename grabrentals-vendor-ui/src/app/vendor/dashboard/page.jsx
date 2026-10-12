@@ -32,7 +32,7 @@ import Toast from "@/components/ui/Toast";
 import DataTable from "@/components/ui/DataTable";
 import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
-import { getCurrentUser, getOnboardingData, updateSessionStatus } from "@/lib/auth";
+import { getCurrentUser, getOnboardingData, updateSessionStatus, getAuthToken } from "@/lib/auth";
 
 export default function VendorDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -77,6 +77,8 @@ export default function VendorDashboard() {
   };
 
   useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
     setCurrentUser(getCurrentUser());
     setOnboardingData(getOnboardingData());
     loadData();

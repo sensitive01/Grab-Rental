@@ -28,14 +28,20 @@ export function getCurrentUser() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const user = JSON.parse(raw);
+    const token = getAuthToken();
+    if (!token) return null;
+    return user;
   } catch {
     return null;
   }
 }
 
 export function isAuthenticated() {
-  return !!getCurrentUser();
+  if (typeof window === "undefined") return false;
+  const token = getAuthToken();
+  const user = getCurrentUser();
+  return Boolean(token && user);
 }
 
 export function getVendorStatus() {

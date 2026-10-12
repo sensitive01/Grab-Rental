@@ -15,8 +15,10 @@ import {
   CheckCircle2, 
   ArrowLeft 
 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function SupportHelpPage() {
+  const { t } = useLanguage();
   const [openFaq, setOpenFaq] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
@@ -69,16 +71,16 @@ export default function SupportHelpPage() {
             href="/dashboard"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors mb-4"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+            <ArrowLeft className="w-4 h-4" /> {t("my_bookings")}
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
-              Customer Helpdesk
+              {t("support_24_7")}
             </span>
-            <span className="text-xs text-slate-400 font-medium">24/7 Dedicated Assistance</span>
+            <span className="text-xs text-slate-400 font-medium">{t("helpline_support")}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mt-2">
-            How can we help you today?
+            {t("helpline_support")}
           </h1>
           <p className="text-sm text-slate-500 mt-1 max-w-xl">
             Have questions regarding your upcoming ride, chauffeur details, or billing? Reach out to our 24/7 operations team directly.

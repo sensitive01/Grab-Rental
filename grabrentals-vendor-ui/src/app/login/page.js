@@ -16,9 +16,12 @@ import {
   Loader2
 } from "lucide-react";
 import { login, sendOtp, verifyVendorOtp, isAuthenticated } from "@/lib/auth";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { useLanguage } from "@/context/LanguageContext";
 
 function LoginContent() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [authMethod, setAuthMethod] = useState("PHONE"); // "PHONE" | "EMAIL"
 
@@ -158,12 +161,12 @@ function LoginContent() {
       <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
 
       {/* Top Navigation Bar */}
-      <header className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-3.5 sm:py-5 flex items-center justify-between gap-3 relative z-10">
+      <header className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-3.5 sm:py-5 flex items-center justify-between gap-3 relative z-50">
         <Link href="/login" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
           <img
-            src="/images/grab-rentals-logo.jpg"
+            src="/images/brand-logo.png"
             alt="Grab Rentals"
-            className="h-8 sm:h-10 w-auto object-contain rounded-lg shadow-md group-hover:scale-105 transition-transform"
+            className="h-8 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform"
           />
           <div>
             <span className="font-extrabold text-xs sm:text-sm tracking-tight text-white block leading-tight">
@@ -176,11 +179,12 @@ function LoginContent() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <LanguageSelector variant="dark" />
           <Link
             href="/register"
             className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 whitespace-nowrap"
           >
-            Become a Partner
+            {t("become_partner")}
           </Link>
           <a
             href="https://grabrentals.in/"
@@ -188,7 +192,7 @@ function LoginContent() {
             rel="noopener noreferrer"
             className="hidden sm:flex text-xs font-medium text-slate-400 hover:text-amber-400 transition-colors items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-900/60 border border-transparent hover:border-slate-800 whitespace-nowrap"
           >
-            <span>Customer App</span>
+            <span>{t("customer_app")}</span>
             <span className="text-[10px]">↗</span>
           </a>
         </div>
@@ -204,10 +208,10 @@ function LoginContent() {
               <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-              Vendor Partner Sign In
+              {t("sign_in_title")}
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-              Access your fleet dispatch, vehicles, chauffeurs, and earnings.
+              {t("sign_in_subtitle")}
             </p>
           </div>
 
@@ -226,7 +230,7 @@ function LoginContent() {
               }`}
             >
               <Phone className="w-3.5 h-3.5" />
-              <span>Mobile Phone</span>
+              <span>{t("mobile_tab")}</span>
             </button>
             <button
               type="button"
@@ -241,7 +245,7 @@ function LoginContent() {
               }`}
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Email & Password</span>
+              <span>{t("email_tab")}</span>
             </button>
           </div>
 
@@ -268,7 +272,7 @@ function LoginContent() {
                 <form onSubmit={handleSendOtp} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="block font-bold text-slate-300">
-                      Mobile Phone Number
+                      {t("mobile_number")}
                     </label>
                     <div className="relative">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
@@ -295,7 +299,7 @@ function LoginContent() {
                       <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                     ) : (
                       <>
-                        <span>Get Verification Code</span>
+                        <span>{t("get_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -320,7 +324,7 @@ function LoginContent() {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="font-bold text-slate-300">
-                        6-Digit Verification Code
+                        {t("enter_otp")}
                       </label>
                       {devOtp && (
                         <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
@@ -340,7 +344,7 @@ function LoginContent() {
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span>Didn't get the code?</span>
+                    <span>{t("didnt_get_code")}</span>
                     {otpCountdown > 0 ? (
                       <span>Resend in {otpCountdown}s</span>
                     ) : (
@@ -349,7 +353,7 @@ function LoginContent() {
                         onClick={handleSendOtp}
                         className="font-bold text-amber-400 hover:underline"
                       >
-                        Resend
+                        {t("resend")}
                       </button>
                     )}
                   </div>
@@ -363,7 +367,7 @@ function LoginContent() {
                       <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                     ) : (
                       <>
-                        <span>Sign In</span>
+                        <span>{t("verify_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -378,7 +382,7 @@ function LoginContent() {
             <form onSubmit={handleEmailSubmit} className="space-y-4 text-xs">
               <div className="space-y-1.5">
                 <label className="block font-bold text-slate-300">
-                  Vendor Email Address
+                  {t("vendor_email")}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -396,13 +400,13 @@ function LoginContent() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="font-bold text-slate-300">
-                    Password
+                    {t("password_label")}
                   </label>
                   <Link
                     href="/reset-password"
                     className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer hover:underline"
                   >
-                    Forgot Password?
+                    {t("forgot_password")}
                   </Link>
                 </div>
                 <div className="relative">
@@ -433,7 +437,7 @@ function LoginContent() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="rounded border-slate-800 bg-slate-950 text-amber-500 focus:ring-amber-500"
                   />
-                  <span className="text-slate-400 font-medium">Remember my session</span>
+                  <span className="text-slate-400 font-medium">{t("remember_session")}</span>
                 </label>
               </div>
 
@@ -446,7 +450,8 @@ function LoginContent() {
                   <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
                 ) : (
                   <>
-                    Sign In <ArrowRight className="w-4 h-4" />
+                    <span>{t("verify_otp")}</span>
+                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -456,12 +461,12 @@ function LoginContent() {
           {/* Registration Link */}
           <div className="pt-2 text-center">
             <span className="text-slate-400 text-[11.5px]">
-              Don&apos;t have a partner account?{" "}
+              {t("dont_have_account")}{" "}
               <Link
                 href="/register"
                 className="text-amber-400 hover:text-amber-300 font-bold hover:underline"
               >
-                Register your fleet
+                {t("register_fleet")}
               </Link>
             </span>
           </div>

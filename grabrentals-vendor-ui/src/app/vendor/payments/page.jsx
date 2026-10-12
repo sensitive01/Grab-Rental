@@ -13,8 +13,10 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import DataTable from "@/components/ui/DataTable";
 import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function VendorPaymentsPage() {
+  const { t } = useLanguage();
   const [profile, setProfile] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +156,7 @@ export default function VendorPaymentsPage() {
       
       {/* Header & Breadcrumbs */}
       <div className="space-y-1">
-        <Breadcrumbs items={[{ label: "Finance", href: "/vendor/earnings" }, { label: "Payouts & Invoices" }]} />
+        <Breadcrumbs items={[{ label: t("finance_compliance") || "Finance", href: "/vendor/earnings" }, { label: t("payouts_invoices") || "Payouts & Invoices" }]} />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">

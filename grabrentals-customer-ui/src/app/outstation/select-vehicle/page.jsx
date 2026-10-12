@@ -8,6 +8,7 @@ import VehicleTripHeader from "@/components/booking/VehicleTripHeader";
 import ModifyBookingModal from "@/components/booking/ModifyBookingModal";
 import VehicleDetailModal from "@/components/booking/VehicleDetailModal";
 import { customerApi } from "@/lib/customerApi";
+import { useLanguage } from "@/context/LanguageContext";
 import { 
   Search, 
   RotateCcw, 
@@ -73,6 +74,7 @@ function cleanCityName(fullString) {
 function SelectVehicleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
 
   // Dynamic Query parameters from BookingWidget
   const queryFrom = searchParams.get("from") || "Bangalore, Karnataka";
@@ -426,13 +428,13 @@ function SelectVehicleContent() {
             {/* Header: Title + Undo/Reset Icon */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-blue-600" />
-                Search & Filters
+                <SlidersHorizontal className="w-4 h-4 text-amber-600" />
+                {t("search_filters")}
               </h3>
               <button
                 onClick={handleResetFilters}
-                title="Reset all filters"
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                title={t("reset_filters")}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -440,22 +442,22 @@ function SelectVehicleContent() {
 
             {/* 1. Search Box */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block">Search</label>
+              <label className="text-xs font-bold text-slate-700 block">{t("search_filters")}</label>
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Vehicle name or registration number"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
+                  placeholder={t("search_placeholder")}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
                 />
               </div>
             </div>
 
             {/* 2. Vehicle Type Checkboxes */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 block">Vehicle Type</label>
+              <label className="text-xs font-bold text-slate-700 block">{t("vehicle_type")}</label>
               <div className="space-y-2">
                 {[
                   { label: "SUV", count: counts.types.SUV },
@@ -471,11 +473,11 @@ function SelectVehicleContent() {
                       className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-blue-600 border-blue-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                         <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                          <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
+                          <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
                           {item.label}
                         </span>
                       </div>
@@ -490,24 +492,24 @@ function SelectVehicleContent() {
 
             {/* 3. Availability Status (Customer Trust Badge) */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">Availability Status</label>
+              <label className="text-xs font-bold text-slate-700 block">{t("availability_status")}</label>
               <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Available Ready Fleet</span>
+                  <span>{t("available_ready_fleet")}</span>
                 </div>
                 <span className="text-xs font-black text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
                   {filteredVehicles.length}
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 font-medium px-1">
-                Only sanitized, active vehicles ready for immediate booking are displayed.
+                {t("available_fleet_note")}
               </p>
             </div>
 
             {/* 4. Fuel Type Checkboxes */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">Fuel Type</label>
+              <label className="text-xs font-bold text-slate-700 block">{t("fuel_type")}</label>
               <div className="space-y-2">
                 {[
                   { label: "Petrol", count: counts.fuels.Petrol },
@@ -523,11 +525,11 @@ function SelectVehicleContent() {
                       className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-blue-600 border-blue-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                         <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                          <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
+                          <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
                           {item.label}
                         </span>
                       </div>
@@ -542,7 +544,7 @@ function SelectVehicleContent() {
 
             {/* 5. Transmission Checkboxes */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">Transmission</label>
+              <label className="text-xs font-bold text-slate-700 block">{t("transmission")}</label>
               <div className="space-y-2">
                 {[
                   { label: "Automatic", count: counts.transmissions.Automatic },
@@ -555,11 +557,11 @@ function SelectVehicleContent() {
                       className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-blue-600 border-blue-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                         <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                          <Settings2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
+                          <Settings2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
                           {item.label}
                         </span>
                       </div>
@@ -581,7 +583,7 @@ function SelectVehicleContent() {
                   placeholder="Min"
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
                 <span className="text-slate-400 font-bold">-</span>
                 <input
@@ -589,7 +591,7 @@ function SelectVehicleContent() {
                   placeholder="Max"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
             </div>
@@ -602,7 +604,7 @@ function SelectVehicleContent() {
                 <select
                   value={seatingCapacity}
                   onChange={(e) => setSeatingCapacity(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 appearance-none cursor-pointer"
+                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 appearance-none cursor-pointer"
                 >
                   <option value="all">Any Capacity</option>
                   <option value="4-5">4 - 5 Seats</option>
@@ -616,9 +618,9 @@ function SelectVehicleContent() {
             <div className="pt-2">
               <button
                 onClick={handleResetFilters}
-                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-blue-600 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-200 text-amber-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
                 Clear Filters
               </button>
             </div>
@@ -645,7 +647,7 @@ function SelectVehicleContent() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer"
+                    className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
                   >
                     <option value="newest">Newest Added</option>
                     <option value="price_asc">Price: Low to High</option>
@@ -660,14 +662,14 @@ function SelectVehicleContent() {
                   <button
                     onClick={() => setViewMode("grid")}
                     title="Grid View"
-                    className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "grid" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
+                    className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "grid" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
                   >
                     <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
                     title="List View"
-                    className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "list" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
+                    className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "list" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
                   >
                     <ListIcon className="w-4 h-4" />
                   </button>
@@ -694,7 +696,7 @@ function SelectVehicleContent() {
               </div>
             ) : paginatedVehicles.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
-                <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
                   <Car className="w-7 h-7" />
                 </div>
                 <h4 className="text-base font-bold text-slate-800">
@@ -710,14 +712,14 @@ function SelectVehicleContent() {
                 {backendVehicles.length === 0 ? (
                   <button
                     onClick={() => setIsModifyOpen(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
                   >
                     Modify Route
                   </button>
                 ) : (
                   <button
                     onClick={handleResetFilters}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
                   >
                     Reset Filters
                   </button>
@@ -728,7 +730,7 @@ function SelectVehicleContent() {
                 {paginatedVehicles.map((car) => (
                   <div
                     key={car.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between group"
+                    className="bg-white rounded-2xl border border-slate-200 p-4 hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between group"
                   >
                     {/* Top Row: Left Image + Right Info */}
                     <div className="flex gap-4 items-start">
@@ -755,7 +757,7 @@ function SelectVehicleContent() {
                         <div className="flex items-start justify-between gap-1">
                           <h4 
                             onClick={() => setSelectedVehicleForDetail(car)}
-                            className="font-bold text-slate-900 text-sm sm:text-base leading-tight truncate hover:text-blue-600 cursor-pointer"
+                            className="font-bold text-slate-900 text-sm sm:text-base leading-tight truncate hover:text-amber-600 cursor-pointer"
                           >
                             {car.title}
                           </h4>
@@ -811,7 +813,7 @@ function SelectVehicleContent() {
                       {/* Price & Location */}
                       <div>
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="text-xl sm:text-2xl font-black text-blue-600">
+                          <span className="text-xl sm:text-2xl font-black text-amber-600">
                             ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </span>
                           <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -846,9 +848,9 @@ function SelectVehicleContent() {
                         </button>
                         <button
                           onClick={() => handleCarSelect(car)}
-                          className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                          className="px-4 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
                         >
-                          Book Now
+                          {t("select_car_button")}
                         </button>
                         <button 
                           onClick={() => setSelectedVehicleForDetail(car)}
@@ -870,7 +872,7 @@ function SelectVehicleContent() {
                 {paginatedVehicles.map((car) => (
                   <div
                     key={car.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 hover:border-blue-400 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group"
+                    className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 hover:border-amber-400 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <div 
@@ -891,7 +893,7 @@ function SelectVehicleContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 
                             onClick={() => setSelectedVehicleForDetail(car)}
-                            className="font-bold text-slate-900 text-base hover:text-blue-600 cursor-pointer"
+                            className="font-bold text-slate-900 text-base hover:text-amber-600 cursor-pointer"
                           >
                             {car.title}
                           </h4>
@@ -928,7 +930,7 @@ function SelectVehicleContent() {
                     <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 gap-2 shrink-0">
                       <div className="text-left md:text-right">
                         <div className="flex items-baseline gap-2 justify-start md:justify-end flex-wrap">
-                          <span className="text-2xl sm:text-3xl font-black text-blue-600">
+                          <span className="text-2xl sm:text-3xl font-black text-amber-600">
                             ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </span>
                           <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -951,9 +953,9 @@ function SelectVehicleContent() {
                         </button>
                         <button
                           onClick={() => handleCarSelect(car)}
-                          className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition cursor-pointer"
+                          className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs transition cursor-pointer"
                         >
-                          Book Now
+                          {t("select_car_button")}
                         </button>
                       </div>
                     </div>
@@ -983,7 +985,7 @@ function SelectVehicleContent() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${currentPage === pageNum ? "bg-blue-600 text-white shadow-2xs" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${currentPage === pageNum ? "bg-amber-600 text-white shadow-2xs" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
                     >
                       {pageNum}
                     </button>

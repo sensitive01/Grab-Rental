@@ -4,8 +4,10 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect } from "react";
 import { ChevronRight, Edit2, ShieldCheck, MapPin } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 
 function SearchSummaryContent({ activeStep = 1 }) {
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const [tripInfo, setTripInfo] = useState({
     from: searchParams?.get("from") || "Bangalore",
@@ -86,7 +88,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
               href={`/outstation/select-vehicle?from=${encodeURIComponent(tripInfo.from)}&to=${encodeURIComponent(tripInfo.to)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}`} 
               className="text-amber-700 hover:text-amber-900 hover:underline flex items-center gap-1 font-bold ml-2"
             >
-              <Edit2 className="w-3.5 h-3.5" /> Modify
+              <Edit2 className="w-3.5 h-3.5" /> {t("modify_trip")}
             </Link>
           </div>
         </div>
@@ -94,17 +96,17 @@ function SearchSummaryContent({ activeStep = 1 }) {
         {/* Step Indicator */}
         <div className="hidden lg:flex items-center gap-2 text-xs font-black uppercase tracking-wider">
           <Link href="/outstation/select-vehicle" className={`hover:text-amber-600 transition-colors ${activeStep === 1 ? 'text-amber-600 border-b-2 border-amber-600 pb-1' : 'text-slate-400'}`}>
-            1. Select Vehicle
+            1. {t("select_vehicle")}
           </Link>
           <ChevronRight className="w-4 h-4 text-slate-300" />
           
           <span className={`${activeStep === 2 ? 'text-amber-600 border-b-2 border-amber-600 pb-1' : 'text-slate-400'}`}>
-            2. Review & Pay
+            2. {t("review_and_pay")}
           </span>
           <ChevronRight className="w-4 h-4 text-slate-300" />
           
           <span className={`${activeStep === 3 ? 'text-amber-600 border-b-2 border-amber-600 pb-1' : 'text-slate-400'}`}>
-            3. Confirmation
+            3. {t("my_bookings")}
           </span>
         </div>
       </div>

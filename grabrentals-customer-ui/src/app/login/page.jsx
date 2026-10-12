@@ -18,9 +18,12 @@ import {
   Edit3
 } from "lucide-react";
 import { setAuthSession, isAuthenticated } from "@/lib/auth";
+import { useLanguage } from "@/context/LanguageContext";
+import LanguageSelector from "@/components/ui/LanguageSelector";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   // Step 1: 'phone' | Step 2: 'otp'
   const [step, setStep] = useState("phone");
@@ -176,12 +179,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#070A0F] text-slate-100 flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950 font-sans">
       
       {/* Top Brand Bar */}
-      <header className="w-full border-b border-slate-800/80 bg-[#0B101B]/80 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 lg:px-12 py-3 sm:py-3.5 flex items-center justify-between">
+      <header className="w-full border-b border-slate-800/80 bg-[#0B101B]/80 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 lg:px-12 py-3 sm:py-3.5 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
           <img
-            src="/images/grab-rentals-logo.jpg"
+            src="/images/brand-logo.png"
             alt="Grab Rentals"
-            className="h-9 sm:h-10 w-auto object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform shrink-0"
+            className="h-9 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform shrink-0"
           />
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-base sm:text-lg tracking-tight text-white whitespace-nowrap">GRAB RENTALS</span>
@@ -191,7 +194,8 @@ export default function LoginPage() {
           </div>
         </Link>
 
-        <div className="flex items-center text-xs font-semibold text-slate-400">
+        <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
+          <LanguageSelector />
           <Link href="/" className="hover:text-amber-400 transition-colors flex items-center gap-1.5 whitespace-nowrap">
             ← Back to Home
           </Link>
@@ -301,11 +305,11 @@ export default function LoginPage() {
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                {step === "phone" ? "Enter Mobile Number" : "Enter Verification Code"}
+                {step === "phone" ? t("enter_mobile") : t("enter_otp")}
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
                 {step === "phone" 
-                  ? "We'll send a 6-digit verification code to sign in or create your account."
+                  ? t("login_subtitle")
                   : (
                     <span className="flex items-center gap-2 flex-wrap">
                       <span>Code sent to <strong className="text-slate-200">+91 {phone.replace(/[^0-9]/g, "").slice(-10)}</strong></span>
@@ -346,7 +350,7 @@ export default function LoginPage() {
               <form onSubmit={handleSendOtp} className="space-y-5">
                 <div className="space-y-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                    Mobile Number
+                    {t("mobile_number")}
                   </label>
                   <div className="relative flex items-center">
                     {/* Country Prefix Badge */}
@@ -367,7 +371,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    Enter your 10-digit Indian phone number without country code.
+                    {t("enter_mobile")}
                   </p>
                 </div>
 
@@ -382,7 +386,7 @@ export default function LoginPage() {
                       <span>Sending OTP...</span>
                     ) : (
                       <>
-                        <span>Get Verification Code</span>
+                        <span>{t("send_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -395,7 +399,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                      6-Digit Verification Code
+                      {t("enter_otp")}
                     </label>
                     <span className="text-xs text-slate-500">Valid for 5 mins</span>
                   </div>
@@ -444,7 +448,7 @@ export default function LoginPage() {
                         onClick={handleSendOtp}
                         className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer"
                       >
-                        <RotateCcw className="w-3.5 h-3.5" /> Resend OTP
+                        <RotateCcw className="w-3.5 h-3.5" /> {t("resend_otp")}
                       </button>
                     ) : (
                       <span className="text-slate-500 flex items-center gap-1.5">
@@ -479,7 +483,7 @@ export default function LoginPage() {
                       <span>Verifying Code...</span>
                     ) : (
                       <>
-                        <span>Verify & Continue</span>
+                        <span>{t("verify_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}

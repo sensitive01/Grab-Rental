@@ -121,7 +121,7 @@ export default function VehicleDetailModal({
               </div>
               <div className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-500 pt-2 border-t border-slate-200/60 mt-2">
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
                   Hub: {location}
                 </span>
                 <span className="flex items-center gap-1 text-emerald-600">
@@ -137,7 +137,7 @@ export default function VehicleDetailModal({
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Vehicle Type</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Car className="w-4 h-4 text-blue-600" />
+                    <Car className="w-4 h-4 text-amber-600" />
                     <span>{type}</span>
                   </div>
                 </div>
@@ -145,7 +145,7 @@ export default function VehicleDetailModal({
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Fuel Type</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Fuel className="w-4 h-4 text-blue-600" />
+                    <Fuel className="w-4 h-4 text-amber-600" />
                     <span className="capitalize">{fuel}</span>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export default function VehicleDetailModal({
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Transmission</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Settings2 className="w-4 h-4 text-blue-600" />
+                    <Settings2 className="w-4 h-4 text-amber-600" />
                     <span>{transmission}</span>
                   </div>
                 </div>
@@ -161,7 +161,7 @@ export default function VehicleDetailModal({
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Capacity</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Users className="w-4 h-4 text-blue-600" />
+                    <Users className="w-4 h-4 text-amber-600" />
                     <span>{seats} Seats</span>
                   </div>
                 </div>
@@ -169,7 +169,7 @@ export default function VehicleDetailModal({
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Model Year</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <Calendar className="w-4 h-4 text-amber-600" />
                     <span>{year}</span>
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function VehicleDetailModal({
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Luggage Space</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Luggage className="w-4 h-4 text-blue-600" />
+                    <Luggage className="w-4 h-4 text-amber-600" />
                     <span>{seats >= 6 ? "4-5 Bags" : "2-3 Bags"}</span>
                   </div>
                 </div>
@@ -185,13 +185,13 @@ export default function VehicleDetailModal({
 
               {/* Comfort & Safety Highlights */}
               <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
-                <span className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                <span className="bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                   <Wind className="w-3.5 h-3.5" /> High-Cool Dual AC
                 </span>
-                <span className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                <span className="bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                   <Navigation className="w-3.5 h-3.5" /> Real-time GPS Tracking
                 </span>
-                <span className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                <span className="bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5" /> Speed Governor Certified
                 </span>
               </div>
@@ -202,14 +202,14 @@ export default function VehicleDetailModal({
           {/* Chauffeur Details */}
           <div className="bg-slate-50/70 rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black text-lg shrink-0">
+              <div className="w-12 h-12 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800 font-black text-lg shrink-0">
                 {chauffeur.charAt(0)}
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="font-bold text-slate-900 text-base">{chauffeur}</h4>
-                  <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Award className="w-3 h-3 text-blue-600" /> Verified Chauffeur
+                  <span className="bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Award className="w-3 h-3 text-amber-600" /> Verified Chauffeur
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -237,7 +237,7 @@ export default function VehicleDetailModal({
             {/* Trip Route Details */}
             <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                <Navigation className="w-3.5 h-3.5 text-amber-600" />
                 Trip Route & Schedule
               </h4>
               <div className="space-y-2 text-sm">
@@ -248,7 +248,7 @@ export default function VehicleDetailModal({
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1 border-t border-slate-100">
                   <span>Trip Type: <strong>{trip?.tripType || "One way"}</strong></span>
-                  <span>Distance: <strong className="text-blue-600">{distanceKm} km</strong></span>
+                  <span>Distance: <strong className="text-amber-600">{distanceKm} km</strong></span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
                   <span>Pickup: <strong>{trip?.date || "28-09-2026"} at {trip?.time || "07:00 AM"}</strong></span>
@@ -286,7 +286,7 @@ export default function VehicleDetailModal({
         <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-auto">
           <div>
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-2xl sm:text-3xl font-black text-blue-600">₹{Math.round(estTripFare).toLocaleString()}</span>
+              <span className="text-2xl sm:text-3xl font-black text-amber-600">₹{Math.round(estTripFare).toLocaleString()}</span>
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                 ₹{vehicle.perKmRate || 12}/km
               </span>
@@ -305,7 +305,7 @@ export default function VehicleDetailModal({
             </button>
             <button
               onClick={handleProceedBooking}
-              className="flex-1 sm:flex-none px-7 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-none px-7 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               Proceed to Book
               <ArrowRight className="w-4 h-4" />

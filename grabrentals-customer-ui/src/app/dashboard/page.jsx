@@ -24,8 +24,10 @@ import {
 } from "lucide-react";
 import { customerApi } from "@/lib/customerApi";
 import { isAuthenticated, getCurrentUser } from "@/lib/auth";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function CustomerDashboard() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("all");
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +181,7 @@ export default function CustomerDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              My Trips & Bookings
+              {t("my_trips_title")}
             </h1>
             <p className="text-sm text-slate-500 mt-1">
               Track live chauffeur status, view upcoming itineraries, and download GST tax invoices.
@@ -191,19 +193,19 @@ export default function CustomerDashboard() {
               href="/support"
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs"
             >
-              <Headphones className="w-3.5 h-3.5 text-amber-600" /> 24/7 Support
+              <Headphones className="w-3.5 h-3.5 text-amber-600" /> {t("support_24_7")}
             </Link>
             <Link
               href="/account/settings"
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs"
             >
-              <Settings className="w-3.5 h-3.5" /> Profile Settings
+              <Settings className="w-3.5 h-3.5" /> {t("profile_settings")}
             </Link>
             <Link
               href="/"
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20"
             >
-              <Car className="w-4 h-4" /> Book New Ride
+              <Car className="w-4 h-4" /> {t("book_new_ride")}
             </Link>
           </div>
         </div>
@@ -211,11 +213,11 @@ export default function CustomerDashboard() {
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200">
           {[
-            { id: "all", label: "All Trips", count: bookings.length },
-            { id: "ongoing", label: "Ongoing", count: bookings.filter(b => b.status === "ongoing").length },
-            { id: "upcoming", label: "Upcoming", count: bookings.filter(b => b.status === "upcoming").length },
-            { id: "completed", label: "Completed", count: bookings.filter(b => b.status === "completed").length },
-            { id: "cancelled", label: "Cancelled", count: bookings.filter(b => b.status === "cancelled").length }
+            { id: "all", label: t("all_trips"), count: bookings.length },
+            { id: "ongoing", label: t("ongoing_trips"), count: bookings.filter(b => b.status === "ongoing").length },
+            { id: "upcoming", label: t("upcoming_trips"), count: bookings.filter(b => b.status === "upcoming").length },
+            { id: "completed", label: t("completed_trips"), count: bookings.filter(b => b.status === "completed").length },
+            { id: "cancelled", label: t("cancelled_trips"), count: bookings.filter(b => b.status === "cancelled").length }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -240,7 +242,7 @@ export default function CustomerDashboard() {
         {loading ? (
           <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
             <Loader2 className="w-8 h-8 text-amber-600 animate-spin mx-auto" />
-            <p className="text-sm font-bold text-slate-700">Loading your real-time bookings...</p>
+            <p className="text-sm font-bold text-slate-700">{t("loading_bookings")}</p>
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4">
@@ -248,18 +250,18 @@ export default function CustomerDashboard() {
               <Calendar className="w-7 h-7" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-extrabold text-slate-900">No bookings found</h3>
+              <h3 className="text-base font-extrabold text-slate-900">{t("no_bookings_title")}</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 {activeTab === "all" 
-                  ? "You have not made any bookings yet. Ready to travel? Book your first outstation cab now!"
-                  : `There are currently no ${activeTab} trips in your account.`}
+                  ? t("no_bookings_desc")
+                  : t("no_trips_found")}
               </p>
             </div>
             <Link
               href="/"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-600/20"
             >
-              <Car className="w-4 h-4" /> Book a Ride Now
+              <Car className="w-4 h-4" /> {t("book_new_ride")}
             </Link>
           </div>
         ) : (

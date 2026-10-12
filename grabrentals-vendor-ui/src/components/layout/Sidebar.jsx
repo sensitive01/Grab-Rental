@@ -22,17 +22,22 @@ import {
   AlertCircle,
   KeyRound
 } from "lucide-react";
-import { getCurrentUser, logout } from "@/lib/auth";
+import { getCurrentUser, getAuthToken, logout } from "@/lib/auth";
 import { vendorApi } from "@/lib/vendorApi";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const [currentUser, setCurrentUser] = useState(null);
   const [requestsCount, setRequestsCount] = useState(0);
   const [expiringDocsCount, setExpiringDocsCount] = useState(0);
   const [activeTripsCount, setActiveTripsCount] = useState(0);
 
   useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
+
     const user = getCurrentUser();
     if (user) setCurrentUser(user);
 
@@ -125,9 +130,9 @@ export default function Sidebar({ isOpen, onClose }) {
         <div className="h-16 px-3.5 sm:px-4 flex items-center justify-between gap-2 border-b border-slate-800/80 bg-slate-950 shrink-0">
           <Link href="/vendor/dashboard" className="flex items-center gap-2.5 min-w-0 flex-1">
             <img
-              src="/images/grab-rentals-logo.jpg"
+              src="/images/brand-logo.png"
               alt="Grab Rentals"
-              className="h-8.5 w-auto max-w-[44px] object-contain rounded-lg shrink-0 shadow-xs"
+              className="h-8.5 w-auto max-w-[44px] object-contain shrink-0 drop-shadow-sm"
             />
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1.5 flex-nowrap">
@@ -169,13 +174,13 @@ export default function Sidebar({ isOpen, onClose }) {
           >
             <div className="flex items-center gap-2.5">
               <LayoutDashboard className={`w-4 h-4 shrink-0 ${isActive("/vendor/dashboard") ? "text-slate-950" : "text-amber-400"}`} />
-              <span>Dashboard</span>
+              <span className="whitespace-nowrap">{t("dashboard")}</span>
             </div>
           </Link>
 
           {/* Section: Fleet Assets */}
           <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
-            Fleet Management
+            {t("fleet_management")}
           </div>
 
           {/* Vehicles Submenu */}
@@ -191,7 +196,7 @@ export default function Sidebar({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-2.5">
                 <Car className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Vehicles</span>
+                <span className="whitespace-nowrap">{t("fleet_vehicles")}</span>
               </div>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
@@ -252,7 +257,7 @@ export default function Sidebar({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Drivers</span>
+                <span className="whitespace-nowrap">{t("chauffeur_roster")}</span>
               </div>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
@@ -291,7 +296,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* Section: Bookings & Operations */}
           <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
-            Bookings & Dispatch
+            {t("bookings_dispatch")}
           </div>
 
           {/* Bookings Submenu */}
@@ -307,7 +312,7 @@ export default function Sidebar({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-2.5">
                 <CalendarCheck className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Bookings</span>
+                <span className="whitespace-nowrap">{t("assigned_bookings")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 {requestsCount > 0 && (
@@ -391,7 +396,7 @@ export default function Sidebar({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-2.5">
                 <Navigation className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Trips Tracking</span>
+                <span className="whitespace-nowrap">{t("active_trips")}</span>
               </div>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
@@ -433,7 +438,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* Section: Finance & Documents */}
           <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
-            Finance & Compliance
+            {t("finance_compliance")}
           </div>
 
           <Link
@@ -446,7 +451,7 @@ export default function Sidebar({ isOpen, onClose }) {
             }`}
           >
             <TrendingUp className={`w-4 h-4 shrink-0 ${pathname === "/vendor/earnings" ? "text-slate-950" : "text-amber-400"}`} />
-            <span>Earnings & Revenue</span>
+            <span className="whitespace-nowrap">{t("settlements")}</span>
           </Link>
 
           <Link
@@ -459,7 +464,7 @@ export default function Sidebar({ isOpen, onClose }) {
             }`}
           >
             <CreditCard className={`w-4 h-4 shrink-0 ${pathname === "/vendor/payments" ? "text-slate-950" : "text-amber-400"}`} />
-            <span>Payouts & Invoices</span>
+            <span className="whitespace-nowrap">{t("payouts_invoices")}</span>
           </Link>
 
           <Link
@@ -473,7 +478,7 @@ export default function Sidebar({ isOpen, onClose }) {
           >
             <div className="flex items-center gap-2.5">
               <FileText className={`w-4 h-4 shrink-0 ${pathname === "/vendor/documents" ? "text-slate-950" : "text-amber-400"}`} />
-              <span>Documents & Expiries</span>
+              <span className="whitespace-nowrap">{t("compliance_docs")}</span>
             </div>
             {expiringDocsCount > 0 && (
               <span
@@ -490,7 +495,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* Section: Account & Security */}
           <div className="pt-4 pb-1.5 px-3.5 text-xs font-black uppercase tracking-wider text-slate-500">
-            Account & Security
+            {t("account_security")}
           </div>
 
           <Link
@@ -503,7 +508,7 @@ export default function Sidebar({ isOpen, onClose }) {
             }`}
           >
             <KeyRound className={`w-4 h-4 shrink-0 ${pathname === "/vendor/reset-password" || pathname === "/vendor/change-password" ? "text-slate-950" : "text-amber-400"}`} />
-            <span>Reset Password</span>
+            <span className="whitespace-nowrap">{t("reset_password")}</span>
           </Link>
 
         </nav>

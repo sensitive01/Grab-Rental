@@ -17,7 +17,10 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { vendorApi } from "@/lib/vendorApi";
-import { getCurrentUser, logout } from "@/lib/auth";
+import { getCurrentUser, getAuthToken, logout } from "@/lib/auth";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { useLanguage } from "@/context/LanguageContext";
+import GlobalSearch from "@/components/layout/GlobalSearch";
 
 export default function TopNavbar({ onMenuClick }) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -27,6 +30,9 @@ export default function TopNavbar({ onMenuClick }) {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
+
     const user = getCurrentUser();
     if (user) {
       setCurrentUser(user);
@@ -78,35 +84,26 @@ export default function TopNavbar({ onMenuClick }) {
         {/* Mobile Header Brand Logo */}
         <Link href="/vendor/dashboard" className="lg:hidden flex items-center shrink-0">
           <img
-            src="/images/grab-rentals-logo.jpg"
+            src="/images/brand-logo.png"
             alt="Grab Rentals"
-            className="h-8.5 w-auto object-contain rounded-md"
+            className="h-8.5 w-auto object-contain drop-shadow-sm"
           />
         </Link>
 
-        {/* Global Search for Desktop */}
+        {/* Global Dynamic Search for Desktop */}
         <div className="relative max-w-md w-full hidden sm:block">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search vehicles (TN-38...), bookings (#BK...), or drivers..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-          />
+          <GlobalSearch />
         </div>
 
         {/* Mobile Search Input Overlay (Expandable) */}
         {mobileSearchOpen && (
           <div className="absolute inset-x-0 top-0 h-16 bg-white z-50 px-3.5 flex items-center gap-2 border-b border-slate-200 shadow-md sm:hidden animate-in fade-in duration-100">
-            <Search className="w-4 h-4 text-amber-500 shrink-0" />
-            <input
-              type="text"
-              autoFocus
-              placeholder="Search vehicles, bookings, drivers..."
-              className="flex-1 py-2 px-1 text-xs text-slate-900 placeholder-slate-400 bg-transparent focus:outline-hidden"
-            />
+            <div className="flex-1">
+              <GlobalSearch isMobile autoFocus onClose={() => setMobileSearchOpen(false)} />
+            </div>
             <button
               onClick={() => setMobileSearchOpen(false)}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100"
+              className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 shrink-0"
             >
               Close
             </button>
@@ -126,6 +123,9 @@ export default function TopNavbar({ onMenuClick }) {
           <Search className="w-4.5 h-4.5" />
         </button>
 
+
+        {/* Multi-Language Switcher */}
+        <LanguageSelector />
 
         {/* Notifications Popover */}
         <div className="relative">
