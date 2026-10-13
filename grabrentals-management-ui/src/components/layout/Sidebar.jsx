@@ -87,29 +87,31 @@ export const OPERATIONS_NAV = [
 
 export const ADMIN_NAV = [
   {
-    title: "Governance",
+    title: "Main",
     items: [
       { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Customers", href: "/admin/customers", icon: Users },
+      { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
+      { label: "Vehicles Models", href: "/admin/vehicle-models", icon: Layers },
+      { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
       { label: "Vendors", href: "/admin/vendors", icon: Building2 },
+      { label: "Customers", href: "/admin/customers", icon: Users },
+      { label: "Users", href: "/admin/users", icon: Users },
+    ],
+  },
+  {
+    title: "Fleet & Operations",
+    items: [
+      { label: "Platform Vehicles", href: "/admin/vehicles", icon: Car },
+      { label: "Platform Drivers", href: "/admin/drivers", icon: UserCheck },
       { label: "Operations Staff", href: "/admin/operations-users", icon: ShieldCheck },
     ],
   },
+  /*
   {
-    title: "Fleet Governance",
-    items: [
-      { label: "Platform Vehicles", href: "/admin/vehicles", icon: Car },
-      { label: "Vehicle Models & Photos", href: "/admin/vehicle-models", icon: Layers },
-      { label: "Platform Drivers", href: "/admin/drivers", icon: UserCheck },
-      { label: "Master Bookings", href: "/admin/bookings", icon: CalendarCheck },
-    ],
-  },
-  {
-    title: "Financials & Tariffs",
+    title: "Financials",
     items: [
       { label: "Payments", href: "/admin/payments", icon: CreditCard },
       { label: "Refunds Queue", href: "/admin/refunds", icon: RotateCcw },
-      { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
     ],
   },
   {
@@ -122,16 +124,17 @@ export const ADMIN_NAV = [
       { label: "Platform Reports", href: "/admin/reports", icon: FileBarChart },
     ],
   },
+  */
   {
     title: "System & Security",
     items: [
-      { label: "All Users Directory", href: "/admin/users", icon: Users },
-      { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldCheck },
-      { label: "System Settings", href: "/admin/settings", icon: Sliders },
+      // { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldCheck },
+      // { label: "System Settings", href: "/admin/settings", icon: Sliders },
       { label: "Audit Logs", href: "/admin/audit-logs", icon: History },
     ],
   },
 ];
+
 
 export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
   const pathname = usePathname();

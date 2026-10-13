@@ -309,7 +309,7 @@ public class VehicleTariffService {
             if (t.getServiceType() != null && !sType.equalsIgnoreCase(t.getServiceType().trim())) return false;
             String tCity = t.getCity();
             String tState = t.getState();
-            if (tCity != null && cleanCity.equalsIgnoreCase(tCity.trim())) {
+            if (tCity != null && areCitiesEqual(cleanCity, tCity)) {
                 return true;
             }
             boolean isAllCity = (tCity == null || tCity.isBlank() || "all".equalsIgnoreCase(tCity.trim()));
@@ -394,7 +394,7 @@ public class VehicleTariffService {
                     && category.trim().equalsIgnoreCase(t.getCategory())
                     && modelName.trim().equalsIgnoreCase(t.getModelName())
                     && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
-                    && t.getCity() != null && city.trim().equalsIgnoreCase(t.getCity().trim())
+                    && t.getCity() != null && areCitiesEqual(city, t.getCity())
             ).findFirst().orElse(null);
         }
 
@@ -590,5 +590,31 @@ public class VehicleTariffService {
         if (isNight) base = base.add(new BigDecimal("1.00"));
 
         return base;
+    }
+
+    public static boolean areCitiesEqual(String c1, String c2) {
+        if (c1 == null || c2 == null) return false;
+        String a = c1.trim().toLowerCase();
+        String b = c2.trim().toLowerCase();
+        if (a.equals(b)) return true;
+        return normalizeCityAlias(a).equals(normalizeCityAlias(b));
+    }
+
+    public static String normalizeCityAlias(String name) {
+        if (name == null) return "";
+        String s = name.trim().toLowerCase();
+        if (s.equals("bangalore") || s.equals("bengaluru")) return "bangalore";
+        if (s.equals("bombay") || s.equals("mumbai")) return "mumbai";
+        if (s.equals("madras") || s.equals("chennai")) return "chennai";
+        if (s.equals("calcutta") || s.equals("kolkata")) return "kolkata";
+        if (s.equals("cochin") || s.equals("kochi")) return "kochi";
+        if (s.equals("trivandrum") || s.equals("thiruvananthapuram")) return "trivandrum";
+        if (s.equals("mysore") || s.equals("mysuru")) return "mysore";
+        if (s.equals("mangalore") || s.equals("mangaluru")) return "mangalore";
+        if (s.equals("pondicherry") || s.equals("puducherry")) return "pondicherry";
+        if (s.equals("gurgaon") || s.equals("gurugram")) return "gurgaon";
+        if (s.equals("baroda") || s.equals("vadodara")) return "vadodara";
+        if (s.equals("poona") || s.equals("pune")) return "pune";
+        return s;
     }
 }
