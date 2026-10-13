@@ -4,9 +4,9 @@ export function normalizeBooking(b) {
   if (!b) return null;
   const total = Number(b.totalFare || 0);
   const advance = Number(b.advancePaid || 0);
-  const due = Number(b.dueAmount != null ? b.dueAmount : Math.max(0, total - advance));
-  const platformFee = Math.round(total * 0.10); // 10% platform commission
-  const vendorNet = total - platformFee;
+  const vendorNet = b.vendorPayout != null ? Number(b.vendorPayout) : (b.vendorNet != null ? Number(b.vendorNet) : Math.round(total * 0.90));
+  const due = Number(b.dueAmount != null ? b.dueAmount : vendorNet);
+  const platformFee = Math.max(0, Math.round(total - vendorNet));
 
   let pickupDateStr = "";
   if (b.pickupDateTime) {
@@ -68,6 +68,7 @@ export function normalizeBooking(b) {
     dueAmount: due,
     platformFee: platformFee,
     vendorNet: vendorNet,
+    vendorPayout: vendorNet,
     status: uiStatus,
     rawStatus: st,
     paymentStatus: b.paymentStatus || (advance > 0 ? "Prepaid Advance" : "Pending"),

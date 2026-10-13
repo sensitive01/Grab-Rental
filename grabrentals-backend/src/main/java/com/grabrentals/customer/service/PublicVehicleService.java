@@ -393,11 +393,11 @@ public class PublicVehicleService {
         return "SEDAN";
     }
 
-    private int calculateDistance(String from, String to, String tripType) {
+    public int calculateDistance(String from, String to, String tripType) {
         return calculateDistanceWithStops(from, to, Collections.emptyList(), tripType);
     }
 
-    private int calculateDistanceWithStops(String from, String to, List<String> stops, String tripType) {
+    public int calculateDistanceWithStops(String from, String to, List<String> stops, String tripType) {
         int oneWay;
         if (stops == null || stops.isEmpty()) {
             oneWay = getSegmentDistance(from, to);

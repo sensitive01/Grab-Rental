@@ -28,6 +28,7 @@ import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,8 @@ public class CustomerBookingService {
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final com.grabrentals.tariff.service.VehicleTariffService vehicleTariffService;
+    private final PublicVehicleService publicVehicleService;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -167,8 +170,13 @@ public class CustomerBookingService {
         booking.setVendor(vendor);
         if (request.getVendorPayout() != null) {
             booking.setVendorPayout(request.getVendorPayout());
-        } else if (booking.getVendorPayout() == null && booking.getTotalFare() != null) {
-            booking.setVendorPayout(booking.getTotalFare().multiply(new BigDecimal("0.70")).setScale(2, RoundingMode.HALF_UP));
+        } else {
+            BigDecimal tariffPayout = calculateVendorPayoutForBooking(booking, vehicle);
+            if (tariffPayout != null && tariffPayout.compareTo(BigDecimal.ZERO) > 0) {
+                booking.setVendorPayout(tariffPayout);
+            } else if (booking.getVendorPayout() == null && booking.getTotalFare() != null) {
+                booking.setVendorPayout(booking.getTotalFare().multiply(new BigDecimal("0.70")).setScale(2, RoundingMode.HALF_UP));
+            }
         }
         booking.setStatus(BookingStatus.ASSIGNED_TO_VENDOR);
         booking.setVendorDeclineReason(null); // Clear previous decline reasons
@@ -489,7 +497,13 @@ public class CustomerBookingService {
                 : bookingRepository.findByVendorIdOrderByCreatedAtDesc(vendor.getId());
 
         return list.stream()
-                .map(BookingResponse::fromEntityForVendor)
+                .map(b -> {
+                    BigDecimal tariffPayout = calculateVendorPayoutForBooking(b, b.getAssignedVehicle());
+                    if (tariffPayout != null && tariffPayout.compareTo(BigDecimal.ZERO) > 0) {
+                        b.setVendorPayout(tariffPayout);
+                    }
+                    return BookingResponse.fromEntityForVendor(b);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -507,6 +521,10 @@ public class CustomerBookingService {
         }
 
         validateVendorOwnership(booking, vendor);
+        BigDecimal tariffPayout = calculateVendorPayoutForBooking(booking, booking.getAssignedVehicle());
+        if (tariffPayout != null && tariffPayout.compareTo(BigDecimal.ZERO) > 0) {
+            booking.setVendorPayout(tariffPayout);
+        }
         return BookingResponse.fromEntityForVendor(booking);
     }
 
@@ -588,6 +606,110 @@ public class CustomerBookingService {
         }
 
         return BookingResponse.fromEntity(saved);
+    }
+
+    public BigDecimal calculateVendorPayoutForBooking(Booking booking, Vehicle vehicle) {
+        if (booking == null) return null;
+        try {
+            String model = (vehicle != null && vehicle.getModel() != null && !vehicle.getModel().isBlank())
+                    ? vehicle.getModel() : null;
+            String category = (booking.getVehicleCategory() != null && !booking.getVehicleCategory().isBlank())
+                    ? booking.getVehicleCategory()
+                    : (vehicle != null && vehicle.getVehicleType() != null ? vehicle.getVehicleType() : "Hatchback");
+            String seating = (vehicle != null && vehicle.getSeatingCapacity() != null)
+                    ? String.valueOf(vehicle.getSeatingCapacity()) : "4";
+
+            String pickupDateStr = (booking.getPickupDateTime() != null)
+                    ? booking.getPickupDateTime().toLocalDate().toString()
+                    : LocalDate.now().toString();
+            String pickupTimeStr = (booking.getPickupDateTime() != null)
+                    ? booking.getPickupDateTime().toLocalTime().toString()
+                    : "09:00";
+
+            String rawTripType = (booking.getTripType() != null) ? booking.getTripType().toUpperCase() : "OUTSTATION";
+            String serviceType = "OUTSTATION";
+            if (rawTripType.contains("LOCAL") || rawTripType.contains("HOURLY")) {
+                serviceType = "LOCAL";
+            } else if (rawTripType.contains("AIRPORT")) {
+                serviceType = "AIRPORT";
+            }
+
+            String rawCity = booking.getPickupCity();
+            String city = rawCity != null ? rawCity.split(",")[0].trim() : null;
+            String state = (rawCity != null && rawCity.contains(",")) ? rawCity.split(",")[1].trim() : null;
+
+            var tariffs = vehicleTariffService.getTariffsForService(serviceType);
+            Map<String, Object> rateContext = vehicleTariffService.calculateRate(
+                    category, model, seating, pickupDateStr, pickupTimeStr, serviceType, city, state, tariffs
+            );
+
+            int distanceKm = extractDistanceKm(booking);
+
+            if ("AIRPORT".equalsIgnoreCase(serviceType)) {
+                BigDecimal airportVendorFare = (BigDecimal) rateContext.get("airportVendorFare");
+                Integer airportIncludedKm = (Integer) rateContext.get("airportIncludedKm");
+                BigDecimal airportVendorExtraKmRate = (BigDecimal) rateContext.get("airportVendorExtraKmRate");
+                if (airportVendorFare == null) airportVendorFare = new BigDecimal("850.00");
+                if (airportIncludedKm == null) airportIncludedKm = 35;
+                if (airportVendorExtraKmRate == null) airportVendorExtraKmRate = new BigDecimal("11.00");
+
+                if (distanceKm <= airportIncludedKm) {
+                    return airportVendorFare;
+                } else {
+                    int extraKm = distanceKm - airportIncludedKm;
+                    return airportVendorFare.add(airportVendorExtraKmRate.multiply(BigDecimal.valueOf(extraKm))).setScale(2, RoundingMode.HALF_UP);
+                }
+            } else if ("LOCAL".equalsIgnoreCase(serviceType)) {
+                BigDecimal hourlyVendorFare = (BigDecimal) rateContext.get("hourlyVendorFare");
+                Integer packageKm = (Integer) rateContext.get("packageKm");
+                BigDecimal vendorExtraKmRate = (BigDecimal) rateContext.get("vendorExtraKmRate");
+                if (hourlyVendorFare == null) hourlyVendorFare = new BigDecimal("1500.00");
+                if (packageKm == null) packageKm = 80;
+                if (vendorExtraKmRate == null) vendorExtraKmRate = new BigDecimal("12.00");
+
+                if (distanceKm <= packageKm) {
+                    return hourlyVendorFare;
+                } else {
+                    int extraKm = distanceKm - packageKm;
+                    return hourlyVendorFare.add(vendorExtraKmRate.multiply(BigDecimal.valueOf(extraKm))).setScale(2, RoundingMode.HALF_UP);
+                }
+            } else {
+                // OUTSTATION: Exactly vendorRatePerKm * distanceKm (with vendorBaseFare as minimum guarantee floor)
+                BigDecimal vendorRatePerKm = (BigDecimal) rateContext.get("vendorRatePerKm");
+                if (vendorRatePerKm == null || vendorRatePerKm.compareTo(BigDecimal.ZERO) <= 0) {
+                    vendorRatePerKm = new BigDecimal("9.50");
+                }
+
+                BigDecimal payout = vendorRatePerKm.multiply(BigDecimal.valueOf(distanceKm));
+                BigDecimal vendorBaseFare = (BigDecimal) rateContext.get("vendorBaseFare");
+                if (vendorBaseFare != null && vendorBaseFare.compareTo(BigDecimal.ZERO) > 0 && payout.compareTo(vendorBaseFare) < 0) {
+                    payout = vendorBaseFare;
+                }
+
+                return payout.setScale(2, RoundingMode.HALF_UP);
+            }
+        } catch (Exception ex) {
+            log.warn("Could not calculate tariff vendor payout: {}", ex.getMessage());
+            return null;
+        }
+    }
+
+    private int extractDistanceKm(Booking booking) {
+        if (booking == null) return 150;
+        if (booking.getSpecialInstructions() != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("Distance:\\s*(\\d+)\\s*km", java.util.regex.Pattern.CASE_INSENSITIVE)
+                    .matcher(booking.getSpecialInstructions());
+            if (m.find()) {
+                try {
+                    return Integer.parseInt(m.group(1));
+                } catch (Exception ignored) {}
+            }
+        }
+        try {
+            int d = publicVehicleService.calculateDistance(booking.getPickupCity(), booking.getDropCity(), booking.getTripType());
+            if (d > 0) return d;
+        } catch (Exception ignored) {}
+        return 150;
     }
 
     private void validateVendorOwnership(Booking booking, User vendor) {

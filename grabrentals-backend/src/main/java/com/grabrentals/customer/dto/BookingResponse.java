@@ -151,7 +151,7 @@ public class BookingResponse {
         if (b == null) return null;
         BookingResponse resp = fromEntity(b);
         BigDecimal payout = b.getVendorPayout() != null ? b.getVendorPayout() : b.getTotalFare();
-        resp.setTotalFare(payout);
+        resp.setTotalFare(b.getTotalFare() != null ? b.getTotalFare() : payout);
         resp.setVendorPayout(payout);
         resp.setDueAmount(payout);
         return resp;
