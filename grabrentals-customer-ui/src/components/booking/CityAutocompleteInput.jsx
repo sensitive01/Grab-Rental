@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { MapPin, Check, Plus, X, Sparkles } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { MapPin, Check, Plus, X, Sparkles, Loader2 } from "lucide-react";
 import { searchCities, saveCustomCity, formatCityLabel } from "@/lib/cities";
+import { loadGoogleMaps } from "@/lib/googleMaps";
 
 export default function CityAutocompleteInput({
   value = "",
@@ -19,18 +20,96 @@ export default function CityAutocompleteInput({
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value || "");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [googleResults, setGoogleResults] = useState([]);
+  const [isSearchingGoogle, setIsSearchingGoogle] = useState(false);
+  const [googleMapsReady, setGoogleMapsReady] = useState(false);
+
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+  const sessionTokenRef = useRef(null);
+
+  // Load Google Maps Places library once on mount
+  useEffect(() => {
+    loadGoogleMaps()
+      .then(() => setGoogleMapsReady(true))
+      .catch(() => setGoogleMapsReady(false));
+  }, []);
 
   // Sync internal input value with incoming prop value
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInputValue(value || "");
   }, [value]);
 
-  // Filter cities as user types
-  const suggestions = useMemo(() => {
+  // Offline / Static suggestions
+  const staticSuggestions = useMemo(() => {
     return searchCities(inputValue);
   }, [inputValue]);
+
+  // Live Google Places (New) Autocomplete search debounced
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    const query = inputValue.trim();
+    if (!query || query.length < 2 || !googleMapsReady || !window.google?.maps?.importLibrary) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGoogleResults([]);
+      setIsSearchingGoogle(false);
+      return;
+    }
+
+    setIsSearchingGoogle(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { AutocompleteSuggestion, AutocompleteSessionToken } = await window.google.maps.importLibrary("places");
+        if (AutocompleteSuggestion) {
+          if (!sessionTokenRef.current && AutocompleteSessionToken) {
+            sessionTokenRef.current = new AutocompleteSessionToken();
+          }
+
+          const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input: query,
+            sessionToken: sessionTokenRef.current,
+            includedRegionCodes: ["in"]
+          });
+
+          if (response?.suggestions?.length > 0) {
+            const formatted = response.suggestions.map((item, index) => {
+              const pred = item.placePrediction;
+              return {
+                id: pred?.placeId || `gplace-${index}`,
+                title: pred?.mainText?.toString() || pred?.text?.toString() || query,
+                description: pred?.secondaryText?.toString() || pred?.text?.toString() || "",
+                isGoogleNew: true,
+                placePrediction: pred
+              };
+            });
+            setGoogleResults(formatted);
+          } else {
+            setGoogleResults([]);
+          }
+        }
+      } catch (err) {
+        console.warn("Google Places Autocomplete error in CityAutocompleteInput:", err);
+        setGoogleResults([]);
+      } finally {
+        setIsSearchingGoogle(false);
+      }
+    }, 250);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [inputValue, googleMapsReady]);
+
+  // Combined suggestions list for keyboard navigation
+  const allSuggestions = useMemo(() => {
+    const list = [];
+    googleResults.forEach((g) => list.push({ type: "google", data: g }));
+    staticSuggestions.forEach((s) => list.push({ type: "static", data: s }));
+    return list;
+  }, [googleResults, staticSuggestions]);
 
   // Click outside listener
   useEffect(() => {
@@ -46,15 +125,71 @@ export default function CityAutocompleteInput({
   const handleInputChange = (e) => {
     const val = e.target.value;
     setInputValue(val);
-    if (onChange) onChange(val);
+    if (onChange) onChange(val, null);
     setIsOpen(true);
     setHighlightedIndex(-1);
   };
 
-  const handleSelectCity = (city) => {
+  const handleSelectGooglePlace = async (result) => {
+    sessionTokenRef.current = null;
+    let lat = null;
+    let lng = null;
+    let specificLabel = result.title;
+
+    if (result.placePrediction) {
+      try {
+        const place = result.placePrediction.toPlace();
+        await place.fetchFields({
+          fields: ["displayName", "formattedAddress", "location", "addressComponents"]
+        });
+
+        if (place.location) {
+          lat = typeof place.location.lat === "function" ? place.location.lat() : place.location.lat;
+          lng = typeof place.location.lng === "function" ? place.location.lng() : place.location.lng;
+        }
+
+        const placeName = (place.displayName || result.title || "").trim();
+        let locality = "";
+        let adminArea = "";
+        if (place.addressComponents) {
+          for (const comp of place.addressComponents) {
+            if (comp.types?.includes("locality")) locality = comp.longText || comp.name;
+            if (comp.types?.includes("administrative_area_level_1")) adminArea = comp.longText || comp.name;
+          }
+        }
+
+        // Build specific label keeping the exact place name (e.g. "Theni Old Bus Stand, Theni, Tamil Nadu")
+        specificLabel = placeName;
+        const extraParts = [];
+        if (locality && !placeName.toLowerCase().includes(locality.toLowerCase())) {
+          extraParts.push(locality);
+        }
+        if (adminArea && !placeName.toLowerCase().includes(adminArea.toLowerCase())) {
+          extraParts.push(adminArea);
+        }
+        if (extraParts.length > 0) {
+          specificLabel = `${placeName}, ${extraParts.join(", ")}`;
+        }
+      } catch (e) {
+        console.warn("Failed fetching place details:", e);
+        specificLabel = result.description ? `${result.title}, ${result.description.split(",")[0].trim()}` : result.title;
+      }
+    }
+
+    saveCustomCity(specificLabel);
+    setInputValue(specificLabel);
+    if (onChange) {
+      onChange(specificLabel, lat && lng ? { lat, lng } : null);
+    }
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleSelectStaticCity = (city) => {
     const formatted = formatCityLabel(city);
     setInputValue(formatted);
-    if (onChange) onChange(formatted);
+    const coords = (city.lat && city.lng) ? { lat: city.lat, lng: city.lng } : null;
+    if (onChange) onChange(formatted, coords);
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -65,13 +200,13 @@ export default function CityAutocompleteInput({
     saveCustomCity(clean);
     const formatted = clean.includes(",") ? clean : `${clean}, India`;
     setInputValue(formatted);
-    if (onChange) onChange(formatted);
+    if (onChange) onChange(formatted, null);
     setIsOpen(false);
   };
 
   const handleClear = () => {
     setInputValue("");
-    if (onChange) onChange("");
+    if (onChange) onChange("", null);
     inputRef.current?.focus();
     setIsOpen(true);
   };
@@ -87,17 +222,22 @@ export default function CityAutocompleteInput({
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setHighlightedIndex((prev) => 
-        prev < suggestions.length - 1 ? prev + 1 : 0
+        prev < allSuggestions.length - 1 ? prev + 1 : 0
       );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setHighlightedIndex((prev) => 
-        prev > 0 ? prev - 1 : suggestions.length - 1
+        prev > 0 ? prev - 1 : allSuggestions.length - 1
       );
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (highlightedIndex >= 0 && suggestions[highlightedIndex]) {
-        handleSelectCity(suggestions[highlightedIndex]);
+      if (highlightedIndex >= 0 && allSuggestions[highlightedIndex]) {
+        const item = allSuggestions[highlightedIndex];
+        if (item.type === "google") {
+          handleSelectGooglePlace(item.data);
+        } else {
+          handleSelectStaticCity(item.data);
+        }
       } else if (inputValue.trim()) {
         handleAddCustom();
       }
@@ -107,7 +247,7 @@ export default function CityAutocompleteInput({
   };
 
   // Check if current typed string is an exact match in suggestions
-  const isExactMatch = suggestions.some(
+  const isExactMatch = staticSuggestions.some(
     (s) => s.name.toLowerCase() === inputValue.trim().toLowerCase() ||
            formatCityLabel(s).toLowerCase() === inputValue.trim().toLowerCase()
   );
@@ -154,26 +294,65 @@ export default function CityAutocompleteInput({
 
       {/* Autocomplete Dropdown Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in-50 duration-150 max-h-72 flex flex-col">
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in-50 duration-150 max-h-80 flex flex-col">
           
           {/* Header Title */}
           <div className="px-3.5 py-2 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            <span>{inputValue ? "Matching Cities" : "Popular Outstation Hubs"}</span>
+            <span className="flex items-center gap-1.5">
+              <span>{googleResults.length > 0 ? "Google Places & Landmarks" : inputValue ? "Matching Locations" : "Popular Outstation Hubs"}</span>
+              {isSearchingGoogle && <Loader2 className="w-3 h-3 animate-spin text-amber-600" />}
+            </span>
             <span className="text-[10px] lowercase font-normal text-slate-400">Click to select</span>
           </div>
 
           {/* List of Suggestions */}
           <div className="overflow-y-auto divide-y divide-slate-50 py-1">
-            {suggestions.map((city, idx) => {
+            {/* 1. Google Places results */}
+            {googleResults.map((item, gIdx) => {
+              const isHighlighted = highlightedIndex === gIdx;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleSelectGooglePlace(item)}
+                  onMouseEnter={() => setHighlightedIndex(gIdx)}
+                  className={`w-full px-3.5 py-2.5 text-left flex items-start gap-2.5 transition-colors cursor-pointer ${
+                    isHighlighted ? "bg-amber-50/80 text-amber-950" : "hover:bg-amber-50/50 text-slate-800"
+                  }`}
+                >
+                  <MapPin className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
+                    {item.description && (
+                      <p className="text-xs text-slate-500 truncate">{item.description}</p>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded shrink-0">
+                    Google
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* Section Divider if both Google and Static are present */}
+            {googleResults.length > 0 && staticSuggestions.length > 0 && (
+              <div className="px-3.5 py-1.5 bg-slate-50/60 border-t border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                City Centers & Hubs
+              </div>
+            )}
+
+            {/* 2. Static / Offline City Suggestions */}
+            {staticSuggestions.map((city, idx) => {
+              const itemIndex = googleResults.length + idx;
               const isSelected = formatCityLabel(city).toLowerCase() === inputValue.trim().toLowerCase();
-              const isHighlighted = idx === highlightedIndex;
+              const isHighlighted = highlightedIndex === itemIndex;
 
               return (
                 <button
                   key={`${city.name}-${city.state}-${idx}`}
                   type="button"
-                  onClick={() => handleSelectCity(city)}
-                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  onClick={() => handleSelectStaticCity(city)}
+                  onMouseEnter={() => setHighlightedIndex(itemIndex)}
                   className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer ${
                     isHighlighted ? "bg-amber-50/70 text-amber-900" : isSelected ? "bg-slate-50 font-bold" : "hover:bg-slate-50 text-slate-800"
                   }`}
@@ -213,7 +392,7 @@ export default function CityAutocompleteInput({
             })}
 
             {/* Custom Add Option if user typed something new */}
-            {inputValue.trim() && !isExactMatch && (
+            {inputValue.trim() && !isExactMatch && googleResults.length === 0 && (
               <button
                 type="button"
                 onClick={handleAddCustom}
@@ -221,14 +400,14 @@ export default function CityAutocompleteInput({
               >
                 <Plus className="w-4 h-4 shrink-0 text-amber-600" />
                 <div className="text-xs font-semibold truncate">
-                  Use custom city: <strong className="text-amber-950">"{inputValue.trim()}"</strong>
+                  Use custom location: <strong className="text-amber-950">&ldquo;{inputValue.trim()}&rdquo;</strong>
                 </div>
               </button>
             )}
 
-            {suggestions.length === 0 && !inputValue.trim() && (
+            {allSuggestions.length === 0 && !inputValue.trim() && (
               <div className="p-4 text-center text-xs text-slate-400">
-                Type any city or town name to search
+                Type any landmark, station, or city name to search
               </div>
             )}
           </div>

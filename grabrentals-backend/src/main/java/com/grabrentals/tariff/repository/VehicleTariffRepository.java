@@ -18,16 +18,28 @@ public interface VehicleTariffRepository extends JpaRepository<VehicleTariff, UU
 
     List<VehicleTariff> findBySeasonalTrue();
 
+    List<VehicleTariff> findByServiceTypeIgnoreCase(String serviceType);
+
     Optional<VehicleTariff> findFirstByCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndSeasonalFalse(
             String category, String modelName, String seatingCapacity
     );
 
+    Optional<VehicleTariff> findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndSeasonalFalse(
+            String serviceType, String category, String modelName, String seatingCapacity
+    );
+
+    Optional<VehicleTariff> findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndSeasonalFalse(
+            String serviceType, String category
+    );
+
     @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = true " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
            "AND :targetDate BETWEEN t.startDate AND t.endDate " +
            "AND LOWER(t.category) = LOWER(:category) " +
            "AND LOWER(t.modelName) = LOWER(:modelName) " +
            "AND t.seatingCapacity = :seatingCapacity")
     Optional<VehicleTariff> findSeasonalTariff(
+            @Param("serviceType") String serviceType,
             @Param("category") String category,
             @Param("modelName") String modelName,
             @Param("seatingCapacity") String seatingCapacity,
@@ -43,4 +55,53 @@ public interface VehicleTariffRepository extends JpaRepository<VehicleTariff, UU
     );
 
     Optional<VehicleTariff> findFirstByCategoryIgnoreCaseAndSeasonalFalse(String category);
+
+    @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = false " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
+           "AND LOWER(t.category) = LOWER(:category) " +
+           "AND LOWER(t.modelName) = LOWER(:modelName) " +
+           "AND t.seatingCapacity = :seatingCapacity " +
+           "AND LOWER(t.city) = LOWER(:city)")
+    Optional<VehicleTariff> findStandardByModelAndCity(
+            @Param("serviceType") String serviceType,
+            @Param("category") String category,
+            @Param("modelName") String modelName,
+            @Param("seatingCapacity") String seatingCapacity,
+            @Param("city") String city
+    );
+
+    @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = false " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
+           "AND LOWER(t.category) = LOWER(:category) " +
+           "AND LOWER(t.modelName) = LOWER(:modelName) " +
+           "AND t.seatingCapacity = :seatingCapacity " +
+           "AND (LOWER(t.city) = 'all' OR t.city IS NULL OR t.city = '') " +
+           "AND LOWER(t.state) = LOWER(:state)")
+    Optional<VehicleTariff> findStandardByModelAndState(
+            @Param("serviceType") String serviceType,
+            @Param("category") String category,
+            @Param("modelName") String modelName,
+            @Param("seatingCapacity") String seatingCapacity,
+            @Param("state") String state
+    );
+
+    long countByServiceTypeIgnoreCase(String serviceType);
+
+    @Query("SELECT COUNT(t) > 0 FROM VehicleTariff t WHERE " +
+           "LOWER(t.serviceType) = LOWER(:serviceType) AND (" +
+           "LOWER(t.city) = LOWER(:city) " +
+           "OR ((LOWER(t.city) = 'all' OR t.city IS NULL OR t.city = '') AND LOWER(t.state) = LOWER(:state)))")
+    boolean existsByServiceTypeAndCityOrState(
+            @Param("serviceType") String serviceType,
+            @Param("city") String city,
+            @Param("state") String state
+    );
+
+    @Query("SELECT COUNT(t) > 0 FROM VehicleTariff t WHERE " +
+           "LOWER(t.city) = LOWER(:city) " +
+           "OR ((LOWER(t.city) = 'all' OR t.city IS NULL OR t.city = '') AND LOWER(t.state) = LOWER(:state))")
+    boolean existsByCityOrState(@Param("city") String city, @Param("state") String state);
+
+    @Query("SELECT COUNT(t) > 0 FROM VehicleTariff t WHERE LOWER(t.city) = LOWER(:city)")
+    boolean existsByCityIgnoreCase(@Param("city") String city);
 }

@@ -14,6 +14,7 @@ export const customerApi = {
         tripType: params.tripType,
         pickupDate: params.pickupDate,
         pickupTime: params.pickupTime,
+        serviceType: params.serviceType,
       },
     });
     return res.data;

@@ -54,20 +54,43 @@ public class VehicleTariff {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    // Rates per 1 KM
-    @Column(name = "weekday_day_rate", precision = 10, scale = 2, nullable = false)
+    @Column(name = "service_type", length = 50)
+    @Builder.Default
+    private String serviceType = "OUTSTATION"; // OUTSTATION, HOURLY, AIRPORT
+
+    @Column(name = "state", length = 100)
+    private String state; // e.g. "Tamil Nadu", "Karnataka", or "ALL"
+
+    @Column(name = "city", length = 100)
+    private String city; // e.g. "Theni", "Coimbatore", "Bangalore", or "ALL"
+
+    // Rates per 1 KM (Customer)
+    @Column(name = "weekday_day_rate", precision = 10, scale = 2)
     private BigDecimal weekdayDayRate;
 
-    @Column(name = "weekday_night_rate", precision = 10, scale = 2, nullable = false)
+    @Column(name = "weekday_night_rate", precision = 10, scale = 2)
     private BigDecimal weekdayNightRate;
 
-    @Column(name = "weekend_day_rate", precision = 10, scale = 2, nullable = false)
+    @Column(name = "weekend_day_rate", precision = 10, scale = 2)
     private BigDecimal weekendDayRate;
 
-    @Column(name = "weekend_night_rate", precision = 10, scale = 2, nullable = false)
+    @Column(name = "weekend_night_rate", precision = 10, scale = 2)
     private BigDecimal weekendNightRate;
 
-    // Optional base components
+    // Rates per 1 KM (Vendor Payout)
+    @Column(name = "vendor_weekday_day_rate", precision = 10, scale = 2)
+    private BigDecimal vendorWeekdayDayRate;
+
+    @Column(name = "vendor_weekday_night_rate", precision = 10, scale = 2)
+    private BigDecimal vendorWeekdayNightRate;
+
+    @Column(name = "vendor_weekend_day_rate", precision = 10, scale = 2)
+    private BigDecimal vendorWeekendDayRate;
+
+    @Column(name = "vendor_weekend_night_rate", precision = 10, scale = 2)
+    private BigDecimal vendorWeekendNightRate;
+
+    // Outstation base components (Customer)
     @Column(name = "base_fare", precision = 10, scale = 2)
     private BigDecimal baseFare;
 
@@ -79,6 +102,73 @@ public class VehicleTariff {
 
     @Column(name = "driver_batta_night", precision = 10, scale = 2)
     private BigDecimal driverBattaNight;
+
+    // Outstation base components (Vendor)
+    @Column(name = "vendor_base_fare", precision = 10, scale = 2)
+    private BigDecimal vendorBaseFare;
+
+    @Column(name = "vendor_driver_batta_day", precision = 10, scale = 2)
+    private BigDecimal vendorDriverBattaDay;
+
+    @Column(name = "vendor_driver_batta_night", precision = 10, scale = 2)
+    private BigDecimal vendorDriverBattaNight;
+
+    // Hourly / Local Package components
+    @Column(name = "package_hours")
+    private Integer packageHours; // e.g. 4, 8, 12
+
+    @Column(name = "package_km")
+    private Integer packageKm; // e.g. 40, 80, 120
+
+    @Column(name = "hourly_customer_fare", precision = 10, scale = 2)
+    private BigDecimal hourlyCustomerFare;
+
+    @Column(name = "hourly_vendor_fare", precision = 10, scale = 2)
+    private BigDecimal hourlyVendorFare;
+
+    @Column(name = "hourly_customer_weekend_fare", precision = 10, scale = 2)
+    private BigDecimal hourlyCustomerWeekendFare;
+
+    @Column(name = "hourly_vendor_weekend_fare", precision = 10, scale = 2)
+    private BigDecimal hourlyVendorWeekendFare;
+
+    @Column(name = "extra_km_rate", precision = 10, scale = 2)
+    private BigDecimal extraKmRate;
+
+    @Column(name = "vendor_extra_km_rate", precision = 10, scale = 2)
+    private BigDecimal vendorExtraKmRate;
+
+    @Column(name = "extra_hour_rate", precision = 10, scale = 2)
+    private BigDecimal extraHourRate;
+
+    @Column(name = "vendor_extra_hour_rate", precision = 10, scale = 2)
+    private BigDecimal vendorExtraHourRate;
+
+    // Airport Transfer components
+    @Column(name = "airport_customer_fare", precision = 10, scale = 2)
+    private BigDecimal airportCustomerFare;
+
+    @Column(name = "airport_vendor_fare", precision = 10, scale = 2)
+    private BigDecimal airportVendorFare;
+
+    @Column(name = "airport_customer_weekend_fare", precision = 10, scale = 2)
+    private BigDecimal airportCustomerWeekendFare;
+
+    @Column(name = "airport_vendor_weekend_fare", precision = 10, scale = 2)
+    private BigDecimal airportVendorWeekendFare;
+
+    @Column(name = "airport_included_km")
+    private Integer airportIncludedKm; // e.g. 35
+
+    @Column(name = "airport_extra_km_rate", precision = 10, scale = 2)
+    private BigDecimal airportExtraKmRate;
+
+    @Column(name = "airport_vendor_extra_km_rate", precision = 10, scale = 2)
+    private BigDecimal airportVendorExtraKmRate;
+
+    @Column(name = "toll_included")
+    @Builder.Default
+    private Boolean tollIncluded = false;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

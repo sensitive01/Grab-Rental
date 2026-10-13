@@ -387,6 +387,18 @@ export default function BookingDetailPage({ params }) {
                   - {formatINR(booking.advancePaid)}
                 </span>
               </div>
+              {booking.vendorPayout != null && (
+                <>
+                  <div className="flex justify-between py-1 border-b border-slate-100 bg-emerald-50/60 px-2 py-1 rounded-md text-[11px]">
+                    <span className="text-emerald-900 font-bold">Assigned Vendor Payout</span>
+                    <span className="font-bold text-emerald-700">{formatINR(booking.vendorPayout)}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100 bg-blue-50/60 px-2 py-1 rounded-md text-[11px]">
+                    <span className="text-blue-900 font-bold">Platform Gross Margin</span>
+                    <span className="font-bold text-blue-700">{formatINR(Math.max(0, (booking.fare || 0) - (booking.vendorPayout || 0)))}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between py-1.5 text-sm font-bold">
                 <span className="text-slate-900">Balance Due at Trip End</span>
                 <span className="text-amber-700">{formatINR(booking.balanceAmount)}</span>

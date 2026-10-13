@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
-import { detectRouteDistance } from "@/lib/cities";
+import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function BookingWidget() {
@@ -17,10 +17,14 @@ export default function BookingWidget() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapTarget, setMapTarget] = useState("pickup"); // 'pickup' | 'drop'
 
-  // Location inputs
+  // Location inputs & exact GPS coordinates
   const [pickupCity, setPickupCity] = useState("Bangalore, Karnataka");
   const [dropCity, setDropCity] = useState("Coimbatore, Tamil Nadu");
   const [stops, setStops] = useState([]); // Array of optional intermediate stops
+
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [dropCoords, setDropCoords] = useState(null);
+  const [stopsCoords, setStopsCoords] = useState([]);
 
   // Date & Time inputs
   const [pickupDate, setPickupDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -33,10 +37,37 @@ export default function BookingWidget() {
 
   const allowsStops = activeTab === "outstation" || activeTab === "van" || activeTab === "bus";
 
-  // Automatic KM & Route Duration Detection
-  const routeEstimate = useMemo(() => {
+  // Automatic KM & Route Duration Detection (Instant synchronous fallback + Google Routes API async)
+  const initialEstimate = useMemo(() => {
     return detectRouteDistance(pickupCity, dropCity, stops, tripType);
   }, [pickupCity, dropCity, stops, tripType]);
+
+  const [googleRoute, setGoogleRoute] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadGoogleRoute() {
+      if (!pickupCity || !dropCity) return;
+      try {
+        const res = await fetchGoogleRouteDistance(pickupCity, dropCity, stops, tripType, {
+          originCoords: pickupCoords,
+          destinationCoords: dropCoords,
+          stopsCoords
+        });
+        if (!cancelled && res?.isDetected) {
+          setGoogleRoute(res);
+        }
+      } catch (err) {
+        console.warn("Could not fetch Google Route:", err);
+      }
+    }
+    loadGoogleRoute();
+    return () => {
+      cancelled = true;
+    };
+  }, [pickupCity, dropCity, stops, tripType, pickupCoords, dropCoords, stopsCoords]);
+
+  const routeEstimate = googleRoute || initialEstimate;
 
   // Stop management
   const handleAddStop = (index) => {
@@ -45,26 +76,39 @@ export default function BookingWidget() {
       const nextStops = [...stops];
       nextStops.splice(index + 1, 0, "");
       setStops(nextStops);
+
+      const nextCoords = [...stopsCoords];
+      nextCoords.splice(index + 1, 0, null);
+      setStopsCoords(nextCoords);
     } else {
       setStops([...stops, ""]);
+      setStopsCoords([...stopsCoords, null]);
     }
   };
 
   const handleRemoveStop = (index) => {
     setStops(stops.filter((_, i) => i !== index));
+    setStopsCoords(stopsCoords.filter((_, i) => i !== index));
   };
 
-  const handleStopChange = (index, value) => {
+  const handleStopChange = (index, value, coords = null) => {
     const updated = [...stops];
     updated[index] = value;
     setStops(updated);
+
+    const updatedCoords = [...stopsCoords];
+    updatedCoords[index] = coords;
+    setStopsCoords(updatedCoords);
   };
 
   const handleSwap = () => {
     setPickupCity(dropCity);
     setDropCity(pickupCity);
+    setPickupCoords(dropCoords);
+    setDropCoords(pickupCoords);
     if (stops.length > 0) {
       setStops([...stops].reverse());
+      setStopsCoords([...stopsCoords].reverse());
     }
   };
 
@@ -85,6 +129,8 @@ export default function BookingWidget() {
       params.set("stops", validStops.join("|"));
     }
     params.set("tripType", tripType);
+    const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
+    params.set("serviceType", resolvedServiceType);
     params.set("pickupDate", pickupDate);
     if (tripType === "round-trip" && dropDate) {
       params.set("dropDate", dropDate);
@@ -95,12 +141,20 @@ export default function BookingWidget() {
 
   const handleExploreClick = () => {
     const validStops = stops.filter((s) => s.trim());
+    const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
     if (typeof window !== "undefined") {
       sessionStorage.setItem("grab_pending_trip", JSON.stringify({
         from: pickupCity,
         to: dropCity,
         stops: validStops.join("|"),
+        pickupCoords,
+        dropCoords,
+        stopsCoords,
+        distanceKm: routeEstimate.distanceKm,
+        durationText: routeEstimate.durationText,
+        tollPrice: routeEstimate.tollPrice,
         tripType,
+        serviceType: resolvedServiceType,
         date: pickupDate,
         time: pickupTime
       }));
@@ -192,7 +246,10 @@ export default function BookingWidget() {
               </label>
               <CityAutocompleteInput 
                 value={pickupCity}
-                onChange={setPickupCity}
+                onChange={(val, coords) => {
+                  setPickupCity(val);
+                  setPickupCoords(coords || null);
+                }}
                 placeholder="e.g. Bangalore (Bengaluru)" 
                 iconColor="text-brand-emerald"
                 inputClassName="rounded-xl"
@@ -242,7 +299,7 @@ export default function BookingWidget() {
 
                 <CityAutocompleteInput
                   value={stop}
-                  onChange={(val) => handleStopChange(index, val)}
+                  onChange={(val, coords) => handleStopChange(index, val, coords)}
                   placeholder="Type stop city (e.g. Salem)"
                   iconColor="text-brand-amber"
                   inputClassName="bg-amber-50/40 border-amber-200 rounded-xl"
@@ -304,7 +361,10 @@ export default function BookingWidget() {
               </label>
               <CityAutocompleteInput 
                 value={dropCity}
-                onChange={setDropCity}
+                onChange={(val, coords) => {
+                  setDropCity(val);
+                  setDropCoords(coords || null);
+                }}
                 placeholder="e.g. Coimbatore, Tamil Nadu" 
                 iconColor="text-brand-orange"
                 inputClassName="rounded-xl"
@@ -415,7 +475,10 @@ export default function BookingWidget() {
             </label>
             <CityAutocompleteInput 
               value={pickupCity}
-              onChange={setPickupCity}
+              onChange={(val, coords) => {
+                setPickupCity(val);
+                setPickupCoords(coords || null);
+              }}
               placeholder="e.g. Bangalore (Bengaluru)" 
               iconColor="text-brand-emerald"
             />
@@ -474,7 +537,10 @@ export default function BookingWidget() {
             ) : (
               <CityAutocompleteInput
                 value={dropCity}
-                onChange={setDropCity}
+                onChange={(val, coords) => {
+                  setDropCity(val);
+                  setDropCoords(coords || null);
+                }}
                 placeholder={activeTab === "local" ? "e.g. Indiranagar / Koramangala" : "e.g. Coimbatore, Tamil Nadu"}
                 iconColor="text-brand-orange"
               />
@@ -565,9 +631,11 @@ export default function BookingWidget() {
               ({tripType === "one-way" ? t("trip_one_way") : tripType === "round-trip" ? t("trip_round_trip") : t("multi_city_tour")})
             </span>
           </div>
-          <div className="text-xs font-bold text-amber-800 bg-white/90 px-3 py-1 rounded-lg border border-amber-200/60 flex items-center gap-1.5 shadow-2xs">
-            <span>⏱️ {t("estimated_driving_time") || "Estimated Driving Time:"}</span>
-            <span className="text-slate-900 font-extrabold">~{routeEstimate.durationHours} hrs</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-xs font-bold text-amber-800 bg-white/90 px-3 py-1 rounded-lg border border-amber-200/60 flex items-center gap-1.5 shadow-2xs">
+              <span>⏱️ {t("estimated_driving_time") || "Estimated Driving Time:"}</span>
+              <span className="text-slate-900 font-extrabold">{routeEstimate.durationText || `~${routeEstimate.durationHours} hrs`}</span>
+            </div>
           </div>
         </div>
       )}
@@ -604,29 +672,48 @@ export default function BookingWidget() {
         dropValue={dropCity}
         stops={stops}
         allowStops={allowsStops}
+        initialPickupCoords={pickupCoords}
+        initialDropCoords={dropCoords}
+        initialStopsCoords={stopsCoords}
         onSelect={(selectedLocation, coords, target, allValues) => {
           if (allValues) {
-            if (allValues.pickup) setPickupCity(allValues.pickup);
-            if (allValues.drop) setDropCity(allValues.drop);
-            if (Array.isArray(allValues.stops)) setStops(allValues.stops);
+            if (allValues.pickup) {
+              setPickupCity(allValues.pickup);
+              if (allValues.pickupCoords) setPickupCoords(allValues.pickupCoords);
+            }
+            if (allValues.drop) {
+              setDropCity(allValues.drop);
+              if (allValues.dropCoords) setDropCoords(allValues.dropCoords);
+            }
+            if (Array.isArray(allValues.stops)) {
+              setStops(allValues.stops);
+              if (allValues.stopsCoords) {
+                const arr = Array.isArray(allValues.stopsCoords)
+                  ? allValues.stopsCoords
+                  : allValues.stops.map((_, i) => allValues.stopsCoords[i] || null);
+                setStopsCoords(arr);
+              }
+            }
           } else if (target === "drop") {
             setDropCity(selectedLocation);
+            if (coords) setDropCoords(coords);
           } else if (typeof target === "string" && target.startsWith("stop-")) {
             const idx = parseInt(target.replace("stop-", ""), 10);
             if (idx >= 0) {
-              const updated = [...stops];
-              updated[idx] = selectedLocation;
-              setStops(updated);
+              handleStopChange(idx, selectedLocation, coords);
             }
           } else {
             setPickupCity(selectedLocation);
+            if (coords) setPickupCoords(coords);
           }
         }}
-        onSelectPickup={(selectedLocation) => {
+        onSelectPickup={(selectedLocation, coords) => {
           setPickupCity(selectedLocation);
+          if (coords) setPickupCoords(coords);
         }}
-        onSelectDrop={(selectedLocation) => {
+        onSelectDrop={(selectedLocation, coords) => {
           setDropCity(selectedLocation);
+          if (coords) setDropCoords(coords);
         }}
         onSelectStops={(newStops) => {
           setStops(newStops);

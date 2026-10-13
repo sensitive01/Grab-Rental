@@ -10,6 +10,7 @@ import com.grabrentals.vendor.entity.Vehicle;
 import com.grabrentals.vendor.entity.VehicleStatus;
 import com.grabrentals.vendor.repository.VehicleRepository;
 import com.grabrentals.tariff.dto.VehicleModelConfigResponse;
+import com.grabrentals.tariff.entity.VehicleTariff;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,16 +35,21 @@ public class PublicVehicleService {
     }
 
     public VehicleSearchResponseDto searchVehicles(String from, String to, String tripType, String pickupDate, String pickupTime) {
-        return searchVehicles(from, to, null, tripType, pickupDate, pickupTime);
+        return searchVehicles(from, to, null, tripType, pickupDate, pickupTime, "OUTSTATION");
+    }
+
+    public VehicleSearchResponseDto searchVehicles(String from, String to, String stops, String tripType, String pickupDate, String pickupTime) {
+        return searchVehicles(from, to, stops, tripType, pickupDate, pickupTime, "OUTSTATION");
     }
 
     /**
-     * Search available vehicles for an outstation route with real pricing calculations.
+     * Search available vehicles for an outstation or local route with real pricing calculations.
      */
-    public VehicleSearchResponseDto searchVehicles(String from, String to, String stops, String tripType, String pickupDate, String pickupTime) {
+    public VehicleSearchResponseDto searchVehicles(String from, String to, String stops, String tripType, String pickupDate, String pickupTime, String serviceType) {
         String cleanFrom = (from != null && !from.isBlank()) ? from.trim() : "Bangalore";
         String cleanTo = (to != null && !to.isBlank()) ? to.trim() : "Coimbatore";
         String normalizedTripType = (tripType != null && tripType.toLowerCase().contains("round")) ? "Round trip" : "One way";
+        String resolvedServiceType = (serviceType != null && !serviceType.isBlank()) ? serviceType.trim().toUpperCase() : "OUTSTATION";
 
         List<String> parsedStops = new ArrayList<>();
         if (stops != null && !stops.isBlank()) {
@@ -55,10 +61,44 @@ public class PublicVehicleService {
             }
         }
 
+        long t0 = System.currentTimeMillis();
         int distanceKm = calculateDistanceWithStops(cleanFrom, cleanTo, parsedStops, normalizedTripType);
+        if ("LOCAL".equalsIgnoreCase(resolvedServiceType) && distanceKm > 150) {
+            // For local travel in city, cap default estimated distance to 80 km if not otherwise measured
+            distanceKm = 80;
+        }
+        long tDist = System.currentTimeMillis();
+
+        String[] cityAndState = extractCityAndState(cleanFrom);
+        String pickupCity = cityAndState[0];
+        String pickupState = cityAndState[1];
+
+        // Fetch all tariffs for this service type in ONE single query (O(1) DB hit)
+        List<VehicleTariff> tariffs = vehicleTariffService.getTariffsForService(resolvedServiceType);
+
+        boolean serviceable = vehicleTariffService.isCityServiceable(pickupCity, pickupState, resolvedServiceType, tariffs);
+        long tCity = System.currentTimeMillis();
+        log.info("[PERF] distance & city check took {} ms", (tCity - t0));
+
+        if (!serviceable) {
+            return VehicleSearchResponseDto.builder()
+                    .from(cleanFrom)
+                    .to(cleanTo)
+                    .stops(parsedStops.isEmpty() ? null : parsedStops)
+                    .tripType(normalizedTripType)
+                    .distanceKm(distanceKm)
+                    .pickupDate(pickupDate)
+                    .pickupTime(pickupTime)
+                    .vehicles(Collections.emptyList())
+                    .serviceAvailable(false)
+                    .serviceCity(pickupCity)
+                    .serviceMessage("Service will Be Soon in " + pickupCity)
+                    .build();
+        }
 
         // Priority 1: Use active Vehicle Models configured by Admin in the catalog
         List<VehicleModelConfigResponse> activeConfigs = vehicleTariffService.getActiveModelConfigs();
+        long tConfigs = System.currentTimeMillis();
 
         List<PublicVehicleCardDto> cards = new ArrayList<>();
 
@@ -74,10 +114,17 @@ public class PublicVehicleService {
                     }
                 } catch (Exception ignored) {}
 
-                // Dynamically resolve rate using Tariff Engine (checks seasonal, weekday/weekend, day/night)
+                // Dynamically resolve rate using Tariff Engine in-memory against pre-fetched tariffs
                 Map<String, Object> rateContext = vehicleTariffService.calculateRate(
-                        config.getCategory(), model, String.valueOf(seats), pickupDate, pickupTime
+                        config.getCategory(), model, String.valueOf(seats), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, tariffs
                 );
+
+                Boolean hasTariff = (Boolean) rateContext.get("hasTariff");
+                if (hasTariff == null || !hasTariff) {
+                    // Only show car models where pricing/tariff has been added by admin for this service type
+                    continue;
+                }
+
                 BigDecimal rate = (BigDecimal) rateContext.get("ratePerKm");
                 if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
                     rate = getDefaultRateForType(config.getCategory(), seats);
@@ -139,30 +186,19 @@ public class PublicVehicleService {
                 cards.add(card);
             }
         } else {
-            // Fallback if no admin vehicle models are configured yet
+            // Fallback: check individual vehicles in inventory if no catalog models configured
             List<Vehicle> availableVehicles = vehicleRepository.findByStatus(VehicleStatus.AVAILABLE);
+            for (Vehicle v : availableVehicles) {
+                String model = (v.getModel() != null && !v.getModel().isBlank()) ? v.getModel().trim() : "Standard Fleet";
+                int seats = v.getSeatingCapacity() != null ? v.getSeatingCapacity() : 4;
 
-            if (availableVehicles.isEmpty()) {
-                cards.add(buildCategoryCard("hatchback", "Wagon R or Equivalent", "Hatchback • AC • 4 Seats", "HATCHBACK",
-                        4.84, 1420, 4, vehicleTariffService.resolveCommonPhoto("Hatchback", "WagonR", "4"), distanceKm, new BigDecimal("11.70"), new BigDecimal("12.50"),
-                        List.of("CNG", "Diesel"), 4, "Most Economical"));
-                cards.add(buildCategoryCard("sedan", "Maruti Dzire or Equivalent", "Sedan • AC • 4 Seats", "SEDAN",
-                        4.88, 2840, 4, vehicleTariffService.resolveCommonPhoto("Sedan", "Dzire", "4"), distanceKm, new BigDecimal("12.00"), new BigDecimal("13.00"),
-                        List.of("CNG", "Diesel"), 7, "Customer Choice"));
-                cards.add(buildCategoryCard("suv_6", "Maruti Ertiga or Equivalent", "SUV • AC • 6 Seats", "SUV_6",
-                        4.81, 980, 6, vehicleTariffService.resolveCommonPhoto("SUV", "Ertiga", "6"), distanceKm, new BigDecimal("15.60"), new BigDecimal("16.50"),
-                        List.of("CNG", "Diesel"), 3, "Family Favorite"));
-                cards.add(buildCategoryCard("suv_7", "Toyota Innova Crysta or Equivalent", "Executive SUV • AC • 7 Seats", "SUV_7",
-                        4.92, 1650, 7, vehicleTariffService.resolveCommonPhoto("Innovacrysta", "Innova Crysta", "7"), distanceKm, new BigDecimal("19.50"), new BigDecimal("21.00"),
-                        List.of("Diesel"), 5, "Premium Comfort"));
-            } else {
-                for (Vehicle v : availableVehicles) {
-                    String model = (v.getModel() != null && !v.getModel().isBlank()) ? v.getModel().trim() : "Standard Fleet";
-                    int seats = v.getSeatingCapacity() != null ? v.getSeatingCapacity() : 4;
-
-                    Map<String, Object> rateContext = vehicleTariffService.calculateRate(
-                            v.getVehicleType(), model, String.valueOf(seats), pickupDate, pickupTime
-                    );
+                Map<String, Object> rateContext = vehicleTariffService.calculateRate(
+                        v.getVehicleType(), model, String.valueOf(seats), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, tariffs
+                );
+                Boolean hasTariff = (Boolean) rateContext.get("hasTariff");
+                if (hasTariff == null || !hasTariff) {
+                    continue;
+                }
                     BigDecimal rate = (BigDecimal) rateContext.get("ratePerKm");
                     if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
                         rate = (v.getPerKmRate() != null && v.getPerKmRate().compareTo(BigDecimal.ZERO) > 0)
@@ -230,7 +266,14 @@ public class PublicVehicleService {
                     cards.add(card);
                 }
             }
-        }
+
+        long tDone = System.currentTimeMillis();
+        log.info("[PERF] searchVehicles completed in {} ms (cards={})", (tDone - t0), cards.size());
+
+        boolean serviceAvailable = !cards.isEmpty();
+        String serviceMsg = serviceAvailable
+                ? "Service Active in " + pickupCity
+                : "Service will Be Soon in " + pickupCity;
 
         return VehicleSearchResponseDto.builder()
                 .from(cleanFrom)
@@ -241,7 +284,45 @@ public class PublicVehicleService {
                 .pickupDate(pickupDate)
                 .pickupTime(pickupTime)
                 .vehicles(cards)
+                .serviceAvailable(serviceAvailable)
+                .serviceCity(pickupCity)
+                .serviceMessage(serviceMsg)
                 .build();
+    }
+
+    public static String[] extractCityAndState(String locationStr) {
+        if (locationStr == null || locationStr.isBlank()) {
+            return new String[]{"Bangalore", "Karnataka"};
+        }
+        String[] rawParts = locationStr.split(",");
+        List<String> parts = new ArrayList<>();
+        for (String p : rawParts) {
+            String trimmed = p.trim();
+            if (!trimmed.isEmpty()) {
+                parts.add(trimmed);
+            }
+        }
+        if (parts.isEmpty()) {
+            return new String[]{"Bangalore", "Karnataka"};
+        }
+
+        // If last element is "India", remove it
+        if (parts.size() > 1 && "India".equalsIgnoreCase(parts.get(parts.size() - 1))) {
+            parts.remove(parts.size() - 1);
+        }
+
+        if (parts.size() == 1) {
+            return new String[]{parts.get(0), ""};
+        }
+
+        // The last part is now the State (strip pincodes)
+        String rawState = parts.get(parts.size() - 1);
+        String state = rawState.replaceAll("\\b\\d{6}\\b", "").trim();
+
+        // The second to last part is the City (e.g. "Theni")
+        String city = parts.get(parts.size() - 2);
+
+        return new String[]{city, state};
     }
 
     private PublicVehicleCardDto buildCategoryCard(

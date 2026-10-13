@@ -350,6 +350,116 @@ export function detectRouteDistance(from, to, stops = [], tripType = "one-way") 
   };
 }
 
+const routeDistanceCache = new Map();
+
+/**
+ * Live Google Routes API distance, duration & FASTag toll calculation
+ */
+export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = "one-way", options = {}) {
+  if (!from || !to) {
+    return { distanceKm: 0, durationHours: 0, tollPrice: 0, isDetected: false };
+  }
+
+  const cleanFrom = from.trim();
+  const cleanTo = to.trim();
+  const cleanStops = Array.isArray(stops) 
+    ? stops.filter(Boolean) 
+    : (typeof stops === "string" && stops.trim() ? stops.split(/[|,]/).map((s) => s.trim()).filter(Boolean) : []);
+  const cacheKey = `${cleanFrom}|${cleanTo}|${cleanStops.join(",")}|${tripType}|${options.originCoords?.lat ?? ""},${options.originCoords?.lng ?? ""}|${options.destinationCoords?.lat ?? ""},${options.destinationCoords?.lng ?? ""}`.toLowerCase();
+
+  if (routeDistanceCache.has(cacheKey)) {
+    return routeDistanceCache.get(cacheKey);
+  }
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    const fallback = detectRouteDistance(cleanFrom, cleanTo, cleanStops, tripType);
+    routeDistanceCache.set(cacheKey, fallback);
+    return fallback;
+  }
+
+  try {
+    const origin = (options.originCoords?.lat != null && options.originCoords?.lng != null)
+      ? { location: { latLng: { latitude: Number(options.originCoords.lat), longitude: Number(options.originCoords.lng) } } }
+      : { address: cleanFrom.includes(",") ? cleanFrom : `${cleanFrom}, India` };
+
+    const destination = (options.destinationCoords?.lat != null && options.destinationCoords?.lng != null)
+      ? { location: { latLng: { latitude: Number(options.destinationCoords.lat), longitude: Number(options.destinationCoords.lng) } } }
+      : { address: cleanTo.includes(",") ? cleanTo : `${cleanTo}, India` };
+
+    const intermediates = cleanStops.map((s, idx) => {
+      const sc = options.stopsCoords?.[idx] || (Array.isArray(options.stopsCoords) ? options.stopsCoords[idx] : null);
+      if (sc?.lat != null && sc?.lng != null) {
+        return { location: { latLng: { latitude: Number(sc.lat), longitude: Number(sc.lng) } } };
+      }
+      return { address: s.includes(",") ? s : `${s}, India` };
+    });
+
+    const body = {
+      origin,
+      destination,
+      travelMode: "DRIVE",
+      extraComputations: ["TOLLS"]
+    };
+    if (intermediates.length > 0) {
+      body.intermediates = intermediates;
+    }
+
+    const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.travelAdvisory.tollInfo"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.routes?.[0]) {
+        const route = data.routes[0];
+        const meters = route.distanceMeters || 0;
+        const oneWayKm = Math.round(meters / 1000);
+        const isRound = (tripType || "").toLowerCase().includes("round");
+        const totalKm = isRound ? oneWayKm * 2 : oneWayKm;
+
+        let oneWayToll = 0;
+        const tollEst = route.travelAdvisory?.tollInfo?.estimatedPrice?.[0];
+        if (tollEst?.units) {
+          oneWayToll = parseInt(tollEst.units, 10) || 0;
+        }
+        const totalToll = isRound ? oneWayToll * 2 : oneWayToll;
+
+        const seconds = parseInt((route.duration || "0s").replace("s", ""), 10) || 0;
+        const totalSecs = isRound ? seconds * 2 : seconds;
+        const hrs = Math.floor(totalSecs / 3600);
+        const mins = Math.round((totalSecs % 3600) / 60);
+        const durationText = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+        const result = {
+          distanceKm: totalKm,
+          oneWayKm,
+          durationHours: Math.round((totalSecs / 3600) * 10) / 10,
+          durationText,
+          tollPrice: totalToll,
+          isGoogle: true,
+          isDetected: true
+        };
+        routeDistanceCache.set(cacheKey, result);
+        return result;
+      }
+    }
+  } catch (err) {
+    console.warn("[Google Routes API] Fallback to Haversine:", err);
+  }
+
+  // Graceful fallback to offline Haversine calculation
+  const fallback = detectRouteDistance(cleanFrom, cleanTo, cleanStops, tripType);
+  routeDistanceCache.set(cacheKey, fallback);
+  return fallback;
+}
+
 /**
  * Format city display text as "City, State"
  */

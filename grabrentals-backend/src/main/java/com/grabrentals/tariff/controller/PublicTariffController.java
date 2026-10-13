@@ -29,9 +29,10 @@ public class PublicTariffController {
             @RequestParam(required = false) String model,
             @RequestParam(required = false) String seatingCapacity,
             @RequestParam(required = false) String date,
-            @RequestParam(required = false) String time
+            @RequestParam(required = false) String time,
+            @RequestParam(required = false) String serviceType
     ) {
-        Map<String, Object> result = tariffService.calculateRate(category, model, seatingCapacity, date, time);
+        Map<String, Object> result = tariffService.calculateRate(category, model, seatingCapacity, date, time, serviceType);
         return ResponseEntity.ok(ApiResponse.success("Calculated rate retrieved", result));
     }
 

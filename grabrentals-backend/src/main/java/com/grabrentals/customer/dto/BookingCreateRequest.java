@@ -50,6 +50,8 @@ public class BookingCreateRequest {
     @Positive(message = "Total fare must be greater than zero")
     private BigDecimal totalFare;
 
+    private BigDecimal vendorPayout;
+
     private BigDecimal advancePaid;
 
     private String paymentStatus;

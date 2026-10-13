@@ -29,13 +29,14 @@ public class PublicVehicleController {
             @RequestParam(required = false, defaultValue = "ONE_WAY") String tripType,
             @RequestParam(required = false) String pickupDate,
             @RequestParam(required = false) String pickupTime,
+            @RequestParam(required = false, defaultValue = "OUTSTATION") String serviceType,
             HttpServletRequest request
     ) {
-        log.info("[PUBLIC VEHICLE API] GET /api/vehicles/search?from={}&to={}&stops={}&tripType={}", from, to, stops, tripType);
-        VehicleSearchResponseDto response = publicVehicleService.searchVehicles(from, to, stops, tripType, pickupDate, pickupTime);
+        log.info("[PUBLIC VEHICLE API] GET /api/vehicles/search?from={}&to={}&stops={}&tripType={}&serviceType={}", from, to, stops, tripType, serviceType);
+        VehicleSearchResponseDto response = publicVehicleService.searchVehicles(from, to, stops, tripType, pickupDate, pickupTime, serviceType);
         return ResponseEntity.ok(ApiResponse.<VehicleSearchResponseDto>builder()
                 .success(true)
-                .message("Available outstation vehicles and live packages retrieved successfully")
+                .message("Available vehicles and live packages retrieved successfully")
                 .data(response)
                 .path(request.getRequestURI())
                 .build());

@@ -59,6 +59,7 @@ public class BookingResponse {
 
     // Financials
     private BigDecimal totalFare;
+    private BigDecimal vendorPayout;
     private BigDecimal advancePaid;
     private BigDecimal dueAmount;
     private String paymentStatus;
@@ -95,6 +96,7 @@ public class BookingResponse {
                 .passengerName(b.getPassengerName())
                 .passengerPhone(b.getPassengerPhone())
                 .totalFare(b.getTotalFare())
+                .vendorPayout(b.getVendorPayout())
                 .advancePaid(b.getAdvancePaid())
                 .dueAmount(b.getDueAmount())
                 .paymentStatus(b.getPaymentStatus())
@@ -140,5 +142,18 @@ public class BookingResponse {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Masks the customer total fare so the assigned vendor strictly sees only their contracted vendor payout amount.
+     */
+    public static BookingResponse fromEntityForVendor(Booking b) {
+        if (b == null) return null;
+        BookingResponse resp = fromEntity(b);
+        BigDecimal payout = b.getVendorPayout() != null ? b.getVendorPayout() : b.getTotalFare();
+        resp.setTotalFare(payout);
+        resp.setVendorPayout(payout);
+        resp.setDueAmount(payout);
+        return resp;
     }
 }

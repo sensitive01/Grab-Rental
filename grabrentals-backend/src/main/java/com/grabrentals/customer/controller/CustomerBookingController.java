@@ -25,7 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/customer/bookings")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('CUSTOMER')")
+@PreAuthorize("isAuthenticated()")
 public class CustomerBookingController {
 
     private final CustomerBookingService bookingService;

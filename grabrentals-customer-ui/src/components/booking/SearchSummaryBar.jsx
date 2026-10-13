@@ -17,6 +17,8 @@ function SearchSummaryContent({ activeStep = 1 }) {
     date: searchParams?.get("pickupDate") || "28-09-2026",
     time: searchParams?.get("pickupTime") || "07:00 AM",
     distanceKm: 365,
+    duration: null,
+    tollPrice: 0,
   });
 
   useEffect(() => {
@@ -26,6 +28,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
         if (storedBooking) {
           const parsed = JSON.parse(storedBooking);
           if (parsed.trip) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTripInfo({
               from: parsed.trip.from || "Bangalore",
               to: parsed.trip.to || "Coimbatore",
@@ -34,6 +37,8 @@ function SearchSummaryContent({ activeStep = 1 }) {
               date: parsed.trip.date || "28-09-2026",
               time: parsed.trip.time || "07:00 AM",
               distanceKm: parsed.distanceKm || 365,
+              duration: parsed.duration || null,
+              tollPrice: parsed.tollPrice || 0,
             });
             return;
           }
@@ -50,6 +55,8 @@ function SearchSummaryContent({ activeStep = 1 }) {
             date: parsed.date || "28-09-2026",
             time: parsed.time || "07:00 AM",
             distanceKm: parsed.distanceKm || 365,
+            duration: parsed.duration || null,
+            tollPrice: parsed.tollPrice || 0,
           });
         }
       } catch (err) {
@@ -75,8 +82,9 @@ function SearchSummaryContent({ activeStep = 1 }) {
             )}
             <span className="text-slate-400 font-bold">→</span>
             <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(tripInfo.to)}</span>
-            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md ml-1 capitalize">
-              {tripInfo.tripType} • {tripInfo.distanceKm} km
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md ml-1 capitalize flex items-center gap-1.5 flex-wrap">
+              <span>{tripInfo.tripType} • {tripInfo.distanceKm} km</span>
+              {tripInfo.duration && <span className="text-slate-500 font-semibold">• ~{tripInfo.duration}</span>}
             </span>
           </div>
           

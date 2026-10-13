@@ -15,7 +15,8 @@ import {
   Car,
   KeyRound,
   RotateCcw,
-  Edit3
+  Edit3,
+  Truck
 } from "lucide-react";
 import { setAuthSession, isAuthenticated } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
@@ -38,7 +39,7 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [resendCountdown, setResendCountdown] = useState(30);
-  const [canResend, setCanResend] = useState(false);
+  const canResend = resendCountdown === 0;
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -58,8 +59,6 @@ export default function LoginPage() {
       timer = setInterval(() => {
         setResendCountdown((prev) => prev - 1);
       }, 1000);
-    } else if (resendCountdown === 0) {
-      setCanResend(true);
     }
     return () => clearInterval(timer);
   }, [step, resendCountdown]);
@@ -99,7 +98,6 @@ export default function LoginPage() {
 
       setStep("otp");
       setResendCountdown(30);
-      setCanResend(false);
       setSuccessMessage(`OTP sent successfully to +91 ${cleaned.slice(-10)}`);
     } catch (err) {
       setErrorMessage(err.message || "Unable to send verification code. Please try again.");
@@ -211,14 +209,15 @@ export default function LoginPage() {
           {/* Background Image with Gradient Overlay */}
           <div className="absolute inset-0 z-0 pointer-events-none">
             <Image 
-              src="/images/login-hero.jpg" 
-              alt="Luxury Chauffeur Vehicle" 
+              src="/images/customer-login-bg.jpg" 
+              alt="Luxury Chauffeur Vehicle & Airport Mobility" 
               fill 
               priority
-              className="object-cover object-center opacity-35 scale-105 transition-transform duration-1000 ease-out"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover object-center opacity-65 scale-105 transition-transform duration-1000 ease-out"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060A12] via-[#060A12]/80 to-[#060A12]/50"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#060A12]/95 via-[#060A12]/70 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#060A12] via-[#060A12]/60 to-[#060A12]/30"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#060A12]/85 via-[#060A12]/50 to-transparent"></div>
             
             {/* Ambient Warm Amber Glow */}
             <div className="absolute top-1/4 -left-20 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
@@ -305,11 +304,11 @@ export default function LoginPage() {
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                {step === "phone" ? t("enter_mobile") : t("enter_otp")}
+                {step === "phone" ? (t("customer_login") || "Customer Login") : t("enter_otp")}
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
                 {step === "phone" 
-                  ? t("login_subtitle")
+                  ? (t("login_subtitle") || "Enter 10-digit mobile number")
                   : (
                     <span className="flex items-center gap-2 flex-wrap">
                       <span>Code sent to <strong className="text-slate-200">+91 {phone.replace(/[^0-9]/g, "").slice(-10)}</strong></span>
@@ -347,7 +346,7 @@ export default function LoginPage() {
 
             {/* STEP 1: Phone Number Form */}
             {step === "phone" ? (
-              <form onSubmit={handleSendOtp} className="space-y-5">
+              <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                     {t("mobile_number")}
@@ -376,7 +375,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Submit CTA */}
-                <div className="pt-2">
+                <div className="pt-1">
                   <button
                     type="submit"
                     disabled={isLoading}
@@ -392,6 +391,45 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
+
+                {/* Already have an Account? Login Here */}
+                <div className="pt-2 text-center text-xs text-slate-400">
+                  <span>{t("already_have_account") || "Already have an Account?"} </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("phone");
+                      setOtp("");
+                      setErrorMessage("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-amber-400 hover:text-amber-300 font-bold hover:underline transition-colors cursor-pointer ml-1"
+                  >
+                    {t("login_here") || "Login Here"}
+                  </button>
+                </div>
+
+                {/* Divider */}
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-800/80"></div>
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest text-slate-500">
+                    <span className="bg-[#0B0F17] px-3">
+                      {t("or_divider") || "Or"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Login as Fleet Owner Button */}
+                <a
+                  href={process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL || "https://vendor.grabrentals.in/login"}
+                  className="w-full py-3 px-5 rounded-xl border border-slate-800 hover:border-amber-500/60 bg-slate-900/90 hover:bg-slate-850 text-slate-200 hover:text-amber-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-sm group cursor-pointer"
+                >
+                  <Truck className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span>{t("login_as_fleet_owner") || "Login as Fleet Owner"}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
+                </a>
               </form>
             ) : (
               /* STEP 2: OTP Verification Form */

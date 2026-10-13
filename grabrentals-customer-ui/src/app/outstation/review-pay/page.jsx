@@ -17,7 +17,8 @@ import {
   Phone, 
   FileText,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Tag
 } from "lucide-react";
 import Image from "next/image";
 import SearchSummaryBar from "@/components/booking/SearchSummaryBar";
@@ -78,6 +79,7 @@ export default function ReviewPayPage() {
         const stored = sessionStorage.getItem("grab_selected_booking");
         if (stored) {
           const parsed = JSON.parse(stored);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setBookingConfig(parsed);
 
           // Prefill pickup & drop addresses if empty
@@ -104,8 +106,10 @@ export default function ReviewPayPage() {
   const baseFare = bookingConfig?.car?.fare || 0;
   const taxes = bookingConfig?.car?.taxes || 0;
   const luggageCarrierFee = bookingConfig?.car?.withLuggageCarrier ? 149 : 0;
-  const totalAmount = bookingConfig?.car?.totalFare || (baseFare + taxes + luggageCarrierFee);
-  const advanceAmount = bookingConfig?.car?.advancePaid || Math.round(totalAmount * 0.20);
+  const tollPrice = bookingConfig?.tollPrice || 0;
+  const duration = bookingConfig?.duration || null;
+  const totalAmount = baseFare + taxes + luggageCarrierFee + tollPrice;
+  const advanceAmount = Math.round(totalAmount * 0.20);
   const driverLaterAmount = totalAmount - advanceAmount;
   const distanceKm = bookingConfig?.distanceKm || 0;
   const perKmRate = bookingConfig?.car?.perKmRate || 0;
@@ -136,6 +140,7 @@ export default function ReviewPayPage() {
       const advancePaid = paymentPlan === "advance" ? advanceAmount : totalAmount;
 
       // Construct ISO timestamp from trip date and time
+      // eslint-disable-next-line react-hooks/purity
       let pickupIso = new Date(Date.now() + 86400000).toISOString();
       if (bookingConfig?.trip?.date) {
         try {
@@ -183,7 +188,7 @@ export default function ReviewPayPage() {
         totalFare: totalAmount,
         advancePaid,
         paymentStatus: paymentPlan === "advance" ? "ADVANCE_PAID" : "FULL_PAID",
-        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km | Rate: ₹${perKmRate}/km${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
+        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
       };
 
       const res = await customerApi.createBooking(bookingPayload);
@@ -442,6 +447,12 @@ export default function ReviewPayPage() {
                 <p className="text-xs text-slate-400 font-medium mt-0.5">
                   {bookingConfig.trip?.from} {bookingConfig.trip?.stops ? `→ Via ${String(bookingConfig.trip.stops).replace(/\|/g, ", ")} ` : ""}→ {bookingConfig.trip?.to} • {bookingConfig.trip?.tripType}
                 </p>
+                {(distanceKm > 0 || duration) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800 text-[11px] font-bold">
+                    {distanceKm > 0 && <span className="text-amber-400">📏 {distanceKm} km</span>}
+                    {duration && <span className="text-slate-300">⏱️ ~{duration}</span>}
+                  </div>
+                )}
               </div>
 
               {/* Selected Vehicle Overview */}
@@ -483,9 +494,17 @@ export default function ReviewPayPage() {
                       <span className="font-bold">+ ₹{luggageCarrierFee}</span>
                     </div>
                   )}
+                  {tollPrice > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span>FASTag Highway Toll</span>
+                      <span className="text-slate-900 font-bold">+ ₹{tollPrice.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
-                    <span>GST, Tolls & State Passenger Tax</span>
-                    <span className="text-slate-900 font-bold">₹{taxes.toLocaleString()}</span>
+                    <span>GST & State Passenger Tax</span>
+                    <span className={taxes > 0 ? "text-slate-900 font-bold" : "text-emerald-700 font-extrabold"}>
+                      {taxes > 0 ? `+ ₹${taxes.toLocaleString()}` : "Included (₹0)"}
+                    </span>
                   </div>
                 </div>
               </div>

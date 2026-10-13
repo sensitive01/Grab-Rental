@@ -30,9 +30,15 @@ public class CustomUserDetails implements UserDetails {
     private final Collection<? extends GrantedAuthority> authorities;
 
     public static CustomUserDetails build(User user) {
-        List<GrantedAuthority> authorities = (user.getRole() == Role.FLEET || user.getRole() == Role.VENDOR)
-                ? List.of(new SimpleGrantedAuthority("ROLE_FLEET"), new SimpleGrantedAuthority("ROLE_VENDOR"))
-                : List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        java.util.Set<GrantedAuthority> authSet = new java.util.HashSet<>();
+        authSet.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        if (user.getRole() == Role.FLEET || user.getRole() == Role.VENDOR) {
+            authSet.add(new SimpleGrantedAuthority("ROLE_FLEET"));
+            authSet.add(new SimpleGrantedAuthority("ROLE_VENDOR"));
+        }
+        // Every registered account (including Fleet/Vendor/Admin) can book rides as a customer
+        authSet.add(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
+        List<GrantedAuthority> authorities = new java.util.ArrayList<>(authSet);
         return new CustomUserDetails(
                 user.getId(),
                 user.getName(),

@@ -20,4 +20,7 @@ public class VehicleSearchResponseDto {
     private String pickupDate;
     private String pickupTime;
     private List<PublicVehicleCardDto> vehicles;
+    private Boolean serviceAvailable;
+    private String serviceCity;
+    private String serviceMessage;
 }

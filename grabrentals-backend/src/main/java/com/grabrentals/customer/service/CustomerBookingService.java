@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.List;
@@ -62,6 +63,11 @@ public class CustomerBookingService {
             paymentStatus = advance.compareTo(BigDecimal.ZERO) > 0 ? "ADVANCE_PAID" : "PENDING";
         }
 
+        BigDecimal vendorPayout = request.getVendorPayout();
+        if (vendorPayout == null && request.getTotalFare() != null) {
+            vendorPayout = request.getTotalFare().multiply(new BigDecimal("0.70")).setScale(2, RoundingMode.HALF_UP);
+        }
+
         Booking booking = Booking.builder()
                 .bookingReference(ref)
                 .customer(customer)
@@ -78,6 +84,7 @@ public class CustomerBookingService {
                 .passengerName(request.getPassengerName() != null && !request.getPassengerName().isBlank() ? request.getPassengerName() : customer.getName())
                 .passengerPhone(request.getPassengerPhone() != null && !request.getPassengerPhone().isBlank() ? request.getPassengerPhone() : customer.getPhone())
                 .totalFare(request.getTotalFare())
+                .vendorPayout(vendorPayout)
                 .advancePaid(advance)
                 .dueAmount(due)
                 .paymentStatus(paymentStatus)
@@ -158,6 +165,11 @@ public class CustomerBookingService {
         booking.setAssignedVehicle(vehicle);
         booking.setAssignedDriver(driver);
         booking.setVendor(vendor);
+        if (request.getVendorPayout() != null) {
+            booking.setVendorPayout(request.getVendorPayout());
+        } else if (booking.getVendorPayout() == null && booking.getTotalFare() != null) {
+            booking.setVendorPayout(booking.getTotalFare().multiply(new BigDecimal("0.70")).setScale(2, RoundingMode.HALF_UP));
+        }
         booking.setStatus(BookingStatus.ASSIGNED_TO_VENDOR);
         booking.setVendorDeclineReason(null); // Clear previous decline reasons
 
@@ -271,7 +283,7 @@ public class CustomerBookingService {
             log.warn("Failed to create notification: {}", ex.getMessage());
         }
 
-        return BookingResponse.fromEntity(confirmed);
+        return BookingResponse.fromEntityForVendor(confirmed);
     }
 
     @Transactional
@@ -290,7 +302,7 @@ public class CustomerBookingService {
         driver.setStatus(DriverStatus.BOOKED);
         driverRepository.save(driver);
         Booking saved = bookingRepository.save(booking);
-        return BookingResponse.fromEntity(saved);
+        return BookingResponse.fromEntityForVendor(saved);
     }
 
     /**
@@ -342,7 +354,7 @@ public class CustomerBookingService {
             log.warn("Failed to create notification: {}", ex.getMessage());
         }
 
-        return BookingResponse.fromEntity(saved);
+        return BookingResponse.fromEntityForVendor(saved);
     }
 
     // Customer Queries
@@ -477,7 +489,7 @@ public class CustomerBookingService {
                 : bookingRepository.findByVendorIdOrderByCreatedAtDesc(vendor.getId());
 
         return list.stream()
-                .map(BookingResponse::fromEntity)
+                .map(BookingResponse::fromEntityForVendor)
                 .collect(Collectors.toList());
     }
 
@@ -495,7 +507,7 @@ public class CustomerBookingService {
         }
 
         validateVendorOwnership(booking, vendor);
-        return BookingResponse.fromEntity(booking);
+        return BookingResponse.fromEntityForVendor(booking);
     }
 
     @Transactional

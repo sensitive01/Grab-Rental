@@ -379,11 +379,11 @@ export default function FleetDetailPage({ params }) {
 
                 <div className="text-center">
                   <a 
-                    href="tel:+919045450000" 
+                    href="tel:+919071100200" 
                     className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-amber transition-colors"
                   >
                     <PhoneCall className="w-3.5 h-3.5 text-brand-amber" />
-                    Need custom booking? Call 24/7 Helpline: +91 90454 50000
+                    Need custom booking? Call 24/7 Helpline: +91 90711 00200
                   </a>
                 </div>
 

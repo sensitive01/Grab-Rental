@@ -29,10 +29,11 @@ import {
   MoreVertical,
   CheckCircle2,
   SlidersHorizontal,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 
-import { detectRouteDistance } from "@/lib/cities";
+import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 
 function estimateRouteDistance(from, to, stops, tripType) {
   const result = detectRouteDistance(from, to, stops, tripType);
@@ -76,21 +77,37 @@ function SelectVehicleContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
 
-  // Dynamic Query parameters from BookingWidget
-  const queryFrom = searchParams.get("from") || "Bangalore, Karnataka";
-  const queryTo = searchParams.get("to") || "Coimbatore, Tamil Nadu";
-  const queryStops = searchParams.get("stops") || "";
-  const queryTripType = searchParams.get("tripType") || "one-way";
-  const queryDate = searchParams.get("pickupDate") || "2026-09-28";
-  const queryTime = searchParams.get("pickupTime") || "07:00";
+  // Dynamic Query parameters from BookingWidget or pending session
+  const [trip, setTrip] = useState(() => {
+    let pendingTrip = null;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = sessionStorage.getItem("grab_pending_trip");
+        if (stored) pendingTrip = JSON.parse(stored);
+      } catch (e) {
+        console.warn("Could not read pending trip", e);
+      }
+    }
+    const fromVal = searchParams.get("from") || pendingTrip?.from || "Bangalore, Karnataka";
+    const toVal = searchParams.get("to") || pendingTrip?.to || "Coimbatore, Tamil Nadu";
+    const stopsVal = searchParams.get("stops") || pendingTrip?.stops || "";
+    const rawTripType = searchParams.get("tripType") || pendingTrip?.tripType || "one-way";
+    const dateVal = searchParams.get("pickupDate") || pendingTrip?.date || "2026-09-28";
+    const timeVal = searchParams.get("pickupTime") || pendingTrip?.time || "07:00";
+    const serviceTypeVal = (searchParams.get("serviceType") || pendingTrip?.serviceType || "OUTSTATION").toUpperCase();
 
-  const [trip, setTrip] = useState({
-    from: queryFrom,
-    to: queryTo,
-    stops: queryStops,
-    tripType: queryTripType.toLowerCase().includes("round") ? "Round trip" : "One way",
-    date: queryDate,
-    time: queryTime
+    return {
+      from: fromVal,
+      to: toVal,
+      stops: stopsVal,
+      tripType: rawTripType.toLowerCase().includes("round") ? "Round trip" : "One way",
+      date: dateVal,
+      time: timeVal,
+      serviceType: serviceTypeVal,
+      pickupCoords: pendingTrip?.pickupCoords || null,
+      dropCoords: pendingTrip?.dropCoords || null,
+      stopsCoords: pendingTrip?.stopsCoords || null,
+    };
   });
 
   const [isModifyOpen, setIsModifyOpen] = useState(false);
@@ -104,8 +121,14 @@ function SelectVehicleContent() {
   const [backendVehicles, setBackendVehicles] = useState([]);
   const [backendDistance, setBackendDistance] = useState(null);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
+  const [serviceStatus, setServiceStatus] = useState({
+    available: true,
+    city: "",
+    message: "",
+  });
 
   // Filter States
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedFuels, setSelectedFuels] = useState([]);
@@ -114,36 +137,89 @@ function SelectVehicleContent() {
   const [maxPrice, setMaxPrice] = useState("");
   const [seatingCapacity, setSeatingCapacity] = useState("all");
 
-  // Sync state if query parameters change
+  // Prevent background scroll when mobile filter drawer is open
   useEffect(() => {
-    if (searchParams.get("from")) {
-      setTrip({
-        from: searchParams.get("from"),
-        to: searchParams.get("to") || "Coimbatore, Tamil Nadu",
-        stops: searchParams.get("stops") || "",
-        tripType: (searchParams.get("tripType") || "one-way").toLowerCase().includes("round") ? "Round trip" : "One way",
-        date: searchParams.get("pickupDate") || "2026-09-28",
-        time: searchParams.get("pickupTime") || "07:00"
-      });
-    } else if (typeof window !== "undefined") {
-      try {
-        const pending = sessionStorage.getItem("grab_pending_trip");
-        if (pending) {
-          const parsed = JSON.parse(pending);
-          setTrip(parsed);
-        }
-      } catch (err) {
-        console.warn("Could not read pending trip", err);
-      }
+    if (isMobileFilterOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileFilterOpen]);
+
+  // Sync state ONLY if query parameters actually change (avoids duplicate initial mount requests)
+  useEffect(() => {
+    const urlFrom = searchParams.get("from");
+    if (!urlFrom) return;
+
+    const urlTo = searchParams.get("to") || "Coimbatore, Tamil Nadu";
+    const urlStops = searchParams.get("stops") || "";
+    const urlTripType = (searchParams.get("tripType") || "one-way").toLowerCase().includes("round") ? "Round trip" : "One way";
+    const urlDate = searchParams.get("pickupDate") || "2026-09-28";
+    const urlTime = searchParams.get("pickupTime") || "07:00";
+    const urlServiceType = (searchParams.get("serviceType") || "OUTSTATION").toUpperCase();
+
+    setTrip((prev) => {
+      if (
+        prev.from === urlFrom &&
+        prev.to === urlTo &&
+        prev.stops === urlStops &&
+        prev.tripType === urlTripType &&
+        prev.date === urlDate &&
+        prev.time === urlTime &&
+        prev.serviceType === urlServiceType
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        from: urlFrom,
+        to: urlTo,
+        stops: urlStops,
+        tripType: urlTripType,
+        date: urlDate,
+        time: urlTime,
+        serviceType: urlServiceType
+      };
+    });
   }, [searchParams]);
 
   // Compute Active Distance
+  const [googleRouteDetails, setGoogleRouteDetails] = useState(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+    async function loadGoogleRoute() {
+      if (!trip.from || !trip.to) return;
+      try {
+        const details = await fetchGoogleRouteDistance(trip.from, trip.to, trip.stops, trip.tripType, {
+          originCoords: trip.pickupCoords,
+          destinationCoords: trip.dropCoords,
+          stopsCoords: trip.stopsCoords
+        });
+        if (!isCancelled && details?.isDetected) {
+          setGoogleRouteDetails(details);
+          if (details.distanceKm) {
+            setBackendDistance(details.distanceKm);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch Google Route details:", err);
+      }
+    }
+    loadGoogleRoute();
+    return () => {
+      isCancelled = true;
+    };
+  }, [trip.from, trip.to, trip.stops, trip.tripType, trip.pickupCoords, trip.dropCoords, trip.stopsCoords]);
+
   const fallbackDistance = useMemo(() => {
     return estimateRouteDistance(trip.from, trip.to, trip.stops, trip.tripType);
   }, [trip.from, trip.to, trip.stops, trip.tripType]);
 
-  const activeDistance = backendDistance || fallbackDistance;
+  const activeDistance = backendDistance || googleRouteDetails?.distanceKm || fallbackDistance;
 
   // Fetch live vehicles from backend API
   useEffect(() => {
@@ -158,12 +234,27 @@ function SelectVehicleContent() {
           stops: trip.stops,
           tripType: trip.tripType.toLowerCase().includes("round") ? "ROUND_TRIP" : "ONE_WAY",
           pickupDate: trip.date,
-          pickupTime: trip.time
+          pickupTime: trip.time,
+          serviceType: trip.serviceType || "OUTSTATION"
         });
 
         if (!isCancelled && res?.data) {
-          if (Array.isArray(res.data.vehicles)) {
-            setBackendVehicles(res.data.vehicles);
+          if (res.data.serviceAvailable === false) {
+            setServiceStatus({
+              available: false,
+              city: res.data.serviceCity || cleanCityName(trip.from),
+              message: res.data.serviceMessage || `Service will Be Soon in ${res.data.serviceCity || cleanCityName(trip.from)}`,
+            });
+            setBackendVehicles([]);
+          } else {
+            setServiceStatus({
+              available: true,
+              city: res.data.serviceCity || "",
+              message: "",
+            });
+            if (Array.isArray(res.data.vehicles)) {
+              setBackendVehicles(res.data.vehicles);
+            }
           }
           if (res.data.distanceKm) {
             setBackendDistance(res.data.distanceKm);
@@ -186,7 +277,7 @@ function SelectVehicleContent() {
     return () => {
       isCancelled = true;
     };
-  }, [trip.from, trip.to, trip.stops, trip.tripType, trip.date, trip.time]);
+  }, [trip.from, trip.to, trip.stops, trip.tripType, trip.date, trip.time, trip.serviceType]);
 
   // Format and calculate live pricing for real backend vehicles
   const fleetWithPricing = useMemo(() => {
@@ -347,6 +438,7 @@ function SelectVehicleContent() {
 
   // Reset pagination when filter changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [searchQuery, selectedTypes, selectedFuels, selectedTransmissions, minPrice, maxPrice, seatingCapacity, sortBy]);
 
@@ -356,6 +448,35 @@ function SelectVehicleContent() {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredVehicles.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredVehicles, currentPage]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery.trim()) count++;
+    count += selectedTypes.length;
+    count += selectedFuels.length;
+    count += selectedTransmissions.length;
+    if (minPrice || maxPrice) count++;
+    if (seatingCapacity !== "all") count++;
+    return count;
+  }, [searchQuery, selectedTypes, selectedFuels, selectedTransmissions, minPrice, maxPrice, seatingCapacity]);
+
+  const toggleType = (label) => {
+    setSelectedTypes((prev) =>
+      prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label]
+    );
+  };
+
+  const toggleFuel = (label) => {
+    setSelectedFuels((prev) =>
+      prev.includes(label) ? prev.filter((f) => f !== label) : [...prev, label]
+    );
+  };
+
+  const toggleTransmission = (label) => {
+    setSelectedTransmissions((prev) =>
+      prev.includes(label) ? prev.filter((tr) => tr !== label) : [...prev, label]
+    );
+  };
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -374,6 +495,8 @@ function SelectVehicleContent() {
       const selectedData = {
         trip,
         distanceKm: activeDistance,
+        tollPrice: googleRouteDetails?.tollPrice || 0,
+        duration: googleRouteDetails?.durationText || null,
         car: {
           id: vehicle.id,
           title: vehicle.title,
@@ -404,6 +527,188 @@ function SelectVehicleContent() {
     }
   };
 
+  // Reusable Filter Form for both Desktop Sidebar and Mobile Drawer
+  const renderFilterForm = () => (
+    <div className="space-y-6">
+      {/* 1. Search Box */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold text-slate-700 block">{t("search_filters")}</label>
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("search_placeholder")}
+            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
+          />
+        </div>
+      </div>
+
+      {/* 2. Vehicle Type Checkboxes */}
+      <div className="space-y-2">
+        <label className="text-xs font-bold text-slate-700 block">{t("vehicle_type")}</label>
+        <div className="space-y-2">
+          {[
+            { label: "SUV", count: counts.types.SUV },
+            { label: "Sedan", count: counts.types.Sedan },
+            { label: "Hatchback", count: counts.types.Hatchback },
+            { label: "Luxury", count: counts.types.Luxury },
+            { label: "Van / Minibus", count: counts.types["Van / Minibus"] }
+          ].map((item) => {
+            const isChecked = selectedTypes.includes(item.label);
+            return (
+              <div
+                key={item.label}
+                onClick={() => toggleType(item.label)}
+                className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group py-0.5"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                  </div>
+                  <span className="flex items-center gap-1.5 group-hover:text-slate-900">
+                    <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
+                    {item.label}
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                  {item.count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Availability Status (Customer Trust Badge) */}
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <label className="text-xs font-bold text-slate-700 block">{t("availability_status")}</label>
+        <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>{t("available_ready_fleet")}</span>
+          </div>
+          <span className="text-xs font-black text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+            {filteredVehicles.length}
+          </span>
+        </div>
+        <p className="text-[10px] text-slate-400 font-medium px-1">
+          {t("available_fleet_note")}
+        </p>
+      </div>
+
+      {/* 4. Fuel Type Checkboxes */}
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <label className="text-xs font-bold text-slate-700 block">{t("fuel_type")}</label>
+        <div className="space-y-2">
+          {[
+            { label: "Petrol", count: counts.fuels.Petrol },
+            { label: "Diesel", count: counts.fuels.Diesel },
+            { label: "CNG", count: counts.fuels.CNG },
+            { label: "Electric", count: counts.fuels.Electric },
+            { label: "Hybrid", count: counts.fuels.Hybrid }
+          ].map((item) => {
+            const isChecked = selectedFuels.includes(item.label);
+            return (
+              <div
+                key={item.label}
+                onClick={() => toggleFuel(item.label)}
+                className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group py-0.5"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                  </div>
+                  <span className="flex items-center gap-1.5 group-hover:text-slate-900">
+                    <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
+                    {item.label}
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                  {item.count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 5. Transmission Checkboxes */}
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <label className="text-xs font-bold text-slate-700 block">{t("transmission")}</label>
+        <div className="space-y-2">
+          {[
+            { label: "Automatic", count: counts.transmissions.Automatic },
+            { label: "Manual", count: counts.transmissions.Manual }
+          ].map((item) => {
+            const isChecked = selectedTransmissions.includes(item.label);
+            return (
+              <div
+                key={item.label}
+                onClick={() => toggleTransmission(item.label)}
+                className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group py-0.5"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                  </div>
+                  <span className="flex items-center gap-1.5 group-hover:text-slate-900">
+                    <Settings2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
+                    {item.label}
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                  {item.count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 6. Price Range Inputs */}
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <label className="text-xs font-bold text-slate-700 block">Trip Fare Range (₹)</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            placeholder="Min"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+          <span className="text-slate-400 font-bold">-</span>
+          <input
+            type="number"
+            placeholder="Max"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+        </div>
+      </div>
+
+      {/* 7. Seating Capacity Select */}
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <label className="text-xs font-bold text-slate-700 block">Seating Capacity</label>
+        <div className="relative">
+          <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <select
+            value={seatingCapacity}
+            onChange={(e) => setSeatingCapacity(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 appearance-none cursor-pointer"
+          >
+            <option value="all">Any Capacity</option>
+            <option value="4-5">4 - 5 Seats</option>
+            <option value="6-7">6 - 7 Seats</option>
+            <option value="8+">8+ Seats / Minibus</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-slate-50 py-5 px-3 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-4">
@@ -416,22 +721,33 @@ function SelectVehicleContent() {
           tripType={trip.tripType}
           date={formatDateDisplay(trip.date)}
           time={formatTimeDisplay(trip.time)}
+          distanceKm={activeDistance}
+          tollPrice={googleRouteDetails?.tollPrice}
+          duration={googleRouteDetails?.durationText}
           onModifyClick={() => setIsModifyOpen(true)}
         />
 
         {/* 2-Column Responsive Layout: Left Search/Filters + Right Vehicle Catalog */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-2">
           
-          {/* ===================== LEFT SIDEBAR: SEARCH & FILTERS ===================== */}
-          <aside className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-6">
+          {/* ===================== LEFT SIDEBAR: SEARCH & FILTERS (DESKTOP ONLY) ===================== */}
+          <aside className="hidden lg:block lg:col-span-3 bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-6">
             
-            {/* Header: Title + Undo/Reset Icon */}
+            {/* Header: Title + Active Count Badge + Undo/Reset Icon */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-amber-600" />
-                {t("search_filters")}
-              </h3>
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  {t("search_filters")}
+                </h3>
+                {activeFiltersCount > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black flex items-center justify-center">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </div>
               <button
+                type="button"
                 onClick={handleResetFilters}
                 title={t("reset_filters")}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition cursor-pointer"
@@ -440,183 +756,13 @@ function SelectVehicleContent() {
               </button>
             </div>
 
-            {/* 1. Search Box */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block">{t("search_filters")}</label>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t("search_placeholder")}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
-                />
-              </div>
-            </div>
-
-            {/* 2. Vehicle Type Checkboxes */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 block">{t("vehicle_type")}</label>
-              <div className="space-y-2">
-                {[
-                  { label: "SUV", count: counts.types.SUV },
-                  { label: "Sedan", count: counts.types.Sedan },
-                  { label: "Hatchback", count: counts.types.Hatchback },
-                  { label: "Luxury", count: counts.types.Luxury },
-                  { label: "Van / Minibus", count: counts.types["Van / Minibus"] }
-                ].map((item) => {
-                  const isChecked = selectedTypes.includes(item.label);
-                  return (
-                    <label
-                      key={item.label}
-                      className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                        <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                          <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
-                          {item.label}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                        {item.count}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. Availability Status (Customer Trust Badge) */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">{t("availability_status")}</label>
-              <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>{t("available_ready_fleet")}</span>
-                </div>
-                <span className="text-xs font-black text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
-                  {filteredVehicles.length}
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 font-medium px-1">
-                {t("available_fleet_note")}
-              </p>
-            </div>
-
-            {/* 4. Fuel Type Checkboxes */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">{t("fuel_type")}</label>
-              <div className="space-y-2">
-                {[
-                  { label: "Petrol", count: counts.fuels.Petrol },
-                  { label: "Diesel", count: counts.fuels.Diesel },
-                  { label: "CNG", count: counts.fuels.CNG },
-                  { label: "Electric", count: counts.fuels.Electric },
-                  { label: "Hybrid", count: counts.fuels.Hybrid }
-                ].map((item) => {
-                  const isChecked = selectedFuels.includes(item.label);
-                  return (
-                    <label
-                      key={item.label}
-                      className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                        <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                          <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
-                          {item.label}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                        {item.count}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 5. Transmission Checkboxes */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">{t("transmission")}</label>
-              <div className="space-y-2">
-                {[
-                  { label: "Automatic", count: counts.transmissions.Automatic },
-                  { label: "Manual", count: counts.transmissions.Manual }
-                ].map((item) => {
-                  const isChecked = selectedTransmissions.includes(item.label);
-                  return (
-                    <label
-                      key={item.label}
-                      className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                        <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                          <Settings2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
-                          {item.label}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                        {item.count}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 6. Price Range Inputs */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">Trip Fare Range (₹)</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                />
-                <span className="text-slate-400 font-bold">-</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                />
-              </div>
-            </div>
-
-            {/* 7. Seating Capacity Select */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 block">Seating Capacity</label>
-              <div className="relative">
-                <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <select
-                  value={seatingCapacity}
-                  onChange={(e) => setSeatingCapacity(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 appearance-none cursor-pointer"
-                >
-                  <option value="all">Any Capacity</option>
-                  <option value="4-5">4 - 5 Seats</option>
-                  <option value="6-7">6 - 7 Seats</option>
-                  <option value="8+">8+ Seats / Minibus</option>
-                </select>
-              </div>
-            </div>
+            {/* Filter controls */}
+            {renderFilterForm()}
 
             {/* Clear Filters CTA */}
             <div className="pt-2">
               <button
+                type="button"
                 onClick={handleResetFilters}
                 className="w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-200 text-amber-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
@@ -631,17 +777,95 @@ function SelectVehicleContent() {
           <section className="lg:col-span-9 space-y-4">
             
             {/* Catalog Toolbar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 px-5 rounded-2xl border border-slate-200 shadow-2xs">
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                  {isLoadingVehicles ? "Searching..." : `${filteredVehicles.length} Vehicles`}
-                </h2>
-                <span className="text-xs font-semibold text-slate-400">
-                  • Available for {cleanCityName(trip.from)}
-                </span>
+            <div className="bg-white p-3.5 px-4 sm:px-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3 sm:space-y-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 truncate">
+                    {isLoadingVehicles
+                      ? "Searching..."
+                      : !serviceStatus.available
+                      ? "Service Launching Soon"
+                      : `${filteredVehicles.length} Vehicles`}
+                  </h2>
+                  <span className="text-xs font-semibold text-slate-400 block truncate">
+                    {!serviceStatus.available
+                      ? `• ${serviceStatus.city || cleanCityName(trip.from)} Hub Launching Soon`
+                      : `• Available for ${cleanCityName(trip.from)}`}
+                  </span>
+                </div>
+
+                {/* Mobile Filter Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(true)}
+                  className="lg:hidden shrink-0 flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span>Filters</span>
+                  {activeFiltersCount > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-white text-amber-600 text-[10px] font-black flex items-center justify-center">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </button>
               </div>
 
-              <div className="flex items-center gap-3 self-end sm:self-auto">
+              {/* Active Filter Chips (Mobile Quick Clear) */}
+              {activeFiltersCount > 0 && (
+                <div className="lg:hidden flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
+                  <span className="text-[11px] font-bold text-slate-400 mr-1">Active:</span>
+                  {selectedTypes.map((t) => (
+                    <span key={t} className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {t}
+                      <button type="button" onClick={() => toggleType(t)} className="cursor-pointer hover:text-amber-900">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                  {selectedFuels.map((f) => (
+                    <span key={f} className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {f}
+                      <button type="button" onClick={() => toggleFuel(f)} className="cursor-pointer hover:text-amber-900">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                  {selectedTransmissions.map((tr) => (
+                    <span key={tr} className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {tr}
+                      <button type="button" onClick={() => toggleTransmission(tr)} className="cursor-pointer hover:text-amber-900">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                  {(minPrice || maxPrice) && (
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      ₹{minPrice || 0} - ₹{maxPrice || "Any"}
+                      <button type="button" onClick={() => { setMinPrice(""); setMaxPrice(""); }} className="cursor-pointer hover:text-amber-900">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  )}
+                  {seatingCapacity !== "all" && (
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {seatingCapacity} seats
+                      <button type="button" onClick={() => setSeatingCapacity("all")} className="cursor-pointer hover:text-amber-900">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-[10px] font-bold text-amber-600 hover:underline ml-auto cursor-pointer"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+
+              {/* Toolbar Sort and Mode Controls */}
+              <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 sm:border-t-0 border-t border-slate-100">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
                   <span>Sort by:</span>
                   <select
@@ -660,6 +884,7 @@ function SelectVehicleContent() {
                 {/* Grid / List Toggles */}
                 <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
                   <button
+                    type="button"
                     onClick={() => setViewMode("grid")}
                     title="Grid View"
                     className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "grid" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
@@ -667,6 +892,7 @@ function SelectVehicleContent() {
                     <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => setViewMode("list")}
                     title="List View"
                     className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "list" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
@@ -693,6 +919,37 @@ function SelectVehicleContent() {
                     <div className="h-10 bg-slate-50 rounded-xl border border-slate-100"></div>
                   </div>
                 ))}
+              </div>
+            ) : !serviceStatus.available ? (
+              <div className="bg-white rounded-2xl border-2 border-amber-200/80 p-8 sm:p-12 text-center space-y-4 shadow-sm">
+                <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
+                  <MapPin className="w-8 h-8 text-amber-600 animate-bounce" />
+                </div>
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 uppercase tracking-wider">
+                    🚀 Launching Soon
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
+                    Service will Be Soon in {serviceStatus.city || cleanCityName(trip.from)}
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                  We are actively expanding our fleet network to <strong className="text-slate-900">{serviceStatus.city || cleanCityName(trip.from)}</strong>. Verified drivers, transparent per-KM fares, and instant bookings will be available in this hub very soon!
+                </p>
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    onClick={() => setIsModifyOpen(true)}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
+                  >
+                    Change Pickup Location
+                  </button>
+                  <button
+                    onClick={() => router.push("/")}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                  >
+                    Explore Other Hubs
+                  </button>
+                </div>
               </div>
             ) : paginatedVehicles.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
@@ -1015,6 +1272,87 @@ function SelectVehicleContent() {
         </div>
 
       </div>
+
+      {/* ===================== MOBILE FILTER MODAL / DRAWER ===================== */}
+      {isMobileFilterOpen && (
+        <div 
+          className="fixed inset-0 z-50 lg:hidden flex justify-end"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileFilterOpen(false)}
+          />
+
+          {/* Drawer Sheet */}
+          <div className="relative w-full max-w-md bg-white h-full max-h-screen flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 px-5 border-b border-slate-200 bg-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <SlidersHorizontal className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base leading-none">
+                    {t("search_filters")}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-semibold mt-1">
+                    {filteredVehicles.length} vehicles matching
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {activeFiltersCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline px-2 py-1 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  aria-label="Close filters"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Filters Body */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {renderFilterForm()}
+            </div>
+
+            {/* Sticky Bottom Actions */}
+            <div className="p-4 border-t border-slate-200 bg-white shadow-lg flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer text-center"
+              >
+                Reset All
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="flex-2 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white font-black text-xs transition cursor-pointer text-center shadow-md flex items-center justify-center gap-2"
+              >
+                <span>Apply Filters</span>
+                <span className="bg-amber-600/80 px-2 py-0.5 rounded-full text-[11px]">
+                  {filteredVehicles.length}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Vehicle Details Modal on Click */}
       <VehicleDetailModal

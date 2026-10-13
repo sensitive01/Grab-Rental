@@ -36,27 +36,52 @@ public class VehicleTariffRequest {
 
     private LocalDate endDate;
 
-    @NotNull(message = "Weekday day rate is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Rate must be greater than 0")
+    @Builder.Default
+    private String serviceType = "OUTSTATION"; // OUTSTATION, HOURLY, AIRPORT
+
+    private String state;
+    private String city;
+
+    // Outstation Customer Rates
     private BigDecimal weekdayDayRate;
-
-    @NotNull(message = "Weekday night rate is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Rate must be greater than 0")
     private BigDecimal weekdayNightRate;
-
-    @NotNull(message = "Weekend day rate is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Rate must be greater than 0")
     private BigDecimal weekendDayRate;
-
-    @NotNull(message = "Weekend night rate is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Rate must be greater than 0")
     private BigDecimal weekendNightRate;
-
     private BigDecimal baseFare;
-
     private Integer baseIncludedKm;
-
     private BigDecimal driverBattaDay;
-
     private BigDecimal driverBattaNight;
+
+    // Outstation Vendor Rates
+    private BigDecimal vendorWeekdayDayRate;
+    private BigDecimal vendorWeekdayNightRate;
+    private BigDecimal vendorWeekendDayRate;
+    private BigDecimal vendorWeekendNightRate;
+    private BigDecimal vendorBaseFare;
+    private BigDecimal vendorDriverBattaDay;
+    private BigDecimal vendorDriverBattaNight;
+
+    // Hourly / Local Package components
+    private Integer packageHours;
+    private Integer packageKm;
+    private BigDecimal hourlyCustomerFare;
+    private BigDecimal hourlyVendorFare;
+    private BigDecimal hourlyCustomerWeekendFare;
+    private BigDecimal hourlyVendorWeekendFare;
+    private BigDecimal extraKmRate;
+    private BigDecimal vendorExtraKmRate;
+    private BigDecimal extraHourRate;
+    private BigDecimal vendorExtraHourRate;
+
+    // Airport Transfer components
+    private BigDecimal airportCustomerFare;
+    private BigDecimal airportVendorFare;
+    private BigDecimal airportCustomerWeekendFare;
+    private BigDecimal airportVendorWeekendFare;
+    private Integer airportIncludedKm;
+    private BigDecimal airportExtraKmRate;
+    private BigDecimal vendorExtraKmRateAirport;
+    private BigDecimal airportVendorExtraKmRate;
+    @Builder.Default
+    private Boolean tollIncluded = false;
 }

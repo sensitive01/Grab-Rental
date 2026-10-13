@@ -11,6 +11,9 @@ export default function VehicleTripHeader({
   tripType = "One way",
   date = "28-09-2026",
   time = "7:00 AM",
+  distanceKm,
+  tollPrice,
+  duration,
   onModifyClick
 }) {
   const { t } = useLanguage();
@@ -67,6 +70,16 @@ export default function VehicleTripHeader({
             <span className="text-[10px] uppercase font-bold text-slate-400 block">{t("pickup_time")}</span>
             <span className="font-extrabold text-slate-800">{time}</span>
           </div>
+
+          {distanceKm > 0 && (
+            <>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Distance</span>
+                <span className="font-extrabold text-slate-800">{distanceKm} km</span>
+              </div>
+            </>
+          )}
 
           <button
             type="button"

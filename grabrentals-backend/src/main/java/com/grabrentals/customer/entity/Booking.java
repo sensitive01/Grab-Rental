@@ -96,6 +96,9 @@ public class Booking {
     @Column(name = "total_fare", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalFare;
 
+    @Column(name = "vendor_payout", precision = 12, scale = 2)
+    private BigDecimal vendorPayout;
+
     @Column(name = "advance_paid", precision = 12, scale = 2)
     private BigDecimal advancePaid;
 

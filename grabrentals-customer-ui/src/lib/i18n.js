@@ -17,13 +17,13 @@ export const translations = {
 
     // Nav links
     outstation_cabs: "Outstation Cabs",
-    hourly_local: "Hourly / Local",
+    hourly_local: "Local",
     airport_transfers: "Airport Transfers",
     tempo_traveller: "Tempo Traveller / Urbania",
     luxury_buses: "Bus Hire",
     corporate_events: "Corporate & Events",
     partner_with_us: "Partner with Us",
-    sign_in_register: "Sign In / Register",
+    sign_in_register: "SignIn",
     my_account: "My Account",
     my_bookings: "My Bookings",
     log_out: "Log Out",
@@ -31,7 +31,7 @@ export const translations = {
     customer_badge: "Customer",
 
     // Hero Section
-    hero_badge: "India's Premier Rental Network",
+    hero_badge: "Grab Rentals",
     hero_title_1: "India's Most Trusted Rental Service",
     hero_title_2: "Car, Van & Bus Rentals",
     hero_subtitle: "Transparent billing, expert verified drivers, and pristine AC vehicles for Outstation, Local & Airport transit across 2,000+ Indian cities.",
@@ -40,7 +40,7 @@ export const translations = {
     one_way: "One Way",
     round_trip: "Round Trip",
     multi_city_tour: "Multi-City Tour",
-    local_rental: "Local / Hourly",
+    local_rental: "Local",
     airport: "Airport Transfer",
     from_city: "Pickup City",
     choose_from_location: "Choose From Map",
@@ -51,7 +51,7 @@ export const translations = {
     pickup_date: "Pickup Date",
     pickup_time: "Pickup Time",
     return_date: "Return Date",
-    search_cabs: "Explore",
+    search_cabs: "Explore", 
     lowest_price_guarantee: "Best Price Guaranteed",
     suggested: "Suggested:",
     stop_label: "STOP",
@@ -93,6 +93,9 @@ export const translations = {
     vp_sanitization_desc: "Complimentary Water & Tissue inside pristine cabs.",
     vp_cancellation_title: "Zero Cancellation Stress",
     vp_cancellation_desc: "Instant UPI/Card Reversal on early cancellations.",
+    all_india_coverage: "All-India Coverage",
+    all_india_coverage_desc: "Reliable service across 2,000+ Indian cities.",
+    view_all_routes: "View All Routes",
 
     // Corridors & Footer
     popular_outstation_corridors: "Popular Outstation Corridors",
@@ -104,9 +107,14 @@ export const translations = {
 
     // Login & Onboarding
     welcome_back: "Welcome to Grab Rentals",
-    login_subtitle: "Enter your mobile number to get instant OTP access",
+    customer_login: "Customer Login",
+    login_subtitle: "Enter 10-digit mobile number",
     mobile_number: "Mobile Number",
     enter_mobile: "Enter 10-digit mobile number",
+    already_have_account: "Already have an Account?",
+    login_here: "Login Here",
+    login_as_fleet_owner: "Login as Fleet Owner",
+    or_divider: "Or",
     send_otp: "Get Secure OTP",
     verify_otp: "Verify & Continue",
     enter_otp: "Enter 6-digit verification code",
@@ -238,7 +246,7 @@ export const translations = {
     luxury_buses: "பேருந்து வாடகை",
     corporate_events: "நிறுவன ஒப்பந்தங்கள்",
     partner_with_us: "எங்களுடன் இணையுங்கள்",
-    sign_in_register: "உள்நுழைவு / பதிவு",
+    sign_in_register: "SignIn",
     my_account: "என் கணக்கு",
     my_bookings: "எனது முன்பதிவுகள்",
     log_out: "வெளியேறு",
@@ -246,7 +254,7 @@ export const translations = {
     customer_badge: "வாடிக்கையாளர்",
 
     // Hero Section
-    hero_badge: "இந்தியாவின் முதன்மையான ஓட்டுநர் நெட்வொர்க்",
+    hero_badge: "Grab Rentals",
     hero_title_1: "இந்தியாவின் நம்பகமான ஓட்டுநருடன் கூடிய",
     hero_title_2: "கார், வேன் மற்றும் பேருந்து வாடகை",
     hero_subtitle: "வெளிப்படையான கட்டணம், அனுபவம் வாய்ந்த ஓட்டுநர்கள் மற்றும் 2,000+ இந்திய நகரங்களில் வெளியூர், உள்ளூர் மற்றும் விமான நிலைய பயணங்களுக்கான சிறந்த ஏசி வாகனங்கள்.",
@@ -308,6 +316,9 @@ export const translations = {
     vp_sanitization_desc: "வாகனத்தில் இலவச குடிநீர் மற்றும் டிஷ்யூ வசதி.",
     vp_cancellation_title: "மன அமைதியுடன் ரத்து செய்யும் வசதி",
     vp_cancellation_desc: "முன்கூட்டியே ரத்து செய்தால் உடனடி UPI/கார்டு ரீஃபண்ட்.",
+    all_india_coverage: "அகில இந்திய சேவை",
+    all_india_coverage_desc: "2,000+ இந்திய நகரங்களில் நம்பகமான சேவை.",
+    view_all_routes: "அனைத்து வழித்தடங்களையும் காண்க",
 
     // Corridors & Footer
     popular_outstation_corridors: "பிரபலமான வெளியூர் வழித்தடங்கள்",
@@ -319,9 +330,14 @@ export const translations = {
 
     // Login & Onboarding
     welcome_back: "கிராப் ரெண்டல்ஸிற்கு வரவேற்கிறோம்",
-    login_subtitle: "உடனடி OTP பெற உங்கள் கைபேசி எண்ணை உள்ளிடவும்",
+    customer_login: "வாடிக்கையாளர் உள்நுழைவு",
+    login_subtitle: "10-இலக்க கைபேசி எண்ணை உள்ளிடவும்",
     mobile_number: "கைபேசி எண்",
     enter_mobile: "10-இலக்க கைபேசி எண்ணை உள்ளிடவும்",
+    already_have_account: "ஏற்கனவே கணக்கு உள்ளதா?",
+    login_here: "இங்கே உள்நுழையவும்",
+    login_as_fleet_owner: "வாகன உரிமையாளராக உள்நுழையவும்",
+    or_divider: "அல்லது",
     send_otp: "OTP பெறவும்",
     verify_otp: "OTP சரிபார்த்து தொடரவும்",
     enter_otp: "6-இலக்க OTP எண்ணை உள்ளிடவும்",
@@ -453,7 +469,7 @@ export const translations = {
     luxury_buses: "ಬಸ್ ಬಾಡಿಗೆ",
     corporate_events: "ಕಾರ್ಪೊರೇಟ್ ಸೇವೆಗಳು",
     partner_with_us: "ಪಾಲುದಾರರಾಗಿ",
-    sign_in_register: "ಲಾಗಿನ್ / ನೋಂದಣಿ",
+    sign_in_register: "SignIn",
     my_account: "ನನ್ನ ಖಾತೆ",
     my_bookings: "ನನ್ನ ಬುಕಿಂಗ್‌ಗಳು",
     log_out: "ಲಾಗ್ ಔಟ್",
@@ -461,7 +477,7 @@ export const translations = {
     customer_badge: "ಗ್ರಾಹಕ",
 
     // Hero Section
-    hero_badge: "ಭಾರತದ ಪ್ರಮುಖ ಚಾಲಕ ನೆಟ್‌ವರ್ಕ್",
+    hero_badge: "Grab Rentals",
     hero_title_1: "ಭಾರತದ ವಿಶ್ವಾಸಾರ್ಹ ಚಾಲಕ-ಚಾಲಿತ",
     hero_title_2: "ಕಾರ್, ವ್ಯಾನ್ ಮತ್ತು ಬಸ್ ಬಾಡಿಗೆ",
     hero_subtitle: "ಪಾರದರ್ಶಕ ಬಿಲ್ಲಿಂಗ್, ಪರಿಣಿತ ಪರಿಶೀಲಿತ ಚಾಲಕರು ಮತ್ತು 2,000+ ಭಾರತೀಯ ನಗರಗಳಲ್ಲಿ ಹೊರಗಿನ, ಸ್ಥಳೀಯ ಮತ್ತು ವಿಮಾನ ನಿಲ್ದಾಣದ ಪ್ರಯಾಣಕ್ಕಾಗಿ ಸ್ವಚ್ಛವಾದ AC ವಾಹನಗಳು.",
@@ -523,6 +539,9 @@ export const translations = {
     vp_sanitization_desc: "ಸ್ವಚ್ಛ ಕ್ಯಾಬ್‌ಗಳಲ್ಲಿ ಉಚಿತ ಕುಡಿಯುವ ನೀರು ಮತ್ತು ಟಿಶ್ಯೂ.",
     vp_cancellation_title: "ರದ್ದತಿ ಚಿಂತೆ ಇಲ್ಲ",
     vp_cancellation_desc: "ಮುಂಚಿತ ರದ್ದತಿಗೆ ತಕ್ಷಣದ UPI/ಕಾರ್ಡ್ ಮರುಪಾವತಿ.",
+    all_india_coverage: "ಅಖಿಲ ಭಾರತ ವ್ಯಾಪ್ತಿ",
+    all_india_coverage_desc: "2,000+ ಭಾರತೀಯ ನಗರಗಳಲ್ಲಿ ವಿಶ್ವಾಸಾರ್ಹ ಸೇವೆ.",
+    view_all_routes: "ಎಲ್ಲಾ ಮಾರ್ಗಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
 
     // Corridors & Footer
     popular_outstation_corridors: "ಜನಪ್ರಿಯ ಹೊರಗಿನ ಮಾರ್ಗಗಳು",
@@ -534,9 +553,14 @@ export const translations = {
 
     // Login & Onboarding
     welcome_back: "ಗ್ರಾಬ್ ರೆಂಟಲ್ಸ್‌ಗೆ ಸುಸ್ವಾಗತ",
-    login_subtitle: "OTP ಪಡೆಯಲು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+    customer_login: "ಗ್ರಾಹಕರ ಲಾಗಿನ್",
+    login_subtitle: "10-ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
     mobile_number: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",
     enter_mobile: "10-ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
+    already_have_account: "ಈಗಾಗಲೇ ಖಾತೆ ಹೊಂದಿದ್ದೀರಾ?",
+    login_here: "ಇಲ್ಲಿ ಲಾಗಿನ್ ಮಾಡಿ",
+    login_as_fleet_owner: "ಫ್ಲೀಟ್ ಮಾಲೀಕರಾಗಿ ಲಾಗಿನ್ ಮಾಡಿ",
+    or_divider: "ಅಥವಾ",
     send_otp: "OTP ಪಡೆಯಿರಿ",
     verify_otp: "OTP ಪರಿಶೀಲಿಸಿ ಮುಂದುವರಿಯಿರಿ",
     enter_otp: "6-ಅಂಕಿಯ OTP ಕೋಡ್ ನಮೂದಿಸಿ",
@@ -668,7 +692,7 @@ export const translations = {
     luxury_buses: "బస్సు అద్దె",
     corporate_events: "కార్పొరేట్ సేవలు",
     partner_with_us: "మాతో భాగస్వామ్యం అవ్వండి",
-    sign_in_register: "సైన్ ఇన్ / నమోదు",
+    sign_in_register: "SignIn",
     my_account: "నా ఖాతా",
     my_bookings: "నా బుకింగ్‌లు",
     log_out: "లాగ్ అవుట్",
@@ -676,7 +700,7 @@ export const translations = {
     customer_badge: "కస్టమర్",
 
     // Hero Section
-    hero_badge: "భారతదేశపు ప్రీమియర్ డ్రైవర్ నెట్‌వర్క్",
+    hero_badge: "Grab Rentals",
     hero_title_1: "భారతదేశంలో విశ్వసనీయమైన డ్రైవర్‌తో కూడిన",
     hero_title_2: "కార్, వ్యాన్ & బస్సు అద్దెలు",
     hero_subtitle: "పారదర్శక బిల్లింగ్, నిపుణులైన ధృవీకరించబడిన డ్రైవర్లు మరియు 2,000+ భారతీయ నగరాల్లో అవుట్‌స్టేషన్, లోకల్ & ఎయిర్‌పోర్ట్ ప్రయాణాల కోసం ఉత్తమ AC వాహనాలు.",
@@ -738,6 +762,9 @@ export const translations = {
     vp_sanitization_desc: "శుభ్రమైన క్యాబ్‌లలో ఉచిత తాగునీరు మరియు టిష్యూ.",
     vp_cancellation_title: "రద్దు ఒత్తిడి సున్నా",
     vp_cancellation_desc: "ముందస్తు రద్దులపై తక్షణ UPI/కార్డ్ రీఫండ్.",
+    all_india_coverage: "ఆల్-ఇండియా కవరేజ్",
+    all_india_coverage_desc: "2,000+ భారతీయ నగరాల్లో విశ్వసనీయ సేవలు.",
+    view_all_routes: "అన్ని రూట్లను చూడండి",
 
     // Corridors & Footer
     popular_outstation_corridors: "ప్రసిద్ధ అవుట్‌స్టేషన్ మార్గాలు",
@@ -749,9 +776,14 @@ export const translations = {
 
     // Login & Onboarding
     welcome_back: "గ్రాబ్ రెంటల్స్‌కు స్వాగతం",
-    login_subtitle: "తక్షణ OTP పొందడానికి మీ మొబైల్ నంబర్‌ను నమోదు చేయండి",
+    customer_login: "కస్టమర్ లాగిన్",
+    login_subtitle: "10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి",
     mobile_number: "మొబైల్ నంబర్",
     enter_mobile: "10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి",
+    already_have_account: "ఇప్పటికే ఖాతా ఉందా?",
+    login_here: "ఇక్కడ లాగిన్ అవ్వండి",
+    login_as_fleet_owner: "ఫ్లీట్ యజమానిగా లాగిన్ చేయండి",
+    or_divider: "లేదా",
     send_otp: "OTP పొందండి",
     verify_otp: "ధృవీకరించి కొనసాగండి",
     enter_otp: "6 అంకెల OTP కోడ్‌ను నమోదు చేయండి",
@@ -883,7 +915,7 @@ export const translations = {
     luxury_buses: "बस किराया",
     corporate_events: "कॉर्पोरेट और इवेंट्स",
     partner_with_us: "पार्टनर बनें",
-    sign_in_register: "साइन इन / पंजीकरण",
+    sign_in_register: "SignIn",
     my_account: "मेरा खाता",
     my_bookings: "मेरी बुकिंग",
     log_out: "लॉग आउट",
@@ -891,7 +923,7 @@ export const translations = {
     customer_badge: "ग्राहक",
 
     // Hero Section
-    hero_badge: "भारत का प्रमुख शॉफर नेटवर्क",
+    hero_badge: "Grab Rentals",
     hero_title_1: "भारत की विश्वसनीय शॉफर-चालित",
     hero_title_2: "कार, वैन और बस रेंटल",
     hero_subtitle: "पारदर्शी बिलिंग, अनुभवी सत्यापित चालक और 2,000+ भारतीय शहरों में आउटस्टेशन, लोकल और एयरपोर्ट यात्रा के लिए स्वच्छ एसी वाहन।",
@@ -953,6 +985,9 @@ export const translations = {
     vp_sanitization_desc: "स्वच्छ कैब के अंदर निःशुल्क पानी और टिश्यू।",
     vp_cancellation_title: "रद्दीकरण की कोई चिंता नहीं",
     vp_cancellation_desc: "जल्दी रद्द करने पर तुरंत UPI/कार्ड रिफंड।",
+    all_india_coverage: "अखिल भारतीय कवरेज",
+    all_india_coverage_desc: "2,000+ भारतीय शहरों में विश्वसनीय सेवा।",
+    view_all_routes: "सभी मार्ग देखें",
 
     // Corridors & Footer
     popular_outstation_corridors: "लोकप्रिय आउटस्टेशन मार्ग",
@@ -964,9 +999,14 @@ export const translations = {
 
     // Login & Onboarding
     welcome_back: "ग्रैब रेंटल्स में आपका स्वागत है",
-    login_subtitle: "तत्काल OTP प्राप्त करने के लिए अपना मोबाइल नंबर दर्ज करें",
+    customer_login: "ग्राहक लॉगिन",
+    login_subtitle: "10-अंकों का मोबाइल नंबर दर्ज करें",
     mobile_number: "मोबाइल नंबर",
     enter_mobile: "10-अंकों का मोबाइल नंबर दर्ज करें",
+    already_have_account: "पहले से खाता है?",
+    login_here: "यहाँ लॉगिन करें",
+    login_as_fleet_owner: "फ्लीट मालिक के रूप में लॉगिन करें",
+    or_divider: "या",
     send_otp: "सुरक्षित OTP प्राप्त करें",
     verify_otp: "सत्यापित करें और आगे बढ़ें",
     enter_otp: "6-अंकों का सत्यापन कोड दर्ज करें",

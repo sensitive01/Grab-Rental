@@ -78,11 +78,11 @@ export default function AppShell({ children }) {
           <div className="flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none">
             {/* Mobile Quick Helpline */}
             <a 
-              href="tel:+919045450000" 
+              href="tel:+919071100200" 
               className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition-colors"
             >
               <Phone className="w-3 h-3 text-amber-400" />
-              <span>+91 90454 50000</span>
+              <span>+91 90711 00200</span>
             </a>
 
             <div className="hidden md:flex items-center gap-1.5 shrink-0">
@@ -180,9 +180,9 @@ export default function AppShell({ children }) {
           
           {/* Call 24/7 Helpline Icon (Visible sm and up) */}
           <a
-            href="tel:+919045450000"
+            href="tel:+919071100200"
             className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-600 border border-slate-200/90 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
-            title="Call 24/7 Helpline (+91 90454 50000)"
+            title="Call 24/7 Helpline (+91 90711 00200)"
             aria-label="Call 24/7 Helpline"
           >
             <Phone className="w-4 h-4 text-slate-600 group-hover:text-amber-600 transition-colors" />
@@ -190,11 +190,11 @@ export default function AppShell({ children }) {
 
           {/* WhatsApp Support Icon */}
           <a
-            href="https://wa.me/919045450000?text=Hi%20Grab%20Rentals,%20I%20have%20an%20enquiry%20regarding%20booking%20a%20cab%20or%20bus."
+            href="https://wa.me/919071100200?text=Hi%20Grab%20Rentals,%20I%20have%20an%20enquiry%20regarding%20booking%20a%20cab%20or%20bus."
             target="_blank"
             rel="noopener noreferrer"
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
-            title="Chat on WhatsApp (+91 90454 50000)"
+            title="Chat on WhatsApp (+91 90711 00200)"
             aria-label="Chat on WhatsApp"
           >
             <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
@@ -279,12 +279,12 @@ export default function AppShell({ children }) {
           ) : (
             <Link 
               href="/login"
-              className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold uppercase tracking-wide transition-all shadow-sm group"
+              className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold tracking-wide transition-all shadow-sm group"
             >
               <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
                 <User className="w-3.5 h-3.5" />
               </div>
-              <span className="hidden sm:inline">{t("sign_in_register")}</span>
+              <span className="hidden sm:inline">{t("sign_in_register") || "SignIn"}</span>
             </Link>
           )}
 
