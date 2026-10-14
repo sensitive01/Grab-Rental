@@ -91,13 +91,9 @@ export default function AdminBookingDetailPage({ params }) {
               <span className="text-slate-500">Advance Collected</span>
               <span className="text-emerald-700 font-semibold">{formatINR(advance)}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Platform Commission (12%)</span>
-              <span className="text-blue-700 font-semibold">{formatINR(fare * 0.12)}</span>
-            </div>
             <div className="flex justify-between py-1.5 font-bold">
               <span className="text-slate-900">Vendor Net Payout</span>
-              <span className="text-slate-900">{formatINR(fare * 0.88)}</span>
+              <span className="text-slate-900">{formatINR(booking.vendorPayout != null ? booking.vendorPayout : fare)}</span>
             </div>
           </div>
         </Card>

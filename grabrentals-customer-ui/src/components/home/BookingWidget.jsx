@@ -9,6 +9,12 @@ import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
+import {
+  formatLocalDate,
+  getMinPickupDateTimeString,
+  getDefaultPickupDateTime,
+  sanitizePickupDateTime,
+} from "@/lib/dateTimeUtils";
 
 export const AIRPORT_LIST = [
   { id: "BLR", name: "Kempegowda International Airport (BLR), Bengaluru", city: "Bangalore, Karnataka", lat: 13.1986, lng: 77.7066 },
@@ -55,7 +61,7 @@ export default function BookingWidget() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(() => getTabFromPath(pathname));
-  const [tripType, setTripType] = useState(() => (pathname && (pathname.startsWith("/package") || pathname.startsWith("/packages")) ? "round-trip" : "one-way"));
+  const [tripType, setTripType] = useState("round-trip");
   const [airportTripType, setAirportTripType] = useState("drop"); // "drop" = Drop to Airport, "pickup" = Pickup from Airport
   const [selectedAirport, setSelectedAirport] = useState(AIRPORT_LIST[0].name);
   const [airportCoords, setAirportCoords] = useState({ lat: 13.1986, lng: 77.7066 });
@@ -71,14 +77,16 @@ export default function BookingWidget() {
   const [dropCoords, setDropCoords] = useState(null);
   const [stopsCoords, setStopsCoords] = useState([]);
 
-  // Date & Time inputs
-  const [pickupDate, setPickupDate] = useState(() => new Date().toISOString().split("T")[0]);
+  // Date & Time inputs (timezone-aware & never in the past)
+  const [pickupDate, setPickupDate] = useState(() => getDefaultPickupDateTime().date);
   const [dropDate, setDropDate] = useState(() => {
-    const d = new Date();
+    const initial = getDefaultPickupDateTime();
+    const d = new Date(`${initial.date}T00:00:00`);
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split("T")[0];
+    return formatLocalDate(d);
   });
-  const [pickupTime, setPickupTime] = useState("07:00");
+  const [pickupTime, setPickupTime] = useState(() => getDefaultPickupDateTime().time);
+  const [minPickupDateTime, setMinPickupDateTime] = useState(() => getMinPickupDateTimeString());
   const [selectedPackage, setSelectedPackage] = useState(() => "8hr-80km");
 
   const allowsStops = activeTab === "outstation";
@@ -115,7 +123,7 @@ export default function BookingWidget() {
     const matchedTab = getTabFromPath(pathname);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab(matchedTab);
-    if (matchedTab === "package") {
+    if (matchedTab === "package" || matchedTab === "outstation") {
       setTripType("round-trip");
     } else if (matchedTab === "local") {
       setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : "8hr-80km"));
@@ -129,9 +137,34 @@ export default function BookingWidget() {
     }
   }, [pathname]);
 
+  // Keep min pickup datetime current and ensure loaded/stored pickup is not in the past
+  useEffect(() => {
+    const currentMin = getMinPickupDateTimeString();
+    setMinPickupDateTime(currentMin);
+    const sanitized = sanitizePickupDateTime(pickupDate, pickupTime);
+    if (sanitized.date !== pickupDate || sanitized.time !== pickupTime) {
+      setPickupDate(sanitized.date);
+      setPickupTime(sanitized.time);
+    }
+  }, []);
+
+  const handlePickupDateTimeChange = (val) => {
+    if (!val) return;
+    const [d, tVal] = val.split("T");
+    const sanitized = sanitizePickupDateTime(d, tVal);
+    setPickupDate(sanitized.date);
+    setPickupTime(sanitized.time);
+    // If dropDate is before pickupDate on round trip, bump dropDate
+    if (dropDate && dropDate < sanitized.date) {
+      const nextDay = new Date(`${sanitized.date}T00:00:00`);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setDropDate(formatLocalDate(nextDay));
+    }
+  };
+
   const handleTabClick = (tabId, e) => {
     setActiveTab(tabId);
-    if (tabId === "package") {
+    if (tabId === "outstation" || tabId === "package") {
       setTripType("round-trip");
     } else if (tabId === "local") {
       setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : "8hr-80km"));
@@ -468,8 +501,8 @@ export default function BookingWidget() {
       ) : allowsStops ? (
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
           {[
-            { id: "one-way", label: t("one_way") },
             { id: "round-trip", label: t("round_trip") },
+            { id: "one-way", label: t("one_way") },
             { id: "multi-city-tour", label: t("multi_city_tour") || "Multi-City Tour" },
           ].map((item) => {
             const isSelected = tripType === item.id;
@@ -670,14 +703,8 @@ export default function BookingWidget() {
                 <input 
                   type="datetime-local" 
                   value={`${pickupDate}T${pickupTime}`}
-                  min={new Date().toISOString().slice(0, 16)}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (!val) return;
-                    const [d, tVal] = val.split("T");
-                    if (d) setPickupDate(d);
-                    if (tVal) setPickupTime(tVal);
-                  }}
+                  min={minPickupDateTime}
+                  onChange={(e) => handlePickupDateTimeChange(e.target.value)}
                   className="w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
                 />
               </div>
@@ -694,6 +721,7 @@ export default function BookingWidget() {
                   <input 
                     type="date" 
                     value={dropDate}
+                    min={pickupDate}
                     onChange={(e) => setDropDate(e.target.value)}
                     className="w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
                   />
@@ -919,14 +947,8 @@ export default function BookingWidget() {
               <input 
                 type="datetime-local" 
                 value={`${pickupDate}T${pickupTime}`}
-                min={new Date().toISOString().slice(0, 16)}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (!val) return;
-                  const [d, tVal] = val.split("T");
-                  if (d) setPickupDate(d);
-                  if (tVal) setPickupTime(tVal);
-                }}
+                min={minPickupDateTime}
+                onChange={(e) => handlePickupDateTimeChange(e.target.value)}
                 className="w-full pl-10 sm:pl-11 pr-3 py-3 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
               />
             </div>

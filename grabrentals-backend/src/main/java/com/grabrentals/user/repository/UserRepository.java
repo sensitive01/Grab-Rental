@@ -26,4 +26,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByStatus(UserStatus status);
 
     List<User> findByRoleAndStatus(Role role, UserStatus status);
+
+    List<User> findByRoleInOrderByCreatedAtDesc(List<Role> roles);
 }

@@ -219,7 +219,6 @@ export const adminApi = {
         branch,
         fleetModel,
         fleetSize,
-        commissionRate,
         ownsBusiness,
         idProofDocumentUrl,
         addressProofDocumentUrl,
@@ -257,7 +256,6 @@ export const adminApi = {
         branch,
         fleetModel,
         fleetSize: fleetSize ? Number(fleetSize) : 1,
-        commissionRate: commissionRate ? Number(commissionRate) : 12,
         ownsBusiness,
         idProofDocumentUrl,
         addressProofDocumentUrl,
@@ -411,6 +409,34 @@ export const adminApi = {
 
   async getVendors() {
     try {
+      const response = await axiosClient.get("/api/admin/vendors");
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        const mapped = response.data.data.map((v) => {
+          const isPending = v.status === "PENDING" || v.status === "PENDING_APPROVAL";
+          const isApproved = v.status === "ACTIVE" || v.status === "APPROVED";
+          return {
+            ...v,
+            name: v.name || v.businessName || "Vendor Partner",
+            businessName: v.businessName || v.name,
+            contactPerson: v.contactPerson || v.name,
+            ownerName: v.ownerName || v.name,
+            fleetCount: Number(v.fleetCount ?? v.vehiclesCount ?? 0),
+            driverCount: Number(v.driverCount ?? v.driversCount ?? 0),
+            vehiclesCount: Number(v.fleetCount ?? v.vehiclesCount ?? 0),
+            driversCount: Number(v.driverCount ?? v.driversCount ?? 0),
+            rating: v.rating != null ? Number(v.rating) : 5.0,
+            gstStatus: isApproved ? "Verified Active" : (v.status === "INACTIVE" ? "Deactivated" : "Pending Verification"),
+            status: isPending ? "PENDING_APPROVAL" : (v.status === "INACTIVE" ? "INACTIVE" : "ACTIVE"),
+            rawStatus: v.status,
+          };
+        });
+        return createApiResponse(mapped);
+      }
+    } catch (err) {
+      console.warn("Direct /api/admin/vendors call failed, falling back to users list:", err.message);
+    }
+
+    try {
       const res = await this.getAllUsers();
       if (res.success && Array.isArray(res.data)) {
         const liveVendors = res.data
@@ -427,11 +453,10 @@ export const adminApi = {
               email: u.email,
               phone: u.phone || "—",
               city: u.hubLocation || "Primary Hub",
-              fleetCount: 0,
-              driverCount: 0,
-              vehiclesCount: 0,
-              driversCount: 0,
-              commissionRate: 12,
+              fleetCount: u.fleetSize || u.fleetCount || 0,
+              driverCount: u.driverCount || u.fleetSize || 0,
+              vehiclesCount: u.fleetSize || u.fleetCount || 0,
+              driversCount: u.driverCount || u.fleetSize || 0,
               rating: 5.0,
               createdAt: u.createdAt || null,
               joinedDate: u.createdAt ? u.createdAt.slice(0, 10) : "Recently",
@@ -475,7 +500,6 @@ export const adminApi = {
           accountNumber: d.accountNumber || "—",
           ifsc: d.ifsc || "—",
           branch: d.branch || "—",
-          commissionRate: 12,
           rating: 5.0,
           joinedDate: d.createdAt ? d.createdAt.slice(0, 10) : "Recently",
           createdAt: d.createdAt,
@@ -502,11 +526,11 @@ export const adminApi = {
     return createApiResponse({ ...vendor, vehicles: vendorVehicles, drivers: vendorDrivers });
   },
 
-  async approveVendor(id, commissionRate = 12) {
+  async approveVendor(id) {
     try {
       const updateRes = await this.updateUserStatus(id, "ACTIVE");
       return createApiResponse(
-        { id, status: "APPROVED", commissionRate, ...updateRes.data },
+        { id, status: "APPROVED", ...updateRes.data },
         "Vendor approved and activated in live database"
       );
     } catch (err) {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, MapPin, Calendar, Clock, ArrowRight, Plus, Minus } from "lucide-react";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
+import { getMinPickupDateTimeString, sanitizePickupDateTime, getDefaultPickupDateTime } from "@/lib/dateTimeUtils";
 
 export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSave }) {
   const isLocal = currentTrip?.serviceType === "LOCAL" || (currentTrip?.to && currentTrip.to.toLowerCase().includes("hr"));
@@ -17,8 +18,9 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
     return [];
   });
   const [tripType, setTripType] = useState(currentTrip?.tripType || (isLocal ? "Hourly Package" : "One way"));
-  const [date, setDate] = useState(currentTrip?.date || "2026-09-28");
-  const [time, setTime] = useState(currentTrip?.time || "07:00");
+  const defaultDT = getDefaultPickupDateTime();
+  const [date, setDate] = useState(currentTrip?.date || defaultDT.date);
+  const [time, setTime] = useState(currentTrip?.time || defaultDT.time);
 
   if (!isOpen) return null;
 
@@ -190,13 +192,14 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
               <input
                 type="datetime-local"
                 value={`${date}T${time}`}
-                min={new Date().toISOString().slice(0, 16)}
+                min={getMinPickupDateTimeString()}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (!val) return;
                   const [d, tVal] = val.split("T");
-                  if (d) setDate(d);
-                  if (tVal) setTime(tVal);
+                  const sanitized = sanitizePickupDateTime(d, tVal);
+                  setDate(sanitized.date);
+                  setTime(sanitized.time);
                 }}
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500 cursor-pointer"
                 required

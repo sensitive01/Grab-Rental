@@ -41,7 +41,6 @@ export default function VendorDetailPage({ params }) {
 
   // Approval state
   const [approveModalOpen, setApproveModalOpen] = useState(false);
-  const [commissionRate, setCommissionRate] = useState(12);
   const [approving, setApproving] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -53,9 +52,6 @@ export default function VendorDetailPage({ params }) {
       try {
         const res = await adminApi.getVendorById(id);
         setVendor(res.data);
-        if (res.data?.commissionRate) {
-          setCommissionRate(res.data.commissionRate);
-        }
       } catch (err) {
         console.error("Failed to load vendor details:", err);
       } finally {
@@ -101,7 +97,7 @@ export default function VendorDetailPage({ params }) {
     if (!vendor) return;
     setApproving(true);
     try {
-      await adminApi.approveVendor(vendor.id, Number(commissionRate));
+      await adminApi.approveVendor(vendor.id);
       setToastMessage({
         type: "success",
         text: `Vendor ${vendor.name} has been approved and activated!`,
@@ -110,7 +106,6 @@ export default function VendorDetailPage({ params }) {
         ...prev,
         status: "APPROVED",
         rawStatus: "ACTIVE",
-        commissionRate: Number(commissionRate),
         gstStatus: "Verified Active",
       }));
       setApproveModalOpen(false);
@@ -276,7 +271,7 @@ export default function VendorDetailPage({ params }) {
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-slate-950">
-                Awaiting Admin Verification & Commission Authorization
+                Awaiting Admin Verification & Account Authorization
               </h2>
               <p className="text-xs text-slate-700 max-w-2xl leading-relaxed">
                 This vendor completed registration and added their business details, compliance documents, and fleet. Verify the proofs below and approve the partner to unlock customer booking dispatches.
@@ -297,12 +292,7 @@ export default function VendorDetailPage({ params }) {
       )}
 
       {/* METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white">
-          <p className="text-xs font-semibold text-slate-500 uppercase">Platform Commission</p>
-          <h3 className="text-2xl font-bold text-blue-700 mt-1">{vendor.commissionRate || 12}%</h3>
-          <p className="text-[11px] text-slate-500 mt-1">Platform take-rate per trip</p>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="bg-white">
           <p className="text-xs font-semibold text-slate-500 uppercase">Fleet Enrolled</p>
           <h3 className="text-2xl font-bold text-slate-900 mt-1">
@@ -643,22 +633,6 @@ export default function VendorDetailPage({ params }) {
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-800">
-              Platform Take-Rate / Commission Rate (%)
-            </label>
-            <Input
-              type="number"
-              min={1}
-              max={50}
-              value={commissionRate}
-              onChange={(e) => setCommissionRate(e.target.value)}
-              placeholder="12"
-            />
-            <p className="text-[11px] text-slate-500">
-              Default platform commission is 12%. This can be adjusted at any time.
-            </p>
-          </div>
 
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-[11px] text-slate-700">
             <p><strong>Vendor:</strong> {vendor.name} ({vendor.email})</p>

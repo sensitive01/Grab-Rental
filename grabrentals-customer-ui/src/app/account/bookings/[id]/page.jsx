@@ -1,7 +1,9 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import { resolveCarModelAndImage, fetchAndCacheAdminVehicleModels } from "@/lib/vehicleUtils";
 import { 
   ArrowLeft, 
   Car, 
@@ -54,7 +56,10 @@ export default function TripDetailsTrackingPage({ params }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await customerApi.getBookingById(bookingId);
+        const [res] = await Promise.all([
+          customerApi.getBookingById(bookingId),
+          fetchAndCacheAdminVehicleModels().catch(() => [])
+        ]);
         if (!isCancelled && res?.data) {
           setBooking(res.data);
         }
@@ -148,6 +153,8 @@ export default function TripDetailsTrackingPage({ params }) {
   const advancePaid = Number(booking.advancePaid || 0);
   const dueAmount = totalFare > advancePaid ? totalFare - advancePaid : 0;
   const isCancelledState = booking.status === "CANCELLED";
+
+  const { modelName, carImage, categoryLabel } = resolveCarModelAndImage(booking);
 
   // Determine stepper state from booking.status
   const statusStepMap = {
@@ -296,12 +303,23 @@ export default function TripDetailsTrackingPage({ params }) {
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vehicle</span>
-                  <h4 className="text-xs font-extrabold text-slate-900">
-                    {booking.assignedVehicle ? `${booking.assignedVehicle.model} (${booking.assignedVehicle.vehicleNumber})` : booking.vehicleCategory}
-                  </h4>
-                  <p className="text-[11px] text-slate-500">Commercial Outstation Cab</p>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3.5">
+                  <div className="relative w-16 h-12 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0 shadow-2xs">
+                    <Image
+                      src={carImage}
+                      alt={modelName}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Vehicle</span>
+                    <h4 className="text-xs font-extrabold text-slate-900 truncate">
+                      {booking.assignedVehicle ? `${booking.assignedVehicle.model} (${booking.assignedVehicle.vehicleNumber})` : modelName}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 font-medium">{categoryLabel}</p>
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">

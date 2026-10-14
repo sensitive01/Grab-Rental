@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import { useState, useEffect, Suspense, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import ModifyBookingModal from "@/components/booking/ModifyBookingModal";
 import VehicleDetailModal from "@/components/booking/VehicleDetailModal";
 import { customerApi } from "@/lib/customerApi";
 import { useLanguage } from "@/context/LanguageContext";
+import { getDefaultPickupDateTime } from "@/lib/dateTimeUtils";
 import { 
   Search, 
   RotateCcw, 
@@ -91,9 +92,10 @@ function SelectVehicleContent() {
     const fromVal = searchParams.get("from") || pendingTrip?.from || "Bangalore, Karnataka";
     const toVal = searchParams.get("to") || pendingTrip?.to || "Coimbatore, Tamil Nadu";
     const stopsVal = searchParams.get("stops") || pendingTrip?.stops || "";
-    const rawTripType = searchParams.get("tripType") || pendingTrip?.tripType || "one-way";
-    const dateVal = searchParams.get("pickupDate") || pendingTrip?.date || "2026-09-28";
-    const timeVal = searchParams.get("pickupTime") || pendingTrip?.time || "07:00";
+    const rawTripType = searchParams.get("tripType") || pendingTrip?.tripType || "Round trip";
+    const defaultDT = getDefaultPickupDateTime();
+    const dateVal = searchParams.get("pickupDate") || pendingTrip?.date || defaultDT.date;
+    const timeVal = searchParams.get("pickupTime") || pendingTrip?.time || defaultDT.time;
     const serviceTypeVal = (searchParams.get("serviceType") || pendingTrip?.serviceType || "OUTSTATION").toUpperCase();
 
     return {
@@ -149,19 +151,26 @@ function SelectVehicleContent() {
     };
   }, [isMobileFilterOpen]);
 
-  // Sync state ONLY if query parameters actually change (avoids duplicate initial mount requests)
+  // Sync state ONLY if query parameters actually change on subsequent navigations (avoids redundant mount renders)
+  const isInitialSearchSync = useRef(true);
   useEffect(() => {
+    if (isInitialSearchSync.current) {
+      isInitialSearchSync.current = false;
+      return;
+    }
+
     const urlFrom = searchParams.get("from");
     if (!urlFrom) return;
 
     const urlTo = searchParams.get("to") || "Coimbatore, Tamil Nadu";
     const urlStops = searchParams.get("stops") || "";
-    const urlTripType = (searchParams.get("tripType") || "one-way").toLowerCase().includes("round") ? "Round trip" : "One way";
-    const urlDate = searchParams.get("pickupDate") || "2026-09-28";
-    const urlTime = searchParams.get("pickupTime") || "07:00";
+    const rawUrlTripType = searchParams.get("tripType") || "Round trip";
+    const urlTripType = rawUrlTripType.toLowerCase().includes("round") ? "Round trip" : "One way";
+    const defaultDT = getDefaultPickupDateTime();
+    const urlDate = searchParams.get("pickupDate") || defaultDT.date;
+    const urlTime = searchParams.get("pickupTime") || defaultDT.time;
     const urlServiceType = (searchParams.get("serviceType") || "OUTSTATION").toUpperCase();
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTrip((prev) => {
       if (
         prev.from === urlFrom &&
@@ -460,9 +469,13 @@ function SelectVehicleContent() {
     sortBy
   ]);
 
-  // Reset pagination when filter changes
+  // Reset pagination when filter changes (skip initial mount)
+  const isInitialFilterMount = useRef(true);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isInitialFilterMount.current) {
+      isInitialFilterMount.current = false;
+      return;
+    }
     setCurrentPage(1);
   }, [searchQuery, selectedTypes, selectedFuels, selectedTransmissions, minPrice, maxPrice, seatingCapacity, sortBy]);
 

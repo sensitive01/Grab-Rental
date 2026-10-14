@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import { resolveCarModelAndImage, fetchAndCacheAdminVehicleModels } from "@/lib/vehicleUtils";
 import { 
   Car, 
   Settings, 
@@ -73,8 +75,14 @@ export default function CustomerDashboard() {
           }
         }
 
-        // 3. Map into presentation format
-        const formatted = liveBookings.map(b => formatBookingItem(b));
+        // 3. Dynamically fetch admin-configured vehicle models (from Admin > Vehicle Models)
+        let adminModels = [];
+        try {
+          adminModels = await fetchAndCacheAdminVehicleModels();
+        } catch {}
+
+        // 4. Map into presentation format
+        const formatted = liveBookings.map(b => formatBookingItem(b, adminModels));
 
         if (!isCancelled) {
           setBookings(formatted);
@@ -95,7 +103,7 @@ export default function CustomerDashboard() {
     };
   }, []);
 
-  function formatBookingItem(b) {
+  function formatBookingItem(b, adminModels = []) {
     const rawStatus = (b.status || "PENDING").toUpperCase();
     
     let tabCategory = "upcoming";
@@ -139,6 +147,8 @@ export default function CustomerDashboard() {
     const advance = Number(b.advancePaid || 0);
     const due = Number(b.dueAmount != null ? b.dueAmount : Math.max(0, total - advance));
 
+    const { modelName, carImage, categoryLabel } = resolveCarModelAndImage(b, adminModels);
+
     return {
       id: b.bookingReference || b.id || "GR-REF",
       rawId: b.id,
@@ -148,8 +158,9 @@ export default function CustomerDashboard() {
       distance: b.distance ? `${b.distance} km` : "Direct Outstation",
       date: dateStr,
       time: timeStr,
-      car: b.vehicleModel || `${b.vehicleCategory || "Sedan"} Cab`,
-      carType: b.vehicleType || `${b.vehicleCategory || "Outstation"} • AC`,
+      car: modelName,
+      carImage: carImage,
+      carType: categoryLabel,
       status: tabCategory,
       rawStatus,
       statusLabel,
@@ -317,9 +328,27 @@ export default function CustomerDashboard() {
                   {/* Vehicle & Chauffeur (Col 7-9) */}
                   <div className="lg:col-span-3 border-t lg:border-t-0 lg:border-l border-slate-100 lg:pl-6 space-y-3">
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vehicle</span>
-                      <h4 className="text-xs font-extrabold text-slate-900">{booking.car}</h4>
-                      <p className="text-[11px] text-slate-500">{booking.carType}</p>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Vehicle</span>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-20 h-14 sm:w-22 sm:h-15 rounded-xl overflow-hidden bg-slate-50 border border-slate-200/80 shrink-0 shadow-2xs">
+                          <Image
+                            src={booking.carImage}
+                            alt={booking.car}
+                            fill
+                            sizes="(max-width: 640px) 80px, 96px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs sm:text-sm font-black text-slate-900 leading-tight" title={booking.car}>
+                            {booking.car}
+                          </h4>
+                          <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{booking.carType}</p>
+                          <span className="inline-block mt-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                            Guaranteed AC
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     {booking.driver ? (

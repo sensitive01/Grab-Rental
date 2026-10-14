@@ -41,6 +41,12 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User retrieved successfully", user));
     }
 
+    @GetMapping("/vendors")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getAllVendors() {
+        List<Map<String, Object>> vendors = adminService.getAllVendors();
+        return ResponseEntity.ok(ApiResponse.success("Vendors retrieved successfully", vendors));
+    }
+
     @GetMapping("/vendors/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getVendorDetails(@PathVariable UUID id) {
         Map<String, Object> details = adminService.getVendorFullDetails(id);

@@ -1,4 +1,5 @@
 import { axiosClient } from "./axiosClient";
+import { formatLocalDateTime } from "./dateTimeUtils";
 
 export const customerApi = {
   /**
@@ -17,6 +18,14 @@ export const customerApi = {
         serviceType: params.serviceType,
       },
     });
+    return res.data;
+  },
+
+  /**
+   * Get active vehicle models configured in admin
+   */
+  async getVehicleModels() {
+    const res = await axiosClient.get("/api/vehicles/models");
     return res.data;
   },
 
@@ -40,7 +49,7 @@ export const customerApi = {
       stops: data.stops || null,
       pickupAddress: data.pickupAddress || data.fromAddress || "Bangalore City Center",
       dropAddress: data.dropAddress || data.toAddress || "Mysore City Center",
-      pickupDateTime: data.pickupDateTime || new Date(Date.now() + 3600000).toISOString(),
+      pickupDateTime: data.pickupDateTime || `${formatLocalDateTime(new Date(Date.now() + 3600000))}:00`,
       returnDateTime: data.returnDateTime || null,
       vehicleCategory: data.vehicleCategory || data.carType || "SEDAN",
       passengerCount: data.passengerCount || 1,

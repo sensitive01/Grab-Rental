@@ -27,5 +27,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
 
     long countByUserId(UUID userId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT v.user.id, COUNT(v) FROM Vehicle v GROUP BY v.user.id")
+    List<Object[]> countVehiclesGroupedByUserId();
+
     List<Vehicle> findByStatus(com.grabrentals.vendor.entity.VehicleStatus status);
 }

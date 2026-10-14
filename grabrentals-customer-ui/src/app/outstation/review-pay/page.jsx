@@ -28,6 +28,7 @@ import { customerApi } from "@/lib/customerApi";
 import { isAuthenticated, getCurrentUser, setAuthSession, logout } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
+import { padZero, formatLocalDateTime } from "@/lib/dateTimeUtils";
 
 function resolveCarImage(title, category, rawImage) {
   if (rawImage && typeof rawImage === "string" && !rawImage.includes("blob:")) {
@@ -282,26 +283,30 @@ export default function ReviewPayPage() {
     try {
       const advancePaid = paymentPlan === "advance" ? advanceAmount : totalAmount;
 
-      // Construct ISO timestamp from trip date and time
-      // eslint-disable-next-line react-hooks/purity
-      let pickupIso = new Date(Date.now() + 86400000).toISOString();
+      // Construct local date-time string (without UTC shift) so Spring Boot's LocalDateTime stores exact local pickup time
+      let pickupIso = null;
       if (bookingConfig?.trip?.date) {
         try {
-          const dateParts = bookingConfig.trip.date.split("-");
+          const dateParts = String(bookingConfig.trip.date).split("-");
           let yyyy, mm, dd;
           if (dateParts[0].length === 4) {
             [yyyy, mm, dd] = dateParts;
           } else {
             [dd, mm, yyyy] = dateParts;
           }
-          const timeParts = (bookingConfig.trip.time || "07:00").split(":");
-          const dt = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(timeParts[0] || 7), Number(timeParts[1] || 0));
-          if (!isNaN(dt.getTime())) {
-            pickupIso = dt.toISOString();
-          }
+          const timeParts = (bookingConfig.trip.time || "08:00").split(":");
+          const hh = padZero(Number(timeParts[0] || 8));
+          const min = padZero(Number(timeParts[1] || 0));
+          yyyy = String(yyyy).padStart(4, "0");
+          mm = padZero(Number(mm));
+          dd = padZero(Number(dd));
+          pickupIso = `${yyyy}-${mm}-${dd}T${hh}:${min}:00`;
         } catch {
           // Keep fallback ISO
         }
+      }
+      if (!pickupIso) {
+        pickupIso = `${formatLocalDateTime(new Date(Date.now() + 86400000))}:00`;
       }
 
       const rawStops = bookingConfig?.trip?.stops || bookingConfig?.stops || null;
@@ -332,7 +337,7 @@ export default function ReviewPayPage() {
         totalFare: totalAmount,
         advancePaid,
         paymentStatus: paymentPlan === "advance" ? "ADVANCE_PAID" : "FULL_PAID",
-        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${isLocal ? "Package: " + packageLabel + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
+        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${isLocal ? "Package: " + packageLabel + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Image: ${bookingConfig?.car?.image || ""} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
       };
 
       const res = await customerApi.createBooking(bookingPayload);

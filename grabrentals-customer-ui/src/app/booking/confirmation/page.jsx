@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { resolveCarModelAndImage } from "@/lib/vehicleUtils";
 import { 
   CheckCircle2, 
   MapPin, 
@@ -135,6 +137,8 @@ function BookingConfirmationContent() {
   const advancePaid = Number(booking?.advancePaid || 0);
   const dueAmount = totalFare > advancePaid ? totalFare - advancePaid : 0;
   const vehicleCategory = booking?.vehicleCategory || "SEDAN";
+
+  const { modelName, carImage, categoryLabel } = resolveCarModelAndImage(booking);
 
   const stopsList = [];
   if (booking?.stops) {
@@ -273,14 +277,20 @@ function BookingConfirmationContent() {
 
           {/* Dynamic Vehicle & Chauffeur Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-                <Car className="w-5 h-5" />
+            <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="relative w-16 h-12 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0 shadow-2xs">
+                <Image
+                  src={carImage}
+                  alt={modelName}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
               </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Reserved Category</span>
-                <h4 className="text-xs font-extrabold text-slate-900">{vehicleCategory}</h4>
-                <p className="text-[11px] text-slate-500 font-medium">Commercial Chauffeur-Driven</p>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Reserved Vehicle</span>
+                <h4 className="text-xs font-extrabold text-slate-900 truncate">{modelName}</h4>
+                <p className="text-[11px] text-slate-500 font-medium">{categoryLabel}</p>
               </div>
             </div>
 

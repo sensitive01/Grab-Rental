@@ -148,7 +148,6 @@ const INITIAL_VENDOR_REPLICA = {
 
   // Option 2 Multi-fleet
   estimatedFleetSize: 5,
-  commissionRate: 12,
   status: "ACTIVE",
 };
 
@@ -166,7 +165,6 @@ function AdminVendorsContent() {
 
   // Approval Modal State
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [commissionRate, setCommissionRate] = useState(12);
 
   // Add Vendor Modal State (Vendor Registration Replica)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -292,10 +290,10 @@ function AdminVendorsContent() {
   async function handleApprove() {
     if (!selectedVendor) return;
     try {
-      await adminApi.approveVendor(selectedVendor.id, Number(commissionRate));
+      await adminApi.approveVendor(selectedVendor.id);
       setToast({
         type: "success",
-        message: `Vendor "${selectedVendor.name}" approved successfully with ${commissionRate}% commission!`,
+        message: `Vendor "${selectedVendor.name}" approved successfully!`,
       });
       setSelectedVendor(null);
       await loadVendors();
@@ -380,7 +378,6 @@ function AdminVendorsContent() {
         gstDocumentUrl: newVendor.gstDocument || null,
         fleetModel: newVendor.fleetModel === 1 ? "Owner-Driver" : "Fleet Operator",
         fleetSize: newVendor.fleetModel === 1 ? 1 : Number(newVendor.estimatedFleetSize || 5),
-        commissionRate: Number(newVendor.commissionRate || 12),
         vehicleNumber: newVendor.fleetModel === 1 ? newVendor.vehicleNumber?.trim() || null : null,
         vehicleCategory: newVendor.vehicleCategory,
         vehicleModel: newVendor.vehicleModel?.trim() || null,
@@ -470,7 +467,7 @@ function AdminVendorsContent() {
         return sortConfig.direction === "asc" ? aTime - bTime : bTime - aTime;
       }
 
-      if (["fleetCount", "driverCount", "commissionRate", "rating"].includes(sortConfig.key)) {
+      if (["fleetCount", "driverCount", "rating"].includes(sortConfig.key)) {
         aVal = Number(aVal || 0);
         bVal = Number(bVal || 0);
       } else if (typeof aVal === "string") {
@@ -499,7 +496,7 @@ function AdminVendorsContent() {
 
       <PageHeader
         title="Fleet Vendor Partners"
-        subtitle="Manage fleet operators, commercial contract commissions, and approve onboarding applications"
+        subtitle="Manage fleet operators and approve onboarding applications"
         breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Vendors" }]}
         action={
           <Button
@@ -774,10 +771,9 @@ function AdminVendorsContent() {
                             icon={CheckCircle2}
                             onClick={() => {
                               setSelectedVendor(v);
-                              setCommissionRate(v.commissionRate || 12);
                             }}
                           >
-                            Authorize & Set Commission
+                            Authorize & Approve
                           </Button>
                         </div>
                       </TableCell>
@@ -830,12 +826,6 @@ function AdminVendorsContent() {
                     onSort={handleSort}
                   />
                   <SortableHeader
-                    columnKey="commissionRate"
-                    label="Commission Rate"
-                    currentSort={sortConfig}
-                    onSort={handleSort}
-                  />
-                  <SortableHeader
                     columnKey="rating"
                     label="Rating"
                     currentSort={sortConfig}
@@ -872,11 +862,6 @@ function AdminVendorsContent() {
                     </TableCell>
                     <TableCell>
                       <span className="text-xs text-slate-700">{v.driverCount ?? 0} Chauffeurs</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                        {v.commissionRate}%
-                      </span>
                     </TableCell>
                     <TableCell>
                       {v.rating > 0 ? (
@@ -972,12 +957,12 @@ function AdminVendorsContent() {
         )}
       </Card>
 
-      {/* Commission Setup & Approval Modal */}
+      {/* Vendor Approval Modal */}
       <Modal
         isOpen={!!selectedVendor}
         onClose={() => setSelectedVendor(null)}
         title={`Approve ${selectedVendor?.name}`}
-        subtitle="Establish commercial contract rate and activate platform booking dispatch"
+        subtitle="Activate platform booking dispatch"
       >
         <div className="space-y-4">
           <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
@@ -986,16 +971,6 @@ function AdminVendorsContent() {
             <div><strong>Representative:</strong> {selectedVendor?.contactPerson} ({selectedVendor?.email})</div>
             <div><strong>Contact Phone:</strong> {selectedVendor?.phone}</div>
           </div>
-
-          <Input
-            label="Platform Commission Fee (%)"
-            type="number"
-            min="5"
-            max="30"
-            value={commissionRate}
-            onChange={(e) => setCommissionRate(e.target.value)}
-            helperText="Standard platform commission is typically 10% - 15% on each completed booking."
-          />
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" size="sm" onClick={() => setSelectedVendor(null)}>
@@ -1854,7 +1829,7 @@ function AdminVendorsContent() {
                     <p className="text-[11px] text-slate-200">
                       {newVendor.fleetModel === 1
                         ? "Register vehicle specifications, compliance dates, and commercial chauffeur qualifications"
-                        : "Configure dispatch parameters, initial fleet scale, and platform commission contract rate"}
+                        : "Configure dispatch parameters and initial fleet scale"}
                     </p>
                   </div>
                 </div>
@@ -2099,38 +2074,21 @@ function AdminVendorsContent() {
                 <div className="p-5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
                   <div className="flex items-center gap-2 text-xs font-bold text-amber-900 uppercase tracking-wider">
                     <Sparkles className="w-4 h-4 text-amber-600" />
-                    <span>Commercial Dispatch Contract & Account Status</span>
+                    <span>Account Status & Activation</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Platform Commission Contract Rate (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="5"
-                        max="30"
-                        value={newVendor.commissionRate}
-                        onChange={(e) => setNewVendor({ ...newVendor, commissionRate: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-slate-800"
-                      />
-                      <p className="text-[11px] text-slate-500 mt-1">Standard rate is 12% on completed trips.</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Initial Activation Status
-                      </label>
-                      <select
-                        value={newVendor.status}
-                        onChange={(e) => setNewVendor({ ...newVendor, status: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-emerald-700"
-                      >
-                        <option value="ACTIVE">ACTIVE (Authorized for immediate live booking dispatch)</option>
-                        <option value="PENDING">PENDING (Awaiting document inspection & approval)</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Initial Activation Status
+                    </label>
+                    <select
+                      value={newVendor.status}
+                      onChange={(e) => setNewVendor({ ...newVendor, status: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-emerald-700"
+                    >
+                      <option value="ACTIVE">ACTIVE (Authorized for immediate live booking dispatch)</option>
+                      <option value="PENDING">PENDING (Awaiting document inspection & approval)</option>
+                    </select>
                   </div>
                 </div>
 

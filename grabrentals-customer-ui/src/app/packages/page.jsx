@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BookingWidget from "@/components/home/BookingWidget";
+import { getDefaultPickupDateTime } from "@/lib/dateTimeUtils";
 import {
   MapPin,
   Calendar,
@@ -40,7 +41,7 @@ export default function PackagesPage() {
 
   const handleBookPackage = (pkg) => {
     if (typeof window !== "undefined") {
-      const today = new Date().toISOString().split("T")[0];
+      const defaultPickup = getDefaultPickupDateTime();
       sessionStorage.setItem(
         "grab_pending_trip",
         JSON.stringify({
@@ -52,8 +53,8 @@ export default function PackagesPage() {
           serviceType: "OUTSTATION",
           distanceKm: pkg.distanceKm,
           durationText: pkg.duration,
-          date: today,
-          time: "07:00",
+          date: defaultPickup.date,
+          time: defaultPickup.time,
         })
       );
     }
@@ -83,7 +84,7 @@ export default function PackagesPage() {
             <Sparkles className="w-3.5 h-3.5 text-brand-amber" /> Special Roadtrip & Tour Packages
           </div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            Curated Special Tour & Travel Packages
+            Outstation Tourist Packages
           </h1>
           <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
             Multi-day scenic highway expeditions and curated roadtrips — Goa, Ladakh, Ooty, Coorg, and beyond. Fixed all-inclusive fares with seasoned highway chauffeurs and premium SUVs.

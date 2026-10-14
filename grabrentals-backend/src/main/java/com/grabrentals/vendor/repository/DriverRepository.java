@@ -27,6 +27,9 @@ public interface DriverRepository extends JpaRepository<Driver, UUID> {
 
     long countByUserId(UUID userId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT d.user.id, COUNT(d) FROM Driver d GROUP BY d.user.id")
+    List<Object[]> countDriversGroupedByUserId();
+
     List<Driver> findByUserIdAndAssignedVehicleIsNotNull(UUID userId);
 
     Optional<Driver> findByAssignedVehicleId(UUID vehicleId);

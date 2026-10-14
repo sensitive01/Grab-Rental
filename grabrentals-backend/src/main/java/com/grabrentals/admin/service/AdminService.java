@@ -84,6 +84,84 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<java.util.Map<String, Object>> getAllVendors() {
+        List<User> users = userRepository.findByRoleInOrderByCreatedAtDesc(
+                List.of(Role.FLEET, Role.VENDOR)
+        );
+        if (users.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        // Batch load profiles (1 query)
+        java.util.Map<UUID, com.grabrentals.vendor.entity.VendorProfile> profileMap =
+                vendorProfileRepository.findAll().stream()
+                        .filter(p -> p.getUser() != null)
+                        .collect(java.util.stream.Collectors.toMap(
+                                p -> p.getUser().getId(),
+                                p -> p,
+                                (a, b) -> a
+                        ));
+
+        // Batch load vehicle counts (1 query)
+        java.util.Map<UUID, Long> vehicleCountMap = new java.util.HashMap<>();
+        for (Object[] row : vehicleRepository.countVehiclesGroupedByUserId()) {
+            if (row != null && row.length >= 2 && row[0] instanceof UUID uId && row[1] instanceof Number num) {
+                vehicleCountMap.put(uId, num.longValue());
+            }
+        }
+
+        // Batch load driver counts (1 query)
+        java.util.Map<UUID, Long> driverCountMap = new java.util.HashMap<>();
+        for (Object[] row : driverRepository.countDriversGroupedByUserId()) {
+            if (row != null && row.length >= 2 && row[0] instanceof UUID uId && row[1] instanceof Number num) {
+                driverCountMap.put(uId, num.longValue());
+            }
+        }
+
+        List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+        for (User u : users) {
+            com.grabrentals.vendor.entity.VendorProfile profile = profileMap.get(u.getId());
+            long actualVehicleCount = vehicleCountMap.getOrDefault(u.getId(), 0L);
+            long actualDriverCount = driverCountMap.getOrDefault(u.getId(), 0L);
+
+            long fleetCount = actualVehicleCount > 0
+                    ? actualVehicleCount
+                    : (profile != null && profile.getFleetSize() != null && profile.getFleetSize() > 0 ? profile.getFleetSize() : 0);
+
+            long driverCount = actualDriverCount > 0
+                    ? actualDriverCount
+                    : (actualVehicleCount > 0 ? actualVehicleCount : (profile != null && profile.getFleetSize() != null && profile.getFleetSize() > 0 ? profile.getFleetSize() : 0));
+
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+            map.put("id", u.getId());
+            map.put("name", (u.getBusinessName() != null && !u.getBusinessName().isBlank())
+                    ? u.getBusinessName()
+                    : ((profile != null && profile.getCompanyName() != null && !profile.getCompanyName().isBlank())
+                            ? profile.getCompanyName()
+                            : u.getName()));
+            map.put("businessName", u.getBusinessName() != null ? u.getBusinessName() : (profile != null ? profile.getCompanyName() : null));
+            map.put("companyName", profile != null ? profile.getCompanyName() : null);
+            map.put("contactPerson", profile != null && profile.getContactPerson() != null ? profile.getContactPerson() : u.getName());
+            map.put("ownerName", u.getName());
+            map.put("email", u.getEmail());
+            map.put("phone", u.getPhone());
+            map.put("city", u.getCity() != null ? u.getCity() : (profile != null && profile.getAddress() != null ? profile.getAddress() : "Primary Hub"));
+            map.put("fleetCount", fleetCount);
+            map.put("driverCount", driverCount);
+            map.put("vehiclesCount", fleetCount);
+            map.put("driversCount", driverCount);
+            map.put("status", u.getStatus() != null ? u.getStatus().name() : "ACTIVE");
+            map.put("role", u.getRole() != null ? u.getRole().name() : "FLEET");
+            map.put("createdAt", u.getCreatedAt());
+            map.put("gstNumber", profile != null && profile.getGstin() != null ? profile.getGstin() : "Pending Submission");
+            map.put("gstStatus", (u.getStatus() == UserStatus.ACTIVE) ? "Verified Active" : "Pending Verification");
+            map.put("rating", 5.0);
+            result.add(map);
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
     public List<UserResponse> getUsersByRole(Role role) {
         return userRepository.findByRole(role).stream()
                 .map(UserResponse::fromEntity)
