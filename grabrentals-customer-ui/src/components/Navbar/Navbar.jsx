@@ -19,7 +19,7 @@ export default function Navbar() {
           <Link href="/ops" className={styles.navLink}>Operations</Link>
           <Link href="/agency" className={styles.navLink}>Partner with Us</Link>
           <Link href="/admin" className={styles.navLink}>Admin</Link>
-          <a href="tel:9045450000" className={styles.contactBtn}>
+          <a href="tel:9071100200" className={styles.contactBtn}>
              📞 24/7 Helpline
           </a>
           <Link href="/dashboard" className="btn-primary" style={{ padding: "8px 20px" }}>

@@ -124,7 +124,7 @@ export default function RefundPolicyPage() {
           <ol className="list-decimal pl-5 space-y-2 text-xs sm:text-sm text-slate-600">
             <li>Log into your account and open <Link href="/dashboard" className="text-amber-700 underline font-bold">My Trips Dashboard</Link>.</li>
             <li>Locate your upcoming booking and click &ldquo;Cancel Trip&rdquo;.</li>
-            <li>Alternatively, call our 24/7 helpline at <a href="tel:+918047109999" className="text-slate-900 font-bold underline">+91 80 4710 9999</a> or WhatsApp our support team for instant assistance.</li>
+            <li>Alternatively, call our 24/7 helpline at <a href="tel:+919071100200" className="text-slate-900 font-bold underline">+91 90711 00200</a> or WhatsApp our support team for instant assistance.</li>
           </ol>
         </div>
 

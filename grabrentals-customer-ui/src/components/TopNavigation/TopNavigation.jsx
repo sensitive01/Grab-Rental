@@ -72,9 +72,9 @@ export default function TopNavigation() {
 
         {/* Quick Actions */}
         <div className="flex items-center gap-4">
-          <a href="tel:+919045450000" className="hidden md:flex items-center gap-2 bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors">
+          <a href="tel:+919071100200" className="hidden md:flex items-center gap-2 bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors">
             <Phone className="w-4 h-4 text-brand-amber" />
-            +91 90454 50000
+            +91 90711 00200
           </a>
           
           <Link href="/dashboard" className="hidden md:flex items-center gap-2 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">

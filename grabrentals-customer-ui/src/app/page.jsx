@@ -2,23 +2,23 @@
 
 import { useState, useRef } from "react";
 import BookingWidget from "@/components/home/BookingWidget";
-import { 
-  CheckCircle, 
-  ShieldCheck, 
-  MapPin, 
-  Star, 
-  FileText, 
-  UserCheck, 
-  BadgeCheck, 
+import {
+  CheckCircle,
+  ShieldCheck,
+  MapPin,
+  Star,
+  FileText,
+  UserCheck,
+  BadgeCheck,
   Globe2,
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Minus, 
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Minus,
   ArrowRight,
-  User, 
-  CreditCard, 
-  Car, 
+  User,
+  CreditCard,
+  Car,
   PhoneCall
 } from "lucide-react";
 import Image from "next/image";
@@ -49,45 +49,45 @@ export default function Home() {
   };
 
   const corridors = [
-    { 
-      route: "Bangalore ➔ Mysore", 
-      price: "₹1,850", 
-      dist: "145 km", 
+    {
+      route: "Bangalore ➔ Mysore",
+      price: "₹1,850",
+      dist: "145 km",
       image: "/images/routes/mysore.jpg",
       slug: "bangalore-mysore"
     },
-    { 
-      route: "Delhi NCR ➔ Agra", 
-      price: "₹2,299", 
-      dist: "230 km", 
+    {
+      route: "Delhi NCR ➔ Agra",
+      price: "₹2,299",
+      dist: "230 km",
       image: "/images/routes/agra.jpg",
       slug: "delhi-agra"
     },
-    { 
-      route: "Mumbai ➔ Pune", 
-      price: "₹1,999", 
-      dist: "150 km", 
+    {
+      route: "Mumbai ➔ Pune",
+      price: "₹1,999",
+      dist: "150 km",
       image: "/images/routes/pune.jpg",
       slug: "mumbai-pune"
     },
-    { 
-      route: "Delhi ➔ Jaipur", 
-      price: "₹2,750", 
-      dist: "280 km", 
+    {
+      route: "Delhi ➔ Jaipur",
+      price: "₹2,750",
+      dist: "280 km",
       image: "/images/routes/jaipur.jpg",
       slug: "delhi-jaipur"
     },
-    { 
-      route: "Chennai ➔ Pondy", 
-      price: "₹2,100", 
-      dist: "155 km", 
+    {
+      route: "Chennai ➔ Pondy",
+      price: "₹2,100",
+      dist: "155 km",
       image: "/images/routes/pondy.jpg",
       slug: "chennai-pondy"
     },
-    { 
-      route: "Bangalore ➔ Ooty", 
-      price: "₹4,100", 
-      dist: "275 km", 
+    {
+      route: "Bangalore ➔ Ooty",
+      price: "₹4,100",
+      dist: "275 km",
       image: "/images/routes/ooty.jpg",
       slug: "bangalore-ooty"
     },
@@ -122,25 +122,25 @@ export default function Home() {
 
   return (
     <main className="flex flex-col bg-slate-50">
-      
+
       {/* 1. Hero Section */}
       <section className="text-white pt-6 sm:pt-8 md:pt-12 pb-28 sm:pb-36 md:pb-44 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
-        
+
         <div className="max-w-7xl w-full relative z-10 flex flex-col items-center text-center mt-1 sm:mt-2 md:mt-4">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-brand-navy-dark/80 backdrop-blur-md border border-slate-700/50 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-brand-amber mb-3 sm:mb-5 shadow-xl">
             <Star className="w-3 h-3 text-brand-amber" /> {t("hero_badge") || "Grab Rentals"}
           </div>
-          
+
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            {t("hero_title_1") || "India's Most Trusted Rental Service"} <br/>
+            {t("hero_title_1") || "India's Most Trusted Rental Service"} <br />
             <span className="text-brand-orange drop-shadow-lg">{t("hero_title_2") || "Car, Van & Bus Rentals"}</span>
           </h1>
-          
+
           <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
             {t("hero_subtitle") || "Transparent billing, expert verified drivers, and pristine AC vehicles for Outstation, Local & Airport transit across 2,000+ Indian cities."}
           </p>
@@ -156,27 +156,27 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 md:mt-28 mb-12 sm:mb-16 w-full">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {[
-            { 
-              stat: "2,000+", 
-              label: t("stat_cities_served") || "Cities & Towns Served", 
+            {
+              stat: "2,000+",
+              label: t("stat_cities_served") || "Cities & Towns Served",
               icon: <MapPin className="text-sky-500 w-5 h-5 sm:w-6 sm:h-6" />,
               bg: "bg-sky-50"
             },
-            { 
-              stat: "98.9%", 
-              label: t("stat_on_time_departure") || "On-Time Departure Rate", 
+            {
+              stat: "98.9%",
+              label: t("stat_on_time_departure") || "On-Time Departure Rate",
               icon: <CheckCircle className="text-emerald-500 w-5 h-5 sm:w-6 sm:h-6" />,
               bg: "bg-emerald-50"
             },
-            { 
-              stat: "4.8 / 5.0", 
-              label: t("stat_reviews") || "(120,000+ Reviews)", 
+            {
+              stat: "4.8 / 5.0",
+              label: t("stat_reviews") || "(120,000+ Reviews)",
               icon: <Star className="text-amber-500 fill-amber-500 w-5 h-5 sm:w-6 sm:h-6" />,
               bg: "bg-amber-50"
             },
-            { 
-              stat: "32-Point", 
-              label: t("stat_sanitized_inspection") || "Sanitized Fleet Inspection", 
+            {
+              stat: "32-Point",
+              label: t("stat_sanitized_inspection") || "Sanitized Fleet Inspection",
               icon: <ShieldCheck className="text-emerald-600 w-5 h-5 sm:w-6 sm:h-6" />,
               bg: "bg-emerald-50"
             },
@@ -203,54 +203,54 @@ export default function Home() {
               {t("choose_travel_class_sub") || "Experience our premium fleet tailored for every need—from executive sedans to luxury coaches."}
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { 
-                slug: "sedan", 
-                name: t("fleet_sedan_name") || "Executive Sedan", 
-                price: `${t("price_starts") || "Starts"} ₹11/km`, 
-                desc: "Dzire, Etios, Aura", 
-                tags: ["4 Seats", "2 Bags", "AC"], 
-                image: "/images/fleet/sedan.jpg" 
+              {
+                slug: "sedan",
+                name: t("fleet_sedan_name") || "Executive Sedan",
+                price: `${t("price_starts") || "Starts"} ₹11/km`,
+                desc: "Dzire, Etios, Aura",
+                tags: ["4 Seats", "2 Bags", "AC"],
+                image: "/images/fleet/sedan.jpg"
               },
-              { 
-                slug: "suv", 
-                name: t("fleet_suv_name") || "Innova Crysta / SUV", 
-                price: `${t("price_starts") || "Starts"} ₹16/km`, 
-                desc: "Innova Crysta, Hycross", 
-                tags: ["6-7 Seats", "4 Bags", "AC", "Captain Seats"], 
-                image: "/images/fleet/suv.jpg" 
+              {
+                slug: "suv",
+                name: t("fleet_suv_name") || "Innova Crysta / SUV",
+                price: `${t("price_starts") || "Starts"} ₹16/km`,
+                desc: "Innova Crysta, Hycross",
+                tags: ["6-7 Seats", "4 Bags", "AC", "Captain Seats"],
+                image: "/images/fleet/suv.jpg"
               },
-              { 
-                slug: "tempo", 
-                name: t("fleet_tempo_name") || "Luxury Tempo Traveller", 
-                price: `${t("price_starts") || "Starts"} ₹24/km`, 
-                desc: "12 to 26 Seater Force Urbania", 
-                tags: ["Maharaja Recliner", "AC", "AV System"], 
-                image: "/images/fleet/tempo.jpg" 
+              {
+                slug: "tempo",
+                name: t("fleet_tempo_name") || "Luxury Tempo Traveller",
+                price: `${t("price_starts") || "Starts"} ₹24/km`,
+                desc: "12 to 26 Seater Force Urbania",
+                tags: ["Maharaja Recliner", "AC", "AV System"],
+                image: "/images/fleet/tempo.jpg"
               },
-              { 
-                slug: "bus", 
-                name: t("fleet_bus_name") || "Luxury Coaches & Buses", 
-                price: `${t("price_starts") || "Starts"} ₹45/km`, 
-                desc: "35 to 55 Seater Volvo, Scania", 
-                tags: ["Washroom", "Mic", "Air Suspension"], 
-                image: "/images/fleet/bus.jpg" 
+              {
+                slug: "bus",
+                name: t("fleet_bus_name") || "Luxury Coaches & Buses",
+                price: `${t("price_starts") || "Starts"} ₹45/km`,
+                desc: "35 to 55 Seater Volvo, Scania",
+                tags: ["Washroom", "Mic", "Air Suspension"],
+                image: "/images/fleet/bus.jpg"
               },
             ].map((fleet, idx) => (
-              <Link 
-                key={idx} 
+              <Link
+                key={idx}
                 href={`/fleet/${fleet.slug}`}
                 className="bg-white rounded-2xl p-5 border border-slate-200/90 flex flex-col items-center text-center relative hover:shadow-xl hover:border-amber-400 transition-all cursor-pointer group"
               >
                 <div className="w-full aspect-[16/9] relative mb-4 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
-                  <Image 
-                    src={fleet.image} 
-                    alt={fleet.name} 
-                    fill 
-                    sizes="(max-width: 768px) 100vw, 300px" 
-                    className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                  <Image
+                    src={fleet.image}
+                    alt={fleet.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 300px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 mb-0.5 group-hover:text-amber-600 transition-colors">
@@ -312,13 +312,13 @@ export default function Home() {
             </div>
           </div>
 
-          <div 
+          <div
             ref={corridorsRef}
             className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 overflow-x-auto no-scrollbar pb-2 sm:pb-0"
           >
             {corridors.map((corridor, i) => (
-              <Link 
-                key={i} 
+              <Link
+                key={i}
                 href={`/outstation?route=${corridor.slug}`}
                 className="min-w-[240px] sm:min-w-0 bg-white border border-slate-200/90 rounded-2xl overflow-hidden hover:border-amber-400 hover:shadow-lg transition-all group flex flex-col shrink-0"
               >
@@ -357,36 +357,36 @@ export default function Home() {
               What makes Grab Rentals the preferred choice for thousands of travelers.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8">
             {[
-              { 
-                title: t("vp_billing_title") || "Transparent Billing", 
-                desc: t("vp_billing_desc") || "Automated GST invoicing with zero hidden fees.", 
+              {
+                title: t("vp_billing_title") || "Transparent Billing",
+                desc: t("vp_billing_desc") || "Automated GST invoicing with zero hidden fees.",
                 icon: <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-brand-orange" />,
                 bg: "bg-orange-50 border-orange-200/60"
               },
-              { 
-                title: t("vp_chauffeurs_title") || "Expert Chauffeurs", 
-                desc: t("vp_chauffeurs_desc") || "8+ years highway experience & police verified.", 
+              {
+                title: t("vp_chauffeurs_title") || "Expert Chauffeurs",
+                desc: t("vp_chauffeurs_desc") || "8+ years highway experience & police verified.",
                 icon: <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />,
                 bg: "bg-blue-50 border-blue-200/60"
               },
-              { 
-                title: t("vp_sanitization_title") || "32-Point Sanitization", 
-                desc: t("vp_sanitization_desc") || "Complimentary Water & Tissue inside pristine cabs.", 
+              {
+                title: t("vp_sanitization_title") || "32-Point Sanitization",
+                desc: t("vp_sanitization_desc") || "Complimentary Water & Tissue inside pristine cabs.",
                 icon: <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />,
                 bg: "bg-emerald-50 border-emerald-200/60"
               },
-              { 
-                title: t("vp_cancellation_title") || "Zero Cancellation Stress", 
-                desc: t("vp_cancellation_desc") || "Instant UPI/Card Reversal on early cancellations.", 
+              {
+                title: t("vp_cancellation_title") || "Zero Cancellation Stress",
+                desc: t("vp_cancellation_desc") || "Instant UPI/Card Reversal on early cancellations.",
                 icon: <BadgeCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />,
                 bg: "bg-amber-50 border-amber-200/60"
               },
-              { 
-                title: t("all_india_coverage") || "All-India Coverage", 
-                desc: t("all_india_coverage_desc") || "Reliable service across 2,000+ Indian cities.", 
+              {
+                title: t("all_india_coverage") || "All-India Coverage",
+                desc: t("all_india_coverage_desc") || "Reliable service across 2,000+ Indian cities.",
                 icon: <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />,
                 bg: "bg-rose-50 border-rose-200/60"
               },
@@ -407,7 +407,7 @@ export default function Home() {
       <section className="py-12 sm:py-16 bg-slate-50 border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-md bg-gradient-to-r from-blue-50/70 via-slate-50 to-[#0B1220] grid grid-cols-1 lg:grid-cols-12">
-            
+
             {/* Left Content (Col 1-5) */}
             <div className="lg:col-span-5 p-6 sm:p-10 flex flex-col justify-between bg-white/70 backdrop-blur-xs">
               <div>

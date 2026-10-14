@@ -10,16 +10,20 @@ export default function CorporatePage() {
   return (
     <main className="flex flex-col bg-slate-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-brand-navy-dark via-slate-800 to-slate-900 text-white py-14 px-6 relative">
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
-        <div className="max-w-6xl mx-auto relative z-10 text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-brand-navy border border-slate-700 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-brand-amber mb-6">
+      <section className="text-white py-16 sm:py-20 md:py-24 px-4 sm:px-6 relative overflow-hidden flex flex-col items-center bg-slate-900">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
+        <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
+          <div className="inline-flex items-center gap-2 bg-brand-navy-dark/80 backdrop-blur-md border border-slate-700/50 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-brand-amber mb-3 sm:mb-5 shadow-xl">
             <Building className="w-3 h-3 text-brand-amber" /> {t("corporate_hero_badge")}
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
             {t("corporate_hero_title")}
           </h1>
-          <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto font-medium">
+          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
             {t("corporate_hero_subtitle")}
           </p>
         </div>

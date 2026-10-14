@@ -69,11 +69,276 @@ const SERVICE_TYPES = [
 ];
 
 const STATES_AND_CITIES = {
+  "Andaman and Nicobar Islands": [
+    "Port Blair",
+    "Havelock Island",
+    "Neil Island",
+    "Diglipur"
+  ],
+  "Andhra Pradesh": [
+    "Visakhapatnam",
+    "Vijayawada",
+    "Guntur",
+    "Nellore",
+    "Kurnool",
+    "Rajahmundry",
+    "Tirupati",
+    "Kakinada",
+    "Anantapur",
+    "Kadapa",
+    "Eluru",
+    "Ongole"
+  ],
+  "Arunachal Pradesh": [
+    "Itanagar",
+    "Naharlagun",
+    "Tawang",
+    "Pasighat",
+    "Ziro",
+    "Bomdila"
+  ],
+  "Assam": [
+    "Guwahati",
+    "Silchar",
+    "Dibrugarh",
+    "Jorhat",
+    "Nagaon",
+    "Tinsukia",
+    "Tezpur"
+  ],
+  "Bihar": [
+    "Patna",
+    "Gaya",
+    "Bhagalpur",
+    "Muzaffarpur",
+    "Purnia",
+    "Darbhanga",
+    "Bihar Sharif",
+    "Arrah"
+  ],
+  "Chandigarh": [
+    "Chandigarh"
+  ],
+  "Chhattisgarh": [
+    "Raipur",
+    "Bhilai",
+    "Bilaspur",
+    "Korba",
+    "Durg",
+    "Rajnandgaon",
+    "Jagdalpur"
+  ],
+  "Dadra and Nagar Haveli and Daman and Diu": [
+    "Daman",
+    "Diu",
+    "Silvassa"
+  ],
+  "Delhi NCR": [
+    "New Delhi",
+    "Noida",
+    "Gurgaon",
+    "Ghaziabad",
+    "Faridabad",
+    "Greater Noida"
+  ],
+  "Goa": [
+    "Panaji",
+    "Margao",
+    "Vasco da Gama",
+    "Mapusa",
+    "Ponda",
+    "Calangute"
+  ],
+  "Gujarat": [
+    "Ahmedabad",
+    "Surat",
+    "Vadodara",
+    "Rajkot",
+    "Bhavnagar",
+    "Jamnagar",
+    "Gandhinagar",
+    "Junagadh",
+    "Anand",
+    "Bharuch",
+    "Bhuj",
+    "Vapi"
+  ],
+  "Haryana": [
+    "Gurgaon",
+    "Faridabad",
+    "Panipat",
+    "Ambala",
+    "Yamunanagar",
+    "Rohtak",
+    "Hisar",
+    "Karnal",
+    "Sonipat",
+    "Panchkula"
+  ],
+  "Himachal Pradesh": [
+    "Shimla",
+    "Manali",
+    "Dharamshala",
+    "Solan",
+    "Mandi",
+    "Kullu",
+    "Kalka",
+    "Baddi"
+  ],
+  "Jammu and Kashmir": [
+    "Srinagar",
+    "Jammu",
+    "Katra",
+    "Anantnag",
+    "Baramulla",
+    "Gulmarg",
+    "Pahalgam"
+  ],
+  "Jharkhand": [
+    "Ranchi",
+    "Jamshedpur",
+    "Dhanbad",
+    "Bokaro",
+    "Deoghar",
+    "Hazaribagh"
+  ],
+  "Karnataka": [
+    "Bangalore",
+    "Mysore",
+    "Mangalore",
+    "Hubli",
+    "Belgaum",
+    "Gulbarga",
+    "Davanagere",
+    "Bellary",
+    "Shimoga",
+    "Tumkur",
+    "Udupi",
+    "Hassan",
+    "Hospet",
+    "Bidar"
+  ],
+  "Kerala": [
+    "Kochi",
+    "Thiruvananthapuram",
+    "Kozhikode",
+    "Thrissur",
+    "Kollam",
+    "Palakkad",
+    "Alappuzha",
+    "Kannur",
+    "Kottayam",
+    "Wayanad",
+    "Munnar",
+    "Malappuram"
+  ],
+  "Ladakh": [
+    "Leh",
+    "Kargil",
+    "Nubra Valley"
+  ],
+  "Lakshadweep": [
+    "Kavaratti",
+    "Agatti"
+  ],
+  "Madhya Pradesh": [
+    "Indore",
+    "Bhopal",
+    "Jabalpur",
+    "Gwalior",
+    "Ujjain",
+    "Sagar",
+    "Dewas",
+    "Satna",
+    "Ratlam"
+  ],
+  "Maharashtra": [
+    "Mumbai",
+    "Pune",
+    "Nagpur",
+    "Nashik",
+    "Aurangabad",
+    "Solapur",
+    "Kolhapur",
+    "Thane",
+    "Navi Mumbai",
+    "Shirdi",
+    "Mahabaleshwar",
+    "Nanded",
+    "Jalgaon",
+    "Amravati"
+  ],
+  "Manipur": [
+    "Imphal",
+    "Churachandpur",
+    "Thoubal",
+    "Ukhrul"
+  ],
+  "Meghalaya": [
+    "Shillong",
+    "Tura",
+    "Cherrapunji",
+    "Jowai"
+  ],
+  "Mizoram": [
+    "Aizawl",
+    "Lunglei",
+    "Champhai"
+  ],
+  "Nagaland": [
+    "Kohima",
+    "Dimapur",
+    "Mokokchung"
+  ],
+  "Odisha": [
+    "Bhubaneswar",
+    "Cuttack",
+    "Rourkela",
+    "Puri",
+    "Berhampur",
+    "Sambalpur",
+    "Balasore"
+  ],
+  "Puducherry": [
+    "Puducherry",
+    "Karaikal",
+    "Mahe",
+    "Yanam"
+  ],
+  "Punjab": [
+    "Ludhiana",
+    "Amritsar",
+    "Jalandhar",
+    "Patiala",
+    "Bathinda",
+    "Mohali",
+    "Pathankot",
+    "Hoshiarpur"
+  ],
+  "Rajasthan": [
+    "Jaipur",
+    "Jodhpur",
+    "Udaipur",
+    "Kota",
+    "Bikaner",
+    "Ajmer",
+    "Bhilwara",
+    "Alwar",
+    "Jaisalmer",
+    "Mount Abu",
+    "Pushkar"
+  ],
+  "Sikkim": [
+    "Gangtok",
+    "Namchi",
+    "Pelling",
+    "Ravangla"
+  ],
   "Tamil Nadu": [
-    "Theni",
-    "Coimbatore",
     "Chennai",
+    "Coimbatore",
     "Madurai",
+    "Theni",
     "Salem",
     "Tiruchirappalli",
     "Tirunelveli",
@@ -89,72 +354,60 @@ const STATES_AND_CITIES = {
     "Hosur",
     "Nagercoil",
     "Kumbakonam",
-    "Cuddalore"
-  ],
-  "Karnataka": [
-    "Bangalore",
-    "Mysore",
-    "Mangalore",
-    "Hubli",
-    "Belgaum",
-    "Gulbarga",
-    "Davanagere",
-    "Bellary",
-    "Shimoga",
-    "Tumkur",
-    "Udupi"
-  ],
-  "Kerala": [
-    "Kochi",
-    "Thiruvananthapuram",
-    "Kozhikode",
-    "Thrissur",
-    "Kollam",
-    "Palakkad",
-    "Alappuzha",
-    "Kannur",
-    "Kottayam",
-    "Wayanad",
-    "Munnar"
-  ],
-  "Andhra Pradesh": [
-    "Visakhapatnam",
-    "Vijayawada",
-    "Guntur",
-    "Nellore",
-    "Kurnool",
-    "Rajahmundry",
-    "Tirupati",
-    "Kakinada"
+    "Cuddalore",
+    "Rameswaram"
   ],
   "Telangana": [
     "Hyderabad",
     "Warangal",
     "Nizamabad",
     "Karimnagar",
-    "Khammam"
+    "Khammam",
+    "Ramagundam",
+    "Mahbubnagar"
   ],
-  "Maharashtra": [
-    "Mumbai",
-    "Pune",
-    "Nagpur",
-    "Nashik",
-    "Aurangabad",
-    "Solapur",
-    "Kolhapur"
+  "Tripura": [
+    "Agartala",
+    "Udaipur",
+    "Dharmanagar"
   ],
-  "Delhi NCR": [
-    "New Delhi",
+  "Uttar Pradesh": [
+    "Lucknow",
+    "Kanpur",
+    "Varanasi",
+    "Agra",
+    "Prayagraj (Allahabad)",
+    "Meerut",
+    "Bareilly",
+    "Aligarh",
+    "Moradabad",
+    "Gorakhpur",
     "Noida",
-    "Gurgaon",
+    "Greater Noida",
     "Ghaziabad",
-    "Faridabad"
+    "Ayodhya",
+    "Mathura"
   ],
-  "Goa": [
-    "Panaji",
-    "Margao",
-    "Vasco da Gama",
-    "Mapusa"
+  "Uttarakhand": [
+    "Dehradun",
+    "Haridwar",
+    "Rishikesh",
+    "Roorkee",
+    "Haldwani",
+    "Nainital",
+    "Mussoorie",
+    "Rudrapur"
+  ],
+  "West Bengal": [
+    "Kolkata",
+    "Howrah",
+    "Siliguri",
+    "Durgapur",
+    "Asansol",
+    "Darjeeling",
+    "Bardhaman",
+    "Malda",
+    "Kharagpur"
   ]
 };
 
@@ -213,32 +466,32 @@ export default function AdminPricingPage() {
     endDate: "",
 
     // Customer Per-KM Rates (Used for both Outstation and Local)
-    weekdayDayRate: "12.50",
-    weekdayNightRate: "14.00",
-    weekendDayRate: "14.00",
-    weekendNightRate: "15.50",
-    baseFare: "3200.00",
-    baseIncludedKm: "250",
-    driverBattaDay: "400.00",
-    driverBattaNight: "300.00",
+    weekdayDayRate: "",
+    weekdayNightRate: "",
+    weekendDayRate: "",
+    weekendNightRate: "",
+    baseFare: "",
+    baseIncludedKm: "",
+    driverBattaDay: "",
+    driverBattaNight: "",
 
     // Vendor Per-KM Rates (Used for both Outstation and Local)
-    vendorWeekdayDayRate: "9.50",
-    vendorWeekdayNightRate: "10.50",
-    vendorWeekendDayRate: "10.50",
-    vendorWeekendNightRate: "11.50",
-    vendorBaseFare: "2300.00",
-    vendorDriverBattaDay: "300.00",
-    vendorDriverBattaNight: "200.00",
+    vendorWeekdayDayRate: "",
+    vendorWeekdayNightRate: "",
+    vendorWeekendDayRate: "",
+    vendorWeekendNightRate: "",
+    vendorBaseFare: "",
+    vendorDriverBattaDay: "",
+    vendorDriverBattaNight: "",
 
     // Airport Specific Fares
-    airportCustomerFare: "1200.00",
-    airportVendorFare: "850.00",
-    airportCustomerWeekendFare: "1350.00",
-    airportVendorWeekendFare: "950.00",
-    airportIncludedKm: "35",
-    airportExtraKmRate: "15.00",
-    airportVendorExtraKmRate: "11.00",
+    airportCustomerFare: "",
+    airportVendorFare: "",
+    airportCustomerWeekendFare: "",
+    airportVendorWeekendFare: "",
+    airportIncludedKm: "",
+    airportExtraKmRate: "",
+    airportVendorExtraKmRate: "",
     tollIncluded: false,
   });
 
@@ -317,9 +570,6 @@ export default function AdminPricingPage() {
     const initialSeats = models[0]?.seatingCapacity || "4";
     const sType = targetService || "OUTSTATION";
 
-    const catDefaults = DEFAULT_RATES_BY_CATEGORY[initialCategory] || DEFAULT_RATES_BY_CATEGORY.Sedan;
-    const rates = sType === "LOCAL" ? catDefaults.local : sType === "AIRPORT" ? catDefaults.airport : catDefaults.outstation;
-
     setFormData({
       id: null,
       category: initialCategory,
@@ -327,7 +577,7 @@ export default function AdminPricingPage() {
       seatingCapacity: initialSeats,
       serviceType: sType,
       state: "Tamil Nadu",
-      city: "Theni",
+      city: "Chennai",
       customCity: "",
       tariffType: isSeasonal ? "SEASONAL" : "STANDARD",
       seasonal: isSeasonal,
@@ -335,57 +585,39 @@ export default function AdminPricingPage() {
       startDate: isSeasonal ? new Date().toISOString().split("T")[0] : "",
       endDate: isSeasonal ? new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0] : "",
 
-      weekdayDayRate: rates.custWdDay,
-      weekdayNightRate: rates.custWdNight,
-      weekendDayRate: rates.custWeDay,
-      weekendNightRate: rates.custWeNight,
-      baseFare: rates.custBase,
-      baseIncludedKm: rates.minKm,
-      driverBattaDay: "400.00",
-      driverBattaNight: "300.00",
+      weekdayDayRate: "",
+      weekdayNightRate: "",
+      weekendDayRate: "",
+      weekendNightRate: "",
+      baseFare: "",
+      baseIncludedKm: "",
+      driverBattaDay: "",
+      driverBattaNight: "",
 
-      vendorWeekdayDayRate: rates.vendWdDay,
-      vendorWeekdayNightRate: rates.vendWdNight,
-      vendorWeekendDayRate: rates.vendWeDay,
-      vendorWeekendNightRate: rates.vendWeNight,
-      vendorBaseFare: rates.vendBase,
-      vendorDriverBattaDay: "300.00",
-      vendorDriverBattaNight: "200.00",
+      vendorWeekdayDayRate: "",
+      vendorWeekdayNightRate: "",
+      vendorWeekendDayRate: "",
+      vendorWeekendNightRate: "",
+      vendorBaseFare: "",
+      vendorDriverBattaDay: "",
+      vendorDriverBattaNight: "",
 
-      airportCustomerFare: rates.custBase,
-      airportVendorFare: rates.vendBase,
-      airportCustomerWeekendFare: rates.custBase,
-      airportVendorWeekendFare: rates.vendBase,
-      airportIncludedKm: rates.minKm,
-      airportExtraKmRate: rates.custWdDay,
-      airportVendorExtraKmRate: rates.vendWdDay,
+      airportCustomerFare: "",
+      airportVendorFare: "",
+      airportCustomerWeekendFare: "",
+      airportVendorWeekendFare: "",
+      airportIncludedKm: "",
+      airportExtraKmRate: "",
+      airportVendorExtraKmRate: "",
       tollIncluded: false,
     });
     setIsModalOpen(true);
   }
 
   function handleSwitchServiceInForm(newService) {
-    const catDefaults = DEFAULT_RATES_BY_CATEGORY[formData.category] || DEFAULT_RATES_BY_CATEGORY.Sedan;
-    let rates = catDefaults.outstation;
-    if (newService === "LOCAL") {
-      rates = catDefaults.local;
-    } else if (newService === "AIRPORT") {
-      rates = catDefaults.airport;
-    }
     setFormData((prev) => ({
       ...prev,
       serviceType: newService,
-      weekdayDayRate: rates.custWdDay,
-      weekdayNightRate: rates.custWdNight,
-      weekendDayRate: rates.custWeDay,
-      weekendNightRate: rates.custWeNight,
-      baseFare: rates.custBase,
-      baseIncludedKm: rates.minKm,
-      vendorWeekdayDayRate: rates.vendWdDay,
-      vendorWeekdayNightRate: rates.vendWdNight,
-      vendorWeekendDayRate: rates.vendWeDay,
-      vendorWeekendNightRate: rates.vendWeNight,
-      vendorBaseFare: rates.vendBase,
     }));
   }
 
@@ -401,7 +633,7 @@ export default function AdminPricingPage() {
       seatingCapacity: item.seatingCapacity || "4",
       serviceType: sType,
       state: item.state || "Tamil Nadu",
-      city: item.city || "Theni",
+      city: item.city || "",
       customCity: "",
       tariffType: isSeasonal ? "SEASONAL" : "STANDARD",
       seasonal: isSeasonal,
@@ -409,30 +641,30 @@ export default function AdminPricingPage() {
       startDate: item.startDate || "",
       endDate: item.endDate || "",
 
-      weekdayDayRate: String(item.weekdayDayRate ?? "12.50"),
-      weekdayNightRate: String(item.weekdayNightRate ?? "14.00"),
-      weekendDayRate: String(item.weekendDayRate ?? "14.00"),
-      weekendNightRate: String(item.weekendNightRate ?? "15.50"),
-      baseFare: String(item.baseFare ?? (sType === "LOCAL" ? "1800.00" : sType === "AIRPORT" ? "1400.00" : "3200.00")),
-      baseIncludedKm: String(item.baseIncludedKm ?? (sType === "LOCAL" ? "80" : sType === "AIRPORT" ? "40" : "250")),
-      driverBattaDay: String(item.driverBattaDay ?? "400.00"),
-      driverBattaNight: String(item.driverBattaNight ?? "300.00"),
+      weekdayDayRate: item.weekdayDayRate != null ? String(item.weekdayDayRate) : "",
+      weekdayNightRate: item.weekdayNightRate != null ? String(item.weekdayNightRate) : "",
+      weekendDayRate: item.weekendDayRate != null ? String(item.weekendDayRate) : "",
+      weekendNightRate: item.weekendNightRate != null ? String(item.weekendNightRate) : "",
+      baseFare: item.baseFare != null ? String(item.baseFare) : "",
+      baseIncludedKm: item.baseIncludedKm != null ? String(item.baseIncludedKm) : "",
+      driverBattaDay: item.driverBattaDay != null ? String(item.driverBattaDay) : "",
+      driverBattaNight: item.driverBattaNight != null ? String(item.driverBattaNight) : "",
 
-      vendorWeekdayDayRate: String(item.vendorWeekdayDayRate ?? (parseFloat(item.weekdayDayRate || 12.5) * 0.75).toFixed(2)),
-      vendorWeekdayNightRate: String(item.vendorWeekdayNightRate ?? (parseFloat(item.weekdayNightRate || 14) * 0.75).toFixed(2)),
-      vendorWeekendDayRate: String(item.vendorWeekendDayRate ?? (parseFloat(item.weekendDayRate || 14) * 0.75).toFixed(2)),
-      vendorWeekendNightRate: String(item.vendorWeekendNightRate ?? (parseFloat(item.weekendNightRate || 15.5) * 0.75).toFixed(2)),
-      vendorBaseFare: String(item.vendorBaseFare ?? (parseFloat(item.baseFare || (sType === "LOCAL" ? 1800 : sType === "AIRPORT" ? 1400 : 3200)) * 0.75).toFixed(2)),
-      vendorDriverBattaDay: String(item.vendorDriverBattaDay ?? "300.00"),
-      vendorDriverBattaNight: String(item.vendorDriverBattaNight ?? "200.00"),
+      vendorWeekdayDayRate: item.vendorWeekdayDayRate != null ? String(item.vendorWeekdayDayRate) : "",
+      vendorWeekdayNightRate: item.vendorWeekdayNightRate != null ? String(item.vendorWeekdayNightRate) : "",
+      vendorWeekendDayRate: item.vendorWeekendDayRate != null ? String(item.vendorWeekendDayRate) : "",
+      vendorWeekendNightRate: item.vendorWeekendNightRate != null ? String(item.vendorWeekendNightRate) : "",
+      vendorBaseFare: item.vendorBaseFare != null ? String(item.vendorBaseFare) : "",
+      vendorDriverBattaDay: item.vendorDriverBattaDay != null ? String(item.vendorDriverBattaDay) : "",
+      vendorDriverBattaNight: item.vendorDriverBattaNight != null ? String(item.vendorDriverBattaNight) : "",
 
-      airportCustomerFare: String(item.airportCustomerFare ?? "1200.00"),
-      airportVendorFare: String(item.airportVendorFare ?? "850.00"),
-      airportCustomerWeekendFare: String(item.airportCustomerWeekendFare ?? "1350.00"),
-      airportVendorWeekendFare: String(item.airportVendorWeekendFare ?? "950.00"),
-      airportIncludedKm: String(item.airportIncludedKm ?? "35"),
-      airportExtraKmRate: String(item.airportExtraKmRate ?? "15.00"),
-      airportVendorExtraKmRate: String(item.airportVendorExtraKmRate ?? "11.00"),
+      airportCustomerFare: item.airportCustomerFare != null ? String(item.airportCustomerFare) : "",
+      airportVendorFare: item.airportVendorFare != null ? String(item.airportVendorFare) : "",
+      airportCustomerWeekendFare: item.airportCustomerWeekendFare != null ? String(item.airportCustomerWeekendFare) : "",
+      airportVendorWeekendFare: item.airportVendorWeekendFare != null ? String(item.airportVendorWeekendFare) : "",
+      airportIncludedKm: item.airportIncludedKm != null ? String(item.airportIncludedKm) : "",
+      airportExtraKmRate: item.airportExtraKmRate != null ? String(item.airportExtraKmRate) : "",
+      airportVendorExtraKmRate: item.airportVendorExtraKmRate != null ? String(item.airportVendorExtraKmRate) : "",
       tollIncluded: Boolean(item.tollIncluded),
     });
     setIsModalOpen(true);

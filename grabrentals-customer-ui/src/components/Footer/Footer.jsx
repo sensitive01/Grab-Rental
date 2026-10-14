@@ -57,7 +57,7 @@ export default function Footer() {
             <li><Link href="/agency" className="hover:text-brand-amber transition-colors">Attach Your Vehicle</Link></li>
             <li><Link href="/corporate" className="hover:text-brand-amber transition-colors">Corporate Travel (B2B)</Link></li>
             <li><Link href="/support" className="hover:text-brand-amber transition-colors">Contact Us / Help Center</Link></li>
-            <li><a href="tel:+918047109999" className="text-white font-medium hover:text-brand-amber transition-colors">Helpline: +91 80 4710 9999</a></li>
+            <li><a href="tel:+919071100200" className="text-white font-medium hover:text-brand-amber transition-colors">Helpline: +91 90711 00200</a></li>
           </ul>
         </div>
       </div>

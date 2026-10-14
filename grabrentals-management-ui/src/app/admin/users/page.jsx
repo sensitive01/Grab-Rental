@@ -467,7 +467,7 @@ export default function AdminUsersDirectoryPage() {
       <PageHeader
         title="Platform Users Directory"
         subtitle="Directory of registered customers, vendor partners, operations dispatchers, and administrators"
-        breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Users" }]}
+        breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "All Users" }]}
         action={
           <div className="flex items-center gap-2.5">
             <Button

@@ -138,9 +138,9 @@ export default function BookingInvoicePage({ params }) {
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-2 font-medium">Grab Rental Technologies Pvt. Ltd.</p>
-              <p className="text-xs text-slate-500">#12, 100 Feet Road, Indiranagar, Bengaluru, KA - 560038</p>
+              <p className="text-xs text-slate-500">Anjananagar, Bangalore, Karnataka</p>
               <p className="text-xs text-slate-500">GSTIN: <span className="font-mono font-bold text-slate-700">29AABCG7890F1Z2</span></p>
-              <p className="text-xs text-slate-500">Email: billing@grabrental.in • Web: grabrental.in</p>
+              <p className="text-xs text-slate-500">Email: info@grabrentals.in • Web: grabrentals.in</p>
             </div>
 
             <div className="sm:text-right space-y-1">
@@ -271,7 +271,7 @@ export default function BookingInvoicePage({ params }) {
           {/* Footer Terms */}
           <div className="pt-6 border-t border-slate-100 text-[11px] text-slate-400 text-center space-y-1">
             <p className="font-bold text-slate-600">Thank you for choosing Grab-Rental!</p>
-            <p>For any billing inquiries, call our 24/7 helpline at +91 80 4710 9999 or email support@grabrental.in</p>
+            <p>For any billing inquiries, call our 24/7 helpline at +91 90711 00200 or email info@grabrentals.in</p>
           </div>
 
         </div>

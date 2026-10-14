@@ -100,10 +100,10 @@ export default function SupportHelpPage() {
             </div>
             <div>
               <a
-                href="tel:+918047109999"
+                href="tel:+919071100200"
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs"
               >
-                Call +91 80 4710 9999
+                Call +91 90711 00200
               </a>
             </div>
           </div>
@@ -118,7 +118,7 @@ export default function SupportHelpPage() {
             </div>
             <div>
               <a
-                href="https://wa.me/919845012345"
+                href="https://wa.me/919071100200"
                 target="_blank"
                 rel="noreferrer"
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
@@ -138,10 +138,10 @@ export default function SupportHelpPage() {
             </div>
             <div>
               <a
-                href="mailto:support@grabrental.in"
+                href="mailto:info@grabrentals.in"
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
               >
-                support@grabrental.in
+                info@grabrentals.in
               </a>
             </div>
           </div>

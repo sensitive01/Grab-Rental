@@ -116,9 +116,9 @@ export default function PrivacyPolicyPage() {
             <p>If you have any questions or grievances regarding this Privacy Policy, please reach us at:</p>
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold space-y-1">
               <p className="font-bold text-slate-900">Grab Rental Technologies Pvt. Ltd. — Data Protection Desk</p>
-              <p>Email: <a href="mailto:privacy@grabrental.in" className="text-amber-700 underline">privacy@grabrental.in</a></p>
-              <p>Helpline: +91 80 4710 9999</p>
-              <p>Address: #12, 100 Feet Road, Indiranagar, Bengaluru, Karnataka, India - 560038</p>
+              <p>Email: <a href="mailto:info@grabrentals.in" className="text-amber-700 underline">info@grabrentals.in</a></p>
+              <p>Helpline: +91 90711 00200</p>
+              <p>Address: Anjananagar, Bangalore, Karnataka</p>
             </div>
           </section>
 

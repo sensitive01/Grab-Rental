@@ -1,18 +1,39 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
 
+const getTabFromPath = (path) => {
+  if (!path) return "outstation";
+  if (path.startsWith("/airport")) return "airport";
+  if (path.startsWith("/local")) return "local";
+  if (path.startsWith("/vans")) return "van";
+  if (path.startsWith("/buses")) return "bus";
+  return "outstation";
+};
+
+const getPathFromTab = (tabId) => {
+  switch (tabId) {
+    case "local": return "/local";
+    case "airport": return "/airport";
+    case "van": return "/vans";
+    case "bus": return "/buses";
+    case "outstation":
+    default: return "/";
+  }
+};
+
 export default function BookingWidget() {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState("outstation");
+  const [activeTab, setActiveTab] = useState(() => getTabFromPath(pathname));
   const [tripType, setTripType] = useState("one-way");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapTarget, setMapTarget] = useState("pickup"); // 'pickup' | 'drop'
@@ -36,6 +57,67 @@ export default function BookingWidget() {
   const [pickupTime, setPickupTime] = useState("07:00");
 
   const allowsStops = activeTab === "outstation" || activeTab === "van" || activeTab === "bus";
+
+  // Tab scroll navigation for mobile view
+  const tabsRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (tabsRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsRef.current;
+      setCanScrollLeft(scrollLeft > 8);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 8);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const el = tabsRef.current;
+    if (!el) return;
+
+    const timer = setTimeout(checkScroll, 100);
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [t]);
+
+  // Synchronize active tab with URL path changes (e.g. when user clicks a service in top navbar)
+  useEffect(() => {
+    const matchedTab = getTabFromPath(pathname);
+    setActiveTab(matchedTab);
+
+    if (tabsRef.current) {
+      const activeBtn = tabsRef.current.querySelector(`[data-tab-id="${matchedTab}"]`);
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+  }, [pathname]);
+
+  const handleTabClick = (tabId, e) => {
+    setActiveTab(tabId);
+    if (e?.currentTarget) {
+      e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+    const targetPath = getPathFromTab(tabId);
+    if (pathname !== targetPath) {
+      router.push(targetPath, { scroll: false });
+    }
+  };
+
+  const scrollTabs = (direction) => {
+    if (tabsRef.current) {
+      const scrollAmount = 160;
+      tabsRef.current.scrollBy({
+        left: direction === "right" ? scrollAmount : -scrollAmount,
+        behavior: "smooth"
+      });
+      setTimeout(checkScroll, 320);
+    }
+  };
 
   // Automatic KM & Route Duration Detection (Instant synchronous fallback + Google Routes API async)
   const initialEstimate = useMemo(() => {
@@ -168,26 +250,62 @@ export default function BookingWidget() {
     <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-4 sm:p-6 max-w-6xl mx-auto border border-slate-200/50">
       
       {/* Top Segmented Tabs */}
-      <div className="flex border-b border-slate-200 mb-4 sm:mb-6 overflow-x-auto hide-scrollbar pb-1 gap-1">
-        {[
-          { id: "outstation", label: t("outstation_cabs") },
-          { id: "local", label: t("local_rental") },
-          { id: "airport", label: t("airport") },
-          { id: "van", label: t("tempo_traveller") },
-          { id: "bus", label: t("luxury_buses") },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-shrink-0 px-3.5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] ${
-              activeTab === tab.id
-                ? "text-brand-amber border-brand-amber bg-orange-50/50 rounded-t-lg"
-                : "text-slate-500 border-transparent hover:text-slate-800"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="relative mb-4 sm:mb-6">
+        {/* Left Arrow (Mobile View) */}
+        {canScrollLeft && (
+          <div className="absolute left-0 top-0 bottom-[1px] flex items-center pr-3 bg-gradient-to-r from-white via-white/95 to-transparent z-10 sm:hidden">
+            <button
+              type="button"
+              onClick={() => scrollTabs("left")}
+              aria-label="Scroll tabs left"
+              className="w-7 h-7 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-brand-amber active:scale-90 transition-all cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          </div>
+        )}
+
+        {/* Scrollable Tabs */}
+        <div
+          ref={tabsRef}
+          onScroll={checkScroll}
+          className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 scroll-smooth"
+        >
+          {[
+            { id: "outstation", label: t("outstation_cabs") },
+            { id: "local", label: t("local_rental") },
+            { id: "airport", label: t("airport") },
+            { id: "van", label: t("tempo_traveller") },
+            { id: "bus", label: t("luxury_buses") },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              data-tab-id={tab.id}
+              onClick={(e) => handleTabClick(tab.id, e)}
+              className={`flex-shrink-0 px-3.5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer ${
+                activeTab === tab.id
+                  ? "text-brand-amber border-brand-amber bg-orange-50/50 rounded-t-lg"
+                  : "text-slate-500 border-transparent hover:text-slate-800"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right Arrow (Mobile View) */}
+        {canScrollRight && (
+          <div className="absolute right-0 top-0 bottom-[1px] flex items-center pl-3 bg-gradient-to-l from-white via-white/95 to-transparent z-10 sm:hidden">
+            <button
+              type="button"
+              onClick={() => scrollTabs("right")}
+              aria-label="Scroll tabs right"
+              className="w-7 h-7 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-brand-amber active:scale-90 transition-all cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Trip Type Radios / Bordered Pill Buttons */}

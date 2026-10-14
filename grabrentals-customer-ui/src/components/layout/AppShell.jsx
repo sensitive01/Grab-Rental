@@ -62,6 +62,11 @@ export default function AppShell({ children }) {
     { name: t("corporate_events"), href: "/corporate" },
   ];
 
+  const isNavActive = (href) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname?.startsWith(href + "/");
+  };
+
   // Auth pages like /login use a dedicated focused layout
   if (pathname === "/login") {
     return <>{children}</>;
@@ -164,7 +169,7 @@ export default function AppShell({ children }) {
                 key={link.name}
                 href={link.href} 
                 className={`px-2 lg:px-3 py-2 text-xs lg:text-sm font-semibold transition-colors ${
-                  pathname === link.href 
+                  isNavActive(link.href) 
                     ? "bg-brand-amber text-white font-bold rounded-full shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
@@ -344,7 +349,7 @@ export default function AppShell({ children }) {
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                      pathname === link.href ? "bg-amber-50 text-amber-800 font-black border border-amber-200" : "text-slate-700 hover:bg-slate-50"
+                      isNavActive(link.href) ? "bg-amber-50 text-amber-800 font-black border border-amber-200" : "text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     <span>{link.name}</span>
@@ -473,11 +478,11 @@ export default function AppShell({ children }) {
           <div>
             <h3 className="text-white font-semibold mb-4 tracking-wide">{t("helpline_support") || "Contact & Trust"}</h3>
             <ul className="space-y-3 text-sm">
-              <li><a href="tel:+919045450000" className="flex items-center gap-2 text-white font-medium hover:text-brand-amber transition-colors"><Phone className="w-4 h-4 text-brand-orange" /> +91 90454 50000</a><span className="block text-xs text-slate-500 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span></li>
-              <li><a href="mailto:bookings@grabrentals.com" className="hover:text-brand-amber transition-colors ml-6">bookings@grabrentals.com</a></li>
+              <li><a href="tel:+919071100200" className="flex items-center gap-2 text-white font-medium hover:text-brand-amber transition-colors"><Phone className="w-4 h-4 text-brand-orange" /> +91 90711 00200</a><span className="block text-xs text-slate-500 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span></li>
+              <li><a href="mailto:info@grabrentals.in" className="hover:text-brand-amber transition-colors ml-6">info@grabrentals.in</a></li>
               <li className="flex items-start gap-2 mt-4 text-slate-400">
                 <Navigation className="w-4 h-4 text-brand-sky mt-1 shrink-0" />
-                <span>Fleet Towers, Aerocity Transit Zone, New Delhi 110037</span>
+                <span>Anjananagar, Bangalore, Karnataka</span>
               </li>
             </ul>
           </div>
