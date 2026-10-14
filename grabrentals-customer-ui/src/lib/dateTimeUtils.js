@@ -94,3 +94,41 @@ export function sanitizePickupDateTime(dateStr, timeStr) {
     datetime: `${dateStr}T${timeStr}`,
   };
 }
+
+/**
+ * Generates 15-minute interval time slots formatted in 12-hour AM/PM
+ */
+export function generateTimeSlots(intervalMinutes = 15) {
+  const slots = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += intervalMinutes) {
+      const val = `${padZero(h)}:${padZero(m)}`;
+      const hour12 = h % 12 || 12;
+      const ampm = h >= 12 ? "PM" : "AM";
+      const label = `${padZero(hour12)}:${padZero(m)} ${ampm}`;
+      slots.push({ value: val, label });
+    }
+  }
+  return slots;
+}
+
+/**
+ * Returns a human-friendly readable date label: e.g. "Thu, 15 Oct 2026"
+ */
+export function formatReadableDate(dateStr) {
+  if (!dateStr) return "";
+  try {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    if (isNaN(dateObj.getTime())) return dateStr;
+    return dateObj.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+  } catch {
+    return dateStr;
+  }
+}
+

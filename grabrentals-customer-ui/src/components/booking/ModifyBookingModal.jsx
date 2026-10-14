@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { X, MapPin, Calendar, Clock, ArrowRight, Plus, Minus } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { X, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, ChevronDown } from "lucide-react";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
-import { getMinPickupDateTimeString, sanitizePickupDateTime, getDefaultPickupDateTime } from "@/lib/dateTimeUtils";
+import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
+import { 
+  formatLocalDate,
+  getMinPickupDate,
+  generateTimeSlots,
+  getDefaultPickupDateTime,
+  isDateTimeInPast
+} from "@/lib/dateTimeUtils";
 
 export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSave }) {
   const isLocal = currentTrip?.serviceType === "LOCAL" || (currentTrip?.to && currentTrip.to.toLowerCase().includes("hr"));
@@ -21,6 +28,33 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const defaultDT = getDefaultPickupDateTime();
   const [date, setDate] = useState(currentTrip?.date || defaultDT.date);
   const [time, setTime] = useState(currentTrip?.time || defaultDT.time);
+
+  const minPickup = getMinPickupDate();
+  const minDateStr = formatLocalDate(minPickup);
+  const minHour = minPickup.getHours();
+  const minMin = minPickup.getMinutes();
+
+  const allTimeSlots = useMemo(() => generateTimeSlots(15), []);
+
+  const availableTimeSlots = useMemo(() => {
+    const isToday = date === minDateStr;
+    if (!isToday) return allTimeSlots;
+    return allTimeSlots.filter((slot) => {
+      const [sh, sm] = slot.value.split(":").map(Number);
+      return sh > minHour || (sh === minHour && sm >= minMin);
+    });
+  }, [date, minDateStr, minHour, minMin, allTimeSlots]);
+
+  // If selected time is not in available slots, snap to first available
+  useEffect(() => {
+    if (availableTimeSlots.length > 0 && !availableTimeSlots.some((s) => s.value === time)) {
+      setTime(availableTimeSlots[0].value);
+    }
+  }, [availableTimeSlots, time]);
+
+  const handleDateChange = (newDate) => {
+    setDate(newDate);
+  };
 
   if (!isOpen) return null;
 
@@ -183,26 +217,30 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
             </>
           )}
 
-          {/* Date & Time */}
-          {/* Pickup Date & Time */}
-          <div>
-            <label className="font-bold text-slate-700 block mb-1">Pickup Date & Time</label>
-            <div className="relative">
-              <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
-              <input
-                type="datetime-local"
-                value={`${date}T${time}`}
-                min={getMinPickupDateTimeString()}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (!val) return;
-                  const [d, tVal] = val.split("T");
-                  const sanitized = sanitizePickupDateTime(d, tVal);
-                  setDate(sanitized.date);
-                  setTime(sanitized.time);
-                }}
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500 cursor-pointer"
-                required
+          {/* Date & Time: Two Clean Fields with Gap */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Pickup Date</label>
+              <div className="relative">
+                <Calendar className="w-4 h-4 text-amber-500 absolute left-3 top-3 pointer-events-none" />
+                <input
+                  type="date"
+                  value={date}
+                  min={minDateStr}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500 cursor-pointer bg-slate-50 hover:bg-slate-100/70"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Pickup Time</label>
+              <TimeSelectDropdown
+                value={time}
+                onChange={setTime}
+                availableSlots={availableTimeSlots}
+                size="compact"
               />
             </div>
           </div>

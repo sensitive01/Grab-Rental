@@ -1,9 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ShieldCheck, Star, BadgeCheck, CheckCircle, Navigation, Phone, Briefcase, ChevronDown, User, Shield, CreditCard, Lock, LogOut, Settings, Menu, X, Bell } from "lucide-react";
+import { 
+  ShieldCheck, 
+  Star, 
+  BadgeCheck, 
+  CheckCircle, 
+  Navigation, 
+  Phone, 
+  Briefcase, 
+  ChevronDown, 
+  User, 
+  Shield, 
+  CreditCard, 
+  Lock, 
+  LogOut, 
+  Settings, 
+  Menu, 
+  X, 
+  Bell,
+  Car,
+  Clock,
+  Plane
+} from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function AppShell({ children }) {
@@ -13,6 +34,8 @@ export default function AppShell({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [bookNowOpen, setBookNowOpen] = useState(false);
+  const bookNowRef = useRef(null);
 
   useEffect(() => {
     const checkUser = () => {
@@ -32,6 +55,25 @@ export default function AppShell({ children }) {
     window.addEventListener("storage", checkUser);
     return () => window.removeEventListener("storage", checkUser);
   }, [pathname]);
+
+  // Close dropdowns on route change
+  useEffect(() => {
+    setBookNowOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Click outside to close Book Now dropdown
+  useEffect(() => {
+    const handleDocClick = (e) => {
+      if (bookNowRef.current && !bookNowRef.current.contains(e.target)) {
+        setBookNowOpen(false);
+      }
+    };
+    if (bookNowOpen) {
+      document.addEventListener("mousedown", handleDocClick);
+    }
+    return () => document.removeEventListener("mousedown", handleDocClick);
+  }, [bookNowOpen]);
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -53,20 +95,40 @@ export default function AppShell({ children }) {
     { code: "hi", label: "हिंदी", name: "Hindi" },
   ];
 
-  const navLinks = [
-    { name: t("outstation_cabs"), href: "/" },
-    { name: t("hourly_local"), href: "/local" },
-    { name: t("airport_transfers"), href: "/airport" },
-    // { name: t("tempo_traveller"), href: "/vans" },
-    // { name: t("luxury_buses"), href: "/buses" },
-    { name: t("packages") || "Packages", href: "/packages" },
-    { name: t("corporate_events"), href: "/corporate" },
+  const bookNowItems = [
+    { 
+      name: t("outstation_cabs") || "Outstation Cabs", 
+      href: "/", 
+      icon: Car, 
+      desc: "One-way & round-trip car rentals" 
+    },
+    { 
+      name: t("hourly_local") || "Hourly Rental", 
+      href: "/local", 
+      icon: Clock, 
+      desc: "Flexible local city rental packages" 
+    },
+    { 
+      name: t("airport_transfers") || "Airport Transfers", 
+      href: "/airport", 
+      icon: Plane, 
+      desc: "Guaranteed on-time airport pickup & drop" 
+    },
+  ];
+
+  const mainNavLinks = [
+    { name: t("tempo_traveller") || "Urbania / Tempo Traveller", href: "/vans" },
+    { name: t("luxury_buses") || "Bus Hire", href: "/buses" },
+    { name: t("packages") || "Tour Packages", href: "/packages" },
+    { name: t("corporate_events") || "Corporate & Events", href: "/corporate" },
   ];
 
   const isNavActive = (href) => {
     if (href === "/") return pathname === "/";
     return pathname === href || pathname?.startsWith(href + "/");
   };
+
+  const isBookNowActive = pathname === "/" || pathname === "/local" || pathname?.startsWith("/local") || pathname === "/airport" || pathname?.startsWith("/airport");
 
   // Auth pages like /login use a dedicated focused layout
   if (pathname === "/login") {
@@ -164,15 +226,72 @@ export default function AppShell({ children }) {
           </Link>
 
           {/* Service Tabs */}
-          <nav className="hidden lg:flex items-center h-full space-x-1 lg:ml-4 whitespace-nowrap overflow-x-auto hide-scrollbar flex-1">
-            {navLinks.map((link) => (
+          <nav className="hidden lg:flex items-center h-full space-x-1 lg:ml-4 whitespace-nowrap overflow-visible flex-1">
+            
+            {/* 1. Book Now Dropdown */}
+            <div 
+              ref={bookNowRef} 
+              className="relative h-full flex items-center"
+              onMouseEnter={() => setBookNowOpen(true)}
+              onMouseLeave={() => setBookNowOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setBookNowOpen(!bookNowOpen)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs lg:text-sm font-bold rounded-full transition-all cursor-pointer ${
+                  isBookNowActive 
+                    ? "bg-brand-amber text-white shadow-sm"
+                    : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+                }`}
+              >
+                <span>{t("book_now") || "Book Now"}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${bookNowOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {bookNowOpen && (
+                <div className="absolute top-[80%] left-0 pt-2 z-50 w-72 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-2 space-y-1">
+                    {bookNowItems.map((item) => {
+                      const Icon = item.icon;
+                      const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
+                      return (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setBookNowOpen(false)}
+                          className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${
+                            active
+                              ? "bg-amber-50 text-amber-950 font-bold"
+                              : "text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                            active ? "bg-amber-500 text-white shadow-xs" : "bg-slate-100 text-slate-600"
+                          }`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold leading-tight">{item.name}</div>
+                            <div className="text-[11px] text-slate-500 font-normal leading-tight mt-0.5">{item.desc}</div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Main Navigation Links */}
+            {mainNavLinks.map((link) => (
               <Link 
                 key={link.name}
                 href={link.href} 
-                className={`px-2 lg:px-3 py-2 text-xs lg:text-sm font-semibold transition-colors ${
+                className={`px-2.5 lg:px-3.5 py-2 text-xs lg:text-sm font-semibold transition-colors rounded-full ${
                   isNavActive(link.href) 
-                    ? "bg-brand-amber text-white font-bold rounded-full shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-brand-amber text-white font-bold shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                 }`}
               >
                 {link.name}
@@ -342,21 +461,49 @@ export default function AppShell({ children }) {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">Services & Fleet</span>
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                      isNavActive(link.href) ? "bg-amber-50 text-amber-800 font-black border border-amber-200" : "text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span>{link.name}</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Explore →</span>
-                  </Link>
-                ))}
+              <div className="space-y-3">
+                {/* Book Now Section */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider px-2">Book Now</span>
+                  {bookNowItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                          active ? "bg-amber-50 text-amber-950 font-black border border-amber-200" : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Icon className="w-4 h-4 text-amber-500" />
+                          <span>{item.name}</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-normal">Search →</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Main Menu Links */}
+                <div className="space-y-1 pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">Fleet & Corporate</span>
+                  {mainNavLinks.map((link) => (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                        isNavActive(link.href) ? "bg-amber-50 text-amber-950 font-black border border-amber-200" : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span>{link.name}</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Search →</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-3 border-t border-slate-100 space-y-1.5">

@@ -10,6 +10,7 @@ import VehicleDetailModal from "@/components/booking/VehicleDetailModal";
 import { customerApi } from "@/lib/customerApi";
 import { useLanguage } from "@/context/LanguageContext";
 import { getDefaultPickupDateTime } from "@/lib/dateTimeUtils";
+import { formatVehicleSavaariTitle } from "@/lib/vehicleUtils";
 import { 
   Search, 
   RotateCcw, 
@@ -315,9 +316,6 @@ function SelectVehicleContent() {
   // Format and calculate live pricing for real backend vehicles
   const fleetWithPricing = useMemo(() => {
     return backendVehicles.map((car) => {
-      const rawTitle = car.title || "Vehicle";
-      const title = rawTitle.replace(/ or Equivalent/gi, "").trim();
-
       // Determine vehicle type
       let type = car.vehicleType;
       if (!type) {
@@ -327,6 +325,9 @@ function SelectVehicleContent() {
         else if (cat.includes("TEMPO") || cat.includes("VAN")) type = "Van / Minibus";
         else type = "Sedan";
       }
+
+      const rawTitle = car.title || car.model || "Vehicle";
+      const title = formatVehicleSavaariTitle(rawTitle, car.category, type);
 
       // Fuel type
       let fuel = car.fuelType;
@@ -1063,12 +1064,12 @@ function SelectVehicleContent() {
                           </span>
                         </div>
 
-                        {/* Registration Number */}
-                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                          {car.regNumber}
+                        {/* Vehicle Type Subtitle */}
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          {car.vehicleType || "Hatchback"}
                         </p>
 
-                        {/* Specs Row 1: Type • Fuel • Transmission */}
+                        {/* Specs: Type • Fuel • Capacity (Manual/Auto & Year removed) */}
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-slate-600 pt-0.5">
                           <span className="flex items-center gap-1">
                             <Car className="w-3.5 h-3.5 text-slate-400" />
@@ -1081,21 +1082,8 @@ function SelectVehicleContent() {
                           </span>
                           <span className="text-slate-300">•</span>
                           <span className="flex items-center gap-1">
-                            <Settings2 className="w-3.5 h-3.5 text-slate-400" />
-                            {car.transmission}
-                          </span>
-                        </div>
-
-                        {/* Specs Row 2: Seats • Year */}
-                        <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-600">
-                          <span className="flex items-center gap-1">
                             <Users className="w-3.5 h-3.5 text-slate-400" />
                             {car.seatingCapacity} Seats
-                          </span>
-                          <span className="text-slate-300">•</span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            {car.year}
                           </span>
                         </div>
 
@@ -1121,6 +1109,9 @@ function SelectVehicleContent() {
                               ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
                             </span>
                           )}
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-500 mt-0.5">
+                          + Charges and Taxes
                         </div>
                         {isLocalBooking ? (
                           <p className="text-[11px] font-bold text-slate-700 mt-0.5">
@@ -1207,8 +1198,8 @@ function SelectVehicleContent() {
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                             Available
                           </span>
-                          <span className="text-[11px] font-bold text-slate-400 uppercase">
-                            ({car.regNumber})
+                          <span className="text-[11px] font-bold text-slate-500 uppercase">
+                            ({car.vehicleType || "Hatchback"})
                           </span>
                         </div>
 
@@ -1217,11 +1208,7 @@ function SelectVehicleContent() {
                           <span>•</span>
                           <span className="flex items-center gap-1"><Fuel className="w-3.5 h-3.5 text-slate-400" /> {car.fuelType}</span>
                           <span>•</span>
-                          <span className="flex items-center gap-1"><Settings2 className="w-3.5 h-3.5 text-slate-400" /> {car.transmission}</span>
-                          <span>•</span>
                           <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-slate-400" /> {car.seatingCapacity} Seats</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {car.year}</span>
                         </div>
 
                         <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
@@ -1248,6 +1235,9 @@ function SelectVehicleContent() {
                               ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
                             </span>
                           )}
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-500 md:text-right mt-0.5">
+                          + Charges and Taxes
                         </div>
                         {isLocalBooking ? (
                           <p className="text-[11px] font-bold text-slate-700">

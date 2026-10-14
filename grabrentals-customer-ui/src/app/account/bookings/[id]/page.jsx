@@ -20,7 +20,10 @@ import {
   Copy,
   AlertCircle,
   Loader2,
-  XCircle
+  XCircle,
+  AlertTriangle,
+  X,
+  CheckCircle2
 } from "lucide-react";
 import { customerApi } from "@/lib/customerApi";
 
@@ -47,6 +50,15 @@ export default function TripDetailsTrackingPage({ params }) {
   const [error, setError] = useState(null);
   const [copiedOtp, setCopiedOtp] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
+
+  const showNotification = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => {
+      setToast((prev) => (prev?.message === message ? null : prev));
+    }, 4500);
+  };
 
   useEffect(() => {
     let isCancelled = false;
@@ -103,17 +115,18 @@ export default function TripDetailsTrackingPage({ params }) {
     setTimeout(() => setCopiedOtp(false), 2000);
   };
 
-  const handleCancelBooking = async () => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
+  const handleConfirmCancel = async () => {
     setCancelling(true);
     try {
       const res = await customerApi.cancelBooking(bookingId);
       if (res?.data) {
         setBooking(res.data);
       }
-      alert("Booking has been cancelled.");
+      setShowCancelModal(false);
+      showNotification("success", "Your booking has been cancelled successfully.");
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to cancel booking.");
+      setShowCancelModal(false);
+      showNotification("error", err.response?.data?.message || "Failed to cancel booking. Please try again.");
     } finally {
       setCancelling(false);
     }
@@ -376,11 +389,11 @@ export default function TripDetailsTrackingPage({ params }) {
                 </div>
                 <button
                   type="button"
-                  onClick={handleCancelBooking}
+                  onClick={() => setShowCancelModal(true)}
                   disabled={cancelling}
-                  className="px-4 py-2 rounded-xl border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs font-bold cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs font-bold cursor-pointer disabled:opacity-50 transition-colors"
                 >
-                  {cancelling ? "Cancelling..." : "Cancel Trip"}
+                  Cancel Trip
                 </button>
               </div>
             )}
@@ -427,6 +440,87 @@ export default function TripDetailsTrackingPage({ params }) {
         </div>
 
       </div>
+
+      {/* CUSTOM CONFIRMATION MODAL POPUP */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-200">
+            
+            <div className="w-13 h-13 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center mx-auto shadow-inner">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900">Cancel This Booking?</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Are you sure you want to cancel booking <span className="font-bold text-slate-900">{booking.bookingReference || bookingId}</span>?
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/70 text-[11px] text-amber-900 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" /> Free Cancellation Policy
+              </div>
+              <p className="text-amber-800 leading-relaxed">
+                Cancellations requested before chauffeur departure incur no penalty. Advance refunds are processed back within 3-5 business days.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelling}
+                className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={cancelling}
+                className="px-5 py-2.5 rounded-xl font-black text-xs bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Cancelling...</span>
+                  </>
+                ) : (
+                  <span>Yes, Cancel Booking</span>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* SLEEK FLOATING TOAST POPUP */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-[10000] flex items-center gap-3 px-4 py-3.5 rounded-2xl shadow-2xl border bg-white animate-in slide-in-from-top-3 duration-200 border-slate-200/90 max-w-sm">
+          {toast.type === "success" ? (
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-4 h-4" />
+            </div>
+          )}
+          <p className="text-xs font-bold text-slate-800 leading-snug flex-1">
+            {toast.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
     </main>
   );
 }

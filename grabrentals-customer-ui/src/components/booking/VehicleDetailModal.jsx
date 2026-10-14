@@ -22,6 +22,7 @@ import {
   Sparkles,
   Award
 } from "lucide-react";
+import { formatVehicleSavaariTitle } from "@/lib/vehicleUtils";
 
 export default function VehicleDetailModal({
   isOpen,
@@ -45,7 +46,7 @@ export default function VehicleDetailModal({
 
   if (!isOpen || !vehicle) return null;
 
-  const title = vehicle.title || "Toyota Innova Crysta";
+  const title = formatVehicleSavaariTitle(vehicle.title, vehicle.category, vehicle.vehicleType);
   const plate = vehicle.vehicleNumber || vehicle.regNumber || "KA 01 AB 1234";
   const type = vehicle.vehicleType || vehicle.category || "SUV";
   const fuel = vehicle.fuelType || (vehicle.fuelOptions?.[0]) || "Diesel";
@@ -147,7 +148,7 @@ export default function VehicleDetailModal({
 
             {/* Core Specs Grid */}
             <div className="md:col-span-7 space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Vehicle Type</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
@@ -165,26 +166,10 @@ export default function VehicleDetailModal({
                 </div>
 
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Transmission</span>
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Settings2 className="w-4 h-4 text-amber-600" />
-                    <span>{transmission}</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Capacity</span>
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
                     <Users className="w-4 h-4 text-amber-600" />
                     <span>{seats} Seats</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Model Year</span>
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Calendar className="w-4 h-4 text-amber-600" />
-                    <span>{year}</span>
                   </div>
                 </div>
 
@@ -344,6 +329,9 @@ export default function VehicleDetailModal({
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                 ₹{vehicle.perKmRate || 12}/km
               </span>
+            </div>
+            <div className="text-[11px] font-bold text-slate-500 mt-0.5">
+              + Charges and Taxes
             </div>
             <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
               Pay 20% (₹{advanceAmount.toLocaleString()}) to confirm • Balance after trip completion

@@ -16,13 +16,14 @@ export const translations = {
     executive_standards: "Executive Standards Verified",
 
     // Nav links
-    outstation_cabs: "Outstation",
-    hourly_local: "Local",
+    book_now: "Book Now",
+    outstation_cabs: "Outstation Cabs",
+    hourly_local: "Hourly Rental",
     airport_transfers: "Airport Transfers",
-    tempo_traveller: "Tempo Traveller / Urbania",
+    tempo_traveller: "Urbania / Tempo Traveller",
     luxury_buses: "Bus Hire",
-    package: "Package",
-    packages: "Packages",
+    package: "Tour Packages",
+    packages: "Tour Packages",
     corporate_events: "Corporate & Events",
     partner_with_us: "Partner with Us",
     sign_in_register: "SignIn",
@@ -248,6 +249,7 @@ export const translations = {
     executive_standards: "உயர்தர பாதுகாப்பு தரம்",
 
     // Nav links
+    book_now: "முன்பதிவு",
     outstation_cabs: "வெளியூர் பயணங்கள்",
     hourly_local: "உள்ளூர் வாடகை",
     airport_transfers: "விமான நிலைய சேவை",
@@ -473,6 +475,7 @@ export const translations = {
     executive_standards: "ಉನ್ನತ ದರ್ಜೆಯ ಗುಣಮಟ್ಟ",
 
     // Nav links
+    book_now: "ಈಗಲೇ ಬುಕ್ ಮಾಡಿ",
     outstation_cabs: "ಹೊರಗಿನ ಪ್ರವಾಸಗಳು",
     hourly_local: "ಸ್ಥಳೀಯ / ಗಂಟೆ ಬಾಡಿಗೆ",
     airport_transfers: "ವಿಮಾನ ನಿಲ್ದಾಣ ಸೇವೆ",
@@ -698,6 +701,7 @@ export const translations = {
     executive_standards: "ఉన్నత ప్రమాణాలు",
 
     // Nav links
+    book_now: "బుక్ చేయండి",
     outstation_cabs: "అవుట్‌స్టేషన్ క్యాబ్‌లు",
     hourly_local: "స్థానిక అద్దె",
     airport_transfers: "విమానాశ్రయ బదిలీలు",
@@ -923,6 +927,7 @@ export const translations = {
     executive_standards: "प्रीमियम सुरक्षा मानक",
 
     // Nav links
+    book_now: "अभी बुक करें",
     outstation_cabs: "आउटस्टेशन कैब",
     hourly_local: "लोकल / प्रति घंटा",
     airport_transfers: "एयरपोर्ट ट्रांसफर",

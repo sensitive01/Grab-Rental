@@ -1,19 +1,22 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight, Plane } from "lucide-react";
+import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight, ChevronDown, Plane } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
+import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   formatLocalDate,
   getMinPickupDateTimeString,
+  getMinPickupDate,
   getDefaultPickupDateTime,
   sanitizePickupDateTime,
+  generateTimeSlots,
 } from "@/lib/dateTimeUtils";
 
 export const AIRPORT_LIST = [
@@ -148,18 +151,45 @@ export default function BookingWidget() {
     }
   }, []);
 
-  const handlePickupDateTimeChange = (val) => {
-    if (!val) return;
-    const [d, tVal] = val.split("T");
-    const sanitized = sanitizePickupDateTime(d, tVal);
+  const allTimeSlots = useMemo(() => generateTimeSlots(15), []);
+  const minDateStr = useMemo(() => formatLocalDate(new Date()), []);
+  const isToday = pickupDate === minDateStr;
+  const currentMinDate = getMinPickupDate();
+  const minTimeMinutes = currentMinDate.getHours() * 60 + currentMinDate.getMinutes();
+
+  const availableTimeSlots = useMemo(() => {
+    if (!isToday) return allTimeSlots;
+    return allTimeSlots.filter((slot) => {
+      const [h, m] = slot.value.split(":").map(Number);
+      const slotMinutes = h * 60 + m;
+      return slotMinutes >= minTimeMinutes;
+    });
+  }, [allTimeSlots, isToday, minTimeMinutes]);
+
+  // If currently selected time is not in available slots (e.g. was in the past), snap to first available
+  useEffect(() => {
+    if (availableTimeSlots.length > 0 && !availableTimeSlots.some((s) => s.value === pickupTime)) {
+      setPickupTime(availableTimeSlots[0].value);
+    }
+  }, [availableTimeSlots, pickupTime]);
+
+  const handlePickupDateChange = (newDate) => {
+    if (!newDate) return;
+    const sanitized = sanitizePickupDateTime(newDate, pickupTime);
     setPickupDate(sanitized.date);
     setPickupTime(sanitized.time);
-    // If dropDate is before pickupDate on round trip, bump dropDate
     if (dropDate && dropDate < sanitized.date) {
       const nextDay = new Date(`${sanitized.date}T00:00:00`);
       nextDay.setDate(nextDay.getDate() + 1);
       setDropDate(formatLocalDate(nextDay));
     }
+  };
+
+  const handlePickupTimeChange = (newTime) => {
+    if (!newTime) return;
+    const sanitized = sanitizePickupDateTime(pickupDate, newTime);
+    setPickupDate(sanitized.date);
+    setPickupTime(sanitized.time);
   };
 
   const handleTabClick = (tabId, e) => {
@@ -548,9 +578,11 @@ export default function BookingWidget() {
             
             {/* FROM: Pickup City */}
             <div className={`w-full relative ${hasStops ? "lg:col-span-4" : "lg:col-span-5"}`}>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                {t("from_city")}
-              </label>
+              <div className="flex items-center justify-between mb-2 min-h-[18px]">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  {t("from_city")}
+                </label>
+              </div>
               <CityAutocompleteInput 
                 value={pickupCity}
                 onChange={(val, coords) => {
@@ -647,9 +679,21 @@ export default function BookingWidget() {
                   : "lg:col-span-4"
                 : "lg:col-span-6"
             }`}>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                {activeTab === "package" ? "Select Packages" : t("to_city")}
-              </label>
+              <div className="flex items-center justify-between mb-2 min-h-[18px]">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  {activeTab === "package" ? "Select Packages" : t("to_city")}
+                </label>
+                {allowsStops && stops.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAddStop()}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                    <span>{t("add_stop") || "Add Stop"}</span>
+                  </button>
+                )}
+              </div>
               <CityAutocompleteInput 
                 value={dropCity}
                 onChange={(val, coords) => {
@@ -662,75 +706,74 @@ export default function BookingWidget() {
               />
 
               {/* Action triggers below field */}
-              <div className="flex items-center justify-between gap-3 mt-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMapTarget("drop");
-                    setIsMapModalOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-                  <span>{t("choose_to_location") || "Choose to Location"}</span>
-                </button>
-
-                {allowsStops && stops.length < 3 && (
-                  <button
-                    type="button"
-                    onClick={() => handleAddStop()}
-                    className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-                    <span>{t("add_stop") || "Add Stop"}</span>
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMapTarget("drop");
+                  setIsMapModalOpen(true);
+                }}
+                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+              >
+                <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span>{t("choose_to_location") || "Choose to Location"}</span>
+              </button>
             </div>
 
           </div>
 
           {/* ROW 2: Schedule & Action (Pick Up Date, Return Date, Pick Up Time, Explore CTA) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end pt-2 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 lg:gap-5 items-end pt-4 mt-2 border-t border-slate-100">
             
-            {/* UNIFIED PICK UP DATE & TIME */}
-            <div className={isRoundTrip ? "lg:col-span-4" : "lg:col-span-7"}>
+            {/* SEPARATE PICKUP DATE */}
+            <div className={isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                {t("pickup_date_time") || "Pickup Date & Time"}
+                {t("pickup_date") || "Pickup Date"}
               </label>
-              <div className="relative">
-                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
+              <div className="relative group">
+                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-4 h-4 pointer-events-none" />
                 <input 
-                  type="datetime-local" 
-                  value={`${pickupDate}T${pickupTime}`}
-                  min={minPickupDateTime}
-                  onChange={(e) => handlePickupDateTimeChange(e.target.value)}
-                  className="w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
+                  type="date" 
+                  value={pickupDate}
+                  min={minDateStr}
+                  onChange={(e) => handlePickupDateChange(e.target.value)}
+                  className="w-full pl-10 pr-3 py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
                 />
               </div>
             </div>
 
+            {/* SEPARATE PICKUP TIME (Custom Controlled Dropdown) */}
+            <div className={isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                {t("pickup_time") || "Pickup Time"}
+              </label>
+              <TimeSelectDropdown
+                value={pickupTime}
+                onChange={handlePickupTimeChange}
+                availableSlots={availableTimeSlots}
+              />
+            </div>
+
             {/* DROP / RETURN DATE (for Round Trip) */}
             {isRoundTrip && (
-              <div className="lg:col-span-4">
+              <div className="lg:col-span-3">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
                   {t("return_date")}
                 </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
+                <div className="relative group">
+                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-4 h-4 pointer-events-none" />
                   <input 
                     type="date" 
                     value={dropDate}
-                    min={pickupDate}
+                    min={pickupDate || minDateStr}
                     onChange={(e) => setDropDate(e.target.value)}
-                    className="w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
+                    className="w-full pl-10 pr-3 py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
                   />
                 </div>
               </div>
             )}
 
-            {/* CTA Button: EXPLORE CABS */}
-            <div className={isRoundTrip ? "lg:col-span-4" : "lg:col-span-5"}>
+            {/* CTA Button: EXPLORE / SEARCH CABS */}
+            <div className={isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}>
               <Link 
                 href={buildExploreUrl()}
                 onClick={handleExploreClick}
@@ -744,17 +787,19 @@ export default function BookingWidget() {
         </div>
       ) : (
         /* STANDARD 1-ROW VIEW (When 0 stops and one-way, Local, or Airport) */
-        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start relative w-full">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 items-start relative w-full">
           
           {/* FIELD 1 (LEFT): Pickup City/Address OR Pickup Airport */}
           <div className="flex-1 min-w-0 w-full relative">
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              {activeTab === "airport"
-                ? (airportTripType === "pickup"
-                    ? (t("pickup_airport") || "Pickup Airport")
-                    : (t("pickup_location") || "Pickup Location"))
-                : t("from_city")}
-            </label>
+            <div className="flex items-center justify-between mb-2 min-h-[18px]">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                {activeTab === "airport"
+                  ? (airportTripType === "pickup"
+                      ? (t("pickup_airport") || "Pickup Airport")
+                      : (t("pickup_location") || "Pickup Location"))
+                  : t("from_city")}
+              </label>
+            </div>
 
             {activeTab === "airport" && airportTripType === "pickup" ? (
               <>
@@ -843,17 +888,29 @@ export default function BookingWidget() {
 
           {/* FIELD 2 (RIGHT): Drop City/Address OR Drop Airport OR Package */}
           <div className="flex-1 min-w-0 w-full relative">
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              {activeTab === "airport" 
-                ? (airportTripType === "drop" 
-                    ? (t("drop_airport") || "Drop Airport") 
-                    : (t("drop_location") || "Drop Location"))
-                : activeTab === "local"
-                ? "Select Hourly Package"
-                : activeTab === "package"
-                ? "Select Packages"
-                : t("to_city")}
-            </label>
+            <div className="flex items-center justify-between mb-2 min-h-[18px]">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                {activeTab === "airport" 
+                  ? (airportTripType === "drop" 
+                      ? (t("drop_airport") || "Drop Airport") 
+                      : (t("drop_location") || "Drop Location"))
+                  : activeTab === "local"
+                  ? "Select Hourly Package"
+                  : activeTab === "package"
+                  ? "Select Packages"
+                  : t("to_city")}
+              </label>
+              {allowsStops && stops.length < 3 && (
+                <button
+                  type="button"
+                  onClick={() => handleAddStop()}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                >
+                  <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>{t("add_stop") || "Add Stop"}</span>
+                </button>
+              )}
+            </div>
 
             {activeTab === "airport" && airportTripType === "drop" ? (
               <>
@@ -910,48 +967,51 @@ export default function BookingWidget() {
             )}
 
             {activeTab !== "local" && activeTab !== "package" && !(activeTab === "airport" && airportTripType === "drop") && (
-              <div className="flex items-center justify-between gap-3 mt-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMapTarget("drop");
-                    setIsMapModalOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-                  <span>{t("choose_to_location") || "Choose to Location"}</span>
-                </button>
-
-                {allowsStops && stops.length < 3 && (
-                  <button
-                    type="button"
-                    onClick={() => handleAddStop()}
-                    className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-                    <span>{t("add_stop") || "Add Stop"}</span>
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMapTarget("drop");
+                  setIsMapModalOpen(true);
+                }}
+                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+              >
+                <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span>{t("choose_to_location") || "Choose to Location"}</span>
+              </button>
             )}
           </div>
 
-          {/* Unified Pickup Date & Time */}
-          <div className="flex-1 lg:flex-[1.1] min-w-0 w-full relative">
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              {t("pickup_date_time") || "Pickup Date & Time"}
-            </label>
-            <div className="relative">
-              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none shrink-0" />
+          {/* SEPARATE PICKUP DATE */}
+          <div className="w-full sm:w-auto flex-1 min-w-[155px] relative">
+            <div className="flex items-center justify-between mb-2 min-h-[18px]">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                {t("pickup_date") || "Pickup Date"}
+              </label>
+            </div>
+            <div className="relative group">
+              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-4 h-4 pointer-events-none" />
               <input 
-                type="datetime-local" 
-                value={`${pickupDate}T${pickupTime}`}
-                min={minPickupDateTime}
-                onChange={(e) => handlePickupDateTimeChange(e.target.value)}
-                className="w-full pl-10 sm:pl-11 pr-3 py-3 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
+                type="date" 
+                value={pickupDate}
+                min={minDateStr}
+                onChange={(e) => handlePickupDateChange(e.target.value)}
+                className="w-full pl-10 pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
               />
             </div>
+          </div>
+
+          {/* SEPARATE PICKUP TIME (Custom Controlled Dropdown) */}
+          <div className="w-full sm:w-auto flex-1 min-w-[155px] relative">
+            <div className="flex items-center justify-between mb-2 min-h-[18px]">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                {t("pickup_time") || "Pickup Time"}
+              </label>
+            </div>
+            <TimeSelectDropdown
+              value={pickupTime}
+              onChange={handlePickupTimeChange}
+              availableSlots={availableTimeSlots}
+            />
           </div>
 
           {/* CTA Button */}

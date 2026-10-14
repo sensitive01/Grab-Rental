@@ -137,3 +137,44 @@ export function resolveCarModelAndImage(booking, modelsList = adminModelsCache) 
 
   return { modelName, carImage, categoryLabel };
 }
+
+/**
+ * Formats a vehicle format:
+ * - WagonR, Swift or Similar
+ * - Dzire, Etios, or Similar
+ * - Crysta, Hycross or Similar
+ * - Ertiga, Xylo or Similar
+ */
+export function formatVehicleSavaariTitle(rawTitle = "", category = "", vehicleType = "") {
+  const combined = `${rawTitle || ""} ${category || ""} ${vehicleType || ""}`.toLowerCase();
+
+  if (combined.includes("hycross") || (combined.includes("crysta") && combined.includes("innova")) || combined.includes("crysta, hycross")) {
+    return "Crysta, Hycross or Similar";
+  }
+  if (combined.includes("innova") || combined.includes("crysta")) {
+    return "Crysta, Hycross or Similar";
+  }
+  if (combined.includes("ertiga") || combined.includes("ertica") || combined.includes("xylo") || combined.includes("carens") || combined.includes("rumion") || combined.includes("suv_6")) {
+    return "Ertiga, Xylo or Similar";
+  }
+  if (combined.includes("wagon") || combined.includes("swift") || combined.includes("celerio") || combined.includes("tiago") || combined.includes("alto") || combined.includes("indica") || combined.includes("hatchback")) {
+    return "WagonR, Swift or Similar";
+  }
+  if (combined.includes("dzire") || combined.includes("etios") || combined.includes("aura") || combined.includes("amaze") || combined.includes("tigir") || combined.includes("sedan")) {
+    return "Dzire, Etios, or Similar";
+  }
+  if (combined.includes("urbania") || combined.includes("tempo") || combined.includes("traveller") || combined.includes("van")) {
+    return "Urbania, Tempo Traveller or Similar";
+  }
+  if (combined.includes("bus")) {
+    return "Mini Bus, Coach or Similar";
+  }
+
+  if (rawTitle && rawTitle.toLowerCase().includes("or similar")) {
+    return rawTitle;
+  }
+  if (rawTitle) {
+    return `${rawTitle} or Similar`;
+  }
+  return "WagonR, Swift or Similar";
+}
