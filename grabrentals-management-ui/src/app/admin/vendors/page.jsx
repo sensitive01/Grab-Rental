@@ -35,7 +35,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Filter,
   Calendar,
   ExternalLink,
   Briefcase,
@@ -162,7 +161,6 @@ function AdminVendorsContent() {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [cityFilter, setCityFilter] = useState("ALL");
   const [toast, setToast] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
 
@@ -226,7 +224,6 @@ function AdminVendorsContent() {
   const handleTabSwitch = (tab) => {
     setActiveTab(tab);
     setSearch("");
-    setCityFilter("ALL");
     setStatusFilter("ALL");
     setCurrentPage(1);
     router.replace(`/admin/vendors?tab=${tab}`);
@@ -430,22 +427,9 @@ function AdminVendorsContent() {
   // Current tab dataset
   const currentList = activeTab === "active" ? activeVendors : pendingVendors;
 
-  // Unique cities in current list
-  const cities = useMemo(() => {
-    const set = new Set();
-    currentList.forEach((v) => {
-      if (v.city) set.add(v.city);
-    });
-    return Array.from(set);
-  }, [currentList]);
-
   // Filtered dataset
   const filteredVendors = useMemo(() => {
     let result = currentList;
-
-    if (cityFilter !== "ALL") {
-      result = result.filter((v) => v.city === cityFilter);
-    }
 
     if (activeTab === "active" && statusFilter !== "ALL") {
       if (statusFilter === "ACTIVE") {
@@ -463,14 +447,13 @@ function AdminVendorsContent() {
           (v.contactPerson && v.contactPerson.toLowerCase().includes(q)) ||
           (v.email && v.email.toLowerCase().includes(q)) ||
           (v.phone && v.phone.toLowerCase().includes(q)) ||
-          (v.city && v.city.toLowerCase().includes(q)) ||
           (v.id && String(v.id).toLowerCase().includes(q))
         );
       });
     }
 
     return result;
-  }, [currentList, search, cityFilter, activeTab, statusFilter]);
+  }, [currentList, search, activeTab, statusFilter]);
 
   // Sorted dataset
   const sortedVendors = useMemo(() => {
@@ -594,32 +577,11 @@ function AdminVendorsContent() {
               }}
               placeholder={
                 activeTab === "active"
-                  ? "Search active vendor by name, city, contact..."
+                  ? "Search active vendor by name, contact..."
                   : "Search pending application by name, email, phone..."
               }
               className="w-full sm:w-80"
             />
-
-            {cities.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={cityFilter}
-                  onChange={(e) => {
-                    setCityFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-500"
-                >
-                  <option value="ALL">All Hubs & Cities ({currentList.length})</option>
-                  {cities.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             {activeTab === "active" && (
               <div className="flex items-center gap-2">
@@ -704,12 +666,6 @@ function AdminVendorsContent() {
                     onSort={handleSort}
                   />
                   <SortableHeader
-                    columnKey="city"
-                    label="Hub / City"
-                    currentSort={sortConfig}
-                    onSort={handleSort}
-                  />
-                  <SortableHeader
                     columnKey="joinedDate"
                     label="Applied Date"
                     currentSort={sortConfig}
@@ -772,13 +728,6 @@ function AdminVendorsContent() {
                             <span>{v.phone}</span>
                           </div>
                         )}
-                      </TableCell>
-
-                      {/* Hub / City */}
-                      <TableCell>
-                        <span className="text-xs font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
-                          {v.city}
-                        </span>
                       </TableCell>
 
                       {/* Applied Date */}
@@ -863,12 +812,6 @@ function AdminVendorsContent() {
                     onSort={handleSort}
                   />
                   <SortableHeader
-                    columnKey="city"
-                    label="Hub / City"
-                    currentSort={sortConfig}
-                    onSort={handleSort}
-                  />
-                  <SortableHeader
                     columnKey="contactPerson"
                     label="Contact Person"
                     currentSort={sortConfig}
@@ -919,9 +862,6 @@ function AdminVendorsContent() {
                     <TableCell>
                       <div className="font-bold text-xs text-slate-900">{v.name}</div>
                       <div className="text-[11px] text-slate-500 font-mono">{String(v.id).slice(0, 16)}...</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs font-semibold text-slate-800">{v.city}</span>
                     </TableCell>
                     <TableCell>
                       <div className="text-xs font-medium text-slate-800">{v.contactPerson}</div>

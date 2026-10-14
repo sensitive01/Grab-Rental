@@ -18,12 +18,14 @@ import {
   FileText,
   Calendar,
   AlertCircle,
-  Tag
+  Tag,
+  X,
+  ArrowRight
 } from "lucide-react";
 import Image from "next/image";
 import SearchSummaryBar from "@/components/booking/SearchSummaryBar";
 import { customerApi } from "@/lib/customerApi";
-import { isAuthenticated, getCurrentUser } from "@/lib/auth";
+import { isAuthenticated, getCurrentUser, setAuthSession, logout } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 
@@ -60,6 +62,8 @@ function resolveCarImage(title, category, rawImage) {
 export default function ReviewPayPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
   const [paymentPlan, setPaymentPlan] = useState("advance");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -72,6 +76,27 @@ export default function ReviewPayPage() {
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapTarget, setMapTarget] = useState("pickup");
+
+  // Inline OTP Auth Modal states
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authStep, setAuthStep] = useState("phone"); // 'phone' | 'otp'
+  const [authPhone, setAuthPhone] = useState("");
+  const [authOtp, setAuthOtp] = useState("");
+  const [authDevOtp, setAuthDevOtp] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authCountdown, setAuthCountdown] = useState(30);
+
+  // OTP resend countdown timer
+  useEffect(() => {
+    let timer;
+    if (showAuthModal && authStep === "otp" && authCountdown > 0) {
+      timer = setInterval(() => {
+        setAuthCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [showAuthModal, authStep, authCountdown]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -101,10 +126,24 @@ export default function ReviewPayPage() {
           }
         }
 
-        const user = getCurrentUser();
-        if (user) {
-          if (user.name) setPassengerName(user.name);
-          if (user.phone) setPassengerPhone(user.phone);
+        // Restore draft if user previously filled it out
+        const savedDraft = sessionStorage.getItem("grab_review_pay_draft");
+        if (savedDraft) {
+          try {
+            const draft = JSON.parse(savedDraft);
+            if (draft.passengerName) setPassengerName(draft.passengerName);
+            if (draft.passengerPhone) setPassengerPhone(draft.passengerPhone);
+            if (draft.pickupAddress) setPickupAddress(draft.pickupAddress);
+            if (draft.dropAddress) setDropAddress(draft.dropAddress);
+            if (draft.specialInstructions) setSpecialInstructions(draft.specialInstructions);
+            if (draft.paymentPlan) setPaymentPlan(draft.paymentPlan);
+          } catch {}
+        } else {
+          const user = getCurrentUser();
+          if (user) {
+            if (user.name) setPassengerName(user.name);
+            if (user.phone) setPassengerPhone(user.phone);
+          }
         }
       } catch (err) {
         console.warn("Could not load stored booking config:", err);
@@ -137,29 +176,110 @@ export default function ReviewPayPage() {
   const distanceKm = bookingConfig?.distanceKm || 0;
   const perKmRate = bookingConfig?.car?.perKmRate || 0;
 
-  const handlePayAndBook = async (e) => {
-    e.preventDefault();
+  const saveDraft = (overrides = {}) => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          "grab_review_pay_draft",
+          JSON.stringify({
+            passengerName,
+            passengerPhone,
+            pickupAddress,
+            dropAddress,
+            specialInstructions,
+            paymentPlan,
+            ...overrides,
+          })
+        );
+      } catch (e) {
+        console.warn("Could not save draft:", e);
+      }
+    }
+  };
 
-    if (!isAuthenticated()) {
-      router.push("/login?redirect=/outstation/review-pay");
+  const sendOtpForAuth = async (targetPhone) => {
+    const cleaned = (targetPhone || authPhone || passengerPhone).replace(/[^0-9]/g, "");
+    if (cleaned.length < 10) {
+      setAuthError("Please enter a valid 10-digit mobile number");
       return;
     }
 
-    if (!pickupAddress.trim()) {
-      setErrorMsg("Please enter your exact pickup address or landmark.");
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/otp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleaned }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to send verification code");
+      }
+      if (result.data?.devOtp) {
+        setAuthDevOtp(result.data.devOtp);
+      }
+      setAuthStep("otp");
+      setAuthCountdown(30);
+    } catch (err) {
+      setAuthError(err.message || "Failed to send OTP. Please check mobile number.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const triggerOtpVerification = (customMsg = "") => {
+    saveDraft();
+    const cleaned = passengerPhone.replace(/[^0-9]/g, "");
+    setAuthPhone(cleaned);
+    setAuthOtp("");
+    setAuthError(customMsg);
+    setShowAuthModal(true);
+
+    if (cleaned.length >= 10) {
+      sendOtpForAuth(cleaned);
+    } else {
+      setAuthStep("phone");
+    }
+  };
+
+  const verifyOtpAndBook = async () => {
+    if (!authOtp || authOtp.trim().length !== 6) {
+      setAuthError("Please enter the complete 6-digit OTP");
       return;
     }
 
-    if (!passengerName.trim() || !passengerPhone.trim()) {
-      setErrorMsg("Please provide passenger name and mobile number.");
-      return;
-    }
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const cleaned = authPhone.replace(/[^0-9]/g, "");
+      const response = await fetch(`${API_BASE_URL}/api/auth/otp/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleaned, otp: authOtp.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Invalid OTP entered");
+      }
 
+      setAuthSession(result.data.accessToken, result.data.user);
+      setShowAuthModal(false);
+
+      // Now create the booking with valid session
+      await executeBooking();
+    } catch (err) {
+      setAuthError(err.message || "Invalid OTP code");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const executeBooking = async () => {
     setSubmitting(true);
     setErrorMsg(null);
 
     try {
-      const user = getCurrentUser();
       const advancePaid = paymentPlan === "advance" ? advanceAmount : totalAmount;
 
       // Construct ISO timestamp from trip date and time
@@ -217,6 +337,7 @@ export default function ReviewPayPage() {
 
       const res = await customerApi.createBooking(bookingPayload);
       if (res && res.data) {
+        sessionStorage.removeItem("grab_review_pay_draft");
         sessionStorage.setItem("grab_confirmed_booking", JSON.stringify({ ...res.data, stops: res.data.stops || stopsVal }));
         const bookingRef = res.data.bookingReference || res.data.id;
         router.push(`/booking/confirmation?id=${encodeURIComponent(bookingRef)}`);
@@ -225,10 +346,38 @@ export default function ReviewPayPage() {
       }
     } catch (err) {
       console.error("[ReviewPay] Booking creation error:", err);
-      setErrorMsg(err.response?.data?.message || err.message || "Failed to confirm booking. Please verify your connection.");
+      if (err.response?.status === 401) {
+        logout();
+        triggerOtpVerification("Your session expired. Please verify with OTP to complete your booking.");
+      } else {
+        setErrorMsg(err.response?.data?.message || err.message || "Failed to confirm booking. Please verify your connection.");
+      }
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePayAndBook = async (e) => {
+    e.preventDefault();
+
+    if (!pickupAddress.trim()) {
+      setErrorMsg("Please enter your exact pickup address or landmark.");
+      return;
+    }
+
+    if (!passengerName.trim() || !passengerPhone.trim()) {
+      setErrorMsg("Please provide passenger name and mobile number.");
+      return;
+    }
+
+    saveDraft();
+
+    if (!isAuthenticated()) {
+      triggerOtpVerification();
+      return;
+    }
+
+    await executeBooking();
   };
 
   if (!bookingConfig) {
@@ -308,9 +457,13 @@ export default function ReviewPayPage() {
                       <input
                         type="tel"
                         required
+                        maxLength={10}
                         value={passengerPhone}
-                        onChange={(e) => setPassengerPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+                          setPassengerPhone(digits);
+                        }}
+                        placeholder="98765 43210"
                         className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
                       />
                     </div>
@@ -583,6 +736,152 @@ export default function ReviewPayPage() {
 
         </form>
       </div>
+
+      {/* Instant OTP Authentication Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-2">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">
+                  {authStep === "otp" ? "Verify OTP to Confirm Ride" : "Verify Mobile Number"}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  {authStep === "otp"
+                    ? `Enter the 6-digit verification code sent to +91 ${authPhone.slice(-10)}`
+                    : "Enter your 10-digit mobile number to verify your booking instantly"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {authError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {authStep === "phone" ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Mobile Number
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3.5 text-xs font-bold text-slate-400">+91</span>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={authPhone}
+                      onChange={(e) => setAuthPhone(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+                      placeholder="98765 43210"
+                      className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={authLoading || authPhone.length < 10}
+                  onClick={() => sendOtpForAuth(authPhone)}
+                  className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                >
+                  {authLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Send Verification Code</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider">
+                      Enter 6-Digit OTP
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setAuthStep("phone")}
+                      className="text-[11px] font-bold text-amber-600 hover:underline"
+                    >
+                      Change Number
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={authOtp}
+                    autoFocus
+                    onChange={(e) => setAuthOtp(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="• • • • • •"
+                    className="w-full text-center tracking-[0.4em] py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-black text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
+                  />
+                </div>
+
+                {authDevOtp && (
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-900">
+                      Test OTP: <strong>{authDevOtp}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAuthOtp(authDevOtp)}
+                      className="px-2 py-0.5 rounded bg-amber-600 text-white font-bold text-[10px] hover:bg-amber-700"
+                    >
+                      Auto-fill
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>Didn&apos;t receive code?</span>
+                  {authCountdown > 0 ? (
+                    <span className="font-semibold text-slate-400">Resend in {authCountdown}s</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => sendOtpForAuth(authPhone)}
+                      className="font-bold text-amber-600 hover:underline"
+                    >
+                      Resend OTP
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={authLoading || authOtp.length !== 6}
+                  onClick={verifyOtpAndBook}
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm"
+                >
+                  {authLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Verify & Confirm Ride</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Interactive Map Location Picker Modal */}
       <LocationPickerModal

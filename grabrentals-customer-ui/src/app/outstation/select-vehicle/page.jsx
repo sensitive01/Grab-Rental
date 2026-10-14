@@ -161,6 +161,7 @@ function SelectVehicleContent() {
     const urlTime = searchParams.get("pickupTime") || "07:00";
     const urlServiceType = (searchParams.get("serviceType") || "OUTSTATION").toUpperCase();
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTrip((prev) => {
       if (
         prev.from === urlFrom &&
@@ -751,13 +752,13 @@ function SelectVehicleContent() {
           onModifyClick={() => setIsModifyOpen(true)}
         />
 
-        {/* 2-Column Responsive Layout: Left Search/Filters + Right Vehicle Catalog */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-2">
+        {/* Layout: Vehicle Catalog (Filter sidebar commented out) */}
+        <div className="w-full pt-2">
           
-          {/* ===================== LEFT SIDEBAR: SEARCH & FILTERS (DESKTOP ONLY) ===================== */}
+          {/* ===================== LEFT SIDEBAR: SEARCH & FILTERS (COMMENTED OUT) ===================== */}
+          {/*
           <aside className="hidden lg:block lg:col-span-3 bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-6">
             
-            {/* Header: Title + Active Count Badge + Undo/Reset Icon */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-amber-600" />
@@ -780,10 +781,8 @@ function SelectVehicleContent() {
               </button>
             </div>
 
-            {/* Filter controls */}
             {renderFilterForm()}
 
-            {/* Clear Filters CTA */}
             <div className="pt-2">
               <button
                 type="button"
@@ -796,9 +795,10 @@ function SelectVehicleContent() {
             </div>
 
           </aside>
+          */}
 
-          {/* ===================== RIGHT COLUMN: VEHICLE CATALOG ===================== */}
-          <section className="lg:col-span-9 space-y-4">
+          {/* ===================== VEHICLE CATALOG ===================== */}
+          <section className="w-full space-y-4">
             
             {/* Catalog Toolbar */}
             <div className="bg-white p-3.5 px-4 sm:px-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3 sm:space-y-0">
@@ -818,7 +818,8 @@ function SelectVehicleContent() {
                   </span>
                 </div>
 
-                {/* Mobile Filter Button */}
+                {/* Mobile Filter Button (Commented Out) */}
+                {/*
                 <button
                   type="button"
                   onClick={() => setIsMobileFilterOpen(true)}
@@ -832,6 +833,7 @@ function SelectVehicleContent() {
                     </span>
                   )}
                 </button>
+                */}
               </div>
 
               {/* Active Filter Chips (Mobile Quick Clear) */}
@@ -1317,22 +1319,20 @@ function SelectVehicleContent() {
 
       </div>
 
-      {/* ===================== MOBILE FILTER MODAL / DRAWER ===================== */}
+      {/* ===================== MOBILE FILTER MODAL / DRAWER (COMMENTED OUT) ===================== */}
+      {/*
       {isMobileFilterOpen && (
         <div 
           className="fixed inset-0 z-50 lg:hidden flex justify-end"
           role="dialog"
           aria-modal="true"
         >
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
             onClick={() => setIsMobileFilterOpen(false)}
           />
 
-          {/* Drawer Sheet */}
           <div className="relative w-full max-w-md bg-white h-full max-h-screen flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-200">
-            {/* Header */}
             <div className="flex items-center justify-between p-4 px-5 border-b border-slate-200 bg-white">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -1369,12 +1369,10 @@ function SelectVehicleContent() {
               </div>
             </div>
 
-            {/* Scrollable Filters Body */}
             <div className="flex-1 overflow-y-auto p-5">
               {renderFilterForm()}
             </div>
 
-            {/* Sticky Bottom Actions */}
             <div className="p-4 border-t border-slate-200 bg-white shadow-lg flex items-center gap-3">
               <button
                 type="button"
@@ -1397,6 +1395,7 @@ function SelectVehicleContent() {
           </div>
         </div>
       )}
+      */}
 
       {/* Vehicle Details Modal on Click */}
       <VehicleDetailModal

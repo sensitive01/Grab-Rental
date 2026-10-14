@@ -55,7 +55,7 @@ export default function BookingWidget() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(() => getTabFromPath(pathname));
-  const [tripType, setTripType] = useState("one-way");
+  const [tripType, setTripType] = useState(() => (pathname && (pathname.startsWith("/package") || pathname.startsWith("/packages")) ? "round-trip" : "one-way"));
   const [airportTripType, setAirportTripType] = useState("drop"); // "drop" = Drop to Airport, "pickup" = Pickup from Airport
   const [selectedAirport, setSelectedAirport] = useState(AIRPORT_LIST[0].name);
   const [airportCoords, setAirportCoords] = useState({ lat: 13.1986, lng: 77.7066 });
@@ -79,7 +79,7 @@ export default function BookingWidget() {
     return d.toISOString().split("T")[0];
   });
   const [pickupTime, setPickupTime] = useState("07:00");
-  const [selectedPackage, setSelectedPackage] = useState("8hr-80km");
+  const [selectedPackage, setSelectedPackage] = useState(() => "8hr-80km");
 
   const allowsStops = activeTab === "outstation";
   const showSwap = allowsStops || activeTab === "airport";
@@ -113,7 +113,13 @@ export default function BookingWidget() {
   // Synchronize active tab with URL path changes (e.g. when user clicks a service in top navbar)
   useEffect(() => {
     const matchedTab = getTabFromPath(pathname);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab(matchedTab);
+    if (matchedTab === "package") {
+      setTripType("round-trip");
+    } else if (matchedTab === "local") {
+      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : "8hr-80km"));
+    }
 
     if (tabsRef.current) {
       const activeBtn = tabsRef.current.querySelector(`[data-tab-id="${matchedTab}"]`);
@@ -125,6 +131,11 @@ export default function BookingWidget() {
 
   const handleTabClick = (tabId, e) => {
     setActiveTab(tabId);
+    if (tabId === "package") {
+      setTripType("round-trip");
+    } else if (tabId === "local") {
+      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : "8hr-80km"));
+    }
     if (e?.currentTarget) {
       e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
@@ -157,7 +168,7 @@ export default function BookingWidget() {
     if (activeTab === "airport") {
       return airportTripType === "drop" ? selectedAirport : dropCity;
     }
-    if (activeTab === "local" || activeTab === "package") {
+    if (activeTab === "local") {
       return "";
     }
     return dropCity;
@@ -165,7 +176,7 @@ export default function BookingWidget() {
 
   // Automatic KM & Route Duration Detection (Instant synchronous fallback + Google Routes API async)
   const initialEstimate = useMemo(() => {
-    if (activeTab === "local" || activeTab === "package") {
+    if (activeTab === "local") {
       return { isDetected: false, distanceKm: 0, durationHours: 0, durationText: "" };
     }
     return detectRouteDistance(effectiveFrom, effectiveTo, allowsStops ? stops : [], tripType);
@@ -263,7 +274,7 @@ export default function BookingWidget() {
   // Build target explore URL with search parameters
   const buildExploreUrl = () => {
     const params = new URLSearchParams();
-    const resolvedServiceType = (activeTab === "local" || activeTab === "package") ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
+    const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
     params.set("serviceType", resolvedServiceType);
 
     if (activeTab === "airport") {
@@ -274,7 +285,13 @@ export default function BookingWidget() {
       params.set("airportTripType", airportTripType);
       params.set("airport", selectedAirport);
       params.set("tripType", airportTripType === "drop" ? "Airport Drop" : "Airport Pickup");
-    } else if (activeTab === "local" || activeTab === "package") {
+    } else if (activeTab === "package") {
+      const fromLoc = pickupCity || "Bangalore, Karnataka";
+      const toLoc = dropCity || "Coimbatore, Tamil Nadu";
+      params.set("from", fromLoc);
+      params.set("to", toLoc);
+      params.set("tripType", "round-trip");
+    } else if (activeTab === "local") {
       if (pickupCity) params.set("from", pickupCity);
       params.set("package", selectedPackage);
       params.set("to", selectedPackage);
@@ -290,7 +307,7 @@ export default function BookingWidget() {
     }
 
     params.set("pickupDate", pickupDate);
-    if (tripType === "round-trip" && dropDate && activeTab === "outstation") {
+    if ((tripType === "round-trip" || activeTab === "package") && dropDate && activeTab !== "local") {
       params.set("dropDate", dropDate);
     }
     params.set("pickupTime", pickupTime);
@@ -299,13 +316,22 @@ export default function BookingWidget() {
 
   const handleExploreClick = () => {
     const validStops = stops.filter((s) => s.trim());
-    const resolvedServiceType = (activeTab === "local" || activeTab === "package") ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
-    const fromLoc = activeTab === "airport" 
-      ? (airportTripType === "drop" ? pickupCity : selectedAirport)
-      : pickupCity;
-    const toLoc = activeTab === "airport"
-      ? (airportTripType === "drop" ? selectedAirport : dropCity)
-      : (activeTab === "local" || activeTab === "package") ? selectedPackage : dropCity;
+    const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
+    
+    let fromLoc = pickupCity;
+    let toLoc = dropCity;
+    let pkgVal = undefined;
+
+    if (activeTab === "airport") {
+      fromLoc = airportTripType === "drop" ? pickupCity : selectedAirport;
+      toLoc = airportTripType === "drop" ? selectedAirport : dropCity;
+    } else if (activeTab === "local") {
+      toLoc = selectedPackage;
+      pkgVal = selectedPackage;
+    } else if (activeTab === "package") {
+      fromLoc = pickupCity || "Bangalore, Karnataka";
+      toLoc = dropCity || "Coimbatore, Tamil Nadu";
+    }
 
     if (typeof window !== "undefined") {
       sessionStorage.setItem("grab_pending_trip", JSON.stringify({
@@ -313,7 +339,7 @@ export default function BookingWidget() {
         to: toLoc,
         airportTripType: activeTab === "airport" ? airportTripType : undefined,
         airport: activeTab === "airport" ? selectedAirport : undefined,
-        package: (activeTab === "local" || activeTab === "package") ? selectedPackage : undefined,
+        package: pkgVal,
         stops: validStops.join("|"),
         pickupCoords,
         dropCoords,
@@ -321,10 +347,15 @@ export default function BookingWidget() {
         distanceKm: routeEstimate.distanceKm,
         durationText: routeEstimate.durationText,
         tollPrice: routeEstimate.tollPrice,
-        tripType: activeTab === "airport" ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup") : tripType,
+        tripType: activeTab === "airport" 
+          ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup") 
+          : activeTab === "package" 
+          ? "round-trip" 
+          : tripType,
         serviceType: resolvedServiceType,
         date: pickupDate,
-        time: pickupTime
+        time: pickupTime,
+        dropDate: (tripType === "round-trip" || activeTab === "package") ? dropDate : undefined,
       }));
     }
   };
@@ -363,7 +394,7 @@ export default function BookingWidget() {
             { id: "airport", label: t("airport") },
             // { id: "van", label: t("tempo_traveller") },
             // { id: "bus", label: t("luxury_buses") },
-            { id: "package", label: t("package") || "Package" },
+            { id: "package", label: t("packages") || "Packages" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -477,7 +508,7 @@ export default function BookingWidget() {
 
       {/* ===================== INPUT SECTION ===================== */}
       {/* If stops or round-trip: 2-row multi-column grid like Savaari */}
-      {(hasStops || isRoundTrip) && activeTab === "outstation" ? (
+      {(hasStops || isRoundTrip) && (activeTab === "outstation" || activeTab === "package") ? (
         <div className="space-y-4">
           {/* ROW 1: Locations (FROM -> STOP 1 -> STOP 2 -> TO) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
@@ -584,7 +615,7 @@ export default function BookingWidget() {
                 : "lg:col-span-6"
             }`}>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                {t("to_city")}
+                {activeTab === "package" ? "Select Packages" : t("to_city")}
               </label>
               <CityAutocompleteInput 
                 value={dropCity}
@@ -789,8 +820,10 @@ export default function BookingWidget() {
                 ? (airportTripType === "drop" 
                     ? (t("drop_airport") || "Drop Airport") 
                     : (t("drop_location") || "Drop Location"))
-                : (activeTab === "local" || activeTab === "package")
-                ? "Select Package" 
+                : activeTab === "local"
+                ? "Select Hourly Package"
+                : activeTab === "package"
+                ? "Select Packages"
                 : t("to_city")}
             </label>
 
@@ -821,16 +854,15 @@ export default function BookingWidget() {
                   <span>{t("choose_to_location") || "Choose From Map"}</span>
                 </button>
               </>
-            ) : (activeTab === "local" || activeTab === "package") ? (
+            ) : activeTab === "local" ? (
               <select
-                value={selectedPackage}
+                value={selectedPackage.includes("hr") ? selectedPackage : "8hr-80km"}
                 onChange={(e) => setSelectedPackage(e.target.value)}
                 className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
               >
                 <option value="4hr-40km">4 Hours / 40 km (Half Day Package)</option>
                 <option value="8hr-80km">8 Hours / 80 km (Full Day Sightseeing)</option>
                 <option value="12hr-120km">12 Hours / 120 km (Extended Full Day)</option>
-                {activeTab === "package" && <option value="multi-day">Multi-Day Custom Tour Package</option>}
               </select>
             ) : (
               <CityAutocompleteInput
@@ -845,6 +877,7 @@ export default function BookingWidget() {
                 }}
                 placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : "e.g. Coimbatore, Tamil Nadu"}
                 iconColor="text-brand-orange"
+                inputClassName="rounded-xl"
               />
             )}
 
@@ -913,7 +946,7 @@ export default function BookingWidget() {
       )}
 
       {/* Automatic Route Distance & Driving Time Detection Banner */}
-      {routeEstimate.isDetected && routeEstimate.distanceKm > 0 && activeTab !== "local" && activeTab !== "package" && (
+      {routeEstimate.isDetected && routeEstimate.distanceKm > 0 && activeTab !== "local" && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-amber-50/70 border border-amber-200/80 px-4 py-2.5 rounded-xl">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="flex h-2.5 w-2.5 relative">
@@ -921,21 +954,29 @@ export default function BookingWidget() {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <span className="text-xs font-semibold text-slate-600">
-              {t("auto_detected_route") || "Auto-Detected Route:"}
+              {activeTab === "package" ? "Selected Special Tour Circuit:" : t("auto_detected_route") || "Auto-Detected Route:"}
             </span>
             <span className="text-sm font-extrabold text-slate-900">
-              {routeEstimate.distanceKm} km
+              {routeEstimate.distanceKm} km {activeTab === "package" ? "(Round Trip Circuit)" : ""}
             </span>
             <span className="text-xs font-semibold text-slate-500 capitalize">
               ({activeTab === "airport"
                 ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup")
+                : activeTab === "package"
+                ? (routeEstimate.durationText || "Multi-Day Tour")
                 : tripType === "one-way" ? t("trip_one_way") : tripType === "round-trip" ? t("trip_round_trip") : t("multi_city_tour")})
             </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="text-xs font-bold text-amber-800 bg-white/90 px-3 py-1 rounded-lg border border-amber-200/60 flex items-center gap-1.5 shadow-2xs">
-              <span>⏱️ {t("estimated_driving_time") || "Estimated Driving Time:"}</span>
-              <span className="text-slate-900 font-extrabold">{routeEstimate.durationText || `~${routeEstimate.durationHours} hrs`}</span>
+              {activeTab === "package" ? (
+                <span>🛡️ Fastag Tolls, State Border Permits & Driver Allowance Included</span>
+              ) : (
+                <>
+                  <span>⏱️ {t("estimated_driving_time") || "Estimated Driving Time:"}</span>
+                  <span className="text-slate-900 font-extrabold">{routeEstimate.durationText || `~${routeEstimate.durationHours} hrs`}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -957,6 +998,17 @@ export default function BookingWidget() {
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
                 <span className="font-bold text-white tracking-tight">🤝 Chauffeur Meet & Greet with Placard</span>
+              </div>
+            </>
+          ) : activeTab === "package" ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">🏖️ Special Multi-Day Roadtrips: Goa, Ladakh & Beyond</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-300 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">Zero Hidden Taxes • Dedicated Chauffeur on Standby</span>
               </div>
             </>
           ) : (

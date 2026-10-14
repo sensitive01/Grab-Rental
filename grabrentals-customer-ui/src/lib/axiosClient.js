@@ -35,9 +35,17 @@ axiosClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401 && typeof window !== "undefined") {
+        logout();
+
+        // Do not forcefully redirect away on review-pay or checkout flows
+        // Let the checkout page handle inline re-authentication without losing user inputs
+        if (window.location.pathname.includes("review-pay") || error.config?.skipAuthRedirect) {
+          console.warn("Customer session expired (401) on review-pay. Deferring to in-page verification...");
+          return Promise.reject(error);
+        }
+
         if (!window.location.pathname.startsWith("/login")) {
           console.warn("Customer session expired or unauthorized (401). Redirecting to login...");
-          logout();
           const currentPath = window.location.pathname + window.location.search;
           window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
         }

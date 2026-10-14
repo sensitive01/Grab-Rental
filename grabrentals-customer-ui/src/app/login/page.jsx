@@ -362,9 +362,12 @@ export default function LoginPage() {
                       type="tel"
                       required
                       autoFocus
-                      maxLength={12}
+                      maxLength={10}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+                        setPhone(digits);
+                      }}
                       placeholder="98765 43210"
                       className="w-full pl-24 pr-4 py-3.5 bg-slate-900 border border-slate-800 rounded-xl text-base font-semibold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all tracking-wide"
                     />
