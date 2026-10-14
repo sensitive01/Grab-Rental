@@ -639,8 +639,9 @@ public class CustomerBookingService {
             String state = (rawCity != null && rawCity.contains(",")) ? rawCity.split(",")[1].trim() : null;
 
             var tariffs = vehicleTariffService.getTariffsForService(serviceType);
+            String fuelType = vehicle != null ? vehicle.getFuelType() : null;
             Map<String, Object> rateContext = vehicleTariffService.calculateRate(
-                    category, model, seating, pickupDateStr, pickupTimeStr, serviceType, city, state, tariffs
+                    category, model, seating, fuelType, pickupDateStr, pickupTimeStr, serviceType, city, state, tariffs
             );
 
             int distanceKm = extractDistanceKm(booking);

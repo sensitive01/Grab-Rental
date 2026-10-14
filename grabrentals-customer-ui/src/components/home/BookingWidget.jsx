@@ -1,20 +1,40 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight, Plane } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
+import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
+
+export const AIRPORT_LIST = [
+  { id: "BLR", name: "Kempegowda International Airport (BLR), Bengaluru", city: "Bangalore, Karnataka", lat: 13.1986, lng: 77.7066 },
+  { id: "MAA", name: "Chennai International Airport (MAA), Chennai", city: "Chennai, Tamil Nadu", lat: 12.9941, lng: 80.1709 },
+  { id: "CJB", name: "Coimbatore International Airport (CJB), Coimbatore", city: "Coimbatore, Tamil Nadu", lat: 11.0298, lng: 77.0434 },
+  { id: "IXM", name: "Madurai Airport (IXM), Madurai", city: "Madurai, Tamil Nadu", lat: 9.8345, lng: 78.0934 },
+  { id: "TRZ", name: "Tiruchirappalli International Airport (TRZ), Trichy", city: "Tiruchirappalli, Tamil Nadu", lat: 10.7654, lng: 78.7107 },
+  { id: "SXV", name: "Salem Airport (SXV), Salem", city: "Salem, Tamil Nadu", lat: 11.7836, lng: 78.0650 },
+  { id: "TCR", name: "Tuticorin Airport (TCR), Thoothukudi", city: "Thoothukudi, Tamil Nadu", lat: 8.7236, lng: 78.0264 },
+  { id: "COK", name: "Cochin International Airport (COK), Kochi", city: "Kochi, Kerala", lat: 10.1518, lng: 76.3930 },
+  { id: "CCJ", name: "Calicut International Airport (CCJ), Kozhikode", city: "Kozhikode, Kerala", lat: 11.1362, lng: 75.9553 },
+  { id: "TRV", name: "Trivandrum International Airport (TRV), Thiruvananthapuram", city: "Thiruvananthapuram, Kerala", lat: 8.4821, lng: 76.9200 },
+  { id: "HYD", name: "Rajiv Gandhi International Airport (HYD), Hyderabad", city: "Hyderabad, Telangana", lat: 17.2403, lng: 78.4294 },
+  { id: "IXE", name: "Mangalore International Airport (IXE), Mangaluru", city: "Mangalore, Karnataka", lat: 12.9613, lng: 74.8900 },
+  { id: "GOI", name: "Goa International Airport (GOI / GOX), Goa", city: "Goa, Goa", lat: 15.3800, lng: 73.8314 },
+  { id: "BOM", name: "Chhatrapati Shivaji Maharaj Airport (BOM), Mumbai", city: "Mumbai, Maharashtra", lat: 19.0896, lng: 72.8656 },
+  { id: "DEL", name: "Indira Gandhi International Airport (DEL), New Delhi", city: "Delhi, Delhi", lat: 28.5562, lng: 77.1000 },
+];
 
 const getTabFromPath = (path) => {
   if (!path) return "outstation";
   if (path.startsWith("/airport")) return "airport";
   if (path.startsWith("/local")) return "local";
-  if (path.startsWith("/vans")) return "van";
-  if (path.startsWith("/buses")) return "bus";
+  if (path.startsWith("/packages") || path.startsWith("/package")) return "package";
+  // if (path.startsWith("/vans")) return "van";
+  // if (path.startsWith("/buses")) return "bus";
   return "outstation";
 };
 
@@ -22,8 +42,9 @@ const getPathFromTab = (tabId) => {
   switch (tabId) {
     case "local": return "/local";
     case "airport": return "/airport";
-    case "van": return "/vans";
-    case "bus": return "/buses";
+    case "package": return "/packages";
+    // case "van": return "/vans";
+    // case "bus": return "/buses";
     case "outstation":
     default: return "/";
   }
@@ -35,8 +56,11 @@ export default function BookingWidget() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(() => getTabFromPath(pathname));
   const [tripType, setTripType] = useState("one-way");
+  const [airportTripType, setAirportTripType] = useState("drop"); // "drop" = Drop to Airport, "pickup" = Pickup from Airport
+  const [selectedAirport, setSelectedAirport] = useState(AIRPORT_LIST[0].name);
+  const [airportCoords, setAirportCoords] = useState({ lat: 13.1986, lng: 77.7066 });
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [mapTarget, setMapTarget] = useState("pickup"); // 'pickup' | 'drop'
+  const [mapTarget, setMapTarget] = useState("pickup"); // 'pickup' | 'drop' | 'airport'
 
   // Location inputs & exact GPS coordinates
   const [pickupCity, setPickupCity] = useState("Bangalore, Karnataka");
@@ -55,8 +79,10 @@ export default function BookingWidget() {
     return d.toISOString().split("T")[0];
   });
   const [pickupTime, setPickupTime] = useState("07:00");
+  const [selectedPackage, setSelectedPackage] = useState("8hr-80km");
 
-  const allowsStops = activeTab === "outstation" || activeTab === "van" || activeTab === "bus";
+  const allowsStops = activeTab === "outstation";
+  const showSwap = allowsStops || activeTab === "airport";
 
   // Tab scroll navigation for mobile view
   const tabsRef = useRef(null);
@@ -119,22 +145,43 @@ export default function BookingWidget() {
     }
   };
 
+  // Effective From & To for route calculation depending on active tab
+  const effectiveFrom = useMemo(() => {
+    if (activeTab === "airport") {
+      return airportTripType === "drop" ? pickupCity : selectedAirport;
+    }
+    return pickupCity;
+  }, [activeTab, airportTripType, pickupCity, selectedAirport]);
+
+  const effectiveTo = useMemo(() => {
+    if (activeTab === "airport") {
+      return airportTripType === "drop" ? selectedAirport : dropCity;
+    }
+    if (activeTab === "local" || activeTab === "package") {
+      return "";
+    }
+    return dropCity;
+  }, [activeTab, airportTripType, dropCity, selectedAirport]);
+
   // Automatic KM & Route Duration Detection (Instant synchronous fallback + Google Routes API async)
   const initialEstimate = useMemo(() => {
-    return detectRouteDistance(pickupCity, dropCity, stops, tripType);
-  }, [pickupCity, dropCity, stops, tripType]);
+    if (activeTab === "local" || activeTab === "package") {
+      return { isDetected: false, distanceKm: 0, durationHours: 0, durationText: "" };
+    }
+    return detectRouteDistance(effectiveFrom, effectiveTo, allowsStops ? stops : [], tripType);
+  }, [effectiveFrom, effectiveTo, stops, tripType, activeTab, allowsStops]);
 
   const [googleRoute, setGoogleRoute] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     async function loadGoogleRoute() {
-      if (!pickupCity || !dropCity) return;
+      if (!effectiveFrom || !effectiveTo || activeTab === "local" || activeTab === "package") return;
       try {
-        const res = await fetchGoogleRouteDistance(pickupCity, dropCity, stops, tripType, {
-          originCoords: pickupCoords,
-          destinationCoords: dropCoords,
-          stopsCoords
+        const res = await fetchGoogleRouteDistance(effectiveFrom, effectiveTo, allowsStops ? stops : [], tripType, {
+          originCoords: activeTab === "airport" && airportTripType === "pickup" ? airportCoords : pickupCoords,
+          destinationCoords: activeTab === "airport" && airportTripType === "drop" ? airportCoords : dropCoords,
+          stopsCoords: allowsStops ? stopsCoords : []
         });
         if (!cancelled && res?.isDetected) {
           setGoogleRoute(res);
@@ -147,7 +194,7 @@ export default function BookingWidget() {
     return () => {
       cancelled = true;
     };
-  }, [pickupCity, dropCity, stops, tripType, pickupCoords, dropCoords, stopsCoords]);
+  }, [effectiveFrom, effectiveTo, stops, tripType, pickupCoords, dropCoords, airportCoords, stopsCoords, activeTab, allowsStops, airportTripType]);
 
   const routeEstimate = googleRoute || initialEstimate;
 
@@ -184,6 +231,18 @@ export default function BookingWidget() {
   };
 
   const handleSwap = () => {
+    if (activeTab === "airport") {
+      if (airportTripType === "drop") {
+        setDropCity(pickupCity);
+        setDropCoords(pickupCoords);
+        setAirportTripType("pickup");
+      } else {
+        setPickupCity(dropCity);
+        setPickupCoords(dropCoords);
+        setAirportTripType("drop");
+      }
+      return;
+    }
     setPickupCity(dropCity);
     setDropCity(pickupCity);
     setPickupCoords(dropCoords);
@@ -204,17 +263,34 @@ export default function BookingWidget() {
   // Build target explore URL with search parameters
   const buildExploreUrl = () => {
     const params = new URLSearchParams();
-    if (pickupCity) params.set("from", pickupCity);
-    if (dropCity) params.set("to", dropCity);
-    const validStops = stops.filter((s) => s.trim());
-    if (validStops.length > 0) {
-      params.set("stops", validStops.join("|"));
-    }
-    params.set("tripType", tripType);
-    const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
+    const resolvedServiceType = (activeTab === "local" || activeTab === "package") ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
     params.set("serviceType", resolvedServiceType);
+
+    if (activeTab === "airport") {
+      const fromLoc = airportTripType === "drop" ? pickupCity : selectedAirport;
+      const toLoc = airportTripType === "drop" ? selectedAirport : dropCity;
+      params.set("from", fromLoc);
+      params.set("to", toLoc);
+      params.set("airportTripType", airportTripType);
+      params.set("airport", selectedAirport);
+      params.set("tripType", airportTripType === "drop" ? "Airport Drop" : "Airport Pickup");
+    } else if (activeTab === "local" || activeTab === "package") {
+      if (pickupCity) params.set("from", pickupCity);
+      params.set("package", selectedPackage);
+      params.set("to", selectedPackage);
+      params.set("tripType", tripType);
+    } else {
+      if (pickupCity) params.set("from", pickupCity);
+      if (dropCity) params.set("to", dropCity);
+      const validStops = stops.filter((s) => s.trim());
+      if (validStops.length > 0) {
+        params.set("stops", validStops.join("|"));
+      }
+      params.set("tripType", tripType);
+    }
+
     params.set("pickupDate", pickupDate);
-    if (tripType === "round-trip" && dropDate) {
+    if (tripType === "round-trip" && dropDate && activeTab === "outstation") {
       params.set("dropDate", dropDate);
     }
     params.set("pickupTime", pickupTime);
@@ -223,11 +299,21 @@ export default function BookingWidget() {
 
   const handleExploreClick = () => {
     const validStops = stops.filter((s) => s.trim());
-    const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
+    const resolvedServiceType = (activeTab === "local" || activeTab === "package") ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
+    const fromLoc = activeTab === "airport" 
+      ? (airportTripType === "drop" ? pickupCity : selectedAirport)
+      : pickupCity;
+    const toLoc = activeTab === "airport"
+      ? (airportTripType === "drop" ? selectedAirport : dropCity)
+      : (activeTab === "local" || activeTab === "package") ? selectedPackage : dropCity;
+
     if (typeof window !== "undefined") {
       sessionStorage.setItem("grab_pending_trip", JSON.stringify({
-        from: pickupCity,
-        to: dropCity,
+        from: fromLoc,
+        to: toLoc,
+        airportTripType: activeTab === "airport" ? airportTripType : undefined,
+        airport: activeTab === "airport" ? selectedAirport : undefined,
+        package: (activeTab === "local" || activeTab === "package") ? selectedPackage : undefined,
         stops: validStops.join("|"),
         pickupCoords,
         dropCoords,
@@ -235,7 +321,7 @@ export default function BookingWidget() {
         distanceKm: routeEstimate.distanceKm,
         durationText: routeEstimate.durationText,
         tollPrice: routeEstimate.tollPrice,
-        tripType,
+        tripType: activeTab === "airport" ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup") : tripType,
         serviceType: resolvedServiceType,
         date: pickupDate,
         time: pickupTime
@@ -265,24 +351,25 @@ export default function BookingWidget() {
           </div>
         )}
 
-        {/* Scrollable Tabs */}
+        {/* Scrollable / Centered Tabs */}
         <div
           ref={tabsRef}
           onScroll={checkScroll}
-          className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 scroll-smooth"
+          className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 sm:gap-2 scroll-smooth justify-center items-center w-full"
         >
           {[
             { id: "outstation", label: t("outstation_cabs") },
             { id: "local", label: t("local_rental") },
             { id: "airport", label: t("airport") },
-            { id: "van", label: t("tempo_traveller") },
-            { id: "bus", label: t("luxury_buses") },
+            // { id: "van", label: t("tempo_traveller") },
+            // { id: "bus", label: t("luxury_buses") },
+            { id: "package", label: t("package") || "Package" },
           ].map((tab) => (
             <button
               key={tab.id}
               data-tab-id={tab.id}
               onClick={(e) => handleTabClick(tab.id, e)}
-              className={`flex-shrink-0 px-3.5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer ${
+              className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id
                   ? "text-brand-amber border-brand-amber bg-orange-50/50 rounded-t-lg"
                   : "text-slate-500 border-transparent hover:text-slate-800"
@@ -308,8 +395,46 @@ export default function BookingWidget() {
         )}
       </div>
 
-      {/* Trip Type Radios / Bordered Pill Buttons */}
-      {allowsStops && (
+      {/* Trip Type Radios / Direction Options */}
+      {activeTab === "airport" ? (
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-5 animate-fade-in">
+          {[
+            { id: "drop", label: t("drop_to_airport") || "Drop to Airport" },
+            { id: "pickup", label: t("pickup_from_airport") || "Pickup from Airport" },
+          ].map((item) => {
+            const isSelected = airportTripType === item.id;
+            return (
+              <label
+                key={item.id}
+                className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${
+                  isSelected
+                    ? "bg-amber-50/70 border-amber-500 text-amber-950 shadow-xs ring-1 ring-amber-500/30 font-bold"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
+                    isSelected ? "border-amber-600" : "border-slate-300"
+                  }`}
+                >
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-amber-600" />}
+                </div>
+                <input
+                  type="radio"
+                  name="airportTripType"
+                  value={item.id}
+                  checked={isSelected}
+                  onChange={() => setAirportTripType(item.id)}
+                  className="hidden"
+                />
+                <span className="text-xs sm:text-sm whitespace-nowrap">
+                  {item.label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      ) : allowsStops ? (
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
           {[
             { id: "one-way", label: t("one_way") },
@@ -348,11 +473,11 @@ export default function BookingWidget() {
             );
           })}
         </div>
-      )}
+      ) : null}
 
       {/* ===================== INPUT SECTION ===================== */}
       {/* If stops or round-trip: 2-row multi-column grid like Savaari */}
-      {hasStops || isRoundTrip ? (
+      {(hasStops || isRoundTrip) && activeTab === "outstation" ? (
         <div className="space-y-4">
           {/* ROW 1: Locations (FROM -> STOP 1 -> STOP 2 -> TO) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
@@ -433,7 +558,7 @@ export default function BookingWidget() {
                   }
                 />
 
-                {/* Map picker & Quick suggestion chips */}
+                {/* Map picker */}
                 <div className="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
                   <button
                     type="button"
@@ -446,22 +571,6 @@ export default function BookingWidget() {
                     <MapPin className="w-3 h-3 text-purple-500 group-hover:scale-110 transition-transform" />
                     <span>Choose on Map</span>
                   </button>
-
-                  {!stop && (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className="text-[10px] text-slate-400 font-semibold">{t("suggested") || "Suggested:"}</span>
-                      {["Salem", "Chennai", "Mysore", "Vellore"].map((city) => (
-                        <button
-                          key={city}
-                          type="button"
-                          onClick={() => handleStopChange(index, city)}
-                          className="text-[10px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
-                        >
-                          + {city}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -520,17 +629,24 @@ export default function BookingWidget() {
           {/* ROW 2: Schedule & Action (Pick Up Date, Return Date, Pick Up Time, Explore CTA) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end pt-2 border-t border-slate-100">
             
-            {/* PICK UP DATE */}
-            <div className={isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}>
+            {/* UNIFIED PICK UP DATE & TIME */}
+            <div className={isRoundTrip ? "lg:col-span-4" : "lg:col-span-7"}>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                {t("pickup_date")}
+                {t("pickup_date_time") || "Pickup Date & Time"}
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
                 <input 
-                  type="date" 
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
+                  type="datetime-local" 
+                  value={`${pickupDate}T${pickupTime}`}
+                  min={new Date().toISOString().slice(0, 16)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    const [d, tVal] = val.split("T");
+                    if (d) setPickupDate(d);
+                    if (tVal) setPickupTime(tVal);
+                  }}
                   className="w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
                 />
               </div>
@@ -538,7 +654,7 @@ export default function BookingWidget() {
 
             {/* DROP / RETURN DATE (for Round Trip) */}
             {isRoundTrip && (
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-4">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
                   {t("return_date")}
                 </label>
@@ -554,22 +670,6 @@ export default function BookingWidget() {
               </div>
             )}
 
-            {/* PICK UP TIME */}
-            <div className={isRoundTrip ? "lg:col-span-2" : "lg:col-span-3"}>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                {t("pickup_time")}
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
-                <input 
-                  type="time" 
-                  value={pickupTime}
-                  onChange={(e) => setPickupTime(e.target.value)}
-                  className="w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
-                />
-              </div>
-            </div>
-
             {/* CTA Button: EXPLORE CABS */}
             <div className={isRoundTrip ? "lg:col-span-4" : "lg:col-span-5"}>
               <Link 
@@ -584,42 +684,83 @@ export default function BookingWidget() {
           </div>
         </div>
       ) : (
-        /* STANDARD 1-ROW VIEW (When 0 stops and one-way) */
-        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start relative">
-          {/* Pickup City */}
-          <div className="flex-1 w-full relative">
+        /* STANDARD 1-ROW VIEW (When 0 stops and one-way, Local, or Airport) */
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start relative w-full">
+          
+          {/* FIELD 1 (LEFT): Pickup City/Address OR Pickup Airport */}
+          <div className="flex-1 min-w-0 w-full relative">
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              {t("from_city")}
+              {activeTab === "airport"
+                ? (airportTripType === "pickup"
+                    ? (t("pickup_airport") || "Pickup Airport")
+                    : (t("pickup_location") || "Pickup Location"))
+                : t("from_city")}
             </label>
-            <CityAutocompleteInput 
-              value={pickupCity}
-              onChange={(val, coords) => {
-                setPickupCity(val);
-                setPickupCoords(coords || null);
-              }}
-              placeholder="e.g. Bangalore (Bengaluru)" 
-              iconColor="text-brand-emerald"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setMapTarget("pickup");
-                setIsMapModalOpen(true);
-              }}
-              className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group"
-            >
-              <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-              <span>{t("choose_from_location") || "Choose from Location"}</span>
-            </button>
+
+            {activeTab === "airport" && airportTripType === "pickup" ? (
+              <>
+                <AirportSearchDropdown
+                  value={selectedAirport}
+                  onChange={(val, coords) => {
+                    setSelectedAirport(val);
+                    if (coords) setAirportCoords(coords);
+                  }}
+                  onOpenMap={() => {
+                    setMapTarget("airport");
+                    setIsMapModalOpen(true);
+                  }}
+                  tripType="pickup"
+                  iconColor="text-brand-emerald"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMapTarget("airport");
+                    setIsMapModalOpen(true);
+                  }}
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>{t("choose_from_location") || "Choose From Map"}</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <CityAutocompleteInput 
+                  value={pickupCity}
+                  onChange={(val, coords) => {
+                    setPickupCity(val);
+                    setPickupCoords(coords || null);
+                  }}
+                  onOpenMap={() => {
+                    setMapTarget("pickup");
+                    setIsMapModalOpen(true);
+                  }}
+                  placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : "e.g. Bangalore (Bengaluru)"} 
+                  iconColor="text-brand-emerald"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMapTarget("pickup");
+                    setIsMapModalOpen(true);
+                  }}
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>{t("choose_from_location") || "Choose from Location"}</span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Desktop Swap Button */}
-          {allowsStops && (
-            <div className="hidden lg:flex items-center justify-center pt-6 px-1">
+          {showSwap && (
+            <div className="hidden lg:flex items-center justify-center pt-6 px-1 shrink-0">
               <button 
                 type="button"
                 onClick={handleSwap}
-                title="Swap Pickup & Destination"
+                title={activeTab === "airport" ? "Switch between Drop to Airport & Pickup from Airport" : "Swap Pickup & Destination"}
                 className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-sm group cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -628,12 +769,12 @@ export default function BookingWidget() {
           )}
 
           {/* Mobile Swap Button */}
-          {allowsStops && (
-            <div className="flex lg:hidden justify-center -my-1 w-full relative z-10">
+          {showSwap && (
+            <div className="flex lg:hidden justify-center -my-1 w-full relative z-10 shrink-0">
               <button 
                 type="button"
                 onClick={handleSwap}
-                title="Swap Pickup & Destination"
+                title={activeTab === "airport" ? "Switch between Drop to Airport & Pickup from Airport" : "Swap Pickup & Destination"}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-brand-amber hover:border-brand-amber shadow-sm cursor-pointer"
               >
                 <ArrowLeftRight className="w-3.5 h-3.5 rotate-90" />
@@ -641,16 +782,55 @@ export default function BookingWidget() {
             </div>
           )}
 
-          {/* Drop Destination */}
-          <div className="flex-1 w-full relative">
+          {/* FIELD 2 (RIGHT): Drop City/Address OR Drop Airport OR Package */}
+          <div className="flex-1 min-w-0 w-full relative">
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              {activeTab === "airport" ? t("airport") : activeTab === "local" ? t("local_rental") : t("to_city")}
+              {activeTab === "airport" 
+                ? (airportTripType === "drop" 
+                    ? (t("drop_airport") || "Drop Airport") 
+                    : (t("drop_location") || "Drop Location"))
+                : (activeTab === "local" || activeTab === "package")
+                ? "Select Package" 
+                : t("to_city")}
             </label>
 
-            {activeTab === "airport" ? (
-              <select className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm">
-                <option>To Kempegowda Airport (BLR)</option>
-                <option>From Kempegowda Airport (BLR)</option>
+            {activeTab === "airport" && airportTripType === "drop" ? (
+              <>
+                <AirportSearchDropdown
+                  value={selectedAirport}
+                  onChange={(val, coords) => {
+                    setSelectedAirport(val);
+                    if (coords) setAirportCoords(coords);
+                  }}
+                  onOpenMap={() => {
+                    setMapTarget("airport");
+                    setIsMapModalOpen(true);
+                  }}
+                  tripType="drop"
+                  iconColor="text-brand-orange"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMapTarget("airport");
+                    setIsMapModalOpen(true);
+                  }}
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>{t("choose_to_location") || "Choose From Map"}</span>
+                </button>
+              </>
+            ) : (activeTab === "local" || activeTab === "package") ? (
+              <select
+                value={selectedPackage}
+                onChange={(e) => setSelectedPackage(e.target.value)}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
+              >
+                <option value="4hr-40km">4 Hours / 40 km (Half Day Package)</option>
+                <option value="8hr-80km">8 Hours / 80 km (Full Day Sightseeing)</option>
+                <option value="12hr-120km">12 Hours / 120 km (Extended Full Day)</option>
+                {activeTab === "package" && <option value="multi-day">Multi-Day Custom Tour Package</option>}
               </select>
             ) : (
               <CityAutocompleteInput
@@ -659,67 +839,68 @@ export default function BookingWidget() {
                   setDropCity(val);
                   setDropCoords(coords || null);
                 }}
-                placeholder={activeTab === "local" ? "e.g. Indiranagar / Koramangala" : "e.g. Coimbatore, Tamil Nadu"}
+                onOpenMap={() => {
+                  setMapTarget("drop");
+                  setIsMapModalOpen(true);
+                }}
+                placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : "e.g. Coimbatore, Tamil Nadu"}
                 iconColor="text-brand-orange"
               />
             )}
 
-            <div className="flex items-center justify-between gap-3 mt-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => {
-                  setMapTarget("drop");
-                  setIsMapModalOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group"
-              >
-                <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-                <span>{t("choose_to_location") || "Choose to Location"}</span>
-              </button>
-
-              {allowsStops && stops.length < 3 && (
+            {activeTab !== "local" && activeTab !== "package" && !(activeTab === "airport" && airportTripType === "drop") && (
+              <div className="flex items-center justify-between gap-3 mt-1.5 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => handleAddStop()}
-                  className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group"
+                  onClick={() => {
+                    setMapTarget("drop");
+                    setIsMapModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
                 >
-                  <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-                  <span>{t("add_stop") || "Add Stop"}</span>
+                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>{t("choose_to_location") || "Choose to Location"}</span>
                 </button>
-              )}
-            </div>
+
+                {allowsStops && stops.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAddStop()}
+                    className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                    <span>{t("add_stop") || "Add Stop"}</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Date & Time */}
-          <div className="flex-1 lg:flex-[1.1] w-full grid grid-cols-2 gap-2 sm:gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("pickup_date")}</label>
-              <div className="relative">
-                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
-                <input 
-                  type="date" 
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                  className="w-full pl-9 sm:pl-11 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("pickup_time")}</label>
-              <div className="relative">
-                <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
-                <input 
-                  type="time" 
-                  value={pickupTime}
-                  onChange={(e) => setPickupTime(e.target.value)}
-                  className="w-full pl-9 sm:pl-11 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
-                />
-              </div>
+          {/* Unified Pickup Date & Time */}
+          <div className="flex-1 lg:flex-[1.1] min-w-0 w-full relative">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+              {t("pickup_date_time") || "Pickup Date & Time"}
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none shrink-0" />
+              <input 
+                type="datetime-local" 
+                value={`${pickupDate}T${pickupTime}`}
+                min={new Date().toISOString().slice(0, 16)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  const [d, tVal] = val.split("T");
+                  if (d) setPickupDate(d);
+                  if (tVal) setPickupTime(tVal);
+                }}
+                className="w-full pl-10 sm:pl-11 pr-3 py-3 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
+              />
             </div>
           </div>
 
           {/* CTA Button */}
-          <div className="w-full lg:w-auto mt-2 sm:mt-4 lg:mt-[23px]">
+          <div className="w-full lg:w-auto mt-2 sm:mt-4 lg:mt-[23px] shrink-0">
             <Link 
               href={buildExploreUrl()}
               onClick={handleExploreClick}
@@ -732,7 +913,7 @@ export default function BookingWidget() {
       )}
 
       {/* Automatic Route Distance & Driving Time Detection Banner */}
-      {routeEstimate.isDetected && routeEstimate.distanceKm > 0 && (
+      {routeEstimate.isDetected && routeEstimate.distanceKm > 0 && activeTab !== "local" && activeTab !== "package" && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-amber-50/70 border border-amber-200/80 px-4 py-2.5 rounded-xl">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="flex h-2.5 w-2.5 relative">
@@ -746,7 +927,9 @@ export default function BookingWidget() {
               {routeEstimate.distanceKm} km
             </span>
             <span className="text-xs font-semibold text-slate-500 capitalize">
-              ({tripType === "one-way" ? t("trip_one_way") : tripType === "round-trip" ? t("trip_round_trip") : t("multi_city_tour")})
+              ({activeTab === "airport"
+                ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup")
+                : tripType === "one-way" ? t("trip_one_way") : tripType === "round-trip" ? t("trip_round_trip") : t("multi_city_tour")})
             </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -761,23 +944,42 @@ export default function BookingWidget() {
       {/* Trust Guarantee & Promo Strip (Orange Banner matching design) */}
       <div className="mt-4 sm:mt-6 p-3 sm:px-5 sm:py-2.5 rounded-xl bg-[#EA580C] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-sm">
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-6">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-            <span className="font-bold text-white tracking-tight">{t("verified_highway_trips") || "5,00,000+ Verified Highway Trips"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-            <span className="font-bold text-white tracking-tight">{t("police_cleared_drivers") || "Commercial Badged & Police-Cleared Drivers"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-            <span className="font-bold text-white tracking-tight">{t("zero_hidden_fares") || "Zero Hidden Night Fares • All-Inclusive Option"}</span>
-          </div>
+          {activeTab === "airport" ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">✈️ Live Flight Tracking & Arrival Monitoring</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">⏱️ 60 Mins Complimentary Waiting at Arrivals</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">🤝 Chauffeur Meet & Greet with Placard</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">{t("verified_highway_trips") || "5,00,000+ Verified Highway Trips"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">{t("police_cleared_drivers") || "Commercial Badged & Police-Cleared Drivers"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">{t("zero_hidden_fares") || "Zero Hidden Night Fares • All-Inclusive Option"}</span>
+              </div>
+            </>
+          )}
         </div>
         
         {/* Promo Pill on Far Right */}
         <div className="bg-white text-[#EA580C] font-black text-xs px-3.5 py-1.5 rounded-lg shadow-xs whitespace-nowrap w-full sm:w-auto text-center">
-          {t("flat_discount_promo") || "Flat 10% Off First Outstation Ride"}
+          {activeTab === "airport" ? "100% On-Time Guarantee" : (t("flat_discount_promo") || "Flat 10% Off First Outstation Ride")}
         </div>
       </div>
 
@@ -788,13 +990,19 @@ export default function BookingWidget() {
         activeTarget={mapTarget}
         pickupValue={pickupCity}
         dropValue={dropCity}
+        airportValue={selectedAirport}
         stops={stops}
-        allowStops={allowsStops}
+        allowStops={allowsStops && activeTab !== "airport"}
         initialPickupCoords={pickupCoords}
         initialDropCoords={dropCoords}
+        initialAirportCoords={airportCoords}
         initialStopsCoords={stopsCoords}
         onSelect={(selectedLocation, coords, target, allValues) => {
           if (allValues) {
+            if (allValues.airport) {
+              setSelectedAirport(allValues.airport);
+              if (allValues.airportCoords) setAirportCoords(allValues.airportCoords);
+            }
             if (allValues.pickup) {
               setPickupCity(allValues.pickup);
               if (allValues.pickupCoords) setPickupCoords(allValues.pickupCoords);
@@ -812,6 +1020,16 @@ export default function BookingWidget() {
                 setStopsCoords(arr);
               }
             }
+          } else if (target === "airport") {
+            setSelectedAirport(selectedLocation);
+            if (coords) {
+              setAirportCoords(coords);
+              if (airportTripType === "pickup") {
+                setPickupCoords(coords);
+              } else {
+                setDropCoords(coords);
+              }
+            }
           } else if (target === "drop") {
             setDropCity(selectedLocation);
             if (coords) setDropCoords(coords);
@@ -823,6 +1041,17 @@ export default function BookingWidget() {
           } else {
             setPickupCity(selectedLocation);
             if (coords) setPickupCoords(coords);
+          }
+        }}
+        onSelectAirport={(selectedLocation, coords) => {
+          setSelectedAirport(selectedLocation);
+          if (coords) {
+            setAirportCoords(coords);
+            if (airportTripType === "pickup") {
+              setPickupCoords(coords);
+            } else {
+              setDropCoords(coords);
+            }
           }
         }}
         onSelectPickup={(selectedLocation, coords) => {

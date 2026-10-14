@@ -200,7 +200,7 @@ public class AuthService {
         }
 
         if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new AccountBlockedException("Your account is currently inactive.");
+            throw new AccountBlockedException("Your account is currently inactive. Please contact administrator to reactivate your access.");
         }
 
         String token = jwtService.generateToken(user);
@@ -381,7 +381,7 @@ public class AuthService {
         }
 
         if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new AccountBlockedException("Your account is currently inactive.");
+            throw new AccountBlockedException("Your account is currently inactive. Please contact administrator to reactivate your access.");
         }
 
         // PENDING accounts can log in to view their registered fleet & profile details, but bookings remain restricted until approved.

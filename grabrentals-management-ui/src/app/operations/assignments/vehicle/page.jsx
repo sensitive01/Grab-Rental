@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { operationsApi } from "@/lib/operationsApi";
@@ -8,7 +8,18 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { Car, CheckCircle2, ArrowRight, UserCheck, Calendar, MapPin } from "lucide-react";
+import {
+  Car,
+  CheckCircle2,
+  ArrowRight,
+  UserCheck,
+  Calendar,
+  MapPin,
+  Phone,
+  ArrowLeft,
+  Filter,
+  Sparkles,
+} from "lucide-react";
 import { formatINR } from "@/lib/utils";
 
 export default function VehicleAssignmentPage() {
@@ -16,10 +27,12 @@ export default function VehicleAssignmentPage() {
   const searchParams = useSearchParams();
   const preselectedBookingId = searchParams.get("bookingId");
 
-  const [bookings, setBookings] = useState([]);
+  const [allBookings, setAllBookings] = useState([]);
+  const [showAllBookings, setShowAllBookings] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [vehicleCategoryFilter, setVehicleCategoryFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
@@ -31,15 +44,33 @@ export default function VehicleAssignmentPage() {
           operationsApi.getBookings(),
           operationsApi.getVehicles("AVAILABLE"),
         ]);
-        setBookings(bookRes.data.filter((b) => b.status === "PENDING_ALLOCATION" || b.id === preselectedBookingId));
-        setVehicles(vehRes.data);
+        const list = (bookRes.data || []).filter(
+          (b) =>
+            b.status === "PENDING_ALLOCATION" ||
+            b.id === preselectedBookingId ||
+            b.rawId === preselectedBookingId
+        );
+        setAllBookings(list);
+        setVehicles(vehRes.data || []);
 
+        let target = null;
         if (preselectedBookingId) {
-          const match = bookRes.data.find((b) => b.id === preselectedBookingId);
-          if (match) setSelectedBooking(match);
-        } else if (bookRes.data.length > 0) {
-          setSelectedBooking(bookRes.data[0]);
+          target = list.find(
+            (b) =>
+              b.id === preselectedBookingId ||
+              b.rawId === preselectedBookingId ||
+              String(b.id).toUpperCase() === String(preselectedBookingId).toUpperCase()
+          );
+          // When a bookingId is provided, show only that specific booking
+          setShowAllBookings(false);
+        } else {
+          setShowAllBookings(true);
         }
+
+        if (!target && list.length > 0) {
+          target = list[0];
+        }
+        setSelectedBooking(target);
       } catch (err) {
         console.error(err);
       } finally {
@@ -48,6 +79,25 @@ export default function VehicleAssignmentPage() {
     }
     load();
   }, [preselectedBookingId]);
+
+  const isTargetMode = Boolean(preselectedBookingId && !showAllBookings);
+  const displayedBookings =
+    isTargetMode && selectedBooking ? [selectedBooking] : allBookings;
+
+  const requiredCategory = (selectedBooking?.vehicleCategory || "").trim().toUpperCase();
+  const matchingVehicles = useMemo(() => {
+    if (!requiredCategory) return [];
+    return vehicles.filter(
+      (v) => (v.category || "").trim().toUpperCase() === requiredCategory
+    );
+  }, [vehicles, requiredCategory]);
+
+  const displayedVehicles = useMemo(() => {
+    if (vehicleCategoryFilter === "MATCHING" && matchingVehicles.length > 0) {
+      return matchingVehicles;
+    }
+    return vehicles;
+  }, [vehicleCategoryFilter, matchingVehicles, vehicles]);
 
   async function handleConfirmDispatch() {
     if (!selectedBooking || !selectedVehicle) {
@@ -140,8 +190,12 @@ export default function VehicleAssignmentPage() {
         subtitle="Assign commercial vehicles to customer bookings. Chauffeurs are assigned by the fleet owner upon dispatch acceptance."
         breadcrumbs={[
           { label: "Operations", href: "/operations/dashboard" },
-          { label: "Assignments", href: "/operations/assignments/vehicle" },
-          { label: "Fast Allocator" },
+          { label: "Pending Allocations", href: "/operations/bookings/new" },
+          {
+            label: selectedBooking?.id
+              ? `Allocate ${selectedBooking.id}`
+              : "Fast Allocator",
+          },
         ]}
       />
 
@@ -149,16 +203,122 @@ export default function VehicleAssignmentPage() {
         {/* Left Column (5 cols): Booking Selection */}
         <div className="lg:col-span-5 space-y-4">
           <Card
-            title="1. Select Booking to Dispatch"
-            subtitle={`${bookings.length} booking(s) needing allocation`}
+            title={
+              isTargetMode
+                ? "1. Booking to Dispatch"
+                : "1. Select Booking to Dispatch"
+            }
+            subtitle={
+              isTargetMode
+                ? `Target booking: #${selectedBooking?.id || preselectedBookingId}`
+                : `${displayedBookings.length} booking(s) needing allocation`
+            }
           >
-            {bookings.length === 0 ? (
+            {/* Header controls for switching between isolated target view and all pending */}
+            {preselectedBookingId && allBookings.length > 1 && (
+              <div className="mb-3 pb-2.5 border-b border-slate-100 flex items-center justify-between text-[11px]">
+                {isTargetMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllBookings(true)}
+                    className="font-semibold text-amber-700 hover:text-amber-800 underline flex items-center gap-1"
+                  >
+                    View all pending bookings ({allBookings.length})
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllBookings(false)}
+                    className="font-semibold text-amber-700 hover:text-amber-800 underline flex items-center gap-1"
+                  >
+                    Focus on #{preselectedBookingId}
+                  </button>
+                )}
+                <Link
+                  href="/operations/bookings/new"
+                  className="text-slate-500 hover:text-slate-800 flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3 h-3" /> Back to Queue
+                </Link>
+              </div>
+            )}
+
+            {displayedBookings.length === 0 ? (
               <div className="py-8 text-center text-xs text-slate-500">
                 No pending bookings requiring vehicle allocation.
               </div>
+            ) : isTargetMode && selectedBooking ? (
+              /* Isolated Full Target Booking Card */
+              <div className="p-4 rounded-xl border border-amber-500 bg-amber-50/50 shadow-sm ring-1 ring-amber-400 text-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm text-slate-900">
+                      {selectedBooking.id}
+                    </span>
+                    <Badge variant="warning" size="sm">
+                      {selectedBooking.vehicleCategory}
+                    </Badge>
+                  </div>
+                  <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300">
+                    Target Booking
+                  </span>
+                </div>
+
+                <div>
+                  <div className="font-bold text-sm text-slate-900">
+                    {selectedBooking.customerName}
+                  </div>
+                  {selectedBooking.customerPhone && (
+                    <div className="text-[11px] text-slate-600 flex items-center gap-1 mt-0.5 font-medium">
+                      <Phone className="w-3 h-3 text-slate-400" />
+                      {selectedBooking.customerPhone}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 rounded-lg bg-white/90 border border-amber-200/80 text-[11px] space-y-1.5 shadow-xs">
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-slate-900">Pickup: </span>
+                      {selectedBooking.pickupLocation}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-700 pt-1.5 border-t border-slate-100">
+                    <MapPin className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-slate-900">Drop: </span>
+                      {selectedBooking.dropLocation}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                  <div className="p-2.5 rounded-lg bg-white/80 border border-amber-200/60">
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+                      Pickup Time
+                    </span>
+                    <span className="font-bold text-slate-900 mt-0.5 block">
+                      {selectedBooking.startDate}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      {selectedBooking.serviceType}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white/80 border border-amber-200/60">
+                    <span className="text-slate-500 block text-[10px] uppercase font-semibold">
+                      Total Fare
+                    </span>
+                    <span className="font-bold text-base text-slate-900 mt-0.5 block">
+                      {formatINR(selectedBooking.fare)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             ) : (
+              /* Multi-Booking List */
               <div className="space-y-2.5 max-h-[550px] overflow-y-auto pr-1">
-                {bookings.map((b) => {
+                {displayedBookings.map((b) => {
                   const isSelected = selectedBooking?.id === b.id;
                   return (
                     <div
@@ -171,18 +331,26 @@ export default function VehicleAssignmentPage() {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-slate-900">{b.id}</span>
+                        <span className="font-mono font-bold text-slate-900">
+                          {b.id}
+                        </span>
                         <Badge variant="warning" size="sm">
                           {b.vehicleCategory}
                         </Badge>
                       </div>
-                      <div className="font-semibold text-slate-800 mt-1">{b.customerName}</div>
+                      <div className="font-semibold text-slate-800 mt-1">
+                        {b.customerName}
+                      </div>
                       <div className="text-[11px] text-slate-500 mt-0.5 truncate">
                         {b.pickupLocation} ➔ {b.dropLocation}
                       </div>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-[11px]">
-                        <span className="text-slate-600 font-medium">{b.startDate}</span>
-                        <span className="font-bold text-slate-900">{formatINR(b.fare)}</span>
+                        <span className="text-slate-600 font-medium">
+                          {b.startDate}
+                        </span>
+                        <span className="font-bold text-slate-900">
+                          {formatINR(b.fare)}
+                        </span>
                       </div>
                     </div>
                   );
@@ -196,13 +364,19 @@ export default function VehicleAssignmentPage() {
         <div className="lg:col-span-7 space-y-6">
           {/* Active Booking Summary Banner */}
           {selectedBooking && (
-            <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 text-xs">
+            <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 text-xs shadow-xs">
               <div className="font-bold text-blue-900 text-sm flex items-center justify-between">
-                <span>Allocating for #{selectedBooking.id} ({selectedBooking.customerName})</span>
-                <span className="font-mono font-bold text-slate-900">{formatINR(selectedBooking.fare)}</span>
+                <span>
+                  Allocating for #{selectedBooking.id} ({selectedBooking.customerName})
+                </span>
+                <span className="font-mono font-bold text-slate-900">
+                  {formatINR(selectedBooking.fare)}
+                </span>
               </div>
               <p className="text-blue-800 mt-1">
-                Required: <strong>{selectedBooking.vehicleCategory}</strong> ({selectedBooking.preferredVehicle || "Any"}) • Pickup: <strong>{selectedBooking.startDate}</strong>
+                Required: <strong>{selectedBooking.vehicleCategory}</strong> (
+                {selectedBooking.preferredVehicle || "Any"}) • Pickup:{" "}
+                <strong>{selectedBooking.startDate}</strong>
               </p>
             </div>
           )}
@@ -210,16 +384,57 @@ export default function VehicleAssignmentPage() {
           {/* 2. Choose Available Vehicle */}
           <Card
             title="2. Choose Available Vehicle"
-            subtitle={`${vehicles.length} commercial vehicles ready for duty`}
+            subtitle={`${displayedVehicles.length} vehicle(s) displayed • ${vehicles.length} commercial vehicles ready for duty`}
           >
-            {vehicles.length === 0 ? (
+            {/* Category Filter Pills */}
+            {selectedBooking?.vehicleCategory && (
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-slate-500 text-[11px] font-medium">
+                    Filter:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setVehicleCategoryFilter("ALL")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      vehicleCategoryFilter === "ALL"
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    All Fleet ({vehicles.length})
+                  </button>
+                  {matchingVehicles.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setVehicleCategoryFilter("MATCHING")}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        vehicleCategoryFilter === "MATCHING"
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                      }`}
+                    >
+                      Matching {selectedBooking.vehicleCategory} ({matchingVehicles.length})
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                      No direct {selectedBooking.vehicleCategory} in fleet (showing all)
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {displayedVehicles.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-500">
                 No vehicle available
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
-                {vehicles.map((v) => {
+                {displayedVehicles.map((v) => {
                   const isChosen = selectedVehicle?.id === v.id;
+                  const isCatMatch =
+                    (v.category || "").trim().toUpperCase() === requiredCategory;
                   return (
                     <div
                       key={v.id}
@@ -232,11 +447,24 @@ export default function VehicleAssignmentPage() {
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <NumberPlate registrationNumber={v.registrationNumber} />
-                        <span className="text-[10px] font-semibold uppercase text-slate-500">{v.category}</span>
+                        <div className="flex items-center gap-1">
+                          {isCatMatch && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              MATCH
+                            </span>
+                          )}
+                          <span className="text-[10px] font-semibold uppercase text-slate-500">
+                            {v.category}
+                          </span>
+                        </div>
                       </div>
                       <div className="font-bold text-slate-900">{v.model}</div>
-                      <div className="text-[11px] text-slate-500">{v.seatingCapacity} Seater • {v.fuelType}</div>
-                      <div className="text-[10px] text-slate-400 mt-1 truncate">{v.vendorName}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {v.seatingCapacity} Seater • {v.fuelType}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1 truncate">
+                        {v.vendorName}
+                      </div>
                     </div>
                   );
                 })}

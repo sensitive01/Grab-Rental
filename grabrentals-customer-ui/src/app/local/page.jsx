@@ -21,7 +21,7 @@ export default function LocalRentalsPage() {
             <Clock className="w-3 h-3 text-brand-amber" /> {t("local_hero_badge") || "Flexible Hourly Packages"}
           </div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            {t("local_hero_title") || "Premium Hourly / Local Car Rentals"}
+            {t("local_hero_title") || "Local Hourly Premium Car Rentals"}
           </h1>
           <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
             {t("local_hero_subtitle") || "Book a chauffeur-driven car for 4 hrs, 8 hrs, or 12 hrs. Perfect for city tours, shopping, and back-to-back meetings."}

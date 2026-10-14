@@ -5,8 +5,10 @@ import { X, MapPin, Calendar, Clock, ArrowRight, Plus, Minus } from "lucide-reac
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 
 export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSave }) {
+  const isLocal = currentTrip?.serviceType === "LOCAL" || (currentTrip?.to && currentTrip.to.toLowerCase().includes("hr"));
+  const isAirport = currentTrip?.serviceType === "AIRPORT" || (currentTrip?.tripType && currentTrip.tripType.toLowerCase().includes("airport"));
   const [from, setFrom] = useState(currentTrip?.from || "Bangalore, Karnataka");
-  const [to, setTo] = useState(currentTrip?.to || "Coimbatore, Tamil Nadu");
+  const [to, setTo] = useState(currentTrip?.to || (isLocal ? "8hr-80km" : "Coimbatore, Tamil Nadu"));
   const [stops, setStops] = useState(() => {
     if (Array.isArray(currentTrip?.stops)) return currentTrip.stops;
     if (typeof currentTrip?.stops === "string" && currentTrip.stops.trim()) {
@@ -14,7 +16,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
     }
     return [];
   });
-  const [tripType, setTripType] = useState(currentTrip?.tripType || "One way");
+  const [tripType, setTripType] = useState(currentTrip?.tripType || (isLocal ? "Hourly Package" : "One way"));
   const [date, setDate] = useState(currentTrip?.date || "2026-09-28");
   const [time, setTime] = useState(currentTrip?.time || "07:00");
 
@@ -38,7 +40,15 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const handleSubmit = (e) => {
     e.preventDefault();
     const validStops = stops.filter((s) => s && s.trim());
-    onSave({ from, to, stops: validStops.join("|"), tripType, date, time });
+    onSave({
+      from,
+      to,
+      stops: (isLocal || isAirport) ? "" : validStops.join("|"),
+      tripType: isLocal ? "Hourly Package" : (currentTrip?.tripType || tripType),
+      serviceType: isLocal ? "LOCAL" : isAirport ? "AIRPORT" : (currentTrip?.serviceType || "OUTSTATION"),
+      date,
+      time
+    });
     onClose();
   };
 
@@ -48,8 +58,12 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
         
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-xl font-black text-slate-900 tracking-tight">Modify Outstation Trip</h3>
-            <p className="text-xs text-slate-500">Update your pickup location, route, and schedule</p>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">
+              {isLocal ? "Modify Local Package Booking" : isAirport ? "Modify Airport Transfer" : "Modify Outstation Trip"}
+            </h3>
+            <p className="text-xs text-slate-500">
+              {isLocal ? "Update your pickup city, hourly rental package, and schedule" : isAirport ? "Update your pickup location, airport, and schedule" : "Update your pickup location, route, and schedule"}
+            </p>
           </div>
           <button 
             type="button" 
@@ -62,38 +76,40 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           
-          {/* Trip Type */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="font-bold text-slate-700 block">Trip Type</label>
-              {stops.length < 3 && (
-                <button
-                  type="button"
-                  onClick={handleAddStop}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Stop</span>
-                </button>
-              )}
+          {/* Trip Type (Outstation only) */}
+          {!isLocal && !isAirport && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="font-bold text-slate-700 block">Trip Type</label>
+                {stops.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={handleAddStop}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Stop</span>
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {["One way", "Round trip"].map((type) => (
+                  <button
+                    type="button"
+                    key={type}
+                    onClick={() => setTripType(type)}
+                    className={`py-2.5 px-3 rounded-xl font-extrabold border transition-all text-center cursor-pointer ${
+                      tripType.toLowerCase().includes(type.toLowerCase().slice(0, 3)) 
+                        ? "border-amber-500 bg-amber-50 text-amber-800" 
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {["One way", "Round trip"].map((type) => (
-                <button
-                  type="button"
-                  key={type}
-                  onClick={() => setTripType(type)}
-                  className={`py-2.5 px-3 rounded-xl font-extrabold border transition-all text-center cursor-pointer ${
-                    tripType.toLowerCase().includes(type.toLowerCase().slice(0, 3)) 
-                      ? "border-amber-500 bg-amber-50 text-amber-800" 
-                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Route: Pickup City */}
           <div>
@@ -108,73 +124,83 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
             />
           </div>
 
-          {/* Intermediate Stops */}
-          {stops.map((stop, index) => (
-            <div key={index} className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="font-bold text-purple-700 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
-                  Stop {index + 1}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveStop(index)}
-                  className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                >
-                  Remove
-                </button>
-              </div>
-              <CityAutocompleteInput
-                value={stop}
-                onChange={(val) => handleStopChange(index, val)}
-                placeholder="Enter stop city (e.g. Salem)..."
-                iconColor="text-purple-600"
-                inputClassName="py-2.5 rounded-xl bg-purple-50/30 border-purple-200"
-              />
+          {/* If Local: Package Selection Dropdown */}
+          {isLocal ? (
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Rental Package</label>
+              <select
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 bg-white focus:outline-none focus:border-amber-500 text-xs"
+              >
+                <option value="4hr-40km">4 Hours / 40 km (Quick Errands & Business)</option>
+                <option value="8hr-80km">8 Hours / 80 km (Full Day City Tour & Sightseeing)</option>
+                <option value="12hr-120km">12 Hours / 120 km (Extended Day & Distant Hubs)</option>
+              </select>
             </div>
-          ))}
+          ) : (
+            <>
+              {/* Intermediate Stops */}
+              {stops.map((stop, index) => (
+                <div key={index} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-purple-700 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
+                      Stop {index + 1}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStop(index)}
+                      className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <CityAutocompleteInput
+                    value={stop}
+                    onChange={(val) => handleStopChange(index, val)}
+                    placeholder="Enter stop city (e.g. Salem)..."
+                    iconColor="text-purple-600"
+                    inputClassName="py-2.5 rounded-xl bg-purple-50/30 border-purple-200"
+                  />
+                </div>
+              ))}
 
-          {/* Destination City */}
-          <div>
-            <label className="font-bold text-slate-700 block mb-1">Destination City</label>
-            <CityAutocompleteInput
-              value={to}
-              onChange={setTo}
-              placeholder="Enter destination city..."
-              iconColor="text-amber-600"
-              inputClassName="py-2.5 rounded-xl"
-              required
-            />
-          </div>
+              {/* Destination City */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Destination City</label>
+                <CityAutocompleteInput
+                  value={to}
+                  onChange={setTo}
+                  placeholder="Enter destination city..."
+                  iconColor="text-amber-600"
+                  inputClassName="py-2.5 rounded-xl"
+                  required
+                />
+              </div>
+            </>
+          )}
 
           {/* Date & Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Pickup Date</label>
-              <div className="relative">
-                <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Pickup Time</label>
-              <div className="relative">
-                <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500"
-                  required
-                />
-              </div>
+          {/* Pickup Date & Time */}
+          <div>
+            <label className="font-bold text-slate-700 block mb-1">Pickup Date & Time</label>
+            <div className="relative">
+              <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+              <input
+                type="datetime-local"
+                value={`${date}T${time}`}
+                min={new Date().toISOString().slice(0, 16)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  const [d, tVal] = val.split("T");
+                  if (d) setDate(d);
+                  if (tVal) setTime(tVal);
+                }}
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:border-amber-500 cursor-pointer"
+                required
+              />
             </div>
           </div>
 

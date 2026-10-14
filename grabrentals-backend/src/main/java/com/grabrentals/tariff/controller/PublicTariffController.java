@@ -23,16 +23,22 @@ public class PublicTariffController {
         return ResponseEntity.ok(ApiResponse.success("Active vehicle models retrieved", list));
     }
 
+    @GetMapping("/category-presets")
+    public ResponseEntity<ApiResponse<Map<String, List<String>>>> getCategoryPresets() {
+        return ResponseEntity.ok(ApiResponse.success("Category presets retrieved", tariffService.getCategoryModelPresets()));
+    }
+
     @GetMapping("/rate-calculator")
     public ResponseEntity<ApiResponse<Map<String, Object>>> calculateRate(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String model,
             @RequestParam(required = false) String seatingCapacity,
+            @RequestParam(required = false) String fuelType,
             @RequestParam(required = false) String date,
             @RequestParam(required = false) String time,
             @RequestParam(required = false) String serviceType
     ) {
-        Map<String, Object> result = tariffService.calculateRate(category, model, seatingCapacity, date, time, serviceType);
+        Map<String, Object> result = tariffService.calculateRate(category, model, seatingCapacity, fuelType, date, time, serviceType, null, null, null);
         return ResponseEntity.ok(ApiResponse.success("Calculated rate retrieved", result));
     }
 

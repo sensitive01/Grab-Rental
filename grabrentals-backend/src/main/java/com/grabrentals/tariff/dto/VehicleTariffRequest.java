@@ -28,6 +28,9 @@ public class VehicleTariffRequest {
     private String seatingCapacity;
 
     @Builder.Default
+    private String fuelType = "Diesel";
+
+    @Builder.Default
     private Boolean seasonal = false;
 
     private String seasonName;
@@ -64,6 +67,14 @@ public class VehicleTariffRequest {
     // Hourly / Local Package components
     private Integer packageHours;
     private Integer packageKm;
+    private BigDecimal hourlyWeekdayDayRate;
+    private BigDecimal hourlyVendorWeekdayDayRate;
+    private BigDecimal hourlyWeekdayNightRate;
+    private BigDecimal hourlyVendorWeekdayNightRate;
+    private BigDecimal hourlyWeekendDayRate;
+    private BigDecimal hourlyVendorWeekendDayRate;
+    private BigDecimal hourlyWeekendNightRate;
+    private BigDecimal hourlyVendorWeekendNightRate;
     private BigDecimal hourlyCustomerFare;
     private BigDecimal hourlyVendorFare;
     private BigDecimal hourlyCustomerWeekendFare;

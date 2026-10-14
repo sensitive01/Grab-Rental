@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { FormattedTextarea } from "@/components/ui/FormattedTextarea";
 import {
@@ -41,20 +42,6 @@ import {
   LayoutGrid
 } from "lucide-react";
 
-// Predefined category to model recommendations matching vendor onboarding
-const CATEGORY_MODEL_PRESETS = {
-  Sedan: ["Dzire", "Etios", "Aura", "Amaze", "Verna", "Ciaz"],
-  Hatchback: ["WagonR", "Swift", "Tiago", "i20", "Baleno"],
-  SUV: ["Ertiga", "Carens", "Xylo", "Marazzo", "Scorpio", "Bolero"],
-  Innova: ["Innova (Standard 6+1)", "Innova (Standard 7+1)"],
-  Innovacrysta: ["Innova Crysta (6+1)", "Innova Crysta (7+1)"],
-  innovahycross: ["Innova Hycross (7+1)", "Innova Hycross (8+1)"],
-  Tempo: ["Tempo Traveller 12+1", "Tempo Traveller 13+1", "Tempo Traveller 17+1"],
-  urbania: ["Force Urbania 10+1", "Force Urbania 12+1", "Force Urbania 16+1"],
-  Bus: ["26 Seater Mini Bus", "35 Seater Luxury Coach", "45 Seater AC Bus"],
-  Benz: ["E-Class Executive", "C-Class Luxury", "S-Class First Class"],
-};
-
 const SEATING_PRESETS = [
   { value: "4", label: "4 Seater + Driver" },
   { value: "6", label: "6 Seater + Driver" },
@@ -77,6 +64,7 @@ export default function AdminVehicleModelsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [photoMode, setPhotoMode] = useState("upload"); // 'upload' or 'url'
@@ -87,10 +75,27 @@ export default function AdminVehicleModelsPage() {
   const [viewMode, setViewMode] = useState("table"); // 'table' or 'grid'
   const fileInputRef = useRef(null);
 
+  const [categoryPresets, setCategoryPresets] = useState({});
+
+  // Preset categories from database for modal dropdowns
+  const dynamicCategories = useMemo(() => {
+    const presetCats = Object.keys(categoryPresets);
+    if (presetCats.length > 0) {
+      return presetCats;
+    }
+    const set = new Set();
+    models.forEach((m) => {
+      if (m.category && m.category.trim()) {
+        set.add(m.category.trim());
+      }
+    });
+    return Array.from(set);
+  }, [categoryPresets, models]);
+
   // Form State
   const [formData, setFormData] = useState({
-    category: "Sedan",
-    modelName: "Dzire",
+    category: "",
+    modelName: "",
     seatingCapacity: "4",
     fuelType: "Diesel",
     description: "",
@@ -98,13 +103,40 @@ export default function AdminVehicleModelsPage() {
     active: true,
   });
 
+  // Dynamic models available for currently selected category in form dropdown
+  const availableModelsForCategory = useMemo(() => {
+    if (!formData.category) return [];
+    const fromPresets = categoryPresets[formData.category];
+    if (fromPresets && Array.isArray(fromPresets) && fromPresets.length > 0) {
+      return fromPresets;
+    }
+    const set = new Set();
+    models
+      .filter((m) => m.category?.toLowerCase() === formData.category.toLowerCase())
+      .forEach((m) => {
+        if (m.modelName && m.modelName.trim()) {
+          set.add(m.modelName.trim());
+        }
+      });
+    return Array.from(set);
+  }, [categoryPresets, models, formData.category]);
+
+  async function loadPresets() {
+    try {
+      const data = await adminApi.getCategoryPresets();
+      if (data && typeof data === "object") {
+        setCategoryPresets(data);
+      }
+    } catch (err) {
+      console.warn("Failed to load category presets:", err);
+    }
+  }
+
   async function loadModels() {
     try {
       setLoading(true);
       const res = await adminApi.getModelConfigs();
-      if (res.data) {
-        setModels(res.data);
-      }
+      setModels(res.data || []);
     } catch (err) {
       console.error("Failed to load vehicle models:", err);
       setToast({ type: "error", message: "Failed to load vehicle model configurations" });
@@ -115,15 +147,16 @@ export default function AdminVehicleModelsPage() {
 
   useEffect(() => {
     loadModels();
+    loadPresets();
   }, []);
 
   function handleOpenCreate() {
     setEditingItem(null);
-    const defaultCat = "Sedan";
-    const defaultModels = CATEGORY_MODEL_PRESETS[defaultCat] || [];
+    const defaultCat = dynamicCategories[0] || "Sedan";
+    const matchingModels = categoryPresets[defaultCat] || [];
     setFormData({
       category: defaultCat,
-      modelName: defaultModels[0] || "",
+      modelName: matchingModels[0] || "",
       seatingCapacity: "4",
       fuelType: "Diesel",
       description: "",
@@ -139,10 +172,10 @@ export default function AdminVehicleModelsPage() {
 
   function handleStartEdit(item) {
     setEditingItem(item);
-    const cat = item.category || "Sedan";
-    const presets = CATEGORY_MODEL_PRESETS[cat] || [];
-    const isPresetModel = presets.includes(item.modelName);
-    const isPresetCat = Boolean(CATEGORY_MODEL_PRESETS[cat]);
+    const cat = item.category || dynamicCategories[0] || "";
+    const matchingModels = categoryPresets[cat] || [];
+    const isKnownModel = matchingModels.includes(item.modelName);
+    const isKnownCat = dynamicCategories.includes(cat);
 
     setFormData({
       id: item.id,
@@ -154,11 +187,157 @@ export default function AdminVehicleModelsPage() {
       commonPhotoUrl: item.commonPhotoUrl || "",
       active: item.active ?? true,
     });
-    setIsCustomCategory(!isPresetCat);
-    setIsCustomModel(!isPresetModel && Boolean(item.modelName));
+    setIsCustomCategory(!isKnownCat);
+    setIsCustomModel(!isKnownModel && Boolean(item.modelName));
     setPreviewPhoto(item.commonPhotoUrl || "");
     setPhotoMode(item.commonPhotoUrl ? "url" : "upload");
     setIsModalOpen(true);
+  }
+
+  function handleDeleteCategory(categoryToDelete) {
+    if (!categoryToDelete) return;
+
+    setConfirmDialog({
+      title: `Delete Category: "${categoryToDelete}"`,
+      message: `Are you sure you want to delete category "${categoryToDelete}" and its models from the database dropdown presets?`,
+      confirmText: "Delete Category",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteCategoryPreset(categoryToDelete);
+          setToast({ type: "success", message: `Category "${categoryToDelete}" deleted from dropdown presets` });
+
+          await loadPresets();
+
+          const remainingCats = Object.keys(categoryPresets).filter((c) => c !== categoryToDelete);
+          const nextCat = remainingCats[0] || "";
+          const nextModels = categoryPresets[nextCat] || [];
+
+          setFormData((prev) => ({
+            ...prev,
+            category: nextCat,
+            modelName: nextModels[0] || "",
+          }));
+        } catch (err) {
+          console.error("Failed to delete category preset:", err);
+          setToast({ type: "error", message: `Failed to delete category preset: ${err.message}` });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }
+
+  function handleDeleteModel(currentCategory, modelToDelete) {
+    if (!modelToDelete || !currentCategory) return;
+
+    setConfirmDialog({
+      title: `Delete Model: "${modelToDelete}"`,
+      message: `Are you sure you want to delete model "${modelToDelete}" in category "${currentCategory}" from database dropdown presets?`,
+      confirmText: "Delete Model",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteModelPreset(currentCategory, modelToDelete);
+          setToast({ type: "success", message: `Model "${modelToDelete}" deleted from dropdown presets` });
+
+          await loadPresets();
+
+          const remainingInCat = (categoryPresets[currentCategory] || []).filter(
+            (m) => m.toLowerCase() !== modelToDelete.toLowerCase()
+          );
+
+          setFormData((prev) => ({
+            ...prev,
+            modelName: remainingInCat[0] || "",
+          }));
+        } catch (err) {
+          console.error("Failed to delete model preset:", err);
+          setToast({ type: "error", message: `Failed to delete model preset: ${err.message}` });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }
+
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [savingModel, setSavingModel] = useState(false);
+
+  async function handleSaveCategory() {
+    const catName = formData.category?.trim();
+    if (!catName) {
+      setToast({ type: "error", message: "Please enter a category name first" });
+      return;
+    }
+
+    try {
+      setSavingCategory(true);
+      await adminApi.addCategoryPreset(
+        catName,
+        formData.modelName?.trim() || "",
+        formData.seatingCapacity || "4",
+        formData.fuelType || "Diesel"
+      );
+      await loadPresets();
+
+      setIsCustomCategory(false);
+      setFormData((prev) => ({ ...prev, category: catName }));
+      setToast({
+        type: "success",
+        message: `Category "${catName}" saved to database dropdowns successfully!`,
+      });
+    } catch (err) {
+      console.error("Failed to save category preset:", err);
+      setToast({
+        type: "error",
+        message: err.response?.data?.message || `Failed to save category "${catName}" to database`,
+      });
+    } finally {
+      setSavingCategory(false);
+    }
+  }
+
+  async function handleSaveModel() {
+    const modName = formData.modelName?.trim();
+    const catName = formData.category?.trim();
+    if (!catName) {
+      setToast({ type: "error", message: "Please select or enter a category first" });
+      return;
+    }
+    if (!modName) {
+      setToast({ type: "error", message: "Please enter a model name first" });
+      return;
+    }
+
+    try {
+      setSavingModel(true);
+      await adminApi.addCategoryPreset(
+        catName,
+        modName,
+        formData.seatingCapacity || "4",
+        formData.fuelType || "Diesel"
+      );
+      await loadPresets();
+
+      setIsCustomModel(false);
+      setFormData((prev) => ({
+        ...prev,
+        modelName: modName,
+      }));
+      setToast({
+        type: "success",
+        message: `Model "${modName}" added to "${catName}" dropdown in database!`,
+      });
+    } catch (err) {
+      console.error("Failed to save model preset:", err);
+      setToast({
+        type: "error",
+        message: err.response?.data?.message || `Failed to save model "${modName}" to database`,
+      });
+    } finally {
+      setSavingModel(false);
+    }
   }
 
   // Handle Local File Upload with Cloudinary + Local Base64 fallback
@@ -220,6 +399,7 @@ export default function AdminVehicleModelsPage() {
         ...formData,
         commonPhotoUrl: finalPhoto,
       });
+
       setToast({
         type: "success",
         message: editingItem
@@ -235,32 +415,44 @@ export default function AdminVehicleModelsPage() {
     }
   }
 
-  async function handleDelete(item) {
-    if (!confirm(`Are you sure you want to remove model "${item.modelName} (${item.seatingCapacity} Seater)"?`)) {
-      return;
-    }
-
-    try {
-      await adminApi.deleteModelConfig(item.id);
-      setToast({ type: "success", message: `Model "${item.modelName}" deleted successfully` });
-      loadModels();
-    } catch (err) {
-      setToast({ type: "error", message: "Failed to delete vehicle model" });
-    }
+  function handleDelete(item) {
+    setConfirmDialog({
+      title: `Delete Model: "${item.modelName}"`,
+      message: `Are you sure you want to remove model "${item.modelName} (${item.seatingCapacity} Seater)" from the master catalog?`,
+      confirmText: "Delete Model",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteModelConfig(item.id);
+          setToast({ type: "success", message: `Model "${item.modelName}" deleted successfully` });
+          loadModels();
+        } catch (err) {
+          setToast({ type: "error", message: "Failed to delete vehicle model" });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   }
 
-  async function handleClearAll() {
-    if (!confirm("Are you sure you want to remove all vehicle models from the catalog?")) {
-      return;
-    }
-
-    try {
-      await adminApi.deleteAllModels();
-      setToast({ type: "success", message: "All vehicle models removed" });
-      loadModels();
-    } catch (err) {
-      setToast({ type: "error", message: "Failed to clear vehicle models" });
-    }
+  function handleClearAll() {
+    setConfirmDialog({
+      title: "Remove All Vehicle Models",
+      message: "Are you sure you want to remove all vehicle models from the catalog? This will completely clear the master vehicle catalog.",
+      confirmText: "Remove All",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteAllModels();
+          setToast({ type: "success", message: "All vehicle models removed" });
+          loadModels();
+        } catch (err) {
+          setToast({ type: "error", message: "Failed to clear vehicle models" });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   }
 
   // Filtered models
@@ -275,14 +467,6 @@ export default function AdminVehicleModelsPage() {
       return matchCat && matchSearch;
     });
   }, [models, selectedCategory, search]);
-
-  const dynamicCategories = useMemo(() => {
-    const set = new Set(Object.keys(CATEGORY_MODEL_PRESETS));
-    models.forEach((m) => {
-      if (m.category && m.category.trim()) set.add(m.category.trim());
-    });
-    return Array.from(set);
-  }, [models]);
 
   const categories = useMemo(() => {
     return ["ALL", ...dynamicCategories];
@@ -609,37 +793,50 @@ export default function AdminVehicleModelsPage() {
               <label className="block text-xs font-bold text-slate-700">
                 1. Vehicle Category <span className="text-rose-500">*</span>
               </label>
-              {!isCustomCategory ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCustomCategory(true);
-                    setFormData((prev) => ({ ...prev, category: "", modelName: "" }));
-                    setIsCustomModel(true);
-                  }}
-                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  + Add Category
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCustomCategory(false);
-                    const defaultCat = "Sedan";
-                    const presets = CATEGORY_MODEL_PRESETS[defaultCat] || [];
-                    setFormData((prev) => ({
-                      ...prev,
-                      category: defaultCat,
-                      modelName: presets[0] || "",
-                    }));
-                    setIsCustomModel(false);
-                  }}
-                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
-                >
-                  ← Select from Dropdown
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {!isCustomCategory && formData.category && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCategory(formData.category)}
+                    className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 transition-colors flex items-center gap-1 cursor-pointer hover:bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200"
+                    title={`Delete category "${formData.category}"`}
+                  >
+                    <Trash2 className="w-3 h-3 text-rose-500" />
+                    <span>Delete Category</span>
+                  </button>
+                )}
+                {!isCustomCategory ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomCategory(true);
+                      setFormData((prev) => ({ ...prev, category: "", modelName: "" }));
+                      setIsCustomModel(true);
+                    }}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    + Add Category
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomCategory(false);
+                      const defaultCat = dynamicCategories[0] || "";
+                      const matchingModels = categoryPresets[defaultCat] || [];
+                      setFormData((prev) => ({
+                        ...prev,
+                        category: defaultCat,
+                        modelName: matchingModels[0] || "",
+                      }));
+                      setIsCustomModel(false);
+                    }}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                  >
+                    ← Select from Dropdown
+                  </button>
+                )}
+              </div>
             </div>
 
             {!isCustomCategory ? (
@@ -653,11 +850,11 @@ export default function AdminVehicleModelsPage() {
                     return;
                   }
                   const cat = e.target.value;
-                  const presets = CATEGORY_MODEL_PRESETS[cat] || [];
+                  const matchingModels = categoryPresets[cat] || [];
                   setFormData((prev) => ({
                     ...prev,
                     category: cat,
-                    modelName: prev.modelName && presets.includes(prev.modelName) ? prev.modelName : (presets[0] || ""),
+                    modelName: prev.modelName && matchingModels.includes(prev.modelName) ? prev.modelName : (matchingModels[0] || ""),
                   }));
                 }}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
@@ -670,16 +867,34 @@ export default function AdminVehicleModelsPage() {
                 <option value="__custom_category__">+ Add New Category...</option>
               </select>
             ) : (
-              <input
-                key="custom-vehicle-category-input"
-                type="text"
-                placeholder="Type new vehicle category (e.g. Luxury, Electric, Convertible)..."
-                value={formData.category || ""}
-                onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
-                autoFocus
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  key="custom-vehicle-category-input"
+                  type="text"
+                  placeholder="Type new vehicle category (e.g. Luxury, Electric, Convertible)..."
+                  value={formData.category || ""}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSaveCategory();
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  disabled={savingCategory || !formData.category?.trim()}
+                  onClick={handleSaveCategory}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors shrink-0 cursor-pointer"
+                  title="Save this category to database"
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  {savingCategory ? "Saving..." : "Save Category"}
+                </button>
+              </div>
             )}
           </div>
 
@@ -689,30 +904,42 @@ export default function AdminVehicleModelsPage() {
               <label className="block text-xs font-bold text-slate-700">
                 2. Vehicle Model Name <span className="text-rose-500">*</span>
               </label>
-              {!isCustomModel ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCustomModel(true);
-                    setFormData((prev) => ({ ...prev, modelName: "" }));
-                  }}
-                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
-                >
-                  + Custom Model
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCustomModel(false);
-                    const presets = CATEGORY_MODEL_PRESETS[formData.category] || [];
-                    setFormData((prev) => ({ ...prev, modelName: presets[0] || "" }));
-                  }}
-                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
-                >
-                  ← Select from Dropdown
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {!isCustomModel && formData.modelName && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteModel(formData.category, formData.modelName)}
+                    className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 transition-colors flex items-center gap-1 cursor-pointer hover:bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200"
+                    title={`Delete model "${formData.modelName}"`}
+                  >
+                    <Trash2 className="w-3 h-3 text-rose-500" />
+                    <span>Delete Model</span>
+                  </button>
+                )}
+                {!isCustomModel ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomModel(true);
+                      setFormData((prev) => ({ ...prev, modelName: "" }));
+                    }}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
+                    + Custom Model
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomModel(false);
+                      setFormData((prev) => ({ ...prev, modelName: availableModelsForCategory[0] || "" }));
+                    }}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
+                    ← Select from Dropdown
+                  </button>
+                )}
+              </div>
             </div>
 
             {!isCustomModel ? (
@@ -730,7 +957,7 @@ export default function AdminVehicleModelsPage() {
                 required
               >
                 <option value="">-- Choose Model for {formData.category || "Category"} --</option>
-                {(CATEGORY_MODEL_PRESETS[formData.category] || []).map((model) => (
+                {availableModelsForCategory.map((model) => (
                   <option key={model} value={model}>
                     {model}
                   </option>
@@ -738,16 +965,34 @@ export default function AdminVehicleModelsPage() {
                 <option value="__custom__">+ Other / Custom Model...</option>
               </select>
             ) : (
-              <input
-                key="custom-vehicle-model-input"
-                type="text"
-                placeholder="Type custom vehicle model name..."
-                value={formData.modelName || ""}
-                onChange={(e) => setFormData((prev) => ({ ...prev, modelName: e.target.value }))}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
-                autoFocus={isCustomCategory ? false : true}
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  key="custom-vehicle-model-input"
+                  type="text"
+                  placeholder="Type custom vehicle model name..."
+                  value={formData.modelName || ""}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, modelName: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSaveModel();
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-slate-900"
+                  autoFocus={isCustomCategory ? false : true}
+                  required
+                />
+                <button
+                  type="button"
+                  disabled={savingModel || !formData.modelName?.trim()}
+                  onClick={handleSaveModel}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors shrink-0 cursor-pointer"
+                  title="Save this model to database"
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  {savingModel ? "Saving..." : "Save Model"}
+                </button>
+              </div>
             )}
           </div>
 
@@ -919,6 +1164,21 @@ export default function AdminVehicleModelsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* CONFIRMATION POPUP DIALOG */}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={Boolean(confirmDialog)}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={confirmDialog.confirmText}
+          cancelText={confirmDialog.cancelText || "Cancel"}
+          variant={confirmDialog.variant || "danger"}
+          loading={confirmDialog.loading}
+          onConfirm={confirmDialog.onConfirm}
+          onClose={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

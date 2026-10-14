@@ -36,6 +36,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
               tripType: parsed.trip.tripType || "One way",
               date: parsed.trip.date || "28-09-2026",
               time: parsed.trip.time || "07:00 AM",
+              serviceType: parsed.trip.serviceType || "OUTSTATION",
               distanceKm: parsed.distanceKm || 365,
               duration: parsed.duration || null,
               tollPrice: parsed.tollPrice || 0,
@@ -54,6 +55,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
             tripType: parsed.tripType || "One way",
             date: parsed.date || "28-09-2026",
             time: parsed.time || "07:00 AM",
+            serviceType: parsed.serviceType || "OUTSTATION",
             distanceKm: parsed.distanceKm || 365,
             duration: parsed.duration || null,
             tollPrice: parsed.tollPrice || 0,
@@ -65,6 +67,18 @@ function SearchSummaryContent({ activeStep = 1 }) {
     }
   }, []);
 
+  const isLocal = tripInfo.serviceType === "LOCAL" || (tripInfo.to && tripInfo.to.toLowerCase().includes("hr"));
+
+  const formatPackageLabel = (pkgStr) => {
+    if (!pkgStr) return "8 Hours / 80 Kms";
+    const lower = pkgStr.toLowerCase();
+    if (lower.includes("4hr") || lower.includes("40")) return "4 Hours / 40 Kms";
+    if (lower.includes("12hr") || lower.includes("120")) return "12 Hours / 120 Kms";
+    if (lower.includes("8hr") || lower.includes("80")) return "8 Hours / 80 Kms";
+    return pkgStr;
+  };
+
+  const packageLabel = formatPackageLabel(tripInfo.to);
   const cleanCity = (str) => (str ? str.split(",")[0].trim() : "");
 
   return (
@@ -75,25 +89,33 @@ function SearchSummaryContent({ activeStep = 1 }) {
           {/* Trip Summary Bar */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(tripInfo.from)}</span>
-            {tripInfo.stops && (
-              <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                Via {tripInfo.stops.replace(/\|/g, ", ")}
+            {isLocal ? (
+              <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">
+                Package: {packageLabel}
               </span>
+            ) : (
+              <>
+                {tripInfo.stops && (
+                  <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    Via {tripInfo.stops.replace(/\|/g, ", ")}
+                  </span>
+                )}
+                <span className="text-slate-400 font-bold">→</span>
+                <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(tripInfo.to)}</span>
+                <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md ml-1 capitalize flex items-center gap-1.5 flex-wrap">
+                  <span>{tripInfo.tripType} • {tripInfo.distanceKm} km</span>
+                  {tripInfo.duration && <span className="text-slate-500 font-semibold">• ~{tripInfo.duration}</span>}
+                </span>
+              </>
             )}
-            <span className="text-slate-400 font-bold">→</span>
-            <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(tripInfo.to)}</span>
-            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md ml-1 capitalize flex items-center gap-1.5 flex-wrap">
-              <span>{tripInfo.tripType} • {tripInfo.distanceKm} km</span>
-              {tripInfo.duration && <span className="text-slate-500 font-semibold">• ~{tripInfo.duration}</span>}
-            </span>
           </div>
           
           <div className="flex items-center gap-4 text-xs font-semibold text-slate-600">
             <span>{tripInfo.date} • {tripInfo.time}</span>
             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-            <span>Chauffeur-Driven Outstation</span>
+            <span>{isLocal ? "Chauffeur-Driven Local Hourly Rental" : "Chauffeur-Driven Outstation"}</span>
             <Link 
-              href={`/outstation/select-vehicle?from=${encodeURIComponent(tripInfo.from)}&to=${encodeURIComponent(tripInfo.to)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}`} 
+              href={`/outstation/select-vehicle?from=${encodeURIComponent(tripInfo.from)}&to=${encodeURIComponent(tripInfo.to)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}&serviceType=${encodeURIComponent(tripInfo.serviceType || 'OUTSTATION')}`} 
               className="text-amber-700 hover:text-amber-900 hover:underline flex items-center gap-1 font-bold ml-2"
             >
               <Edit2 className="w-3.5 h-3.5" /> {t("modify_trip")}

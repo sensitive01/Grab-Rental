@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Edit3, MapPin, ArrowRight } from "lucide-react";
+import { Edit3, MapPin, ArrowRight, Plane } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function VehicleTripHeader({
@@ -14,12 +14,27 @@ export default function VehicleTripHeader({
   distanceKm,
   tollPrice,
   duration,
+  serviceType = "OUTSTATION",
   onModifyClick
 }) {
   const { t } = useLanguage();
   const stopsList = Array.isArray(stops)
     ? stops.filter(Boolean)
     : (typeof stops === "string" && stops.trim() ? stops.split(/[|,]/).map(s => s.trim()).filter(Boolean) : []);
+
+  const isLocal = serviceType === "LOCAL" || to.toLowerCase().includes("hr") || tripType.toLowerCase().includes("local");
+  const isAirport = serviceType === "AIRPORT" || tripType.toLowerCase().includes("airport") || from.toLowerCase().includes("airport") || to.toLowerCase().includes("airport");
+
+  const formatPackageLabel = (pkgStr) => {
+    if (!pkgStr) return "8 Hours / 80 Kms";
+    const lower = pkgStr.toLowerCase();
+    if (lower.includes("4hr") || lower.includes("40")) return "4 Hours / 40 Kms";
+    if (lower.includes("12hr") || lower.includes("120")) return "12 Hours / 120 Kms";
+    if (lower.includes("8hr") || lower.includes("80")) return "8 Hours / 80 Kms";
+    return pkgStr;
+  };
+
+  const packageLabel = formatPackageLabel(to);
 
   return (
     <div className="space-y-3 pb-2">
@@ -34,27 +49,43 @@ export default function VehicleTripHeader({
       <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-full inline-block mb-1">
-            {t("confirmed_route")}
+            {isLocal ? "Local Hourly Rental" : isAirport ? "Airport Transfer" : t("confirmed_route")}
           </span>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
             <span>{from}</span>
-            {stopsList.map((stop, idx) => (
-              <span key={idx} className="flex items-center gap-2">
-                <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg text-sm sm:text-base font-bold border border-amber-200">
-                  Via: {stop.split(",")[0].trim()}
-                </span>
+            {isLocal ? (
+              <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg text-sm sm:text-base font-bold border border-amber-200">
+                Package: {packageLabel}
               </span>
-            ))}
-            <ArrowRight className="w-5 h-5 text-slate-400 shrink-0" />
-            <span>{to}</span>
+            ) : (
+              <>
+                {stopsList.map((stop, idx) => (
+                  <span key={idx} className="flex items-center gap-2">
+                    <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg text-sm sm:text-base font-bold border border-amber-200">
+                      Via: {stop.split(",")[0].trim()}
+                    </span>
+                  </span>
+                ))}
+                {isAirport ? (
+                  <Plane className="w-5 h-5 text-amber-600 shrink-0" />
+                ) : (
+                  <ArrowRight className="w-5 h-5 text-slate-400 shrink-0" />
+                )}
+                <span>{to}</span>
+              </>
+            )}
           </h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-5 sm:gap-8 text-xs sm:text-sm">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">{tripType.toLowerCase().includes("round") ? t("round_trip") : t("one_way")}</span>
-            <span className="font-extrabold text-slate-800">{tripType}</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block">
+              {isLocal ? "Service" : isAirport ? "Airport Trip" : (tripType.toLowerCase().includes("round") ? t("round_trip") : t("one_way"))}
+            </span>
+            <span className="font-extrabold text-slate-800">
+              {isLocal ? "Hourly Package" : isAirport ? (tripType || "Airport Transfer") : tripType}
+            </span>
           </div>
 
           <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
@@ -71,7 +102,23 @@ export default function VehicleTripHeader({
             <span className="font-extrabold text-slate-800">{time}</span>
           </div>
 
-          {distanceKm > 0 && (
+          {isLocal ? (
+            <>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Included Coverage</span>
+                <span className="font-extrabold text-slate-800">{packageLabel}</span>
+              </div>
+            </>
+          ) : isAirport ? (
+            <>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Flight Support</span>
+                <span className="font-extrabold text-slate-800">Tracking Included</span>
+              </div>
+            </>
+          ) : distanceKm > 0 ? (
             <>
               <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
               <div>
@@ -79,7 +126,7 @@ export default function VehicleTripHeader({
                 <span className="font-extrabold text-slate-800">{distanceKm} km</span>
               </div>
             </>
-          )}
+          ) : null}
 
           <button
             type="button"

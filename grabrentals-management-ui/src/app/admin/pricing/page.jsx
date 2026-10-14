@@ -7,6 +7,7 @@ import { Card, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Toast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { formatINR } from "@/lib/utils";
 import {
@@ -36,6 +37,10 @@ import {
   TrendingUp,
   Car,
   MapPin,
+  Fuel,
+  Navigation,
+  ArrowLeftRight,
+  Clock,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -49,6 +54,15 @@ const CATEGORIES = [
   "urbania",
   "Bus",
   "Benz",
+];
+
+const FUEL_TYPES = [
+  "Diesel",
+  "Petrol",
+  "CNG",
+  "Petrol + CNG",
+  "Electric",
+  "Hybrid",
 ];
 
 const SEATING_OPTIONS = [
@@ -443,6 +457,7 @@ export default function AdminPricingPage() {
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("ALL");
   const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -455,7 +470,8 @@ export default function AdminPricingPage() {
     category: "Sedan",
     modelName: "Dzire",
     seatingCapacity: "4",
-    serviceType: "OUTSTATION", // OUTSTATION | LOCAL | AIRPORT
+    fuelType: "Diesel",
+    serviceType: "ONE_WAY", // ONE_WAY | ROUND_TRIP | LOCAL | AIRPORT
     state: "Tamil Nadu",
     city: "Theni",
     customCity: "",
@@ -465,17 +481,18 @@ export default function AdminPricingPage() {
     startDate: "",
     endDate: "",
 
-    // Customer Per-KM Rates (Used for both Outstation and Local)
+    // Customer Per-KM Rates (Used for One Way, Round Trip, Local)
     weekdayDayRate: "",
     weekdayNightRate: "",
     weekendDayRate: "",
     weekendNightRate: "",
     baseFare: "",
     baseIncludedKm: "",
+    packageHours: "", // Minimum / Included Hours for Local (e.g. 8)
     driverBattaDay: "",
     driverBattaNight: "",
 
-    // Vendor Per-KM Rates (Used for both Outstation and Local)
+    // Vendor Per-KM Rates (Used for One Way, Round Trip, Local)
     vendorWeekdayDayRate: "",
     vendorWeekdayNightRate: "",
     vendorWeekendDayRate: "",
@@ -483,6 +500,18 @@ export default function AdminPricingPage() {
     vendorBaseFare: "",
     vendorDriverBattaDay: "",
     vendorDriverBattaNight: "",
+
+    // Hourly Rates for Local (₹/hr)
+    hourlyCustomerFare: "",
+    hourlyVendorFare: "",
+    hourlyWeekdayDayRate: "",
+    hourlyVendorWeekdayDayRate: "",
+    hourlyWeekdayNightRate: "",
+    hourlyVendorWeekdayNightRate: "",
+    hourlyWeekendDayRate: "",
+    hourlyVendorWeekendDayRate: "",
+    hourlyWeekendNightRate: "",
+    hourlyVendorWeekendNightRate: "",
 
     // Airport Specific Fares
     airportCustomerFare: "",
@@ -496,11 +525,12 @@ export default function AdminPricingPage() {
   });
 
   // Simulator State
-  const [simService, setSimService] = useState("OUTSTATION");
+  const [simService, setSimService] = useState("ONE_WAY");
   const [simCategory, setSimCategory] = useState("Sedan");
   const [simModel, setSimModel] = useState("Dzire");
   const [simDate, setSimDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [simTime, setSimTime] = useState("10:00 AM");
+  const [simFuel, setSimFuel] = useState("Diesel");
   const [simResult, setSimResult] = useState(null);
   const [simLoading, setSimLoading] = useState(false);
 
@@ -541,16 +571,18 @@ export default function AdminPricingPage() {
     }
   }
 
+  // Dynamic categories derived from database models
+  const dynamicCategories = useMemo(() => {
+    const list = Array.from(new Set(models.map((m) => m.category).filter(Boolean)));
+    return list.length > 0 ? list : CATEGORIES;
+  }, [models]);
+
   // Filter available model names based on selected category in form
   const availableModelsForForm = useMemo(() => {
     const matched = models.filter(
       (m) => m.category?.toLowerCase() === formData.category?.toLowerCase()
     );
-    if (matched.length > 0) return matched.map((m) => m.modelName);
-    if (formData.category === "Sedan") return ["Dzire", "Etios", "Aura"];
-    if (formData.category === "Hatchback") return ["WagonR", "Swift"];
-    if (formData.category === "SUV") return ["Ertiga", "Carens", "Xylo"];
-    if (formData.category === "Innovacrysta") return ["Innova Crysta"];
+    if (matched.length > 0) return Array.from(new Set(matched.map((m) => m.modelName).filter(Boolean)));
     return ["Standard Fleet"];
   }, [models, formData.category]);
 
@@ -568,13 +600,15 @@ export default function AdminPricingPage() {
     const initialCategory = models[0]?.category || "Sedan";
     const initialModel = models[0]?.modelName || "Dzire";
     const initialSeats = models[0]?.seatingCapacity || "4";
-    const sType = targetService || "OUTSTATION";
+    const initialFuel = models[0]?.fuelType || "Diesel";
+    const sType = targetService === "OUTSTATION" ? "ONE_WAY" : (targetService || "ONE_WAY");
 
     setFormData({
       id: null,
       category: initialCategory,
       modelName: initialModel,
       seatingCapacity: initialSeats,
+      fuelType: initialFuel,
       serviceType: sType,
       state: "Tamil Nadu",
       city: "Chennai",
@@ -591,6 +625,7 @@ export default function AdminPricingPage() {
       weekendNightRate: "",
       baseFare: "",
       baseIncludedKm: "",
+      packageHours: "",
       driverBattaDay: "",
       driverBattaNight: "",
 
@@ -601,6 +636,17 @@ export default function AdminPricingPage() {
       vendorBaseFare: "",
       vendorDriverBattaDay: "",
       vendorDriverBattaNight: "",
+
+      hourlyCustomerFare: "",
+      hourlyVendorFare: "",
+      hourlyWeekdayDayRate: "",
+      hourlyVendorWeekdayDayRate: "",
+      hourlyWeekdayNightRate: "",
+      hourlyVendorWeekdayNightRate: "",
+      hourlyWeekendDayRate: "",
+      hourlyVendorWeekendDayRate: "",
+      hourlyWeekendNightRate: "",
+      hourlyVendorWeekendNightRate: "",
 
       airportCustomerFare: "",
       airportVendorFare: "",
@@ -615,22 +661,28 @@ export default function AdminPricingPage() {
   }
 
   function handleSwitchServiceInForm(newService) {
+    let resolved = newService;
+    if (newService === "OUTSTATION") {
+      resolved = formData.serviceType === "ROUND_TRIP" ? "ROUND_TRIP" : "ONE_WAY";
+    }
     setFormData((prev) => ({
       ...prev,
-      serviceType: newService,
+      serviceType: resolved,
     }));
   }
 
   function handleStartEdit(item) {
     setEditingItem(item);
     const isSeasonal = Boolean(item.seasonal || item.tariffType === "SEASONAL");
-    const sType = item.serviceType || "OUTSTATION";
+    const rawService = item.serviceType || "ONE_WAY";
+    const sType = rawService === "OUTSTATION" ? "ONE_WAY" : rawService;
 
     setFormData({
       id: item.id,
       category: item.category || "Sedan",
       modelName: item.modelName || "",
       seatingCapacity: item.seatingCapacity || "4",
+      fuelType: item.fuelType || "Diesel",
       serviceType: sType,
       state: item.state || "Tamil Nadu",
       city: item.city || "",
@@ -647,6 +699,7 @@ export default function AdminPricingPage() {
       weekendNightRate: item.weekendNightRate != null ? String(item.weekendNightRate) : "",
       baseFare: item.baseFare != null ? String(item.baseFare) : "",
       baseIncludedKm: item.baseIncludedKm != null ? String(item.baseIncludedKm) : "",
+      packageHours: item.packageHours != null ? String(item.packageHours) : (sType === "LOCAL" ? "8" : ""),
       driverBattaDay: item.driverBattaDay != null ? String(item.driverBattaDay) : "",
       driverBattaNight: item.driverBattaNight != null ? String(item.driverBattaNight) : "",
 
@@ -657,6 +710,17 @@ export default function AdminPricingPage() {
       vendorBaseFare: item.vendorBaseFare != null ? String(item.vendorBaseFare) : "",
       vendorDriverBattaDay: item.vendorDriverBattaDay != null ? String(item.vendorDriverBattaDay) : "",
       vendorDriverBattaNight: item.vendorDriverBattaNight != null ? String(item.vendorDriverBattaNight) : "",
+
+      hourlyCustomerFare: item.hourlyCustomerFare != null ? String(item.hourlyCustomerFare) : (sType === "LOCAL" ? String(item.baseFare || "") : ""),
+      hourlyVendorFare: item.hourlyVendorFare != null ? String(item.hourlyVendorFare) : (sType === "LOCAL" ? String(item.vendorBaseFare || "") : ""),
+      hourlyWeekdayDayRate: item.hourlyWeekdayDayRate != null ? String(item.hourlyWeekdayDayRate) : "",
+      hourlyVendorWeekdayDayRate: item.hourlyVendorWeekdayDayRate != null ? String(item.hourlyVendorWeekdayDayRate) : "",
+      hourlyWeekdayNightRate: item.hourlyWeekdayNightRate != null ? String(item.hourlyWeekdayNightRate) : "",
+      hourlyVendorWeekdayNightRate: item.hourlyVendorWeekdayNightRate != null ? String(item.hourlyVendorWeekdayNightRate) : "",
+      hourlyWeekendDayRate: item.hourlyWeekendDayRate != null ? String(item.hourlyWeekendDayRate) : "",
+      hourlyVendorWeekendDayRate: item.hourlyVendorWeekendDayRate != null ? String(item.hourlyVendorWeekendDayRate) : "",
+      hourlyWeekendNightRate: item.hourlyWeekendNightRate != null ? String(item.hourlyWeekendNightRate) : "",
+      hourlyVendorWeekendNightRate: item.hourlyVendorWeekendNightRate != null ? String(item.hourlyVendorWeekendNightRate) : "",
 
       airportCustomerFare: item.airportCustomerFare != null ? String(item.airportCustomerFare) : "",
       airportVendorFare: item.airportVendorFare != null ? String(item.airportVendorFare) : "",
@@ -690,15 +754,18 @@ export default function AdminPricingPage() {
 
       await adminApi.saveTariff({
         ...formData,
+        fuelType: formData.fuelType || "Diesel",
         state: formData.state || "Tamil Nadu",
         city: resolvedCity || "Theni",
-        serviceType: formData.serviceType || "OUTSTATION",
+        serviceType: formData.serviceType || "ONE_WAY",
         weekdayDayRate: parseFloat(formData.weekdayDayRate || 0),
         weekdayNightRate: parseFloat(formData.weekdayNightRate || 0),
         weekendDayRate: parseFloat(formData.weekendDayRate || 0),
         weekendNightRate: parseFloat(formData.weekendNightRate || 0),
         baseFare: parseFloat(formData.baseFare || 0),
         baseIncludedKm: parseInt(formData.baseIncludedKm || (formData.serviceType === "LOCAL" ? 80 : formData.serviceType === "AIRPORT" ? 40 : 250), 10),
+        packageHours: formData.packageHours ? parseInt(formData.packageHours, 10) : (formData.serviceType === "LOCAL" ? 8 : null),
+        packageKm: parseInt(formData.baseIncludedKm || (formData.serviceType === "LOCAL" ? 80 : 250), 10),
         driverBattaDay: parseFloat(formData.driverBattaDay || 0),
         driverBattaNight: parseFloat(formData.driverBattaNight || 0),
 
@@ -709,6 +776,24 @@ export default function AdminPricingPage() {
         vendorBaseFare: parseFloat(formData.vendorBaseFare || 0),
         vendorDriverBattaDay: parseFloat(formData.vendorDriverBattaDay || 0),
         vendorDriverBattaNight: parseFloat(formData.vendorDriverBattaNight || 0),
+
+        hourlyWeekdayDayRate: parseFloat(formData.hourlyWeekdayDayRate || 0),
+        hourlyVendorWeekdayDayRate: parseFloat(formData.hourlyVendorWeekdayDayRate || 0),
+        hourlyWeekdayNightRate: parseFloat(formData.hourlyWeekdayNightRate || 0),
+        hourlyVendorWeekdayNightRate: parseFloat(formData.hourlyVendorWeekdayNightRate || 0),
+        hourlyWeekendDayRate: parseFloat(formData.hourlyWeekendDayRate || 0),
+        hourlyVendorWeekendDayRate: parseFloat(formData.hourlyVendorWeekendDayRate || 0),
+        hourlyWeekendNightRate: parseFloat(formData.hourlyWeekendNightRate || 0),
+        hourlyVendorWeekendNightRate: parseFloat(formData.hourlyVendorWeekendNightRate || 0),
+
+        hourlyCustomerFare: parseFloat(formData.hourlyCustomerFare || formData.hourlyWeekdayDayRate || formData.baseFare || 0),
+        hourlyVendorFare: parseFloat(formData.hourlyVendorFare || formData.hourlyVendorWeekdayDayRate || formData.vendorBaseFare || 0),
+        hourlyCustomerWeekendFare: parseFloat(formData.hourlyWeekendDayRate || formData.hourlyCustomerFare || formData.baseFare || 0),
+        hourlyVendorWeekendFare: parseFloat(formData.hourlyVendorWeekendDayRate || formData.hourlyVendorFare || formData.vendorBaseFare || 0),
+        extraHourRate: parseFloat(formData.hourlyWeekdayDayRate || 0),
+        vendorExtraHourRate: parseFloat(formData.hourlyVendorWeekdayDayRate || 0),
+        extraKmRate: parseFloat(formData.weekdayDayRate || 0),
+        vendorExtraKmRate: parseFloat(formData.vendorWeekdayDayRate || 0),
 
         airportCustomerFare: parseFloat(formData.baseFare || formData.airportCustomerFare || 0),
         airportVendorFare: parseFloat(formData.vendorBaseFare || formData.airportVendorFare || 0),
@@ -723,8 +808,8 @@ export default function AdminPricingPage() {
       setToast({
         type: "success",
         message: editingItem
-          ? `Tariff for ${formData.modelName} (${formData.serviceType}) updated successfully`
-          : `Tariff rules for ${formData.modelName} (${formData.serviceType}) saved successfully`,
+          ? `Tariff for ${formData.modelName} • ${formData.fuelType || "Diesel"} (${formData.serviceType}) updated successfully`
+          : `Tariff rules for ${formData.modelName} • ${formData.fuelType || "Diesel"} (${formData.serviceType}) saved successfully`,
       });
       setIsModalOpen(false);
       refreshData();
@@ -735,17 +820,24 @@ export default function AdminPricingPage() {
     }
   }
 
-  async function handleDelete(item) {
-    if (!confirm(`Are you sure you want to delete tariff for ${item.modelName} (${item.serviceType || 'OUTSTATION'})?`)) {
-      return;
-    }
-    try {
-      await adminApi.deleteTariff(item.id);
-      setToast({ type: "success", message: "Tariff deleted successfully" });
-      refreshData();
-    } catch (err) {
-      setToast({ type: "error", message: "Failed to delete tariff" });
-    }
+  function handleDelete(item) {
+    setConfirmDialog({
+      title: `Delete Tariff: ${item.modelName}`,
+      message: `Are you sure you want to delete the tariff for ${item.modelName} (${item.serviceType === 'OUTSTATION' ? 'ONE_WAY' : (item.serviceType || 'ONE_WAY')} - ${item.city || 'Standard'})?`,
+      confirmText: "Delete Tariff",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteTariff(item.id);
+          setToast({ type: "success", message: "Tariff deleted successfully" });
+          refreshData();
+        } catch (err) {
+          setToast({ type: "error", message: "Failed to delete tariff" });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   }
 
   async function runSimulation() {
@@ -755,6 +847,7 @@ export default function AdminPricingPage() {
         category: simCategory,
         model: simModel,
         seatingCapacity: "4",
+        fuelType: simFuel,
         date: simDate,
         time: simTime,
         serviceType: simService,
@@ -773,8 +866,12 @@ export default function AdminPricingPage() {
   // Filtered Tariffs
   const filteredTariffs = useMemo(() => {
     return tariffs.filter((t) => {
-      const sType = t.serviceType || "OUTSTATION";
-      const matchService = serviceFilter === "ALL" || sType.toUpperCase() === serviceFilter.toUpperCase();
+      const sType = (t.serviceType || "OUTSTATION").toUpperCase();
+      const isOutstation = sType === "OUTSTATION" || sType === "ONE_WAY" || sType === "ROUND_TRIP";
+      const matchService =
+        serviceFilter === "ALL" ||
+        (serviceFilter === "OUTSTATION" && isOutstation) ||
+        sType === serviceFilter.toUpperCase();
 
       const isSeasonal = Boolean(t.seasonal || t.tariffType === "SEASONAL");
       const matchType =
@@ -788,6 +885,7 @@ export default function AdminPricingPage() {
         !search.trim() ||
         t.category?.toLowerCase().includes(search.toLowerCase()) ||
         t.modelName?.toLowerCase().includes(search.toLowerCase()) ||
+        t.fuelType?.toLowerCase().includes(search.toLowerCase()) ||
         t.seasonName?.toLowerCase().includes(search.toLowerCase()) ||
         t.city?.toLowerCase().includes(search.toLowerCase()) ||
         t.state?.toLowerCase().includes(search.toLowerCase());
@@ -798,14 +896,15 @@ export default function AdminPricingPage() {
 
   // Live modal margin computation helper
   const modalMarginInfo = useMemo(() => {
-    const custRate = parseFloat(formData.weekdayDayRate || 0);
-    const vendRate = parseFloat(formData.vendorWeekdayDayRate || 0);
+    const isLocal = formData.serviceType === "LOCAL";
+    const custRate = parseFloat((isLocal && formData.hourlyWeekdayDayRate ? formData.hourlyWeekdayDayRate : formData.weekdayDayRate) || 0);
+    const vendRate = parseFloat((isLocal && formData.hourlyVendorWeekdayDayRate ? formData.hourlyVendorWeekdayDayRate : formData.vendorWeekdayDayRate) || 0);
     const margin = custRate > 0 ? ((custRate - vendRate) / custRate) * 100 : 0;
-    const minKm = parseInt(formData.baseIncludedKm || (formData.serviceType === "LOCAL" ? 80 : formData.serviceType === "AIRPORT" ? 40 : 250), 10);
-    const custSample = custRate * minKm;
-    const vendSample = vendRate * minKm;
+    const minUnits = isLocal ? 8 : parseInt(formData.baseIncludedKm || (formData.serviceType === "AIRPORT" ? 40 : 250), 10);
+    const custSample = custRate * minUnits;
+    const vendSample = vendRate * minUnits;
     return {
-      unit: "/ KM",
+      unit: isLocal && formData.hourlyWeekdayDayRate ? "/ Hr" : "/ KM",
       customer: custRate.toFixed(2),
       vendor: vendRate.toFixed(2),
       marginPercent: margin.toFixed(1),
@@ -825,7 +924,7 @@ export default function AdminPricingPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <PageHeader
           title="Vehicle Tariff & Pricing Matrix"
-          subtitle="Configure rates individually for Outstation, Local, and Airport with separate Customer selling fares and Vendor payouts"
+          subtitle="Configure rates individually for One Way, Round Trip, Local, and Airport with separate Customer selling fares and Vendor payouts"
           breadcrumbs={[
             { label: "Admin", href: "/admin/dashboard" },
             { label: "Pricing Matrix" },
@@ -854,7 +953,16 @@ export default function AdminPricingPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         {[
           { id: "ALL", label: "All Services", icon: ShieldCheck, count: tariffs.length, desc: "Combined Overview" },
-          { id: "OUTSTATION", label: "Outstation", icon: Car, count: tariffs.filter(t => (t.serviceType || "OUTSTATION").toUpperCase() === "OUTSTATION").length, desc: "Inter-city Per-KM Pricing" },
+          {
+            id: "OUTSTATION",
+            label: "Outstation",
+            icon: Car,
+            count: tariffs.filter(t => {
+              const st = (t.serviceType || "OUTSTATION").toUpperCase();
+              return st === "OUTSTATION" || st === "ONE_WAY" || st === "ROUND_TRIP";
+            }).length,
+            desc: "One Way & Round Trip Rates"
+          },
           { id: "LOCAL", label: "Local", icon: MapPin, count: tariffs.filter(t => t.serviceType?.toUpperCase() === "LOCAL").length, desc: "City Limits Per-KM Pricing" },
           { id: "AIRPORT", label: "Airport Transfer", icon: Plane, count: tariffs.filter(t => t.serviceType?.toUpperCase() === "AIRPORT").length, desc: "Pickup & Drop Flat Transfers" },
         ].map((tab) => {
@@ -897,18 +1005,19 @@ export default function AdminPricingPage() {
               </span>
             </div>
             <p className="text-xs text-blue-200">
-              Test fare calculation across Outstation, Local, and Airport. Verifies Customer selling price and Vendor payout.
+              Test fare calculation across One Way, Round Trip, Local, and Airport. Verifies Customer selling price and Vendor payout.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full lg:w-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full lg:w-auto">
             {/* Service Type */}
             <select
               value={simService}
               onChange={(e) => setSimService(e.target.value)}
               className="px-2.5 py-1.5 text-xs rounded-lg bg-blue-950/70 border border-blue-800 text-white focus:outline-none"
             >
-              <option value="OUTSTATION" className="bg-slate-900">🚗 Outstation</option>
+              <option value="ONE_WAY" className="bg-slate-900">🧭 One Way</option>
+              <option value="ROUND_TRIP" className="bg-slate-900">🔄 Round Trip</option>
               <option value="LOCAL" className="bg-slate-900">📍 Local</option>
               <option value="AIRPORT" className="bg-slate-900">✈️ Airport</option>
             </select>
@@ -926,7 +1035,7 @@ export default function AdminPricingPage() {
               }}
               className="px-2.5 py-1.5 text-xs rounded-lg bg-blue-950/70 border border-blue-800 text-white focus:outline-none"
             >
-              {CATEGORIES.map((c) => (
+              {dynamicCategories.map((c) => (
                 <option key={c} value={c} className="bg-slate-900">{c}</option>
               ))}
             </select>
@@ -943,6 +1052,17 @@ export default function AdminPricingPage() {
                   <option key={m} value={m} className="bg-slate-900">{m}</option>
                 ))
               )}
+            </select>
+
+            {/* Fuel Type */}
+            <select
+              value={simFuel}
+              onChange={(e) => setSimFuel(e.target.value)}
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-blue-950/70 border border-blue-800 text-white focus:outline-none"
+            >
+              {FUEL_TYPES.map((f) => (
+                <option key={f} value={f} className="bg-slate-900">⛽ {f}</option>
+              ))}
             </select>
 
             <input
@@ -975,7 +1095,7 @@ export default function AdminPricingPage() {
         {/* Simulator Results banner if active */}
         {simResult && (
           <div className="mt-4 pt-3 border-t border-blue-800/80 flex flex-wrap items-center justify-between gap-4 text-xs">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="text-blue-300">
                 Service: <strong className="text-white uppercase">{simResult.serviceType}</strong>
               </span>
@@ -989,6 +1109,11 @@ export default function AdminPricingPage() {
               <span>•</span>
               <span className="text-blue-200">
                 Slot: <strong>{simResult.dayType}</strong> ({simResult.timeSlot})
+              </span>
+              <span>•</span>
+              <span className="text-blue-300 flex items-center gap-1">
+                <Fuel className="w-3 h-3 text-emerald-400" />
+                Fuel: <strong className="text-emerald-300">{simResult.fuelType || simFuel}</strong>
               </span>
             </div>
 
@@ -1083,7 +1208,7 @@ export default function AdminPricingPage() {
           <IndianRupee className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-semibold text-slate-700">No tariff rules found for current filter</p>
           <p className="text-xs text-slate-400 mt-1">
-            Click &quot;+ Standard Tariff&quot; to configure pricing for Outstation, Local, or Airport.
+            Click &quot;+ Standard Tariff&quot; to configure pricing for One Way, Round Trip, Local, or Airport.
           </p>
         </Card>
       ) : (
@@ -1104,17 +1229,30 @@ export default function AdminPricingPage() {
             </TableHeader>
             <TableBody>
               {filteredTariffs.map((t) => {
-                const sType = (t.serviceType || "OUTSTATION").toUpperCase();
+                const sType = (t.serviceType || "ONE_WAY").toUpperCase();
                 
-                let custWd = `₹${parseFloat(t.weekdayDayRate || 0).toFixed(1)}/km`;
-                let vendWd = `₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0).toFixed(1)}/km`;
-                let custWe = `₹${parseFloat(t.weekendDayRate || 0).toFixed(1)}/km`;
-                let vendWe = `₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.75) || 0).toFixed(1)}/km`;
-                let baseDisplay = `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")}`;
+                let custWd = sType === "LOCAL" && (t.hourlyWeekdayDayRate || t.hourlyCustomerFare)
+                  ? `₹${parseFloat(t.hourlyWeekdayDayRate || t.hourlyCustomerFare).toFixed(0)}/hr • ₹${parseFloat(t.weekdayDayRate || 0).toFixed(1)}/km`
+                  : `₹${parseFloat(t.weekdayDayRate || 0).toFixed(1)}/km`;
+                let vendWd = sType === "LOCAL" && (t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare)
+                  ? `₹${parseFloat(t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0).toFixed(1)}/km`
+                  : `₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0).toFixed(1)}/km`;
+                let custWe = sType === "LOCAL" && (t.hourlyWeekendDayRate || t.hourlyCustomerWeekendFare)
+                  ? `₹${parseFloat(t.hourlyWeekendDayRate || t.hourlyCustomerWeekendFare).toFixed(0)}/hr • ₹${parseFloat(t.weekendDayRate || 0).toFixed(1)}/km`
+                  : `₹${parseFloat(t.weekendDayRate || 0).toFixed(1)}/km`;
+                let vendWe = sType === "LOCAL" && (t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare)
+                  ? `₹${parseFloat(t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.75) || 0).toFixed(1)}/km`
+                  : `₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.75) || 0).toFixed(1)}/km`;
                 let defaultKm = sType === "LOCAL" ? 80 : sType === "AIRPORT" ? 40 : 250;
-                let vendBaseDisplay = `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.75) || 0).toLocaleString("en-IN")} (${t.baseIncludedKm || defaultKm}km)`;
-                const c = parseFloat(t.weekdayDayRate || 1);
-                const v = parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0.75);
+                let defaultHrs = sType === "LOCAL" ? (t.packageHours || 8) : null;
+                let baseDisplay = sType === "LOCAL" && defaultHrs
+                  ? `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`
+                  : `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")}`;
+                let vendBaseDisplay = sType === "LOCAL" && defaultHrs
+                  ? `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.75) || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`
+                  : `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.75) || 0).toLocaleString("en-IN")} (${t.baseIncludedKm || defaultKm}km)`;
+                const c = sType === "LOCAL" && t.hourlyWeekdayDayRate ? parseFloat(t.hourlyWeekdayDayRate) : parseFloat(t.weekdayDayRate || 1);
+                const v = sType === "LOCAL" && t.hourlyVendorWeekdayDayRate ? parseFloat(t.hourlyVendorWeekdayDayRate) : parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0.75);
                 let marginPct = c > 0 ? ((c - v) / c) * 100 : 0;
 
                 return (
@@ -1122,12 +1260,16 @@ export default function AdminPricingPage() {
                     {/* Category / Model */}
                     <TableCell>
                       <div className="font-bold text-slate-900 text-sm">{t.modelName}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         <Badge variant="primary" size="sm">
                           {t.category}
                         </Badge>
                         <span className="text-[11px] text-slate-500 font-medium">
                           {t.seatingCapacity} Seater
+                        </span>
+                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60 inline-flex items-center gap-1">
+                          <Fuel className="w-2.5 h-2.5 text-emerald-600" />
+                          {t.fuelType || "Diesel"}
                         </span>
                       </div>
                     </TableCell>
@@ -1148,16 +1290,19 @@ export default function AdminPricingPage() {
                     {/* Service */}
                     <TableCell>
                       <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                        sType === "OUTSTATION"
+                        sType === "ONE_WAY" || sType === "OUTSTATION"
                           ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : sType === "ROUND_TRIP"
+                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                           : sType === "LOCAL"
                           ? "bg-amber-50 text-amber-700 border-amber-200"
                           : "bg-purple-50 text-purple-700 border-purple-200"
                       }`}>
-                        {sType === "OUTSTATION" && <Car className="w-3 h-3" />}
+                        {(sType === "ONE_WAY" || sType === "OUTSTATION") && <Navigation className="w-3 h-3" />}
+                        {sType === "ROUND_TRIP" && <ArrowLeftRight className="w-3 h-3" />}
                         {sType === "LOCAL" && <MapPin className="w-3 h-3" />}
                         {sType === "AIRPORT" && <Plane className="w-3 h-3" />}
-                        {sType === "OUTSTATION" ? "Outstation" : sType === "LOCAL" ? "Local" : "Airport"}
+                        {sType === "ROUND_TRIP" ? "Round Trip" : (sType === "ONE_WAY" || sType === "OUTSTATION") ? "One Way" : sType === "LOCAL" ? "Local" : "Airport"}
                       </span>
                     </TableCell>
 
@@ -1250,20 +1395,95 @@ export default function AdminPricingPage() {
         onClose={() => setIsModalOpen(false)}
         title={
           editingItem
-            ? `Edit Tariff: ${formData.modelName} (${formData.serviceType === "LOCAL" ? "Local" : formData.serviceType === "AIRPORT" ? "Airport" : "Outstation"})`
+            ? `Edit Tariff: ${formData.modelName} (${formData.serviceType === "LOCAL" ? "Local" : formData.serviceType === "AIRPORT" ? "Airport" : formData.serviceType === "ROUND_TRIP" ? "Round Trip" : "One Way"})`
             : "Set Vehicle Tariff & Pricing Rules"
         }
         size="lg"
       >
         <form onSubmit={handleSaveTariff} className="space-y-4">
           
-          {/* STEP 1: CHOOSE VEHICLE */}
+          {/* STEP 1: TARIFF DURATION */}
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-              <Car className="w-3.5 h-3.5 text-blue-600" />
-              Step 1: Choose Vehicle
+              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              Step 1: Tariff Duration
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="flex items-center gap-2">
+              {[
+                { value: "STANDARD", label: "🏢 Standard Tariff", desc: "Year-Round Weekday & Weekend Pricing" },
+                { value: "SEASONAL", label: "✨ Seasonal Peak Tariff", desc: "Festival / Holiday Surge Date Range" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      tariffType: opt.value,
+                      seasonal: opt.value === "SEASONAL",
+                    }))
+                  }
+                  className={`flex-1 py-1.5 px-3 rounded-lg border text-center transition-all ${
+                    formData.tariffType === opt.value
+                      ? "border-blue-500 bg-white text-blue-700 font-bold shadow-xs"
+                      : "border-slate-200 bg-slate-100 text-slate-600 hover:bg-white"
+                  }`}
+                >
+                  <span className="text-xs block">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {formData.tariffType === "SEASONAL" && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                    Season Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Diwali Peak"
+                    value={formData.seasonName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, seasonName: e.target.value }))}
+                    className="w-full px-2.5 py-1 text-xs border border-amber-300 rounded-md bg-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                    From Date <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
+                    className="w-full px-2.5 py-1 text-xs border border-amber-300 rounded-md bg-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                    To Date <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
+                    className="w-full px-2.5 py-1 text-xs border border-amber-300 rounded-md bg-white"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* STEP 2: CHOOSE VEHICLE */}
+          <div className="p-3 bg-blue-50/50 border border-blue-200 rounded-xl space-y-2">
+            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+              <Car className="w-3.5 h-3.5 text-blue-600" />
+              Step 2: Choose Vehicle
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Vehicle Category <span className="text-rose-500">*</span>
@@ -1275,16 +1495,18 @@ export default function AdminPricingPage() {
                     const matchedModel = models.find((m) => m.category === cat);
                     const firstModel = matchedModel?.modelName || (cat === "SUV" ? "Ertiga" : cat === "Hatchback" ? "WagonR" : "Dzire");
                     const seat = matchedModel?.seatingCapacity || (cat === "SUV" ? "6" : "4");
+                    const fuel = matchedModel?.fuelType || "Diesel";
                     setFormData((prev) => ({
                       ...prev,
                       category: cat,
                       modelName: firstModel,
                       seatingCapacity: seat,
+                      fuelType: fuel,
                     }));
                   }}
-                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold cursor-pointer text-slate-900"
                 >
-                  {CATEGORIES.map((c) => (
+                  {dynamicCategories.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -1298,7 +1520,16 @@ export default function AdminPricingPage() {
                 </label>
                 <select
                   value={formData.modelName}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, modelName: e.target.value }))}
+                  onChange={(e) => {
+                    const mod = e.target.value;
+                    const matched = models.find((m) => m.modelName === mod);
+                    setFormData((prev) => ({
+                      ...prev,
+                      modelName: mod,
+                      ...(matched?.seatingCapacity ? { seatingCapacity: matched.seatingCapacity } : {}),
+                      ...(matched?.fuelType ? { fuelType: matched.fuelType } : {}),
+                    }));
+                  }}
                   className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold cursor-pointer text-slate-900"
                   required
                 >
@@ -1318,7 +1549,7 @@ export default function AdminPricingPage() {
                 <select
                   value={formData.seatingCapacity}
                   onChange={(e) => setFormData((prev) => ({ ...prev, seatingCapacity: e.target.value }))}
-                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold cursor-pointer text-slate-900"
                 >
                   {SEATING_OPTIONS.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -1327,14 +1558,32 @@ export default function AdminPricingPage() {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <Fuel className="w-3 h-3 text-amber-500" />
+                  Fuel Type <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={formData.fuelType || "Diesel"}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, fuelType: e.target.value }))}
+                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold cursor-pointer text-slate-900"
+                >
+                  {FUEL_TYPES.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* STEP 2: OPERATIONAL TERRITORY (STATE & CITY) */}
+          {/* STEP 3: OPERATIONAL TERRITORY (STATE & CITY) */}
           <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2">
             <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-amber-600" />
-              Step 2: Operational Territory (State & City)
+              Step 3: Operational Territory (State & City)
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
@@ -1409,301 +1658,732 @@ export default function AdminPricingPage() {
             )}
           </div>
 
-          {/* STEP 3: CHOOSE SERVICE TYPE */}
+          {/* STEP 4: SERVICE TYPE */}
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1.5">
-              Step 3: Choose Service Type <span className="text-rose-500">*</span>
+              Step 4: Service Type <span className="text-rose-500">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {SERVICE_TYPES.map((st) => {
-                const Icon = st.icon;
-                const isSelected = formData.serviceType === st.id;
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* 1. OUTSTATION BOX (WITH ONE WAY & ROUND TRIP RADIO BUTTONS INSIDE) */}
+              {(() => {
+                const isSelected = formData.serviceType === "ONE_WAY" || formData.serviceType === "ROUND_TRIP" || formData.serviceType === "OUTSTATION";
+                return (
+                  <div
+                    onClick={() => handleSwitchServiceInForm("OUTSTATION")}
+                    className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? "border-blue-600 bg-blue-50/70 text-blue-700 shadow-xs"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Car className="w-4 h-4 text-blue-600" />
+                        <span className="text-xs font-black">Outstation</span>
+                      </div>
+                      <span className="text-[10px] opacity-75 block mt-0.5">Inter-city Per-KM Pricing</span>
+                    </div>
+
+                    {/* Radio buttons inside the Outstation box */}
+                    <div className="mt-2.5 pt-2 border-t border-blue-200/60 flex items-center justify-center gap-3">
+                      <label
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSwitchServiceInForm("ONE_WAY");
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer transition-all ${
+                          isSelected && (formData.serviceType === "ONE_WAY" || formData.serviceType === "OUTSTATION")
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="outstationTripTypeBox"
+                          value="ONE_WAY"
+                          checked={isSelected && (formData.serviceType === "ONE_WAY" || formData.serviceType === "OUTSTATION")}
+                          onChange={() => handleSwitchServiceInForm("ONE_WAY")}
+                          className="w-3.5 h-3.5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span>One Way</span>
+                      </label>
+
+                      <label
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSwitchServiceInForm("ROUND_TRIP");
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer transition-all ${
+                          isSelected && formData.serviceType === "ROUND_TRIP"
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="outstationTripTypeBox"
+                          value="ROUND_TRIP"
+                          checked={isSelected && formData.serviceType === "ROUND_TRIP"}
+                          onChange={() => handleSwitchServiceInForm("ROUND_TRIP")}
+                          className="w-3.5 h-3.5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span>Round Trip</span>
+                      </label>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 2. LOCAL BOX */}
+              {(() => {
+                const isSelected = formData.serviceType === "LOCAL";
                 return (
                   <button
-                    key={st.id}
                     type="button"
-                    onClick={() => handleSwitchServiceInForm(st.id)}
-                    className={`py-2 px-3 rounded-xl border-2 text-center transition-all ${
+                    onClick={() => handleSwitchServiceInForm("LOCAL")}
+                    className={`p-3 rounded-xl border-2 text-center transition-all flex flex-col justify-between ${
                       isSelected
                         ? "border-blue-600 bg-blue-50 text-blue-700 shadow-xs"
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-1.5">
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="text-xs font-black">{st.label}</span>
+                    <div>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-amber-500" />
+                        <span className="text-xs font-black">Local</span>
+                      </div>
+                      <span className="text-[10px] opacity-75 block mt-0.5">City Limits Per-KM Pricing</span>
                     </div>
-                    <span className="text-[10px] opacity-75 block mt-0.5">{st.desc}</span>
+                    <div className="mt-2.5 pt-2 border-t border-transparent text-[11px] text-slate-400 font-medium">
+                      Intra-city Hourly / KM
+                    </div>
                   </button>
                 );
-              })}
+              })()}
+
+              {/* 3. AIRPORT TRANSFER BOX */}
+              {(() => {
+                const isSelected = formData.serviceType === "AIRPORT";
+                return (
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchServiceInForm("AIRPORT")}
+                    className={`p-3 rounded-xl border-2 text-center transition-all flex flex-col justify-between ${
+                      isSelected
+                        ? "border-blue-600 bg-blue-50 text-blue-700 shadow-xs"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Plane className="w-4 h-4 text-purple-600" />
+                        <span className="text-xs font-black">Airport Transfer</span>
+                      </div>
+                      <span className="text-[10px] opacity-75 block mt-0.5">Airport Route Per-KM Pricing</span>
+                    </div>
+                    <div className="mt-2.5 pt-2 border-t border-transparent text-[11px] text-slate-400 font-medium">
+                      Pickup & Drop Flat
+                    </div>
+                  </button>
+                );
+              })()}
             </div>
           </div>
 
-          {/* STEP 4: TARIFF TYPE (STANDARD vs SEASONAL) */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <label className="block text-xs font-bold text-slate-800">
-              Step 4: Tariff Duration
-            </label>
-            <div className="flex items-center gap-2">
-              {[
-                { value: "STANDARD", label: "🏢 Standard Tariff", desc: "Year-Round Weekday & Weekend Pricing" },
-                { value: "SEASONAL", label: "✨ Seasonal Peak Tariff", desc: "Festival / Holiday Surge Date Range" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      tariffType: opt.value,
-                      seasonal: opt.value === "SEASONAL",
-                    }))
-                  }
-                  className={`flex-1 py-1.5 px-3 rounded-lg border text-center transition-all ${
-                    formData.tariffType === opt.value
-                      ? "border-blue-500 bg-white text-blue-700 font-bold shadow-xs"
-                      : "border-slate-200 bg-slate-100 text-slate-600 hover:bg-white"
-                  }`}
-                >
-                  <span className="text-xs block">{opt.label}</span>
-                </button>
-              ))}
-            </div>
+          {/* STEP 5: BASE FARES & MINIMUM THRESHOLDS */}
+          {formData.serviceType === "LOCAL" ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  Step 5: Base Fares & Minimum Thresholds (KM & Hours)
+                </h4>
+                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/60 px-2 py-0.5 rounded-full border border-emerald-200">
+                  Minimum Package Thresholds
+                </span>
+              </div>
 
-            {formData.tariffType === "SEASONAL" && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-200">
+              {/* CARD 1: DISTANCE / MINIMUM KM */}
+              <div className="p-3 bg-slate-50/80 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                  <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                    <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+                    Distance Base & Minimum KM
+                  </span>
+                  <span className="text-[10px] text-slate-600 font-bold uppercase">
+                    Per-KM Base
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-900 mb-1">
+                      👤 Customer Base (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1800"
+                      value={formData.baseFare}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, baseFare: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                      🤝 Vendor Base (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1350"
+                      value={formData.vendorBaseFare}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, vendorBaseFare: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-emerald-300 rounded-md bg-emerald-50/60 font-bold text-emerald-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      🚗 Included Min KM
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 80"
+                      value={formData.baseIncludedKm}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, baseIncludedKm: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: TIME / MINIMUM HOURS */}
+              <div className="p-3 bg-blue-50/50 border border-blue-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between border-b border-blue-200/60 pb-1">
+                  <span className="text-xs font-black text-blue-950 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-blue-600" />
+                    Hourly Base & Minimum Hours
+                  </span>
+                  <span className="text-[10px] text-blue-700 font-bold uppercase">
+                    Hourly Base
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                      👤 Customer Base (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1800"
+                      value={formData.hourlyCustomerFare}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, hourlyCustomerFare: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-blue-300 rounded-md bg-white font-bold text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                      🤝 Vendor Base (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1350"
+                      value={formData.hourlyVendorFare}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, hourlyVendorFare: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-emerald-300 rounded-md bg-emerald-50/60 font-bold text-emerald-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                      ⏰ Included Min Hours
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 8"
+                      value={formData.packageHours}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, packageHours: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-blue-300 rounded-md bg-white font-bold text-blue-950"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  Step 5: Base Fares & Minimum KM
+                </h4>
+                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/60 px-2 py-0.5 rounded-full border border-emerald-200">
+                  Minimum Package Threshold
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                    Season Name <span className="text-rose-500">*</span>
+                    👤 Customer Base (₹)
                   </label>
                   <input
-                    type="text"
-                    placeholder="e.g. Diwali Peak"
-                    value={formData.seasonName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, seasonName: e.target.value }))}
-                    className="w-full px-2.5 py-1 text-xs border border-amber-300 rounded-md bg-white"
-                    required
+                    type="number"
+                    placeholder="e.g. 2800"
+                    value={formData.baseFare}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, baseFare: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                    🤝 Vendor Base (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 2100"
+                    value={formData.vendorBaseFare}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, vendorBaseFare: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 text-xs border border-emerald-300 rounded-md bg-emerald-50/60 font-bold text-emerald-900"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                    From Date <span className="text-rose-500">*</span>
+                    🚗 Included Min KM
                   </label>
                   <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
-                    className="w-full px-2.5 py-1 text-xs border border-amber-300 rounded-md bg-white"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                    To Date <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
-                    className="w-full px-2.5 py-1 text-xs border border-amber-300 rounded-md bg-white"
-                    required
+                    type="number"
+                    placeholder="e.g. 250"
+                    value={formData.baseIncludedKm}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, baseIncludedKm: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
                   />
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* STEP 5: RATE INPUTS (CUSTOMER VS VENDOR) */}
+          {/* STEP 6: SET PRICE FOR CUSTOMER & VENDOR */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
                 <IndianRupee className="w-3.5 h-3.5 text-emerald-600" />
-                Step 5: Set Price for Customer & Vendor ({formData.serviceType === "LOCAL" ? "Local" : formData.serviceType === "AIRPORT" ? "Airport" : "Outstation"})
+                Step 6: Set Price for Customer & Vendor ({formData.serviceType === "LOCAL" ? "Local" : formData.serviceType === "AIRPORT" ? "Airport" : formData.serviceType === "ROUND_TRIP" ? "Round Trip" : "One Way"})
               </h4>
               <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                 Customer (Selling) vs Vendor (Payout)
               </span>
             </div>
 
-            {/* RATE FORM (OUTSTATION, LOCAL & AIRPORT ALL USE PER-KM STRUCTURE) */}
-            {(formData.serviceType === "OUTSTATION" || formData.serviceType === "LOCAL" || formData.serviceType === "AIRPORT") && (
-              <div className="space-y-3">
-                {/* Weekday Rates */}
-                <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between border-b border-blue-200/60 pb-1">
-                    <span className="text-xs font-black text-blue-900">
-                      🏢 Weekday Rates (Mon – Fri)
-                    </span>
-                    <span className="text-[10px] text-blue-700 font-bold uppercase">
-                      {formData.serviceType === "LOCAL" ? "Local City Rate" : formData.serviceType === "AIRPORT" ? "Airport Transfer Rate" : "Outstation Rate"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-bold text-blue-950 mb-1">
-                        👤 Customer Day (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.weekdayDayRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, weekdayDayRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
-                        required
-                      />
+            {/* RATE FORM (WEEKDAY & WEEKEND STRUCTURE) */}
+            <div className="space-y-3">
+              {formData.serviceType === "LOCAL" ? (
+                <>
+                  {/* LOCAL DISTANCE / EXTRA KM RATES (FIRST) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                        <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+                        Distance / Extra KM Rates (₹/KM) — Beyond Included Limit
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        Per-KM Rates
+                      </span>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-blue-950 mb-1">
-                        👤 Customer Night (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.weekdayNightRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, weekdayNightRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-emerald-950 mb-1">
-                        🤝 Vendor Day (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.vendorWeekdayDayRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekdayDayRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-emerald-950 mb-1">
-                        🤝 Vendor Night (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.vendorWeekdayNightRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekdayNightRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Weekend Rates */}
-                <div className="p-3 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between border-b border-indigo-200/60 pb-1">
-                    <span className="text-xs font-black text-indigo-900">
-                      🌴 Weekend Rates (Sat – Sun)
-                    </span>
-                    <span className="text-[10px] text-indigo-700 font-bold uppercase">
-                      {formData.serviceType === "LOCAL" ? "Local Weekend" : formData.serviceType === "AIRPORT" ? "Airport Weekend" : "Outstation Weekend"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-bold text-indigo-950 mb-1">
-                        👤 Customer Day (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.weekendDayRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, weekendDayRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
-                        required
-                      />
+                    {/* Weekday KM Rates */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                        <span className="text-xs font-black text-slate-800">
+                          🏢 Weekday Rates (Mon – Fri)
+                        </span>
+                        <span className="text-[10px] text-slate-600 font-bold uppercase">
+                          Local City Rate
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-900 mb-1">
+                            👤 Customer Day (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.weekdayDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, weekdayDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Day (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.vendorWeekdayDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekdayDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-900 mb-1">
+                            👤 Customer Night (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.weekdayNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, weekdayNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Night (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.vendorWeekdayNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekdayNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-indigo-950 mb-1">
-                        👤 Customer Night (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.weekendNightRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, weekendNightRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-emerald-950 mb-1">
-                        🤝 Vendor Day (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.vendorWeekendDayRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendDayRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-emerald-950 mb-1">
-                        🤝 Vendor Night (₹/KM)
-                      </label>
-                      <input
-                        type="number" step="0.10" min="0"
-                        value={formData.vendorWeekendNightRate}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendNightRate: e.target.value }))}
-                        className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Base Fares & Allowance */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                      Customer Base (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.baseFare}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, baseFare: e.target.value }))}
-                      className="w-full px-2 py-1 text-xs border border-slate-200 rounded-md bg-white"
-                    />
+                    {/* Weekend KM Rates */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                        <span className="text-xs font-black text-slate-800">
+                          🌴 Weekend Rates (Sat – Sun)
+                        </span>
+                        <span className="text-[10px] text-slate-600 font-bold uppercase">
+                          Local Weekend
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-900 mb-1">
+                            👤 Customer Day (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.weekendDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, weekendDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Day (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.vendorWeekendDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-900 mb-1">
+                            👤 Customer Night (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.weekendNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, weekendNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Night (₹/KM)
+                          </label>
+                          <input
+                            type="number" step="0.10" min="0"
+                            value={formData.vendorWeekendNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                      Vendor Base (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.vendorBaseFare}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, vendorBaseFare: e.target.value }))}
-                      className="w-full px-2 py-1 text-xs border border-emerald-200 rounded-md bg-emerald-50/40 font-bold text-emerald-800"
-                    />
+
+                  {/* LOCAL HOURLY RATES (DOWN) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black text-blue-950 uppercase tracking-wide flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                        Hourly Rates (₹/Hr) — Local City Packages
+                      </span>
+                      <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        Day & Night Hourly Rates
+                      </span>
+                    </div>
+
+                    {/* Weekday Hourly Rates */}
+                    <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between border-b border-blue-200/60 pb-1">
+                        <span className="text-xs font-black text-blue-900">
+                          🏢 Weekday Rates (Mon – Fri)
+                        </span>
+                        <span className="text-[10px] text-blue-700 font-bold uppercase">
+                          Local Hourly Rate
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                            👤 Customer Day (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 200"
+                            value={formData.hourlyWeekdayDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyWeekdayDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Day (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 150"
+                            value={formData.hourlyVendorWeekdayDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyVendorWeekdayDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                            👤 Customer Night (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 250"
+                            value={formData.hourlyWeekdayNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyWeekdayNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Night (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 190"
+                            value={formData.hourlyVendorWeekdayNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyVendorWeekdayNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Weekend Hourly Rates */}
+                    <div className="p-3 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between border-b border-indigo-200/60 pb-1">
+                        <span className="text-xs font-black text-indigo-900">
+                          🌴 Weekend Rates (Sat – Sun)
+                        </span>
+                        <span className="text-[10px] text-indigo-700 font-bold uppercase">
+                          Local Weekend Hourly
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-indigo-950 mb-1">
+                            👤 Customer Day (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 230"
+                            value={formData.hourlyWeekendDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyWeekendDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Day (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 170"
+                            value={formData.hourlyVendorWeekendDayRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyVendorWeekendDayRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-indigo-950 mb-1">
+                            👤 Customer Night (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 280"
+                            value={formData.hourlyWeekendNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyWeekendNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                            🤝 Vendor Night (₹/hr)
+                          </label>
+                          <input
+                            type="number" step="1" min="0"
+                            placeholder="e.g. 210"
+                            value={formData.vendorWeekendNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendNightRate: e.target.value }))}
+                            className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                      Included Min KM
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.baseIncludedKm}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, baseIncludedKm: e.target.value }))}
-                      className="w-full px-2 py-1 text-xs border border-slate-200 rounded-md bg-white"
-                    />
+                </>
+              ) : (
+                <>
+                  {/* Weekday Rates */}
+                  <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between border-b border-blue-200/60 pb-1">
+                      <span className="text-xs font-black text-blue-900">
+                        🏢 Weekday Rates (Mon – Fri)
+                      </span>
+                      <span className="text-[10px] text-blue-700 font-bold uppercase">
+                        {formData.serviceType === "AIRPORT" ? "Airport Transfer Rate" : formData.serviceType === "ROUND_TRIP" ? "Round Trip Rate" : "One Way Rate"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                          👤 Customer Day (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.weekdayDayRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, weekdayDayRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                          🤝 Vendor Day (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.vendorWeekdayDayRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekdayDayRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                          👤 Customer Night (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.weekdayNightRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, weekdayNightRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                          🤝 Vendor Night (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.vendorWeekdayNightRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekdayNightRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
-                  {/* Driver Batta commented out for now
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                      Driver Batta (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.driverBattaDay}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, driverBattaDay: e.target.value }))}
-                      className="w-full px-2 py-1 text-xs border border-slate-200 rounded-md bg-white"
-                    />
+
+                  {/* Weekend Rates */}
+                  <div className="p-3 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between border-b border-indigo-200/60 pb-1">
+                      <span className="text-xs font-black text-indigo-900">
+                        🌴 Weekend Rates (Sat – Sun)
+                      </span>
+                      <span className="text-[10px] text-indigo-700 font-bold uppercase">
+                        {formData.serviceType === "AIRPORT" ? "Airport Weekend" : formData.serviceType === "ROUND_TRIP" ? "Round Trip Weekend" : "One Way Weekend"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-indigo-950 mb-1">
+                          👤 Customer Day (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.weekendDayRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, weekendDayRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                          🤝 Vendor Day (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.vendorWeekendDayRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendDayRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-indigo-950 mb-1">
+                          👤 Customer Night (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.weekendNightRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, weekendNightRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                          🤝 Vendor Night (₹/KM)
+                        </label>
+                        <input
+                          type="number" step="0.10" min="0"
+                          value={formData.vendorWeekendNightRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendNightRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
-                  */}
-                </div>
-              </div>
-            )}
+                </>
+              )}
+            </div>
+          </div>
 
             {/* LIVE MARGIN OVERVIEW BANNER IN MODAL */}
             <div className="p-3 bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-xl flex items-center justify-between">
@@ -1724,7 +2404,6 @@ export default function AdminPricingPage() {
                 </span>
               </div>
             </div>
-          </div>
 
           {/* Form Actions */}
           <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
@@ -1738,6 +2417,21 @@ export default function AdminPricingPage() {
           </div>
         </form>
       </Modal>
+
+      {/* CONFIRMATION POPUP DIALOG */}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={Boolean(confirmDialog)}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={confirmDialog.confirmText}
+          cancelText={confirmDialog.cancelText || "Cancel"}
+          variant={confirmDialog.variant || "danger"}
+          loading={confirmDialog.loading}
+          onConfirm={confirmDialog.onConfirm}
+          onClose={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

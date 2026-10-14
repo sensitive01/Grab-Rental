@@ -24,8 +24,16 @@ public interface VehicleTariffRepository extends JpaRepository<VehicleTariff, UU
             String category, String modelName, String seatingCapacity
     );
 
+    Optional<VehicleTariff> findFirstByCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndFuelTypeIgnoreCaseAndSeasonalFalse(
+            String category, String modelName, String seatingCapacity, String fuelType
+    );
+
     Optional<VehicleTariff> findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndSeasonalFalse(
             String serviceType, String category, String modelName, String seatingCapacity
+    );
+
+    Optional<VehicleTariff> findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndFuelTypeIgnoreCaseAndSeasonalFalse(
+            String serviceType, String category, String modelName, String seatingCapacity, String fuelType
     );
 
     Optional<VehicleTariff> findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndSeasonalFalse(
@@ -75,6 +83,22 @@ public interface VehicleTariffRepository extends JpaRepository<VehicleTariff, UU
            "AND LOWER(t.category) = LOWER(:category) " +
            "AND LOWER(t.modelName) = LOWER(:modelName) " +
            "AND t.seatingCapacity = :seatingCapacity " +
+           "AND (LOWER(t.fuelType) = LOWER(:fuelType) OR (:fuelType = 'Diesel' AND t.fuelType IS NULL)) " +
+           "AND LOWER(t.city) = LOWER(:city)")
+    Optional<VehicleTariff> findStandardByModelAndCityAndFuel(
+            @Param("serviceType") String serviceType,
+            @Param("category") String category,
+            @Param("modelName") String modelName,
+            @Param("seatingCapacity") String seatingCapacity,
+            @Param("fuelType") String fuelType,
+            @Param("city") String city
+    );
+
+    @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = false " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
+           "AND LOWER(t.category) = LOWER(:category) " +
+           "AND LOWER(t.modelName) = LOWER(:modelName) " +
+           "AND t.seatingCapacity = :seatingCapacity " +
            "AND (LOWER(t.city) = 'all' OR t.city IS NULL OR t.city = '') " +
            "AND LOWER(t.state) = LOWER(:state)")
     Optional<VehicleTariff> findStandardByModelAndState(
@@ -82,6 +106,23 @@ public interface VehicleTariffRepository extends JpaRepository<VehicleTariff, UU
             @Param("category") String category,
             @Param("modelName") String modelName,
             @Param("seatingCapacity") String seatingCapacity,
+            @Param("state") String state
+    );
+
+    @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = false " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
+           "AND LOWER(t.category) = LOWER(:category) " +
+           "AND LOWER(t.modelName) = LOWER(:modelName) " +
+           "AND t.seatingCapacity = :seatingCapacity " +
+           "AND (LOWER(t.fuelType) = LOWER(:fuelType) OR (:fuelType = 'Diesel' AND t.fuelType IS NULL)) " +
+           "AND (LOWER(t.city) = 'all' OR t.city IS NULL OR t.city = '') " +
+           "AND LOWER(t.state) = LOWER(:state)")
+    Optional<VehicleTariff> findStandardByModelAndStateAndFuel(
+            @Param("serviceType") String serviceType,
+            @Param("category") String category,
+            @Param("modelName") String modelName,
+            @Param("seatingCapacity") String seatingCapacity,
+            @Param("fuelType") String fuelType,
             @Param("state") String state
     );
 

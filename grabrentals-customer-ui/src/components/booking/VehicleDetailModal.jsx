@@ -60,6 +60,18 @@ export default function VehicleDetailModal({
   const taxes = vehicle.pricing?.chargesAndTaxes || Math.round(estTripFare * 0.35);
   const totalFare = estTripFare + taxes;
 
+  const isLocal = trip?.serviceType === "LOCAL" || (trip?.to && trip.to.toLowerCase().includes("hr"));
+
+  const formatPackageLabel = (pkgStr) => {
+    if (!pkgStr) return "8 Hours / 80 Kms";
+    const lower = pkgStr.toLowerCase();
+    if (lower.includes("4hr") || lower.includes("40")) return "4 Hours / 40 Kms";
+    if (lower.includes("12hr") || lower.includes("120")) return "12 Hours / 120 Kms";
+    if (lower.includes("8hr") || lower.includes("80")) return "8 Hours / 80 Kms";
+    return pkgStr;
+  };
+  const packageLabel = formatPackageLabel(trip?.to);
+
   const handleProceedBooking = () => {
     onClose();
     onBook(vehicle);
@@ -88,7 +100,9 @@ export default function VehicleDetailModal({
                   Available
                 </span>
               </div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{plate} • Commercial Outstation Fleet</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                {plate} • {isLocal ? "Local Hourly Package Fleet" : "Commercial Outstation Fleet"}
+              </p>
             </div>
           </div>
 
@@ -238,18 +252,35 @@ export default function VehicleDetailModal({
             <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <Navigation className="w-3.5 h-3.5 text-amber-600" />
-                Trip Route & Schedule
+                {isLocal ? "Local Package & Schedule" : "Trip Route & Schedule"}
               </h4>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between font-bold text-slate-800">
-                  <span>From: {trip?.from || "Bangalore"}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                  <span>To: {trip?.to || "Coimbatore"}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1 border-t border-slate-100">
-                  <span>Trip Type: <strong>{trip?.tripType || "One way"}</strong></span>
-                  <span>Distance: <strong className="text-amber-600">{distanceKm} km</strong></span>
-                </div>
+                {isLocal ? (
+                  <>
+                    <div className="font-bold text-slate-800 flex items-center justify-between">
+                      <span>Pickup City: {trip?.from || "Bangalore"}</span>
+                    </div>
+                    <div className="text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-200 inline-block">
+                      Selected Package: {packageLabel}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1 border-t border-slate-100">
+                      <span>Service: <strong>Local Hourly Rental</strong></span>
+                      <span>Coverage: <strong className="text-amber-600">{packageLabel}</strong></span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between font-bold text-slate-800">
+                      <span>From: {trip?.from || "Bangalore"}</span>
+                      <ArrowRight className="w-4 h-4 text-slate-400" />
+                      <span>To: {trip?.to || "Coimbatore"}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1 border-t border-slate-100">
+                      <span>Trip Type: <strong>{trip?.tripType || "One way"}</strong></span>
+                      <span>Distance: <strong className="text-amber-600">{distanceKm} km</strong></span>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
                   <span>Pickup: <strong>{trip?.date || "28-09-2026"} at {trip?.time || "07:00 AM"}</strong></span>
                 </div>
@@ -260,21 +291,44 @@ export default function VehicleDetailModal({
             <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2.5">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                All-Inclusive Guarantee
+                {isLocal ? "Package Inclusions & Over-usage" : "All-Inclusive Guarantee"}
               </h4>
               <ul className="text-xs text-slate-600 space-y-1.5 font-medium">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  Includes base fare & fuel for {distanceKm} km
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  Dedicated chauffeur allowance & night driving charges included
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  Free cancellation up to 1 hour before pickup
-                </li>
+                {isLocal ? (
+                  <>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Fixed package for {packageLabel} included
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Dedicated chauffeur allowance & fuel included
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Extra KM: ₹{vehicle.perKmRate || 14}/km • Extra Hr: ₹150/hr
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Tolls, parking & state entry fees payable as actuals
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Includes base fare & fuel for {distanceKm} km
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Dedicated chauffeur allowance & night driving charges included
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Free cancellation up to 1 hour before pickup
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
 

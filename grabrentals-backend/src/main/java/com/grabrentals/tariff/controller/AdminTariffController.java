@@ -62,6 +62,54 @@ public class AdminTariffController {
         return ResponseEntity.ok(ApiResponse.success("Vehicle model deleted successfully", null));
     }
 
+    @DeleteMapping("/models/category/{category}")
+    public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable String category) {
+        tariffService.deleteByCategory(category);
+        return ResponseEntity.ok(ApiResponse.success("Category and its models deleted successfully", null));
+    }
+
+    @PostMapping("/models/seed-defaults")
+    public ResponseEntity<ApiResponse<List<VehicleModelConfigResponse>>> seedDefaults() {
+        tariffService.seedDefaultModelConfigs();
+        List<VehicleModelConfigResponse> all = tariffService.getAllModelConfigs();
+        return ResponseEntity.ok(ApiResponse.success("Default models seeded successfully", all));
+    }
+
+    // ==========================================
+    // VEHICLE CATEGORY & MODEL PRESETS (DROPDOWNS)
+    // ==========================================
+
+    @GetMapping("/category-presets")
+    public ResponseEntity<ApiResponse<Map<String, List<String>>>> getAdminCategoryPresets() {
+        return ResponseEntity.ok(ApiResponse.success("Category presets retrieved", tariffService.getCategoryModelPresets()));
+    }
+
+    @PostMapping("/category-presets")
+    public ResponseEntity<ApiResponse<Void>> addCategoryPreset(
+            @RequestParam String category,
+            @RequestParam(required = false, defaultValue = "") String modelName,
+            @RequestParam(required = false, defaultValue = "4") String seatingCapacity,
+            @RequestParam(required = false, defaultValue = "Diesel") String fuelType
+    ) {
+        tariffService.addCategoryPreset(category, modelName, seatingCapacity, fuelType);
+        return ResponseEntity.ok(ApiResponse.success("Category preset saved successfully", null));
+    }
+
+    @DeleteMapping("/category-presets/category/{category}")
+    public ResponseEntity<ApiResponse<Void>> deleteCategoryPreset(@PathVariable String category) {
+        tariffService.deleteCategoryPreset(category);
+        return ResponseEntity.ok(ApiResponse.success("Category preset deleted successfully", null));
+    }
+
+    @DeleteMapping("/category-presets/model")
+    public ResponseEntity<ApiResponse<Void>> deleteModelPreset(
+            @RequestParam String category,
+            @RequestParam String modelName
+    ) {
+        tariffService.deleteModelPreset(category, modelName);
+        return ResponseEntity.ok(ApiResponse.success("Model preset deleted successfully", null));
+    }
+
     // ==========================================
     // TARIFFS & PRICING MATRIX
     // ==========================================

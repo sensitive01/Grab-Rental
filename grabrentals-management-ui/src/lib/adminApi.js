@@ -196,7 +196,45 @@ export const adminApi = {
 
   async createUser(userData) {
     try {
-      const { role, name, email, phone, password, businessName, hubLocation } = userData;
+      const {
+        role,
+        name,
+        email,
+        phone,
+        password,
+        businessName,
+        hubLocation,
+        alternatePhone,
+        city,
+        address,
+        businessType,
+        tradeName,
+        gstin,
+        pan,
+        state,
+        pincode,
+        bankName,
+        accountNumber,
+        ifsc,
+        branch,
+        fleetModel,
+        fleetSize,
+        commissionRate,
+        ownsBusiness,
+        idProofDocumentUrl,
+        addressProofDocumentUrl,
+        businessProofDocumentUrl,
+        gstDocumentUrl,
+        panDocumentUrl,
+        vehicleNumber,
+        vehicleModel,
+        vehicleCategory,
+        seatingCapacity,
+        fuelType,
+        driverLicenseNumber,
+        status = "ACTIVE",
+      } = userData;
+
       let endpoint = "/api/admin/users/vendor";
       let payload = {
         name,
@@ -204,7 +242,35 @@ export const adminApi = {
         phone,
         password,
         businessName: businessName || `${name} Travels`,
-        status: "ACTIVE",
+        alternatePhone,
+        city: city || hubLocation,
+        address,
+        businessType,
+        tradeName: tradeName || businessName,
+        gstin,
+        pan,
+        state,
+        pincode,
+        bankName,
+        accountNumber,
+        ifsc,
+        branch,
+        fleetModel,
+        fleetSize: fleetSize ? Number(fleetSize) : 1,
+        commissionRate: commissionRate ? Number(commissionRate) : 12,
+        ownsBusiness,
+        idProofDocumentUrl,
+        addressProofDocumentUrl,
+        businessProofDocumentUrl,
+        gstDocumentUrl,
+        panDocumentUrl,
+        vehicleNumber,
+        vehicleModel,
+        vehicleCategory,
+        seatingCapacity: seatingCapacity ? Number(seatingCapacity) : null,
+        fuelType,
+        driverLicenseNumber,
+        status,
       };
 
       if (role === "OPERATIONS") {
@@ -370,8 +436,8 @@ export const adminApi = {
               createdAt: u.createdAt || null,
               joinedDate: u.createdAt ? u.createdAt.slice(0, 10) : "Recently",
               gstNumber: "Pending Submission",
-              gstStatus: isApproved ? "Verified Active" : "Pending Verification",
-              status: isPending ? "PENDING_APPROVAL" : (isApproved ? "APPROVED" : u.status),
+              gstStatus: isApproved ? "Verified Active" : (u.status === "INACTIVE" ? "Deactivated" : "Pending Verification"),
+              status: isPending ? "PENDING_APPROVAL" : (u.status === "INACTIVE" ? "INACTIVE" : "ACTIVE"),
               rawStatus: u.status,
             };
           });
@@ -535,6 +601,43 @@ export const adminApi = {
 
   async deleteModelConfig(id) {
     const res = await axiosClient.delete(`/api/admin/models/${id}`);
+    return res.data;
+  },
+
+  async deleteCategory(category) {
+    const res = await axiosClient.delete(`/api/admin/models/category/${encodeURIComponent(category)}`);
+    return res.data;
+  },
+
+  async getCategoryPresets() {
+    try {
+      const res = await axiosClient.get("/api/vehicles/category-presets");
+      return res.data?.data || {};
+    } catch (err) {
+      console.warn("Failed to fetch category presets from backend:", err.message);
+      return {};
+    }
+  },
+
+  async addCategoryPreset(category, modelName = "", seatingCapacity = "4", fuelType = "Diesel") {
+    const params = new URLSearchParams({ category, modelName, seatingCapacity, fuelType });
+    const res = await axiosClient.post(`/api/admin/category-presets?${params.toString()}`);
+    return res.data;
+  },
+
+  async deleteCategoryPreset(category) {
+    const res = await axiosClient.delete(`/api/admin/category-presets/category/${encodeURIComponent(category)}`);
+    return res.data;
+  },
+
+  async deleteModelPreset(category, modelName) {
+    const params = new URLSearchParams({ category, modelName });
+    const res = await axiosClient.delete(`/api/admin/category-presets/model?${params.toString()}`);
+    return res.data;
+  },
+
+  async seedDefaultModels() {
+    const res = await axiosClient.post("/api/admin/models/seed-defaults");
     return res.data;
   },
 

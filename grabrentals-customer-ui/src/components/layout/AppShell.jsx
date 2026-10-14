@@ -57,8 +57,9 @@ export default function AppShell({ children }) {
     { name: t("outstation_cabs"), href: "/" },
     { name: t("hourly_local"), href: "/local" },
     { name: t("airport_transfers"), href: "/airport" },
-    { name: t("tempo_traveller"), href: "/vans" },
-    { name: t("luxury_buses"), href: "/buses" },
+    // { name: t("tempo_traveller"), href: "/vans" },
+    // { name: t("luxury_buses"), href: "/buses" },
+    { name: t("package") || "Package", href: "/packages" },
     { name: t("corporate_events"), href: "/corporate" },
   ];
 

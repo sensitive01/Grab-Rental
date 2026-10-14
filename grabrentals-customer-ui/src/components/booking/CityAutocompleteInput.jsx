@@ -15,7 +15,8 @@ export default function CityAutocompleteInput({
   containerClassName = "",
   rightElement = null,
   disabled = false,
-  required = false
+  required = false,
+  onOpenMap = null
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value || "");
@@ -253,10 +254,10 @@ export default function CityAutocompleteInput({
   );
 
   return (
-    <div ref={containerRef} className={`relative w-full ${containerClassName}`}>
-      <div className="relative flex items-center">
+    <div ref={containerRef} className={`relative w-full min-w-0 ${containerClassName}`}>
+      <div className="relative flex items-center w-full min-w-0">
         {Icon && (
-          <Icon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none ${iconColor}`} />
+          <Icon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none shrink-0 ${iconColor}`} />
         )}
         <input
           ref={inputRef}
@@ -269,7 +270,7 @@ export default function CityAutocompleteInput({
           disabled={disabled}
           required={required}
           autoComplete="off"
-          className={`w-full pl-11 ${rightElement ? "pr-14" : "pr-8"} py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm ${inputClassName}`}
+          className={`w-full min-w-0 pl-11 ${rightElement ? "pr-14" : "pr-8"} py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm ${inputClassName}`}
         />
 
         {/* Clear content button */}

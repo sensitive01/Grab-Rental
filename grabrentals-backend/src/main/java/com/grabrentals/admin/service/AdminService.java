@@ -269,18 +269,74 @@ public class AdminService {
                 .phone(request.getPhone().trim())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .businessName(request.getBusinessName().trim())
+                .alternatePhone(request.getAlternatePhone() != null && !request.getAlternatePhone().isBlank() ? request.getAlternatePhone().trim() : null)
+                .city(request.getCity() != null && !request.getCity().isBlank() ? request.getCity().trim() : null)
                 .role(Role.FLEET)
                 .status(request.getStatus() != null ? request.getStatus() : UserStatus.ACTIVE)
                 .build();
 
         User saved = userRepository.save(user);
 
+        int num = Math.abs(saved.getId().hashCode() % 900000) + 100000;
+        String address = request.getAddress() != null && !request.getAddress().isBlank()
+                ? request.getAddress().trim()
+                : (request.getCity() != null ? request.getCity().trim() : null);
+
         com.grabrentals.vendor.entity.VendorProfile vendorProfile = com.grabrentals.vendor.entity.VendorProfile.builder()
                 .user(saved)
+                .vendorIdCode("GR-VND-" + num)
                 .companyName(request.getBusinessName().trim())
                 .contactPerson(request.getName().trim())
+                .tradeName(request.getTradeName() != null && !request.getTradeName().isBlank() ? request.getTradeName().trim() : request.getBusinessName().trim())
+                .address(address)
+                .gstin(request.getGstin() != null && !request.getGstin().isBlank() ? request.getGstin().trim().toUpperCase() : null)
+                .pan(request.getPan() != null && !request.getPan().isBlank() ? request.getPan().trim().toUpperCase() : null)
+                .bankName(request.getBankName() != null && !request.getBankName().isBlank() ? request.getBankName().trim() : null)
+                .accountNumber(request.getAccountNumber() != null && !request.getAccountNumber().isBlank() ? request.getAccountNumber().trim() : null)
+                .ifsc(request.getIfsc() != null && !request.getIfsc().isBlank() ? request.getIfsc().trim().toUpperCase() : null)
+                .branch(request.getBranch() != null && !request.getBranch().isBlank() ? request.getBranch().trim() : null)
+                .fleetSize(request.getFleetSize() != null && request.getFleetSize() > 0 ? request.getFleetSize() : 1)
+                .idProofDocumentUrl(request.getIdProofDocumentUrl())
+                .addressProofDocumentUrl(request.getAddressProofDocumentUrl())
+                .businessProofDocumentUrl(request.getBusinessProofDocumentUrl())
+                .gstDocumentUrl(request.getGstDocumentUrl())
+                .panDocumentUrl(request.getPanDocumentUrl())
                 .build();
         vendorProfileRepository.save(vendorProfile);
+
+        if (request.getVehicleNumber() != null && !request.getVehicleNumber().isBlank()) {
+            String vNum = request.getVehicleNumber().trim().toUpperCase();
+            if (!vehicleRepository.existsByVehicleNumberIgnoreCase(vNum)) {
+                com.grabrentals.vendor.entity.Vehicle vehicle = com.grabrentals.vendor.entity.Vehicle.builder()
+                        .user(saved)
+                        .vehicleNumber(vNum)
+                        .vehicleType(request.getVehicleCategory() != null && !request.getVehicleCategory().isBlank() ? request.getVehicleCategory().trim() : "Sedan")
+                        .model(request.getVehicleModel() != null && !request.getVehicleModel().isBlank() ? request.getVehicleModel().trim() : "Standard")
+                        .seatingCapacity(request.getSeatingCapacity() != null && request.getSeatingCapacity() > 0 ? request.getSeatingCapacity() : 4)
+                        .fuelType(request.getFuelType() != null && !request.getFuelType().isBlank() ? request.getFuelType().trim() : "Diesel")
+                        .status(com.grabrentals.vendor.entity.VehicleStatus.AVAILABLE)
+                        .build();
+                com.grabrentals.vendor.entity.Vehicle savedVehicle = vehicleRepository.save(vehicle);
+
+                if (request.getDriverLicenseNumber() != null && !request.getDriverLicenseNumber().isBlank()) {
+                    String licNum = request.getDriverLicenseNumber().trim().toUpperCase();
+                    if (!driverRepository.existsByLicenseNumberIgnoreCase(licNum)) {
+                        com.grabrentals.vendor.entity.Driver driver = com.grabrentals.vendor.entity.Driver.builder()
+                                .user(saved)
+                                .name(saved.getName())
+                                .phone(saved.getPhone())
+                                .email(saved.getEmail())
+                                .licenseNumber(licNum)
+                                .licenseExpiry(java.time.LocalDate.now().plusYears(5))
+                                .experienceYears(5)
+                                .assignedVehicle(savedVehicle)
+                                .status(com.grabrentals.vendor.entity.DriverStatus.AVAILABLE)
+                                .build();
+                        driverRepository.save(driver);
+                    }
+                }
+            }
+        }
 
         try {
             auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()

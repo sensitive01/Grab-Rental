@@ -83,11 +83,21 @@ export default function ReviewPayPage() {
           setBookingConfig(parsed);
 
           // Prefill pickup & drop addresses if empty
+          const isLocalTrip = parsed.trip?.serviceType === "LOCAL" || (parsed.trip?.to && parsed.trip.to.toLowerCase().includes("hr"));
+          const isAirportTrip = parsed.trip?.serviceType === "AIRPORT" || (parsed.trip?.tripType && parsed.trip.tripType.toLowerCase().includes("airport"));
           if (parsed.trip?.from) {
-            setPickupAddress(`${parsed.trip.from} (City Center / Main Landmark)`);
+            setPickupAddress(isAirportTrip && parsed.trip.from.toLowerCase().includes("airport") 
+              ? `${parsed.trip.from} (Arrivals Terminal)`
+              : `${parsed.trip.from} (Pickup Point)`);
           }
           if (parsed.trip?.to) {
-            setDropAddress(`${parsed.trip.to} (City Center / Main Landmark)`);
+            if (isLocalTrip) {
+              setDropAddress(`Within ${parsed.trip.from.split(",")[0].trim()} (Local City Limits / As Directed)`);
+            } else if (isAirportTrip && parsed.trip.to.toLowerCase().includes("airport")) {
+              setDropAddress(`${parsed.trip.to} (Departures Terminal)`);
+            } else {
+              setDropAddress(`${parsed.trip.to} (City Center / Main Landmark)`);
+            }
           }
         }
 
@@ -102,12 +112,25 @@ export default function ReviewPayPage() {
     }
   }, []);
 
+  const isLocal = bookingConfig?.trip?.serviceType === "LOCAL" || (bookingConfig?.trip?.to && bookingConfig.trip.to.toLowerCase().includes("hr"));
+  const isAirport = bookingConfig?.trip?.serviceType === "AIRPORT" || (bookingConfig?.trip?.tripType && bookingConfig.trip.tripType.toLowerCase().includes("airport"));
+
+  const formatPackageLabel = (pkgStr) => {
+    if (!pkgStr) return "8 Hours / 80 Kms";
+    const lower = pkgStr.toLowerCase();
+    if (lower.includes("4hr") || lower.includes("40")) return "4 Hours / 40 Kms";
+    if (lower.includes("12hr") || lower.includes("120")) return "12 Hours / 120 Kms";
+    if (lower.includes("8hr") || lower.includes("80")) return "8 Hours / 80 Kms";
+    return pkgStr;
+  };
+  const packageLabel = formatPackageLabel(bookingConfig?.trip?.to);
+
   // Dynamic pricing from backend tariff engine (stored in sessionStorage by select-vehicle page)
   const baseFare = bookingConfig?.car?.fare || 0;
   const taxes = bookingConfig?.car?.taxes || 0;
   const luggageCarrierFee = bookingConfig?.car?.withLuggageCarrier ? 149 : 0;
-  const tollPrice = bookingConfig?.tollPrice || 0;
-  const duration = bookingConfig?.duration || null;
+  const tollPrice = isLocal ? 0 : (bookingConfig?.tollPrice || 0);
+  const duration = isLocal ? null : (bookingConfig?.duration || null);
   const totalAmount = baseFare + taxes + luggageCarrierFee + tollPrice;
   const advanceAmount = Math.round(totalAmount * 0.20);
   const driverLaterAmount = totalAmount - advanceAmount;
@@ -173,12 +196,13 @@ export default function ReviewPayPage() {
       }
 
       const bookingPayload = {
-        tripType: (bookingConfig?.trip?.tripType || "One way").toLowerCase().includes("round") ? "ROUND_TRIP" : "ONE_WAY",
+        tripType: isLocal ? "HOURLY_PACKAGE" : isAirport ? (bookingConfig?.trip?.tripType || "AIRPORT_TRANSFER") : ((bookingConfig?.trip?.tripType || "One way").toLowerCase().includes("round") ? "ROUND_TRIP" : "ONE_WAY"),
+        serviceType: isLocal ? "LOCAL" : isAirport ? "AIRPORT" : (bookingConfig?.trip?.serviceType || "OUTSTATION"),
         pickupCity: bookingConfig?.trip?.from || "Bangalore",
-        dropCity: bookingConfig?.trip?.to || "Coimbatore",
-        stops: stopsVal,
+        dropCity: isLocal ? (bookingConfig?.trip?.from?.split(",")[0]?.trim() || "Bangalore") : (bookingConfig?.trip?.to || "Coimbatore"),
+        stops: (isLocal || isAirport) ? "" : stopsVal,
         pickupAddress: pickupAddress.trim(),
-        dropAddress: dropAddress.trim() || `${bookingConfig?.trip?.to || "Destination"} Center`,
+        dropAddress: dropAddress.trim() || (isLocal ? "Within City Limits / Local Disposal" : `${bookingConfig?.trip?.to || "Destination"} Center`),
         pickupDateTime: pickupIso,
         returnDateTime: null,
         vehicleCategory: bookingConfig?.car?.category || "SEDAN",
@@ -188,7 +212,7 @@ export default function ReviewPayPage() {
         totalFare: totalAmount,
         advancePaid,
         paymentStatus: paymentPlan === "advance" ? "ADVANCE_PAID" : "FULL_PAID",
-        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
+        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${isLocal ? "Package: " + packageLabel + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km${bookingConfig?.car?.withLuggageCarrier ? " | Rooftop Carrier Included" : ""}`,
       };
 
       const res = await customerApi.createBooking(bookingPayload);
@@ -445,14 +469,23 @@ export default function ReviewPayPage() {
               <div className="bg-slate-900 text-white p-5">
                 <h3 className="text-base font-black tracking-tight">Final Booking Summary</h3>
                 <p className="text-xs text-slate-400 font-medium mt-0.5">
-                  {bookingConfig.trip?.from} {bookingConfig.trip?.stops ? `→ Via ${String(bookingConfig.trip.stops).replace(/\|/g, ", ")} ` : ""}→ {bookingConfig.trip?.to} • {bookingConfig.trip?.tripType}
+                  {isLocal ? (
+                    `${bookingConfig.trip?.from} • Local Package: ${packageLabel}`
+                  ) : (
+                    `${bookingConfig.trip?.from} ${bookingConfig.trip?.stops ? `→ Via ${String(bookingConfig.trip.stops).replace(/\|/g, ", ")} ` : ""}→ ${bookingConfig.trip?.to} • ${bookingConfig.trip?.tripType}`
+                  )}
                 </p>
-                {(distanceKm > 0 || duration) && (
+                {isLocal ? (
+                  <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800 text-[11px] font-bold">
+                    <span className="text-amber-400">⏱️ {packageLabel}</span>
+                    <span className="text-slate-300">📍 Local City Disposal</span>
+                  </div>
+                ) : (distanceKm > 0 || duration) ? (
                   <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-800 text-[11px] font-bold">
                     {distanceKm > 0 && <span className="text-amber-400">📏 {distanceKm} km</span>}
                     {duration && <span className="text-slate-300">⏱️ ~{duration}</span>}
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Selected Vehicle Overview */}

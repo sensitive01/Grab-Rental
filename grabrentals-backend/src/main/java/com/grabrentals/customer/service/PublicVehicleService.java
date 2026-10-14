@@ -11,6 +11,7 @@ import com.grabrentals.vendor.entity.VehicleStatus;
 import com.grabrentals.vendor.repository.VehicleRepository;
 import com.grabrentals.tariff.dto.VehicleModelConfigResponse;
 import com.grabrentals.tariff.entity.VehicleTariff;
+import com.grabrentals.tariff.service.VehicleTariffService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class PublicVehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final BookingRepository bookingRepository;
-    private final com.grabrentals.tariff.service.VehicleTariffService vehicleTariffService;
+    private final VehicleTariffService vehicleTariffService;
 
     public BookingResponse getBookingByReference(String bookingReference) {
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
@@ -50,6 +51,11 @@ public class PublicVehicleService {
         String cleanTo = (to != null && !to.isBlank()) ? to.trim() : "Coimbatore";
         String normalizedTripType = (tripType != null && tripType.toLowerCase().contains("round")) ? "Round trip" : "One way";
         String resolvedServiceType = (serviceType != null && !serviceType.isBlank()) ? serviceType.trim().toUpperCase() : "OUTSTATION";
+        if ("PACKAGE".equalsIgnoreCase(resolvedServiceType)) {
+            resolvedServiceType = "LOCAL";
+        } else if ("OUTSTATION".equalsIgnoreCase(resolvedServiceType)) {
+            resolvedServiceType = (tripType != null && tripType.toLowerCase().contains("round")) ? "ROUND_TRIP" : "ONE_WAY";
+        }
 
         List<String> parsedStops = new ArrayList<>();
         if (stops != null && !stops.isBlank()) {
@@ -62,10 +68,24 @@ public class PublicVehicleService {
         }
 
         long t0 = System.currentTimeMillis();
-        int distanceKm = calculateDistanceWithStops(cleanFrom, cleanTo, parsedStops, normalizedTripType);
-        if ("LOCAL".equalsIgnoreCase(resolvedServiceType) && distanceKm > 150) {
-            // For local travel in city, cap default estimated distance to 80 km if not otherwise measured
-            distanceKm = 80;
+        int pkgHours = 8;
+        int pkgKm = 80;
+        int distanceKm = 80;
+        if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
+            String packageKey = (cleanTo != null ? cleanTo.toLowerCase() : "");
+            if (packageKey.contains("4hr") || packageKey.contains("40")) {
+                pkgHours = 4;
+                pkgKm = 40;
+            } else if (packageKey.contains("12hr") || packageKey.contains("120")) {
+                pkgHours = 12;
+                pkgKm = 120;
+            } else {
+                pkgHours = 8;
+                pkgKm = 80;
+            }
+            distanceKm = pkgKm;
+        } else {
+            distanceKm = calculateDistanceWithStops(cleanFrom, cleanTo, parsedStops, normalizedTripType);
         }
         long tDist = System.currentTimeMillis();
 
@@ -116,7 +136,7 @@ public class PublicVehicleService {
 
                 // Dynamically resolve rate using Tariff Engine in-memory against pre-fetched tariffs
                 Map<String, Object> rateContext = vehicleTariffService.calculateRate(
-                        config.getCategory(), model, String.valueOf(seats), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, tariffs
+                        config.getCategory(), model, String.valueOf(seats), config.getFuelType(), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, tariffs
                 );
 
                 Boolean hasTariff = (Boolean) rateContext.get("hasTariff");
@@ -155,6 +175,18 @@ public class PublicVehicleService {
                         ? baseFare
                         : rate.multiply(BigDecimal.valueOf(baseKm)).setScale(0, RoundingMode.HALF_UP);
 
+                if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
+                    BigDecimal hourlyFare = (BigDecimal) rateContext.get("hourlyCustomerFare");
+                    if (hourlyFare != null && hourlyFare.compareTo(BigDecimal.ZERO) > 0) {
+                        dailyPrice = hourlyFare.multiply(BigDecimal.valueOf(pkgHours))
+                                .divide(BigDecimal.valueOf(8), 0, RoundingMode.HALF_UP);
+                    } else {
+                        dailyPrice = rate.multiply(BigDecimal.valueOf(pkgKm))
+                                .add(BigDecimal.valueOf(pkgHours * 100))
+                                .setScale(0, RoundingMode.HALF_UP);
+                    }
+                }
+
                 PublicVehicleCardDto card = buildCategoryCard(
                         cardId,
                         model + " or Equivalent",
@@ -183,6 +215,59 @@ public class PublicVehicleService {
                 card.setChauffeurRating(4.9);
                 card.setDescription(config.getDescription());
 
+                if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
+                    BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                    card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
+                            .originalPrice(orig)
+                            .discountedPrice(dailyPrice)
+                            .chargesAndTaxes(BigDecimal.ZERO)
+                            .advanceAmount(adv)
+                            .build());
+                    card.setDailyPrice(dailyPrice);
+                    card.setIncludedKms(pkgKm);
+                    card.setInclusions(List.of(
+                            "Fixed package for " + pkgHours + " Hours and " + pkgKm + " Kilometers",
+                            "Commercial Chauffeur with Local City Route Mastery",
+                            "Chauffeur on standby during all your stops",
+                            "Fuel Charges Included for " + pkgKm + " km"
+                    ));
+                    BigDecimal extraKm = (rateContext.get("extraKmRate") != null) ? (BigDecimal) rateContext.get("extraKmRate") : postRate;
+                    BigDecimal extraHr = (rateContext.get("extraHourRate") != null) ? (BigDecimal) rateContext.get("extraHourRate") : new BigDecimal("150.00");
+                    card.setExclusions(List.of(
+                            "Extra Distance: ₹" + extraKm + "/km after " + pkgKm + " km",
+                            "Extra Time: ₹" + extraHr + "/hr after " + pkgHours + " hours",
+                            "Toll and Parking charges (if any) payable directly at actuals"
+                    ));
+                } else if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+                    Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
+                    if (airportKm == null || airportKm <= 0) airportKm = 35;
+                    BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                    card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
+                            .originalPrice(orig)
+                            .discountedPrice(dailyPrice)
+                            .chargesAndTaxes(BigDecimal.ZERO)
+                            .advanceAmount(adv)
+                            .build());
+                    card.setDailyPrice(dailyPrice);
+                    card.setIncludedKms(airportKm);
+                    card.setInclusions(List.of(
+                            "Guaranteed Airport Transfer (" + airportKm + " km Included)",
+                            "Live Flight Delay Tracking Included",
+                            "Free 60 Minutes Waiting Time at Arrivals",
+                            "Chauffeur Meet & Greet with Placard & Luggage Help",
+                            "Fuel Charges Included"
+                    ));
+                    BigDecimal extraKm = (rateContext.get("airportExtraKmRate") != null)
+                            ? (BigDecimal) rateContext.get("airportExtraKmRate")
+                            : postRate;
+                    card.setExclusions(List.of(
+                            "Extra KM Charge: ₹" + extraKm + "/km beyond " + airportKm + " km",
+                            "Airport Toll & Parking (if applicable) at actuals"
+                    ));
+                }
+
                 cards.add(card);
             }
         } else {
@@ -193,7 +278,7 @@ public class PublicVehicleService {
                 int seats = v.getSeatingCapacity() != null ? v.getSeatingCapacity() : 4;
 
                 Map<String, Object> rateContext = vehicleTariffService.calculateRate(
-                        v.getVehicleType(), model, String.valueOf(seats), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, tariffs
+                        v.getVehicleType(), model, String.valueOf(seats), v.getFuelType(), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, tariffs
                 );
                 Boolean hasTariff = (Boolean) rateContext.get("hasTariff");
                 if (hasTariff == null || !hasTariff) {
@@ -227,6 +312,28 @@ public class PublicVehicleService {
                     BigDecimal dailyPrice = (v.getDailyRate() != null && v.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
                             ? v.getDailyRate()
                             : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
+                    if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
+                        BigDecimal hourlyFare = (BigDecimal) rateContext.get("hourlyCustomerFare");
+                        if (hourlyFare != null && hourlyFare.compareTo(BigDecimal.ZERO) > 0) {
+                            dailyPrice = hourlyFare.multiply(BigDecimal.valueOf(pkgHours))
+                                    .divide(BigDecimal.valueOf(8), 0, RoundingMode.HALF_UP);
+                        } else {
+                            dailyPrice = rate.multiply(BigDecimal.valueOf(pkgKm))
+                                    .add(BigDecimal.valueOf(pkgHours * 100))
+                                    .setScale(0, RoundingMode.HALF_UP);
+                        }
+                    } else if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+                        BigDecimal airportFare = (BigDecimal) rateContext.get("airportCustomerFare");
+                        Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
+                        if (airportKm == null || airportKm <= 0) airportKm = 35;
+                        if (airportFare != null && airportFare.compareTo(BigDecimal.ZERO) > 0) {
+                            dailyPrice = airportFare;
+                        } else {
+                            dailyPrice = rate.multiply(BigDecimal.valueOf(airportKm))
+                                    .add(new BigDecimal("350.00"))
+                                    .setScale(0, RoundingMode.HALF_UP);
+                        }
+                    }
                     String loc = v.getParkingLocation() != null && !v.getParkingLocation().isBlank()
                             ? v.getParkingLocation()
                             : (v.getCurrentLocation() != null && !v.getCurrentLocation().isBlank() ? v.getCurrentLocation() : cleanFrom);
@@ -262,6 +369,59 @@ public class PublicVehicleService {
                     card.setStatus(v.getStatus() != null ? v.getStatus().name() : "AVAILABLE");
                     card.setChauffeur(chauffeurName);
                     card.setChauffeurRating(4.9);
+
+                    if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
+                        BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                        card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
+                                .originalPrice(orig)
+                                .discountedPrice(dailyPrice)
+                                .chargesAndTaxes(BigDecimal.ZERO)
+                                .advanceAmount(adv)
+                                .build());
+                        card.setDailyPrice(dailyPrice);
+                        card.setIncludedKms(pkgKm);
+                        card.setInclusions(List.of(
+                                "Fixed package for " + pkgHours + " Hours and " + pkgKm + " Kilometers",
+                                "Commercial Chauffeur with Local City Route Mastery",
+                                "Chauffeur on standby during all your stops",
+                                "Fuel Charges Included for " + pkgKm + " km"
+                        ));
+                        BigDecimal extraKm = (rateContext.get("extraKmRate") != null) ? (BigDecimal) rateContext.get("extraKmRate") : postRate;
+                        BigDecimal extraHr = (rateContext.get("extraHourRate") != null) ? (BigDecimal) rateContext.get("extraHourRate") : new BigDecimal("150.00");
+                        card.setExclusions(List.of(
+                                "Extra KM Charge: ₹" + extraKm + "/km beyond " + pkgKm + " km",
+                                "Extra Hour Charge: ₹" + extraHr + "/hr beyond " + pkgHours + " hours",
+                                "State Entry Tax, Fastag Tolls & Parking fees at actuals"
+                        ));
+                    } else if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+                        Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
+                        if (airportKm == null || airportKm <= 0) airportKm = 35;
+                        BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                        card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
+                                .originalPrice(orig)
+                                .discountedPrice(dailyPrice)
+                                .chargesAndTaxes(BigDecimal.ZERO)
+                                .advanceAmount(adv)
+                                .build());
+                        card.setDailyPrice(dailyPrice);
+                        card.setIncludedKms(airportKm);
+                        card.setInclusions(List.of(
+                                "Guaranteed Airport Transfer (" + airportKm + " km Included)",
+                                "Live Flight Delay Tracking Included",
+                                "Free 60 Minutes Waiting Time at Arrivals",
+                                "Chauffeur Meet & Greet with Placard & Luggage Help",
+                                "Fuel Charges Included"
+                        ));
+                        BigDecimal extraKm = (rateContext.get("airportExtraKmRate") != null)
+                                ? (BigDecimal) rateContext.get("airportExtraKmRate")
+                                : postRate;
+                        card.setExclusions(List.of(
+                                "Extra KM Charge: ₹" + extraKm + "/km beyond " + airportKm + " km",
+                                "Airport Toll & Parking (if applicable) at actuals"
+                        ));
+                    }
 
                     cards.add(card);
                 }
@@ -312,15 +472,19 @@ public class PublicVehicleService {
         }
 
         if (parts.size() == 1) {
-            return new String[]{parts.get(0), ""};
+            String rawCity = parts.get(0);
+            String cleanedCity = VehicleTariffService.cleanCityLandmarks(rawCity);
+            return new String[]{!cleanedCity.isBlank() ? cleanedCity : rawCity, ""};
         }
 
         // The last part is now the State (strip pincodes)
         String rawState = parts.get(parts.size() - 1);
         String state = rawState.replaceAll("\\b\\d{6}\\b", "").trim();
 
-        // The second to last part is the City (e.g. "Theni")
-        String city = parts.get(parts.size() - 2);
+        // The second to last part is the City (e.g. "Madurai Railway Station" -> "Madurai")
+        String rawCity = parts.get(parts.size() - 2);
+        String cleanedCity = VehicleTariffService.cleanCityLandmarks(rawCity);
+        String city = !cleanedCity.isBlank() ? cleanedCity : rawCity;
 
         return new String[]{city, state};
     }

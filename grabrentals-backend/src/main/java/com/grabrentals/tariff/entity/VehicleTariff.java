@@ -16,6 +16,7 @@ import java.util.UUID;
     name = "vehicle_tariffs",
     indexes = {
         @Index(name = "idx_vt_cat_model_seat", columnList = "category, model_name, seating_capacity"),
+        @Index(name = "idx_vt_fuel", columnList = "fuel_type"),
         @Index(name = "idx_vt_dates", columnList = "is_seasonal, start_date, end_date")
     }
 )
@@ -40,6 +41,10 @@ public class VehicleTariff {
 
     @Column(name = "seating_capacity", nullable = false, length = 50)
     private String seatingCapacity;
+
+    @Column(name = "fuel_type", length = 50)
+    @Builder.Default
+    private String fuelType = "Diesel";
 
     @Column(name = "is_seasonal", nullable = false)
     @Builder.Default
@@ -119,6 +124,30 @@ public class VehicleTariff {
 
     @Column(name = "package_km")
     private Integer packageKm; // e.g. 40, 80, 120
+
+    @Column(name = "hourly_weekday_day_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyWeekdayDayRate;
+
+    @Column(name = "hourly_vendor_weekday_day_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyVendorWeekdayDayRate;
+
+    @Column(name = "hourly_weekday_night_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyWeekdayNightRate;
+
+    @Column(name = "hourly_vendor_weekday_night_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyVendorWeekdayNightRate;
+
+    @Column(name = "hourly_weekend_day_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyWeekendDayRate;
+
+    @Column(name = "hourly_vendor_weekend_day_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyVendorWeekendDayRate;
+
+    @Column(name = "hourly_weekend_night_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyWeekendNightRate;
+
+    @Column(name = "hourly_vendor_weekend_night_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyVendorWeekendNightRate;
 
     @Column(name = "hourly_customer_fare", precision = 10, scale = 2)
     private BigDecimal hourlyCustomerFare;

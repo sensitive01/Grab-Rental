@@ -34,4 +34,60 @@ public class CreateVendorUserRequest {
 
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
+
+    private String alternatePhone;
+
+    private String city;
+
+    private String address;
+
+    private String businessType;
+
+    private String tradeName;
+
+    private String gstin;
+
+    private String pan;
+
+    private String state;
+
+    private String pincode;
+
+    private String bankName;
+
+    private String accountNumber;
+
+    private String ifsc;
+
+    private String branch;
+
+    private String fleetModel;
+
+    private Integer fleetSize;
+
+    private Double commissionRate;
+
+    private Boolean ownsBusiness;
+
+    private String idProofDocumentUrl;
+
+    private String addressProofDocumentUrl;
+
+    private String businessProofDocumentUrl;
+
+    private String gstDocumentUrl;
+
+    private String panDocumentUrl;
+
+    private String vehicleNumber;
+
+    private String vehicleModel;
+
+    private String vehicleCategory;
+
+    private Integer seatingCapacity;
+
+    private String fuelType;
+
+    private String driverLicenseNumber;
 }

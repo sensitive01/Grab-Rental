@@ -1,9 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
 import { AlertCircle, CheckCircle2, Info, X, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function Toast({ type = "info", message, onClose }) {
+export function Toast({ type = "info", message, onClose, duration = 4000 }) {
+  useEffect(() => {
+    if (!message || !onClose || duration <= 0) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [message, onClose, duration]);
+
   if (!message) return null;
 
   const icons = {

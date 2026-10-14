@@ -65,6 +65,38 @@ export default function VendorDetailPage({ params }) {
     load();
   }, [id]);
 
+  const [togglingStatus, setTogglingStatus] = useState(false);
+
+  const handleToggleStatus = async () => {
+    if (!vendor) return;
+    const isCurrentlyActive = vendor.status === "ACTIVE" || vendor.status === "APPROVED";
+    const newStatus = isCurrentlyActive ? "INACTIVE" : "ACTIVE";
+
+    setTogglingStatus(true);
+    try {
+      await adminApi.updateUserStatus(vendor.id, newStatus);
+      setVendor((prev) => ({
+        ...prev,
+        status: newStatus,
+        rawStatus: newStatus,
+      }));
+      setToastMessage({
+        type: newStatus === "ACTIVE" ? "success" : "warning",
+        text:
+          newStatus === "ACTIVE"
+            ? `Vendor "${vendor.name}" is now ACTIVE. Login access has been restored.`
+            : `Vendor "${vendor.name}" is now INACTIVE. Login access has been blocked.`,
+      });
+    } catch (err) {
+      setToastMessage({
+        type: "error",
+        text: "Failed to update vendor status: " + (err.message || "Unknown error"),
+      });
+    } finally {
+      setTogglingStatus(false);
+    }
+  };
+
   const handleApprove = async () => {
     if (!vendor) return;
     setApproving(true);
@@ -165,6 +197,49 @@ export default function VendorDetailPage({ params }) {
         ]}
         action={
           <div className="flex items-center gap-2.5">
+            {!isPending && (
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-lg">
+                <span className="text-xs font-semibold text-slate-700">Login Access:</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={vendor.status === "ACTIVE" || vendor.status === "APPROVED"}
+                  disabled={togglingStatus}
+                  onClick={handleToggleStatus}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    (vendor.status === "ACTIVE" || vendor.status === "APPROVED")
+                      ? "bg-emerald-500 hover:bg-emerald-600"
+                      : "bg-slate-300 hover:bg-slate-400"
+                  } ${togglingStatus ? "opacity-50 cursor-wait" : ""}`}
+                  title={
+                    (vendor.status === "ACTIVE" || vendor.status === "APPROVED")
+                      ? "Click to deactivate vendor (disables login access)"
+                      : "Click to activate vendor (enables login access)"
+                  }
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                      (vendor.status === "ACTIVE" || vendor.status === "APPROVED")
+                        ? "translate-x-4"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </button>
+                <Badge
+                  variant={
+                    vendor.status === "ACTIVE" || vendor.status === "APPROVED"
+                      ? "success"
+                      : "neutral"
+                  }
+                  size="sm"
+                  dot
+                >
+                  {vendor.status === "ACTIVE" || vendor.status === "APPROVED"
+                    ? "ACTIVE"
+                    : "INACTIVE"}
+                </Badge>
+              </div>
+            )}
             <Link href="/admin/vendors">
               <Button variant="secondary" size="sm" icon={ArrowLeft}>
                 Back to Directory

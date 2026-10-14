@@ -27,8 +27,9 @@ public class TariffDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Disabled auto-seeder to let user manually configure vehicle models, common photos, and tariffs.
-        log.info("TariffDataSeeder ready: manual configuration active.");
+        log.info("TariffDataSeeder: ensuring default vehicle model configurations exist in database...");
+        tariffService.seedDefaultModelConfigs();
+        log.info("TariffDataSeeder: vehicle models check/seed completed.");
     }
 
     private void seedVehicleModels() {
@@ -203,6 +204,7 @@ public class TariffDataSeeder implements CommandLineRunner {
                         .category("Hatchback")
                         .modelName("WagonR")
                         .seatingCapacity("4")
+                        .fuelType("Petrol + CNG")
                         .seasonal(false)
                         .weekdayDayRate(new BigDecimal("11.50"))
                         .weekdayNightRate(new BigDecimal("12.50"))

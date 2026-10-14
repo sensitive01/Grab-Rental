@@ -187,12 +187,32 @@ function SelectVehicleContent() {
   }, [searchParams]);
 
   // Compute Active Distance
+  const isLocalBooking = trip.serviceType === "LOCAL" || (trip.to && trip.to.toLowerCase().includes("hr"));
+
+  const formatPackageLabel = (pkgStr) => {
+    if (!pkgStr) return "8 Hours / 80 Kms";
+    const lower = pkgStr.toLowerCase();
+    if (lower.includes("4hr") || lower.includes("40")) return "4 Hours / 40 Kms";
+    if (lower.includes("12hr") || lower.includes("120")) return "12 Hours / 120 Kms";
+    if (lower.includes("8hr") || lower.includes("80")) return "8 Hours / 80 Kms";
+    return pkgStr;
+  };
+  const packageLabel = formatPackageLabel(trip.to);
+
+  const parsePackageKm = (pkgStr) => {
+    if (!pkgStr) return 80;
+    const lower = pkgStr.toLowerCase();
+    if (lower.includes("4hr") || lower.includes("40")) return 40;
+    if (lower.includes("12hr") || lower.includes("120")) return 120;
+    return 80;
+  };
+
   const [googleRouteDetails, setGoogleRouteDetails] = useState(null);
 
   useEffect(() => {
     let isCancelled = false;
     async function loadGoogleRoute() {
-      if (!trip.from || !trip.to) return;
+      if (isLocalBooking || !trip.from || !trip.to) return;
       try {
         const details = await fetchGoogleRouteDistance(trip.from, trip.to, trip.stops, trip.tripType, {
           originCoords: trip.pickupCoords,
@@ -213,13 +233,16 @@ function SelectVehicleContent() {
     return () => {
       isCancelled = true;
     };
-  }, [trip.from, trip.to, trip.stops, trip.tripType, trip.pickupCoords, trip.dropCoords, trip.stopsCoords]);
+  }, [isLocalBooking, trip.from, trip.to, trip.stops, trip.tripType, trip.pickupCoords, trip.dropCoords, trip.stopsCoords]);
 
   const fallbackDistance = useMemo(() => {
+    if (isLocalBooking) return parsePackageKm(trip.to);
     return estimateRouteDistance(trip.from, trip.to, trip.stops, trip.tripType);
-  }, [trip.from, trip.to, trip.stops, trip.tripType]);
+  }, [isLocalBooking, trip.from, trip.to, trip.stops, trip.tripType]);
 
-  const activeDistance = backendDistance || googleRouteDetails?.distanceKm || fallbackDistance;
+  const activeDistance = isLocalBooking 
+    ? parsePackageKm(trip.to) 
+    : (backendDistance || googleRouteDetails?.distanceKm || fallbackDistance);
 
   // Fetch live vehicles from backend API
   useEffect(() => {
@@ -716,14 +739,15 @@ function SelectVehicleContent() {
         {/* Dynamic Route Header */}
         <VehicleTripHeader
           from={cleanCityName(trip.from)}
-          to={cleanCityName(trip.to)}
+          to={isLocalBooking ? trip.to : cleanCityName(trip.to)}
           stops={trip.stops}
           tripType={trip.tripType}
           date={formatDateDisplay(trip.date)}
           time={formatTimeDisplay(trip.time)}
           distanceKm={activeDistance}
-          tollPrice={googleRouteDetails?.tollPrice}
-          duration={googleRouteDetails?.durationText}
+          tollPrice={isLocalBooking ? 0 : googleRouteDetails?.tollPrice}
+          duration={isLocalBooking ? null : googleRouteDetails?.durationText}
+          serviceType={trip.serviceType}
           onModifyClick={() => setIsModifyOpen(true)}
         />
 
@@ -1073,15 +1097,25 @@ function SelectVehicleContent() {
                           <span className="text-xl sm:text-2xl font-black text-amber-600">
                             ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </span>
-                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                            ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
-                          </span>
+                          {isLocalBooking ? (
+                            <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                              Fixed Package
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
+                            </span>
+                          )}
                         </div>
-                        {activeDistance > 0 && (
+                        {isLocalBooking ? (
+                          <p className="text-[11px] font-bold text-slate-700 mt-0.5">
+                            Included: <strong className="text-amber-700">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                          </p>
+                        ) : activeDistance > 0 ? (
                           <p className="text-[11px] font-medium text-slate-500 mt-0.5">
                             Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
                           </p>
-                        )}
+                        ) : null}
                         <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-0.5">
                           <span className="flex items-center gap-0.5">
                             <MapPin className="w-3 h-3 text-slate-400" />
@@ -1190,15 +1224,25 @@ function SelectVehicleContent() {
                           <span className="text-2xl sm:text-3xl font-black text-amber-600">
                             ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </span>
-                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                            ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
-                          </span>
+                          {isLocalBooking ? (
+                            <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                              Fixed Package
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
+                            </span>
+                          )}
                         </div>
-                        {activeDistance > 0 && (
+                        {isLocalBooking ? (
+                          <p className="text-[11px] font-bold text-slate-700">
+                            Included: <strong className="text-amber-700">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                          </p>
+                        ) : activeDistance > 0 ? (
                           <p className="text-[11px] font-medium text-slate-500">
                             Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
                           </p>
-                        )}
+                        ) : null}
                       </div>
 
                       <div className="flex items-center gap-2">

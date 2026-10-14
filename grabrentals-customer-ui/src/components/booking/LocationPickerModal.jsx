@@ -14,7 +14,8 @@ import {
   ChevronRight,
   ChevronLeft,
   ExternalLink,
-  Plus
+  Plus,
+  Plane
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { saveCustomCity, findCityCoordinates, fetchGoogleRouteDistance } from "@/lib/cities";
@@ -31,24 +32,40 @@ const QUICK_HUBS = [
   { name: "Salem", state: "Tamil Nadu", lat: 11.6643, lng: 78.1460 }
 ];
 
+// Major Indian Airport Hubs for direct airport map selection
+const AIRPORT_HUBS = [
+  { name: "Kempegowda Int'l (BLR)", state: "Bengaluru", lat: 13.1986, lng: 77.7066 },
+  { name: "Chennai Int'l (MAA)", state: "Chennai", lat: 12.9941, lng: 80.1709 },
+  { name: "Coimbatore Int'l (CJB)", state: "Coimbatore", lat: 11.0298, lng: 77.0434 },
+  { name: "Cochin Int'l (COK)", state: "Kochi", lat: 10.1518, lng: 76.3930 },
+  { name: "Rajiv Gandhi Int'l (HYD)", state: "Hyderabad", lat: 17.2403, lng: 78.4294 },
+  { name: "Madurai Airport (IXM)", state: "Madurai", lat: 9.8345, lng: 78.0934 },
+  { name: "Trichy Airport (TRZ)", state: "Tiruchirappalli", lat: 10.7654, lng: 78.7107 },
+  { name: "Mumbai CSMIA (BOM)", state: "Mumbai", lat: 19.0896, lng: 72.8656 },
+  { name: "Delhi IGI Airport (DEL)", state: "New Delhi", lat: 28.5562, lng: 77.1000 }
+];
+
 export default function LocationPickerModal({
   isOpen,
   onClose,
   onSelect,
   initialValue = "",
   title,
-  activeTarget = "pickup", // "pickup" | "drop" | "stop-0" | "stop-1"...
+  activeTarget = "pickup", // "pickup" | "drop" | "airport" | "stop-0" | "stop-1"...
   pickupValue = "",
   dropValue = "",
+  airportValue = "",
   stops = [],
   onSelectPickup,
   onSelectDrop,
+  onSelectAirport,
   onSelectStops,
   allowTargetSwitch = true,
   allowStops = true,
   maxStops = 3,
   initialPickupCoords = null,
   initialDropCoords = null,
+  initialAirportCoords = null,
   initialStopsCoords = null
 }) {
   const { t } = useLanguage();
@@ -59,10 +76,12 @@ export default function LocationPickerModal({
   const [currentTarget, setCurrentTarget] = useState(activeTarget || "pickup");
   const [pickupCityState, setPickupCityState] = useState(pickupValue || (activeTarget === "pickup" ? initialValue : "") || "Bangalore, Karnataka");
   const [dropCityState, setDropCityState] = useState(dropValue || (activeTarget === "drop" ? initialValue : "") || "Coimbatore, Tamil Nadu");
+  const [airportCityState, setAirportCityState] = useState(airportValue || (activeTarget === "airport" ? initialValue : "") || "Kempegowda International Airport (BLR), Bengaluru");
   const [stopsState, setStopsState] = useState(Array.isArray(stops) ? [...stops] : []);
 
   const [pickupCoords, setPickupCoords] = useState(initialPickupCoords || { lat: 12.9716, lng: 77.5946 });
   const [dropCoords, setDropCoords] = useState(initialDropCoords || { lat: 11.0168, lng: 76.9558 });
+  const [airportCoords, setAirportCoords] = useState(initialAirportCoords || { lat: 13.1986, lng: 77.7066 });
   const [stopsCoords, setStopsCoords] = useState(initialStopsCoords || {});
 
   // Live modal route calculation
@@ -115,6 +134,16 @@ export default function LocationPickerModal({
 
     const activePick = pickupValue || (target === "pickup" && initialValue ? initialValue : "") || pickupCityState;
     const activeDrop = dropValue || (target === "drop" && initialValue ? initialValue : "") || dropCityState;
+    const activeAirport = airportValue || (target === "airport" && initialValue ? initialValue : "") || airportCityState;
+
+    if (initialAirportCoords?.lat && initialAirportCoords?.lng) {
+      setAirportCoords(initialAirportCoords);
+    } else if (airportValue) {
+      setAirportCityState(airportValue);
+      const ac = findCityCoordinates(airportValue);
+      if (ac) setAirportCoords({ lat: ac.lat, lng: ac.lng });
+    }
+    if (airportValue) setAirportCityState(airportValue);
 
     if (initialPickupCoords?.lat && initialPickupCoords?.lng) {
       setPickupCoords(initialPickupCoords);
@@ -153,7 +182,11 @@ export default function LocationPickerModal({
     let currentCityVal = activePick;
     let newCoords = pickupCoords;
 
-    if (target === "drop") {
+    if (target === "airport") {
+      currentCityVal = activeAirport;
+      const matchedCoords = findCityCoordinates(activeAirport);
+      newCoords = matchedCoords ? { lat: matchedCoords.lat, lng: matchedCoords.lng } : airportCoords;
+    } else if (target === "drop") {
       currentCityVal = activeDrop;
       const matchedCoords = findCityCoordinates(activeDrop);
       newCoords = matchedCoords ? { lat: matchedCoords.lat, lng: matchedCoords.lng } : dropCoords;
@@ -171,7 +204,7 @@ export default function LocationPickerModal({
     setSelectedAddress(currentCityVal || "");
     setCityLabel(currentCityVal || "");
     setCoordinates(newCoords);
-  }, [isOpen, activeTarget, pickupValue, dropValue, stops, initialValue, initialPickupCoords, initialDropCoords, initialStopsCoords]);
+  }, [isOpen, activeTarget, pickupValue, dropValue, airportValue, stops, initialValue, initialPickupCoords, initialDropCoords, initialAirportCoords, initialStopsCoords]);
 
   // Compute live driving distance dynamically inside modal
   useEffect(() => {
@@ -286,7 +319,11 @@ export default function LocationPickerModal({
     setSelectedAddress(label);
     setCityLabel(label);
 
-    if (target === "drop") {
+    if (target === "airport") {
+      setAirportCityState(label);
+      if (coords) setAirportCoords(coords);
+      if (onSelectAirport) onSelectAirport(label, coords);
+    } else if (target === "drop") {
       setDropCityState(label);
       if (coords) setDropCoords(coords);
       if (onSelectDrop) onSelectDrop(label, coords);
@@ -308,7 +345,7 @@ export default function LocationPickerModal({
       if (coords) setPickupCoords(coords);
       if (onSelectPickup) onSelectPickup(label, coords);
     }
-  }, [onSelectDrop, onSelectPickup, onSelectStops]);
+  }, [onSelectDrop, onSelectPickup, onSelectAirport, onSelectStops]);
 
   // Reverse Geocode using Google Maps Geocoder
   const reverseGeocodeGoogle = useCallback((lat, lng) => {
@@ -582,7 +619,10 @@ export default function LocationPickerModal({
     let targetVal = "";
     let targetCoords = pickupCoords;
 
-    if (target === "drop") {
+    if (target === "airport") {
+      targetVal = airportCityState;
+      targetCoords = airportCoords;
+    } else if (target === "drop") {
       targetVal = dropCityState;
       targetCoords = dropCoords;
     } else if (typeof target === "string" && target.startsWith("stop-")) {
@@ -804,6 +844,7 @@ export default function LocationPickerModal({
 
     if (onSelectPickup) onSelectPickup(pickupCityState, pickupCoords);
     if (onSelectDrop) onSelectDrop(dropCityState, dropCoords);
+    if (onSelectAirport) onSelectAirport(airportCityState, airportCoords);
     const validStops = stopsState.filter((s) => s && s.trim());
     if (onSelectStops) onSelectStops(validStops);
 
@@ -811,7 +852,10 @@ export default function LocationPickerModal({
       let activeVal = pickupCityState;
       let activeCoords = pickupCoords;
 
-      if (currentTarget === "drop") {
+      if (currentTarget === "airport") {
+        activeVal = airportCityState || selectedAddress || cityLabel;
+        activeCoords = airportCoords || coordinates;
+      } else if (currentTarget === "drop") {
         activeVal = dropCityState;
         activeCoords = dropCoords;
       } else if (typeof currentTarget === "string" && currentTarget.startsWith("stop-")) {
@@ -825,6 +869,8 @@ export default function LocationPickerModal({
         pickupCoords,
         drop: dropCityState,
         dropCoords,
+        airport: airportCityState,
+        airportCoords,
         stops: validStops,
         stopsCoords
       });
@@ -866,17 +912,21 @@ export default function LocationPickerModal({
         <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-2.5">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-              typeof currentTarget === "string" && currentTarget.startsWith("stop-")
+              currentTarget === "airport"
+                ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
                 ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
                 : currentTarget === "drop" 
                   ? "bg-amber-500/10 text-amber-600 border-amber-500/20" 
                   : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
             }`}>
-              <MapPin className="w-5 h-5" />
+              {currentTarget === "airport" ? <Plane className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
             </div>
             <div>
               <h3 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">
-                {typeof currentTarget === "string" && currentTarget.startsWith("stop-")
+                {currentTarget === "airport"
+                  ? (title || "Choose Airport Location on Map")
+                  : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
                   ? `Choose Stop ${parseInt(currentTarget.replace("stop-", ""), 10) + 1} Location`
                   : allowTargetSwitch
                     ? (currentTarget === "drop"
@@ -891,7 +941,9 @@ export default function LocationPickerModal({
                 }
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                {typeof currentTarget === "string" && currentTarget.startsWith("stop-")
+                {currentTarget === "airport"
+                  ? "Search airport or terminal, pin on map, or select a popular airport hub"
+                  : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
                   ? `Stop ${parseInt(currentTarget.replace("stop-", ""), 10) + 1} — Search place, pin on map, or use GPS`
                   : currentTarget === "drop"
                     ? `${t("to_city") || "Drop Destination"} — Search place, pin on map, or use GPS`
@@ -913,7 +965,7 @@ export default function LocationPickerModal({
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           
           {/* Segmented Target Switcher: From Location, Intermediate Stops & To Location */}
-          {allowTargetSwitch && (
+          {allowTargetSwitch && currentTarget !== "airport" && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-1">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -1045,7 +1097,11 @@ export default function LocationPickerModal({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder={hasGoogleMapsKey && !googleMapsError ? "Search landmark, street, city or airport with Google..." : "Search landmark, station or city..."}
+                placeholder={
+                  currentTarget === "airport"
+                    ? "Search airport name, terminal, or city with Google..."
+                    : (hasGoogleMapsKey && !googleMapsError ? "Search landmark, street, city or airport with Google..." : "Search landmark, station or city...")
+                }
                 className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all shadow-xs"
               />
               {isSearching && (
@@ -1096,9 +1152,9 @@ export default function LocationPickerModal({
           {/* Quick Hub Suggestions */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
-              Popular:
+              {currentTarget === "airport" ? "Airports:" : "Popular:"}
             </span>
-            {QUICK_HUBS.map((hub) => (
+            {(currentTarget === "airport" ? AIRPORT_HUBS : QUICK_HUBS).map((hub) => (
               <button
                 key={hub.name}
                 type="button"

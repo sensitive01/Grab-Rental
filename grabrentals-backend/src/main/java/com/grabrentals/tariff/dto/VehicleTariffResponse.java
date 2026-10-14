@@ -19,6 +19,7 @@ public class VehicleTariffResponse {
     private String category;
     private String modelName;
     private String seatingCapacity;
+    private String fuelType;
     private Boolean seasonal;
     private String seasonName;
     private LocalDate startDate;
@@ -50,6 +51,14 @@ public class VehicleTariffResponse {
     // Hourly / Local Package components
     private Integer packageHours;
     private Integer packageKm;
+    private BigDecimal hourlyWeekdayDayRate;
+    private BigDecimal hourlyVendorWeekdayDayRate;
+    private BigDecimal hourlyWeekdayNightRate;
+    private BigDecimal hourlyVendorWeekdayNightRate;
+    private BigDecimal hourlyWeekendDayRate;
+    private BigDecimal hourlyVendorWeekendDayRate;
+    private BigDecimal hourlyWeekendNightRate;
+    private BigDecimal hourlyVendorWeekendNightRate;
     private BigDecimal hourlyCustomerFare;
     private BigDecimal hourlyVendorFare;
     private BigDecimal hourlyCustomerWeekendFare;
@@ -79,6 +88,7 @@ public class VehicleTariffResponse {
                 .category(entity.getCategory())
                 .modelName(entity.getModelName())
                 .seatingCapacity(entity.getSeatingCapacity())
+                .fuelType(entity.getFuelType() != null && !entity.getFuelType().isBlank() ? entity.getFuelType() : "Diesel")
                 .seasonal(entity.getSeasonal())
                 .seasonName(entity.getSeasonName())
                 .startDate(entity.getStartDate())
@@ -103,6 +113,14 @@ public class VehicleTariffResponse {
                 .vendorDriverBattaNight(entity.getVendorDriverBattaNight())
                 .packageHours(entity.getPackageHours())
                 .packageKm(entity.getPackageKm())
+                .hourlyWeekdayDayRate(entity.getHourlyWeekdayDayRate())
+                .hourlyVendorWeekdayDayRate(entity.getHourlyVendorWeekdayDayRate())
+                .hourlyWeekdayNightRate(entity.getHourlyWeekdayNightRate())
+                .hourlyVendorWeekdayNightRate(entity.getHourlyVendorWeekdayNightRate())
+                .hourlyWeekendDayRate(entity.getHourlyWeekendDayRate())
+                .hourlyVendorWeekendDayRate(entity.getHourlyVendorWeekendDayRate())
+                .hourlyWeekendNightRate(entity.getHourlyWeekendNightRate())
+                .hourlyVendorWeekendNightRate(entity.getHourlyVendorWeekendNightRate())
                 .hourlyCustomerFare(entity.getHourlyCustomerFare())
                 .hourlyVendorFare(entity.getHourlyVendorFare())
                 .hourlyCustomerWeekendFare(entity.getHourlyCustomerWeekendFare())
