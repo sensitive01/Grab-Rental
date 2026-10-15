@@ -57,7 +57,7 @@ export default function VehicleDetailModal({
   const location = vehicle.city || vehicle.location || "Bangalore";
   const chauffeur = vehicle.driverName || vehicle.chauffeur || "Rajesh Kumar";
   const dailyPrice = vehicle.dailyPrice || vehicle.pricing?.perDayRate || 4500;
-  const estTripFare = vehicle.pricing?.discountedPrice || (dailyPrice * 1.2);
+  const estTripFare = vehicle.pricing?.displayFare || vehicle.pricing?.discountedPrice || (dailyPrice * 1.2);
   const advanceAmount = vehicle.pricing?.advanceAmount || Math.round(estTripFare * 0.20);
   const taxes = vehicle.pricing?.chargesAndTaxes || Math.round(estTripFare * 0.35);
   const totalFare = estTripFare + taxes;

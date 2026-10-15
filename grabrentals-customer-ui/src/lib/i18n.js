@@ -36,7 +36,7 @@ export const translations = {
 
     // Hero Section
     hero_badge: "Grab Rentals",
-    hero_title_1: "India's Most Trusted Rental Service",
+    hero_title_1: "India's Most Trusted Cab Rental Service",
     hero_title_2: "Car, Van & Bus Rentals",
     hero_subtitle: "Transparent billing, expert verified drivers, and pristine AC vehicles for Outstation, Local & Airport transit across 2,000+ Indian cities.",
 

@@ -849,7 +849,8 @@ export default function ReviewPayPage() {
               </div>
 
               <div className="space-y-3 pt-1">
-                {/* Add-on 1: Expressway Toll */}
+                {/* Add-on 1: Expressway Toll (Commented out for now - based on routes, not common) */}
+                {/*
                 <label className={`flex items-center justify-between p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer ${selectedAddons.expressway ? 'border-amber-500 bg-amber-50/20 shadow-2xs' : 'border-slate-200 hover:border-slate-300'}`}>
                   <div className="flex items-center gap-3">
                     <input 
@@ -869,6 +870,7 @@ export default function ReviewPayPage() {
                   </div>
                   <span className="font-extrabold text-slate-900 text-sm">₹{expresswayFee}</span>
                 </label>
+                */}
 
                 {/* Add-on 2: Language Chauffeur */}
                 <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${selectedAddons.languageChauffeur ? 'border-amber-500 bg-amber-50/20 shadow-2xs' : 'border-slate-200 hover:border-slate-300'}`}>
@@ -1395,29 +1397,31 @@ export default function ReviewPayPage() {
       )}
 
       {/* Interactive Map Location Picker Modal */}
-      <LocationPickerModal
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        activeTarget={mapTarget}
-        pickupValue={pickupAddress || bookingConfig?.trip?.from || "Bangalore, Karnataka"}
-        dropValue={dropAddress || bookingConfig?.trip?.to || "Coimbatore, Tamil Nadu"}
-        onSelect={(selectedLocation, coords, target, allValues) => {
-          if (allValues) {
-            if (allValues.pickup) setPickupAddress(allValues.pickup);
-            if (allValues.drop) setDropAddress(allValues.drop);
-          } else if (target === "drop") {
-            setDropAddress(selectedLocation);
-          } else {
+      {isMapModalOpen && (
+        <LocationPickerModal
+          isOpen={isMapModalOpen}
+          onClose={() => setIsMapModalOpen(false)}
+          activeTarget={mapTarget}
+          pickupValue={pickupAddress || bookingConfig?.trip?.from || "Bangalore, Karnataka"}
+          dropValue={dropAddress || bookingConfig?.trip?.to || "Coimbatore, Tamil Nadu"}
+          onSelect={(selectedLocation, coords, target, allValues) => {
+            if (allValues) {
+              if (allValues.pickup) setPickupAddress(allValues.pickup);
+              if (allValues.drop) setDropAddress(allValues.drop);
+            } else if (target === "drop") {
+              setDropAddress(selectedLocation);
+            } else {
+              setPickupAddress(selectedLocation);
+            }
+          }}
+          onSelectPickup={(selectedLocation) => {
             setPickupAddress(selectedLocation);
-          }
-        }}
-        onSelectPickup={(selectedLocation) => {
-          setPickupAddress(selectedLocation);
-        }}
-        onSelectDrop={(selectedLocation) => {
-          setDropAddress(selectedLocation);
-        }}
-      />
+          }}
+          onSelectDrop={(selectedLocation) => {
+            setDropAddress(selectedLocation);
+          }}
+        />
+      )}
     </main>
   );
 }

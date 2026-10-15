@@ -367,14 +367,23 @@ function SelectVehicleContent() {
       const reg = car.regNumber || car.vehicleNumber || "Commercial Fleet";
       const perKmRate = car.perKmRate || (type === "SUV" ? 19.5 : type === "Hatchback" ? 11.5 : 13.0);
 
-      const baseFare = car.pricing?.baseFare || Math.round((activeDistance || 250) * perKmRate);
-      const tripDiscountedFare = car.pricing?.discountedPrice || baseFare;
-      const displayFare = isLocalBooking ? tripDiscountedFare : baseFare;
+      const standardRateFare = isLocalBooking
+        ? (car.pricing?.originalPrice || car.dailyPrice || 2000)
+        : (car.pricing?.originalPrice || Math.round((activeDistance || 250) * perKmRate));
 
       const discountPercentage = parseFloat(car.pricing?.discountPercentage || car.discountPercentage || 0);
-      const originalFare = discountPercentage > 0
-        ? Math.round(displayFare / (1 - (discountPercentage / 100)))
-        : displayFare;
+
+      // Model B: Direct Fare Reduction
+      // originalFare = Standard rate before discount
+      const originalFare = Math.round(standardRateFare);
+
+      // displayFare = Discounted price directly deducted by discount%
+      const displayFare = discountPercentage > 0
+        ? Math.round(originalFare * (1 - (discountPercentage / 100)))
+        : originalFare;
+
+      const baseFare = displayFare;
+      const tripDiscountedFare = displayFare;
 
       // Driver Allowance (0 for local package since driver fee is included)
       const driverAllowance = isLocalBooking
@@ -881,22 +890,7 @@ function SelectVehicleContent() {
             
             {/* Catalog Toolbar */}
             <div className="bg-white p-3.5 px-4 sm:px-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3 sm:space-y-0">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 truncate">
-                    {isLoadingVehicles
-                      ? "Searching..."
-                      : !serviceStatus.available
-                      ? "Service Launching Soon"
-                      : `${filteredVehicles.length} Vehicles`}
-                  </h2>
-                  <span className="text-xs font-semibold text-slate-400 block truncate">
-                    {!serviceStatus.available
-                      ? `• ${serviceStatus.city || cleanCityName(trip.from)} Hub Launching Soon`
-                      : `• Available for ${cleanCityName(trip.from)}`}
-                  </span>
-                </div>
-
+              <div className="flex items-center justify-between sm:justify-end gap-3">
                 {/* Mobile Filter Button (Commented Out) */}
                 {/*
                 <button
@@ -913,6 +907,44 @@ function SelectVehicleContent() {
                   )}
                 </button>
                 */}
+
+                {/* Toolbar Sort and Mode Controls */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                    <span>Sort by:</span>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+                    >
+                      <option value="newest">Newest Added</option>
+                      <option value="price_asc">Price: Low to High</option>
+                      <option value="price_desc">Price: High to Low</option>
+                      <option value="seats_desc">Seating Capacity</option>
+                      <option value="rating">Top Rated</option>
+                    </select>
+                  </div>
+
+                  {/* Grid / List Toggles */}
+                  <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("grid")}
+                      title="Grid View"
+                      className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "grid" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      title="List View"
+                      className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "list" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
+                    >
+                      <ListIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Active Filter Chips (Mobile Quick Clear) */}
@@ -968,44 +1000,6 @@ function SelectVehicleContent() {
                   </button>
                 </div>
               )}
-
-              {/* Toolbar Sort and Mode Controls */}
-              <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 sm:border-t-0 border-t border-slate-100">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                  <span>Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
-                  >
-                    <option value="newest">Newest Added</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="seats_desc">Seating Capacity</option>
-                    <option value="rating">Top Rated</option>
-                  </select>
-                </div>
-
-                {/* Grid / List Toggles */}
-                <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("grid")}
-                    title="Grid View"
-                    className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "grid" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    title="List View"
-                    className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "list" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
-                  >
-                    <ListIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
             </div>
 
             {/* Loading Pulse Skeletons */}
@@ -1327,7 +1321,7 @@ function SelectVehicleContent() {
             <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center text-xs text-slate-500 font-semibold shadow-2xs">
               <p className="flex items-center justify-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                All Grab-Rental vehicles are covered with 24x7 Highway Breakdown Assistance and real-time GPS tracking.
+                All Grab Rentals vehicles are covered with 24x7 Highway Breakdown Assistance and real-time GPS tracking.
               </p>
             </div>
 

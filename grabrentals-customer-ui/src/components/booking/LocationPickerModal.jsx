@@ -424,12 +424,32 @@ export default function LocationPickerModal({
     applyLocationToActiveTarget(fallback, { lat, lng });
   }, [applyLocationToActiveTarget]);
 
+  // Clean up and reset map instances when modal closes so reopening creates a fresh map
+  useEffect(() => {
+    if (!isOpen) {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current = null;
+        markerInstanceRef.current = null;
+      }
+      if (leafletInstanceRef.current) {
+        try {
+          leafletInstanceRef.current.remove();
+        } catch (e) {
+          console.warn("Leaflet cleanup warning:", e);
+        }
+        leafletInstanceRef.current = null;
+        leafletMarkerRef.current = null;
+      }
+    }
+  }, [isOpen]);
+
   // Initialize or update Google Map instance
   useEffect(() => {
     if (!isOpen || !googleMapsLoaded || !hasGoogleMapsKey || !googleMapRef.current) return;
 
     try {
-      if (!mapInstanceRef.current) {
+      const needsInit = !mapInstanceRef.current || (googleMapRef.current && !googleMapRef.current.hasChildNodes());
+      if (needsInit) {
         const map = new window.google.maps.Map(googleMapRef.current, {
           center: coordinates,
           zoom: 14,
@@ -474,10 +494,20 @@ export default function LocationPickerModal({
         // Marker instance
         mapInstanceRef.current = map;
         markerInstanceRef.current = marker;
+
+        setTimeout(() => {
+          if (window.google?.maps?.event && map) {
+            window.google.maps.event.trigger(map, "resize");
+            map.setCenter(coordinates);
+          }
+        }, 150);
       } else {
         mapInstanceRef.current.setCenter(coordinates);
         if (markerInstanceRef.current) {
           markerInstanceRef.current.setPosition(coordinates);
+        }
+        if (window.google?.maps?.event) {
+          window.google.maps.event.trigger(mapInstanceRef.current, "resize");
         }
       }
     } catch (err) {
@@ -485,6 +515,14 @@ export default function LocationPickerModal({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGoogleMapsError(true);
     }
+
+    return () => {
+      // Clean up on unmount or closing
+      if (mapInstanceRef.current && !isOpen) {
+        mapInstanceRef.current = null;
+        markerInstanceRef.current = null;
+      }
+    };
   }, [isOpen, googleMapsLoaded, hasGoogleMapsKey, coordinates, reverseGeocodeGoogle]);
 
   // Initialize or update Leaflet Map (Free interactive OpenStreetMap with draggable pin)

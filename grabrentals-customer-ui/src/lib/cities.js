@@ -435,6 +435,7 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
         const totalSecs = isRound ? seconds * 2 : seconds;
         const hrs = Math.floor(totalSecs / 3600);
         const mins = Math.round((totalSecs % 3600) / 60);
+        const durationText = hrs > 0 ? (mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`) : `${mins} min`;
         const dynamicToll = totalToll > 0 ? totalToll : (totalKm > 20 ? Math.round(totalKm * 1.35) : 0);
 
         const result = {

@@ -1139,9 +1139,10 @@ export default function BookingWidget() {
       </div>
 
       {/* Interactive Google Maps / Leaflet Location Picker Modal */}
-      <LocationPickerModal
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
+      {isMapModalOpen && (
+        <LocationPickerModal
+          isOpen={isMapModalOpen}
+          onClose={() => setIsMapModalOpen(false)}
         activeTarget={mapTarget}
         pickupValue={pickupCity}
         dropValue={dropCity}
@@ -1227,6 +1228,7 @@ export default function BookingWidget() {
           }, 0);
         }}
       />
+      )}
 
     </div>
   );

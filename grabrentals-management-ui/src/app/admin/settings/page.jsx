@@ -351,7 +351,8 @@ export default function AdminSettingsPage() {
                     </p>
                   </div>
 
-                  {/* Expressway Toll */}
+                  {/* Expressway Toll (Commented out for now - based on routes, not common) */}
+                  {/*
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
                     <label className="block text-xs font-bold text-slate-900">
                       Expressway Fastag Toll Add-on (₹) *
@@ -369,6 +370,7 @@ export default function AdminSettingsPage() {
                       Amount charged for expressway toll pass add-on.
                     </p>
                   </div>
+                  */}
                 </div>
               </div>
             </div>

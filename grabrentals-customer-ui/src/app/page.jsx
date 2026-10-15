@@ -137,9 +137,9 @@ export default function Home() {
             <Star className="w-3 h-3 text-brand-amber" /> {t("hero_badge") || "Grab Rentals"}
           </div>
 
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            {t("hero_title_1") || "India's Most Trusted Rental Service"} <br />
-            <span className="text-brand-orange drop-shadow-lg">{t("hero_title_2") || "Car, Van & Bus Rentals"}</span>
+          <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
+            <span className="block md:whitespace-nowrap">{t("hero_title_1") || "India's Most Trusted Cab Rental Service"}</span>
+            <span className="text-brand-orange drop-shadow-lg block mt-1 sm:mt-2">{t("hero_title_2") || "Car, Van & Bus Rentals"}</span>
           </h1>
 
           <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">

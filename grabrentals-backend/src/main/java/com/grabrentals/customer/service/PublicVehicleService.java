@@ -227,22 +227,22 @@ public class PublicVehicleService {
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                     BigDecimal discPctLocal = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
-                    BigDecimal orig;
+                    BigDecimal originalLocal = dailyPrice;
+                    BigDecimal discountedLocal = dailyPrice;
                     if (discPctLocal != null && discPctLocal.compareTo(BigDecimal.ZERO) > 0) {
-                        BigDecimal factor = BigDecimal.ONE.subtract(discPctLocal.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
-                        orig = factor.compareTo(BigDecimal.ZERO) > 0 ? dailyPrice.divide(factor, 0, RoundingMode.HALF_UP) : dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
-                    } else {
-                        orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal discRate = discPctLocal.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                        discountedLocal = originalLocal.subtract(originalLocal.multiply(discRate)).setScale(0, RoundingMode.HALF_UP);
                     }
-                    BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal adv = discountedLocal.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
                     card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
-                            .originalPrice(orig)
-                            .discountedPrice(dailyPrice)
+                            .originalPrice(originalLocal)
+                            .discountedPrice(discountedLocal)
+                            .baseFare(discountedLocal)
                             .chargesAndTaxes(BigDecimal.ZERO)
                             .advanceAmount(adv)
                             .discountPercentage(discPctLocal)
                             .build());
-                    card.setDailyPrice(dailyPrice);
+                    card.setDailyPrice(discountedLocal);
                     card.setIncludedKms(pkgKm);
                     card.setInclusions(List.of(
                             "Fixed package for " + pkgHours + " Hours and " + pkgKm + " Kilometers",
@@ -261,22 +261,22 @@ public class PublicVehicleService {
                     Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
                     if (airportKm == null || airportKm <= 0) airportKm = 35;
                     BigDecimal discPctAirport = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
-                    BigDecimal orig;
+                    BigDecimal originalAirport = dailyPrice;
+                    BigDecimal discountedAirport = dailyPrice;
                     if (discPctAirport != null && discPctAirport.compareTo(BigDecimal.ZERO) > 0) {
-                        BigDecimal factor = BigDecimal.ONE.subtract(discPctAirport.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
-                        orig = factor.compareTo(BigDecimal.ZERO) > 0 ? dailyPrice.divide(factor, 0, RoundingMode.HALF_UP) : dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
-                    } else {
-                        orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal discRate = discPctAirport.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                        discountedAirport = originalAirport.subtract(originalAirport.multiply(discRate)).setScale(0, RoundingMode.HALF_UP);
                     }
-                    BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal adv = discountedAirport.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
                     card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
-                            .originalPrice(orig)
-                            .discountedPrice(dailyPrice)
+                            .originalPrice(originalAirport)
+                            .discountedPrice(discountedAirport)
+                            .baseFare(discountedAirport)
                             .chargesAndTaxes(BigDecimal.ZERO)
                             .advanceAmount(adv)
                             .discountPercentage(discPctAirport)
                             .build());
-                    card.setDailyPrice(dailyPrice);
+                    card.setDailyPrice(discountedAirport);
                     card.setIncludedKms(airportKm);
                     card.setInclusions(List.of(
                             "Guaranteed Airport Transfer (" + airportKm + " km Included)",
@@ -406,15 +406,23 @@ public class PublicVehicleService {
                     card.setChauffeurRating(4.9);
 
                     if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
-                        BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
-                        BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal discPctLocal = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
+                        BigDecimal originalLocal = dailyPrice;
+                        BigDecimal discountedLocal = dailyPrice;
+                        if (discPctLocal != null && discPctLocal.compareTo(BigDecimal.ZERO) > 0) {
+                            BigDecimal discRate = discPctLocal.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                            discountedLocal = originalLocal.subtract(originalLocal.multiply(discRate)).setScale(0, RoundingMode.HALF_UP);
+                        }
+                        BigDecimal adv = discountedLocal.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
                         card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
-                                .originalPrice(orig)
-                                .discountedPrice(dailyPrice)
+                                .originalPrice(originalLocal)
+                                .discountedPrice(discountedLocal)
+                                .baseFare(discountedLocal)
                                 .chargesAndTaxes(BigDecimal.ZERO)
                                 .advanceAmount(adv)
+                                .discountPercentage(discPctLocal)
                                 .build());
-                        card.setDailyPrice(dailyPrice);
+                        card.setDailyPrice(discountedLocal);
                         card.setIncludedKms(pkgKm);
                         card.setInclusions(List.of(
                                 "Fixed package for " + pkgHours + " Hours and " + pkgKm + " Kilometers",
@@ -433,22 +441,22 @@ public class PublicVehicleService {
                         Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
                         if (airportKm == null || airportKm <= 0) airportKm = 35;
                         BigDecimal discPctAirport = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
-                        BigDecimal orig;
+                        BigDecimal originalAirport = dailyPrice;
+                        BigDecimal discountedAirport = dailyPrice;
                         if (discPctAirport != null && discPctAirport.compareTo(BigDecimal.ZERO) > 0) {
-                            BigDecimal factor = BigDecimal.ONE.subtract(discPctAirport.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
-                            orig = factor.compareTo(BigDecimal.ZERO) > 0 ? dailyPrice.divide(factor, 0, RoundingMode.HALF_UP) : dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
-                        } else {
-                            orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                            BigDecimal discRate = discPctAirport.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                            discountedAirport = originalAirport.subtract(originalAirport.multiply(discRate)).setScale(0, RoundingMode.HALF_UP);
                         }
-                        BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal adv = discountedAirport.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
                         card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
-                                .originalPrice(orig)
-                                .discountedPrice(dailyPrice)
+                                .originalPrice(originalAirport)
+                                .discountedPrice(discountedAirport)
+                                .baseFare(discountedAirport)
                                 .chargesAndTaxes(BigDecimal.ZERO)
                                 .advanceAmount(adv)
                                 .discountPercentage(discPctAirport)
                                 .build());
-                        card.setDailyPrice(dailyPrice);
+                        card.setDailyPrice(discountedAirport);
                         card.setIncludedKms(airportKm);
                         card.setInclusions(List.of(
                                 "Guaranteed Airport Transfer (" + airportKm + " km Included)",
@@ -560,7 +568,15 @@ public class PublicVehicleService {
         BigDecimal driverPercent = taxConfig.getDriverAllowancePercentage() != null ? taxConfig.getDriverAllowancePercentage() : new BigDecimal("10.00");
         BigDecimal driverAmount = taxConfig.getDriverAllowanceAmount() != null ? taxConfig.getDriverAllowanceAmount() : BigDecimal.ZERO;
 
-        BigDecimal baseFare = perKmRate.multiply(BigDecimal.valueOf(distanceKm)).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal standardBaseFare = perKmRate.multiply(BigDecimal.valueOf(distanceKm)).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal originalBaseFare = standardBaseFare;
+        BigDecimal baseFare = standardBaseFare;
+
+        if (discountPercentage != null && discountPercentage.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal discRate = discountPercentage.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            BigDecimal discountAmt = standardBaseFare.multiply(discRate).setScale(0, RoundingMode.HALF_UP);
+            baseFare = standardBaseFare.subtract(discountAmt);
+        }
 
         BigDecimal driverAllowance;
         String driverInclusionLabel;
@@ -590,17 +606,7 @@ public class PublicVehicleService {
         }
 
         BigDecimal discounted = baseFare.add(driverAllowance).add(taxes);
-        BigDecimal original;
-        if (discountPercentage != null && discountPercentage.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal factor = BigDecimal.ONE.subtract(discountPercentage.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
-            if (factor.compareTo(BigDecimal.ZERO) > 0) {
-                original = discounted.divide(factor, 0, RoundingMode.HALF_UP);
-            } else {
-                original = discounted;
-            }
-        } else {
-            original = discounted;
-        }
+        BigDecimal original = originalBaseFare;
         BigDecimal advance = discounted.multiply(new BigDecimal("0.25")).setScale(0, RoundingMode.HALF_UP);
 
         return PublicVehicleCardDto.builder()
