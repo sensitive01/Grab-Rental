@@ -120,6 +120,7 @@ export default function LocationPickerModal({
   const currentTargetRef = useRef(currentTarget);
   const stopsRef = useRef(stopsState);
   const sessionTokenRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     currentTargetRef.current = currentTarget;
@@ -427,6 +428,9 @@ export default function LocationPickerModal({
   // Clean up and reset map instances when modal closes so reopening creates a fresh map
   useEffect(() => {
     if (!isOpen) {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current = null;
         markerInstanceRef.current = null;
