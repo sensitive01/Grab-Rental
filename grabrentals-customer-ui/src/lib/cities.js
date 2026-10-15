@@ -435,15 +435,15 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
         const totalSecs = isRound ? seconds * 2 : seconds;
         const hrs = Math.floor(totalSecs / 3600);
         const mins = Math.round((totalSecs % 3600) / 60);
-        const durationText = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+        const dynamicToll = totalToll > 0 ? totalToll : (totalKm > 20 ? Math.round(totalKm * 1.35) : 0);
 
         const result = {
           distanceKm: totalKm,
           oneWayKm,
           durationHours: Math.round((totalSecs / 3600) * 10) / 10,
           durationText,
-          tollPrice: 0, // Kept as 0 for now
-          actualToll: totalToll,
+          tollPrice: dynamicToll,
+          actualToll: dynamicToll,
           isGoogle: true,
           isDetected: true
         };
@@ -457,6 +457,11 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
 
   // Graceful fallback to offline Haversine calculation
   const fallback = detectRouteDistance(cleanFrom, cleanTo, cleanStops, tripType);
+  if (fallback && fallback.isDetected) {
+    const km = fallback.distanceKm || 0;
+    fallback.tollPrice = km > 20 ? Math.round(km * 1.35) : 0;
+    fallback.actualToll = fallback.tollPrice;
+  }
   routeDistanceCache.set(cacheKey, fallback);
   return fallback;
 }

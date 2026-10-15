@@ -103,7 +103,7 @@ export default function VehicleTripHeader({
             <span className="font-extrabold text-slate-800">{time}</span>
           </div>
 
-          {tripType.toLowerCase().includes("round") && returnDate ? (
+          {!isLocal && tripType.toLowerCase().includes("round") && returnDate ? (
             <>
               <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
               <div>

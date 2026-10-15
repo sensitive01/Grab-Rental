@@ -29,6 +29,7 @@ import { isAuthenticated, getCurrentUser, setAuthSession, logout } from "@/lib/a
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import { padZero, formatLocalDateTime } from "@/lib/dateTimeUtils";
+import { fetchGoogleRouteDistance } from "@/lib/cities";
 
 function resolveCarImage(title, category, rawImage) {
   if (rawImage && typeof rawImage === "string" && !rawImage.includes("blob:")) {
@@ -107,6 +108,7 @@ export default function ReviewPayPage() {
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapTarget, setMapTarget] = useState("pickup");
+  const [liveToll, setLiveToll] = useState(null);
 
   // Inline OTP Auth Modal states
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -279,8 +281,39 @@ export default function ReviewPayPage() {
   const gstLabel = isGstFlat
     ? `GST (₹${taxes})`
     : `GST (${gstPercentage}%)`;
-  // For now, keep FASTag toll as 0
-  const tollPrice = 0;
+
+  // Dynamic FASTag highway toll from booking (0 for local hourly rentals)
+  useEffect(() => {
+    if (!bookingConfig || isLocal) return;
+    const initialToll = Number(bookingConfig.tollPrice);
+    if (initialToll > 0) {
+      setLiveToll(initialToll);
+      return;
+    }
+    const from = bookingConfig.trip?.from;
+    const to = bookingConfig.trip?.to;
+    if (from && to && !isLocal) {
+      fetchGoogleRouteDistance(from, to, bookingConfig.trip?.stops, bookingConfig.trip?.tripType, {
+        originCoords: bookingConfig.trip?.pickupCoords,
+        destinationCoords: bookingConfig.trip?.dropCoords,
+        stopsCoords: bookingConfig.trip?.stopsCoords
+      }).then((res) => {
+        if (res && res.tollPrice > 0) {
+          setLiveToll(res.tollPrice);
+        } else if (res && res.distanceKm > 0) {
+          setLiveToll(Math.round(res.distanceKm * 1.35));
+        }
+      }).catch((e) => console.warn("Could not fetch live toll in review-pay:", e));
+    }
+  }, [bookingConfig, isLocal]);
+
+  const tollPrice = isLocal 
+    ? 0 
+    : (liveToll !== null 
+        ? liveToll 
+        : (bookingConfig?.tollPrice > 0 
+            ? Math.round(Number(bookingConfig.tollPrice)) 
+            : (distanceKm > 0 ? Math.round(distanceKm * 1.35) : 0)));
   const duration = isLocal ? null : (bookingConfig?.duration || null);
 
   const couponDiscount = appliedCouponData?.discountAmount ? Math.round(Number(appliedCouponData.discountAmount)) : 0;

@@ -11,6 +11,7 @@ import { customerApi } from "@/lib/customerApi";
 import { useLanguage } from "@/context/LanguageContext";
 import { getDefaultPickupDateTime } from "@/lib/dateTimeUtils";
 import { formatVehicleSavaariTitle } from "@/lib/vehicleUtils";
+import { formatPackageLabel, parsePackageKm } from "@/lib/packageUtils";
 import { 
   Search, 
   RotateCcw, 
@@ -28,7 +29,6 @@ import {
   ShieldCheck, 
   Check, 
   ArrowRight,
-  MoreVertical,
   CheckCircle2,
   SlidersHorizontal,
   Loader2,
@@ -97,14 +97,15 @@ function SelectVehicleContent() {
     const defaultDT = getDefaultPickupDateTime();
     const dateVal = searchParams.get("pickupDate") || pendingTrip?.date || defaultDT.date;
     const timeVal = searchParams.get("pickupTime") || pendingTrip?.time || defaultDT.time;
-    const dropDateVal = searchParams.get("dropDate") || searchParams.get("returnDate") || pendingTrip?.dropDate || pendingTrip?.returnDate || "";
     const serviceTypeVal = (searchParams.get("serviceType") || pendingTrip?.serviceType || "OUTSTATION").toUpperCase();
+    const isLocal = serviceTypeVal === "LOCAL" || (toVal && toVal.toLowerCase().includes("hr"));
+    const dropDateVal = isLocal ? "" : (searchParams.get("dropDate") || searchParams.get("returnDate") || pendingTrip?.dropDate || pendingTrip?.returnDate || "");
 
     return {
       from: fromVal,
       to: toVal,
       stops: stopsVal,
-      tripType: rawTripType.toLowerCase().includes("round") ? "Round trip" : "One way",
+      tripType: isLocal ? "Hourly Package" : (rawTripType.toLowerCase().includes("round") ? "Round trip" : "One way"),
       date: dateVal,
       time: timeVal,
       dropDate: dropDateVal,
@@ -141,6 +142,40 @@ function SelectVehicleContent() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [seatingCapacity, setSeatingCapacity] = useState("all");
+
+  // Dynamic pricing & tax configuration from backend
+  const [pricingConfig, setPricingConfig] = useState({
+    gstPercentage: 6,
+    gstAmount: 400,
+    gstType: "FLAT",
+    driverAllowancePercentage: 11,
+    driverAllowanceAmount: 500,
+    driverAllowanceType: "FLAT",
+  });
+
+  useEffect(() => {
+    async function loadPricingConfig() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/vehicles/pricing-tax`, { cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data) {
+            setPricingConfig({
+              gstPercentage: Number(json.data.gstPercentage) || 6,
+              gstAmount: Number(json.data.gstAmount) || 400,
+              gstType: json.data.gstType || "FLAT",
+              driverAllowancePercentage: Number(json.data.driverAllowancePercentage) || 11,
+              driverAllowanceAmount: Number(json.data.driverAllowanceAmount) || 500,
+              driverAllowanceType: json.data.driverAllowanceType || "FLAT",
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("[SelectVehicle] Could not load pricing config:", err);
+      }
+    }
+    loadPricingConfig();
+  }, []);
 
   // Prevent background scroll when mobile filter drawer is open
   useEffect(() => {
@@ -203,23 +238,7 @@ function SelectVehicleContent() {
   // Compute Active Distance
   const isLocalBooking = trip.serviceType === "LOCAL" || (trip.to && trip.to.toLowerCase().includes("hr"));
 
-  const formatPackageLabel = (pkgStr) => {
-    if (!pkgStr) return "8 Hours / 80 Kms";
-    const lower = pkgStr.toLowerCase();
-    if (lower.includes("4hr") || lower.includes("40")) return "4 Hours / 40 Kms";
-    if (lower.includes("12hr") || lower.includes("120")) return "12 Hours / 120 Kms";
-    if (lower.includes("8hr") || lower.includes("80")) return "8 Hours / 80 Kms";
-    return pkgStr;
-  };
   const packageLabel = formatPackageLabel(trip.to);
-
-  const parsePackageKm = (pkgStr) => {
-    if (!pkgStr) return 80;
-    const lower = pkgStr.toLowerCase();
-    if (lower.includes("4hr") || lower.includes("40")) return 40;
-    if (lower.includes("12hr") || lower.includes("120")) return 120;
-    return 80;
-  };
 
   const [googleRouteDetails, setGoogleRouteDetails] = useState(null);
 
@@ -351,9 +370,34 @@ function SelectVehicleContent() {
       const baseFare = car.pricing?.baseFare || Math.round((activeDistance || 250) * perKmRate);
       const tripDiscountedFare = car.pricing?.discountedPrice || baseFare;
       const displayFare = isLocalBooking ? tripDiscountedFare : baseFare;
-      const originalFare = car.pricing?.originalPrice || Math.round(displayFare * 1.14);
-      const taxes = car.pricing?.chargesAndTaxes || 0;
-      const driverAllowance = car.pricing?.driverAllowance || 0;
+
+      const discountPercentage = parseFloat(car.pricing?.discountPercentage || car.discountPercentage || 0);
+      const originalFare = discountPercentage > 0
+        ? Math.round(displayFare / (1 - (discountPercentage / 100)))
+        : displayFare;
+
+      // Driver Allowance (0 for local package since driver fee is included)
+      const driverAllowance = isLocalBooking
+        ? 0
+        : (pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0
+            ? Math.round(pricingConfig.driverAllowanceAmount)
+            : Math.round(displayFare * (pricingConfig.driverAllowancePercentage / 100)));
+
+      // GST / Taxes
+      const taxes = (pricingConfig.gstType === "FLAT" && pricingConfig.gstAmount > 0)
+        ? Math.round(pricingConfig.gstAmount)
+        : Math.round((displayFare + driverAllowance) * (pricingConfig.gstPercentage / 100));
+
+      // Toll price (0 for local, dynamic FASTag toll for outstation)
+      const tollPrice = isLocalBooking
+        ? 0
+        : (googleRouteDetails?.tollPrice > 0
+            ? Math.round(googleRouteDetails.tollPrice)
+            : (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0));
+
+      // Total Charges & Taxes (GST + driver allowance + toll)
+      const chargesAndTaxesTotal = Math.round(driverAllowance + taxes + tollPrice);
+
       const advance = car.pricing?.advanceAmount || Math.round((tripDiscountedFare) * 0.25);
       const dailyPrice = car.dailyPrice || Math.round(displayFare / 1.15);
 
@@ -383,8 +427,13 @@ function SelectVehicleContent() {
           discountedPrice: tripDiscountedFare,
           baseFare: baseFare,
           displayFare: displayFare,
+          discountPercentage: discountPercentage,
           chargesAndTaxes: taxes,
           driverAllowance: driverAllowance,
+          tollPrice: tollPrice,
+          chargesAndTaxesTotal: chargesAndTaxesTotal,
+          gstPercentage: pricingConfig.gstPercentage,
+          driverAllowancePercentage: pricingConfig.driverAllowancePercentage,
           advanceAmount: advance,
           perDayRate: dailyPrice
         },
@@ -392,7 +441,7 @@ function SelectVehicleContent() {
         exclusions: car.exclusions
       };
     });
-  }, [backendVehicles, activeDistance, trip.from, isLocalBooking]);
+  }, [backendVehicles, activeDistance, trip.from, isLocalBooking, pricingConfig, googleRouteDetails]);
 
   // Dynamic Filter Counts based on live vehicles
   const counts = useMemo(() => {
@@ -542,7 +591,7 @@ function SelectVehicleContent() {
       const selectedData = {
         trip,
         distanceKm: activeDistance,
-        tollPrice: googleRouteDetails?.tollPrice || 0,
+        tollPrice: vehicle.pricing?.tollPrice ?? (googleRouteDetails?.tollPrice || (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0)),
         duration: googleRouteDetails?.durationText || null,
         car: {
           id: vehicle.id,
@@ -774,7 +823,7 @@ function SelectVehicleContent() {
           tripType={trip.tripType}
           date={formatDateDisplay(trip.date)}
           time={formatTimeDisplay(trip.time)}
-          returnDate={trip.tripType.toLowerCase().includes("round") && trip.dropDate ? formatDateDisplay(trip.dropDate) : null}
+          returnDate={!isLocalBooking && trip.tripType.toLowerCase().includes("round") && trip.dropDate ? formatDateDisplay(trip.dropDate) : null}
           distanceKm={activeDistance}
           tollPrice={isLocalBooking ? 0 : googleRouteDetails?.tollPrice}
           duration={isLocalBooking ? null : googleRouteDetails?.durationText}
@@ -1064,20 +1113,16 @@ function SelectVehicleContent() {
                       </div>
 
                       {/* Right Details */}
-                      <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex-1 min-w-0 space-y-1">
                         
-                        {/* Title + Green Available Badge */}
-                        <div className="flex items-start justify-between gap-1">
+                        {/* Title - Clickable to View */}
+                        <div>
                           <h4 
                             onClick={() => setSelectedVehicleForDetail(car)}
-                            className="font-bold text-slate-900 text-sm sm:text-base leading-tight truncate hover:text-amber-600 cursor-pointer"
+                            className="font-bold text-slate-900 text-sm sm:text-base leading-tight line-clamp-2 hover:text-amber-600 cursor-pointer"
                           >
                             {car.title}
                           </h4>
-                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                            Available
-                          </span>
                         </div>
 
                         {/* Vehicle Type Subtitle */}
@@ -1098,77 +1143,47 @@ function SelectVehicleContent() {
                           </span>
                         </div>
 
+                        {/* Price Block (Moved up next to car image) */}
+                        <div className="pt-1.5">
+                          {car.pricing?.discountPercentage > 0 && (
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                              <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md tracking-tight">
+                                {car.pricing.discountPercentage}% OFF
+                              </span>
+                              <span className="text-xs sm:text-sm text-slate-400 line-through font-semibold">
+                                ₹{(car.pricing?.originalPrice || Math.round((car.pricing?.displayFare || 4000) * 1.1)).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="text-lg sm:text-2xl font-black text-amber-600 leading-tight">
+                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
+                          </div>
+                          <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
+                            + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
+                          </div>
+                          {isLocalBooking ? (
+                            <p className="text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight mt-0.5">
+                              Included: <strong className="text-amber-700">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                            </p>
+                          ) : activeDistance > 0 ? (
+                            <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight mt-0.5">
+                              Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
+                            </p>
+                          ) : null}
+                        </div>
+
                       </div>
 
                     </div>
 
-                    {/* Bottom Area: Pricing, Chauffeur, and Actions */}
-                    <div className="pt-3 mt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      
-                      {/* Price & Location */}
-                      <div>
-                        <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="text-xl sm:text-2xl font-black text-amber-600">
-                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
-                          </span>
-                          {isLocalBooking ? (
-                            <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                              Fixed Package
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                              ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-500 mt-0.5">
-                          + Charges and Taxes
-                        </div>
-                        {isLocalBooking ? (
-                          <p className="text-[11px] font-bold text-slate-700 mt-0.5">
-                            Included: <strong className="text-amber-700">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
-                          </p>
-                        ) : activeDistance > 0 ? (
-                          <p className="text-[11px] font-medium text-slate-500 mt-0.5">
-                            Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
-                          </p>
-                        ) : null}
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-0.5">
-                          <span className="flex items-center gap-0.5">
-                            <MapPin className="w-3 h-3 text-slate-400" />
-                            {car.location}
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-0.5 text-slate-600">
-                            <User className="w-3 h-3 text-slate-400" />
-                            Chauffeur: {car.chauffeur}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Buttons */}
-                      <div className="flex items-center gap-2 self-end sm:self-auto">
-                        <button
-                          onClick={() => setSelectedVehicleForDetail(car)}
-                          className="px-3.5 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition cursor-pointer shadow-2xs"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => handleCarSelect(car)}
-                          className="px-4 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer"
-                        >
-                          {t("select_car_button")}
-                        </button>
-                        <button 
-                          onClick={() => setSelectedVehicleForDetail(car)}
-                          title="More options"
-                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                        >
-                          <MoreVertical className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
+                    {/* Bottom Area: Actions */}
+                    <div className="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-end">
+                      <button
+                        onClick={() => handleCarSelect(car)}
+                        className="w-full sm:w-auto px-5 py-2 text-xs sm:text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-2xs transition flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        {t("select_car_button")}
+                      </button>
                     </div>
 
                   </div>
@@ -1205,10 +1220,6 @@ function SelectVehicleContent() {
                           >
                             {car.title}
                           </h4>
-                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                            Available
-                          </span>
                           <span className="text-[11px] font-bold text-slate-500 uppercase">
                             ({car.vehicleType || "Hatchback"})
                           </span>
@@ -1220,33 +1231,34 @@ function SelectVehicleContent() {
                           <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-slate-400" /> {car.seatingCapacity} Seats</span>
                         </div>
 
+                        {/* Location and Chauffeur
                         <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
                           <span>📍 {car.location}</span>
                           <span>•</span>
                           <span>👤 Chauffeur: {car.chauffeur}</span>
                         </div>
+                        */}
                       </div>
                     </div>
 
                     {/* Price & Action */}
                     <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 gap-2 shrink-0">
                       <div className="text-left md:text-right">
-                        <div className="flex items-baseline gap-2 justify-start md:justify-end flex-wrap">
-                          <span className="text-2xl sm:text-3xl font-black text-amber-600">
-                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
-                          </span>
-                          {isLocalBooking ? (
-                            <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                              Fixed Package
+                        {car.pricing?.discountPercentage > 0 && (
+                          <div className="flex items-center gap-1.5 mb-1 justify-start md:justify-end flex-wrap">
+                            <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md tracking-tight">
+                              {car.pricing.discountPercentage}% OFF
                             </span>
-                          ) : (
-                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                              ₹{parseFloat(car.perKmRate || 12).toFixed(1)}/km
+                            <span className="text-xs sm:text-sm text-slate-400 line-through font-semibold">
+                              ₹{(car.pricing?.originalPrice || Math.round((car.pricing?.displayFare || 4000) * 1.1)).toLocaleString()}
                             </span>
-                          )}
+                          </div>
+                        )}
+                        <div className="text-2xl sm:text-3xl font-black text-amber-600 leading-tight">
+                          ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                         </div>
                         <div className="text-[11px] font-bold text-slate-500 md:text-right mt-0.5">
-                          + Charges and Taxes
+                          + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
                         </div>
                         {isLocalBooking ? (
                           <p className="text-[11px] font-bold text-slate-700">
@@ -1260,12 +1272,6 @@ function SelectVehicleContent() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setSelectedVehicleForDetail(car)}
-                          className="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition cursor-pointer"
-                        >
-                          View Details
-                        </button>
                         <button
                           onClick={() => handleCarSelect(car)}
                           className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs transition cursor-pointer"

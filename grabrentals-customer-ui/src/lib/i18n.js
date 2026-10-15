@@ -17,6 +17,7 @@ export const translations = {
 
     // Nav links
     book_now: "Book Now",
+    outstation: "Outstation",
     outstation_cabs: "Outstation Cabs",
     hourly_local: "Hourly Rental",
     airport_transfers: "Airport Transfers",
@@ -250,6 +251,7 @@ export const translations = {
 
     // Nav links
     book_now: "முன்பதிவு",
+    outstation: "வெளியூர்",
     outstation_cabs: "வெளியூர் பயணங்கள்",
     hourly_local: "உள்ளூர் வாடகை",
     airport_transfers: "விமான நிலைய சேவை",
@@ -476,6 +478,7 @@ export const translations = {
 
     // Nav links
     book_now: "ಈಗಲೇ ಬುಕ್ ಮಾಡಿ",
+    outstation: "ಹೊರಗೂರು",
     outstation_cabs: "ಹೊರಗಿನ ಪ್ರವಾಸಗಳು",
     hourly_local: "ಸ್ಥಳೀಯ / ಗಂಟೆ ಬಾಡಿಗೆ",
     airport_transfers: "ವಿಮಾನ ನಿಲ್ದಾಣ ಸೇವೆ",
@@ -702,6 +705,7 @@ export const translations = {
 
     // Nav links
     book_now: "బుక్ చేయండి",
+    outstation: "అవుట్‌స్టేషన్",
     outstation_cabs: "అవుట్‌స్టేషన్ క్యాబ్‌లు",
     hourly_local: "స్థానిక అద్దె",
     airport_transfers: "విమానాశ్రయ బదిలీలు",
@@ -928,6 +932,7 @@ export const translations = {
 
     // Nav links
     book_now: "अभी बुक करें",
+    outstation: "आउटस्टेशन",
     outstation_cabs: "आउटस्टेशन कैब",
     hourly_local: "लोकल / प्रति घंटा",
     airport_transfers: "एयरपोर्ट ट्रांसफर",

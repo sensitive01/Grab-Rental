@@ -199,6 +199,10 @@ public class VehicleTariff {
     @Builder.Default
     private Boolean tollIncluded = false;
 
+    @Column(name = "discount_percentage", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal discountPercentage = BigDecimal.ZERO;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

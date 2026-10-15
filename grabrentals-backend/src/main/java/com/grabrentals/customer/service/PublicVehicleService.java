@@ -178,9 +178,16 @@ public class PublicVehicleService {
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                     BigDecimal hourlyFare = (BigDecimal) rateContext.get("hourlyCustomerFare");
+                    Integer tariffPkgHours = (rateContext.get("packageHours") != null) ? (Integer) rateContext.get("packageHours") : 8;
+                    if (tariffPkgHours == null || tariffPkgHours <= 0) tariffPkgHours = 8;
+
                     if (hourlyFare != null && hourlyFare.compareTo(BigDecimal.ZERO) > 0) {
-                        dailyPrice = hourlyFare.multiply(BigDecimal.valueOf(pkgHours))
-                                .divide(BigDecimal.valueOf(8), 0, RoundingMode.HALF_UP);
+                        if (pkgHours == tariffPkgHours) {
+                            dailyPrice = hourlyFare;
+                        } else {
+                            dailyPrice = hourlyFare.multiply(BigDecimal.valueOf(pkgHours))
+                                    .divide(BigDecimal.valueOf(tariffPkgHours), 0, RoundingMode.HALF_UP);
+                        }
                     } else {
                         dailyPrice = rate.multiply(BigDecimal.valueOf(pkgKm))
                                 .add(BigDecimal.valueOf(pkgHours * 100))
@@ -188,6 +195,7 @@ public class PublicVehicleService {
                     }
                 }
 
+                BigDecimal discPct = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
                 PublicVehicleCardDto card = buildCategoryCard(
                         cardId,
                         model + " or Equivalent",
@@ -202,7 +210,8 @@ public class PublicVehicleService {
                         postRate,
                         List.of(fuel),
                         5,
-                        badge
+                        badge,
+                        discPct
                 );
                 card.setVehicleType(typeTitle);
                 card.setFuelType(fuel);
@@ -217,13 +226,21 @@ public class PublicVehicleService {
                 card.setDescription(config.getDescription());
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
-                    BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal discPctLocal = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
+                    BigDecimal orig;
+                    if (discPctLocal != null && discPctLocal.compareTo(BigDecimal.ZERO) > 0) {
+                        BigDecimal factor = BigDecimal.ONE.subtract(discPctLocal.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+                        orig = factor.compareTo(BigDecimal.ZERO) > 0 ? dailyPrice.divide(factor, 0, RoundingMode.HALF_UP) : dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    } else {
+                        orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    }
                     BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
                     card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
                             .originalPrice(orig)
                             .discountedPrice(dailyPrice)
                             .chargesAndTaxes(BigDecimal.ZERO)
                             .advanceAmount(adv)
+                            .discountPercentage(discPctLocal)
                             .build());
                     card.setDailyPrice(dailyPrice);
                     card.setIncludedKms(pkgKm);
@@ -243,13 +260,21 @@ public class PublicVehicleService {
                 } else if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
                     Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
                     if (airportKm == null || airportKm <= 0) airportKm = 35;
-                    BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal discPctAirport = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
+                    BigDecimal orig;
+                    if (discPctAirport != null && discPctAirport.compareTo(BigDecimal.ZERO) > 0) {
+                        BigDecimal factor = BigDecimal.ONE.subtract(discPctAirport.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+                        orig = factor.compareTo(BigDecimal.ZERO) > 0 ? dailyPrice.divide(factor, 0, RoundingMode.HALF_UP) : dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    } else {
+                        orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                    }
                     BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
                     card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
                             .originalPrice(orig)
                             .discountedPrice(dailyPrice)
                             .chargesAndTaxes(BigDecimal.ZERO)
                             .advanceAmount(adv)
+                            .discountPercentage(discPctAirport)
                             .build());
                     card.setDailyPrice(dailyPrice);
                     card.setIncludedKms(airportKm);
@@ -315,9 +340,16 @@ public class PublicVehicleService {
                             : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
                     if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                         BigDecimal hourlyFare = (BigDecimal) rateContext.get("hourlyCustomerFare");
+                        Integer tariffPkgHours = (rateContext.get("packageHours") != null) ? (Integer) rateContext.get("packageHours") : 8;
+                        if (tariffPkgHours == null || tariffPkgHours <= 0) tariffPkgHours = 8;
+
                         if (hourlyFare != null && hourlyFare.compareTo(BigDecimal.ZERO) > 0) {
-                            dailyPrice = hourlyFare.multiply(BigDecimal.valueOf(pkgHours))
-                                    .divide(BigDecimal.valueOf(8), 0, RoundingMode.HALF_UP);
+                            if (pkgHours == tariffPkgHours) {
+                                dailyPrice = hourlyFare;
+                            } else {
+                                dailyPrice = hourlyFare.multiply(BigDecimal.valueOf(pkgHours))
+                                        .divide(BigDecimal.valueOf(tariffPkgHours), 0, RoundingMode.HALF_UP);
+                            }
                         } else {
                             dailyPrice = rate.multiply(BigDecimal.valueOf(pkgKm))
                                     .add(BigDecimal.valueOf(pkgHours * 100))
@@ -342,6 +374,7 @@ public class PublicVehicleService {
                             ? v.getUser().getName()
                             : "Verified Commercial Chauffeur";
 
+                    BigDecimal discPct = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
                     PublicVehicleCardDto card = buildCategoryCard(
                             cardId,
                             model,
@@ -356,7 +389,8 @@ public class PublicVehicleService {
                             postRate,
                             List.of(fuel),
                             1,
-                            badge
+                            badge,
+                            discPct
                     );
                     card.setVehicleNumber(v.getVehicleNumber());
                     card.setRegNumber(v.getRegistrationNumber() != null && !v.getRegistrationNumber().isBlank() ? v.getRegistrationNumber() : v.getVehicleNumber());
@@ -398,13 +432,21 @@ public class PublicVehicleService {
                     } else if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
                         Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
                         if (airportKm == null || airportKm <= 0) airportKm = 35;
-                        BigDecimal orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal discPctAirport = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
+                        BigDecimal orig;
+                        if (discPctAirport != null && discPctAirport.compareTo(BigDecimal.ZERO) > 0) {
+                            BigDecimal factor = BigDecimal.ONE.subtract(discPctAirport.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+                            orig = factor.compareTo(BigDecimal.ZERO) > 0 ? dailyPrice.divide(factor, 0, RoundingMode.HALF_UP) : dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                        } else {
+                            orig = dailyPrice.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                        }
                         BigDecimal adv = dailyPrice.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
                         card.setPricing(PublicVehicleCardDto.PublicPricingDto.builder()
                                 .originalPrice(orig)
                                 .discountedPrice(dailyPrice)
                                 .chargesAndTaxes(BigDecimal.ZERO)
                                 .advanceAmount(adv)
+                                .discountPercentage(discPctAirport)
                                 .build());
                         card.setDailyPrice(dailyPrice);
                         card.setIncludedKms(airportKm);
@@ -504,7 +546,8 @@ public class PublicVehicleService {
             BigDecimal postLimitRate,
             List<String> fuelOptions,
             int availableCount,
-            String badge
+            String badge,
+            BigDecimal discountPercentage
     ) {
         com.grabrentals.tariff.entity.PricingTaxConfig taxConfig = pricingTaxConfigService.getConfig();
         String gstType = (taxConfig.getGstType() != null && !taxConfig.getGstType().isBlank())
@@ -547,7 +590,17 @@ public class PublicVehicleService {
         }
 
         BigDecimal discounted = baseFare.add(driverAllowance).add(taxes);
-        BigDecimal original = discounted.multiply(new BigDecimal("1.14")).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal original;
+        if (discountPercentage != null && discountPercentage.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal factor = BigDecimal.ONE.subtract(discountPercentage.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+            if (factor.compareTo(BigDecimal.ZERO) > 0) {
+                original = discounted.divide(factor, 0, RoundingMode.HALF_UP);
+            } else {
+                original = discounted;
+            }
+        } else {
+            original = discounted;
+        }
         BigDecimal advance = discounted.multiply(new BigDecimal("0.25")).setScale(0, RoundingMode.HALF_UP);
 
         return PublicVehicleCardDto.builder()
@@ -570,6 +623,7 @@ public class PublicVehicleService {
                         .advanceAmount(advance)
                         .gstPercentage(gstPercent)
                         .driverAllowancePercentage(driverPercent)
+                        .discountPercentage(discountPercentage != null ? discountPercentage : BigDecimal.ZERO)
                         .build())
                 .fuelOptions(fuelOptions)
                 .inclusions(List.of(

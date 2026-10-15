@@ -8,6 +8,7 @@ import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
+import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -18,6 +19,7 @@ import {
   sanitizePickupDateTime,
   generateTimeSlots,
 } from "@/lib/dateTimeUtils";
+import { fetchLocalPackages, getCachedLocalPackages, DEFAULT_LOCAL_PACKAGES } from "@/lib/packageUtils";
 
 export const AIRPORT_LIST = [
   { id: "BLR", name: "Kempegowda International Airport (BLR), Bengaluru", city: "Bangalore, Karnataka", lat: 13.1986, lng: 77.7066 },
@@ -90,7 +92,24 @@ export default function BookingWidget() {
   });
   const [pickupTime, setPickupTime] = useState(() => getDefaultPickupDateTime().time);
   const [minPickupDateTime, setMinPickupDateTime] = useState(() => getMinPickupDateTimeString());
-  const [selectedPackage, setSelectedPackage] = useState(() => "8hr-80km");
+  const [localPackages, setLocalPackages] = useState(() => getCachedLocalPackages() || []);
+  const [selectedPackage, setSelectedPackage] = useState(() => {
+    const cached = getCachedLocalPackages();
+    return cached && cached.length > 0 ? cached[0].value : "4hr-40km";
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLocalPackages(true).then((pkgs) => {
+      if (isMounted && Array.isArray(pkgs) && pkgs.length > 0) {
+        setLocalPackages(pkgs);
+        setSelectedPackage((prev) => (pkgs.some((p) => p.value === prev) ? prev : pkgs[0].value));
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const allowsStops = activeTab === "outstation";
   const showSwap = allowsStops || activeTab === "airport";
@@ -129,7 +148,7 @@ export default function BookingWidget() {
     if (matchedTab === "package" || matchedTab === "outstation") {
       setTripType("round-trip");
     } else if (matchedTab === "local") {
-      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : "8hr-80km"));
+      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : (localPackages[0]?.value || "4hr-40km")));
     }
 
     if (tabsRef.current) {
@@ -199,7 +218,7 @@ export default function BookingWidget() {
     if (tabId === "outstation" || tabId === "package") {
       setTripType("round-trip");
     } else if (tabId === "local") {
-      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : "8hr-80km"));
+      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : (localPackages[0]?.value || "4hr-40km")));
     }
     if (e?.currentTarget) {
       e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
@@ -360,7 +379,7 @@ export default function BookingWidget() {
       if (pickupCity) params.set("from", pickupCity);
       params.set("package", selectedPackage);
       params.set("to", selectedPackage);
-      params.set("tripType", tripType);
+      params.set("tripType", "local");
     } else {
       if (pickupCity) params.set("from", pickupCity);
       if (dropCity) params.set("to", dropCity);
@@ -416,11 +435,13 @@ export default function BookingWidget() {
           ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup") 
           : activeTab === "package" 
           ? "round-trip" 
+          : activeTab === "local"
+          ? "local"
           : tripType,
         serviceType: resolvedServiceType,
         date: pickupDate,
         time: pickupTime,
-        dropDate: (tripType === "round-trip" || activeTab === "package") ? dropDate : undefined,
+        dropDate: (activeTab !== "local" && (tripType === "round-trip" || activeTab === "package")) ? dropDate : undefined,
       }));
     }
   };
@@ -454,7 +475,7 @@ export default function BookingWidget() {
           className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 sm:gap-2 scroll-smooth justify-center items-center w-full"
         >
           {[
-            { id: "outstation", label: t("outstation_cabs") },
+            { id: "outstation", label: t("outstation") || "Outstation" },
             { id: "local", label: t("local_rental") },
             { id: "airport", label: t("airport") },
             // { id: "van", label: t("tempo_traveller") },
@@ -737,6 +758,7 @@ export default function BookingWidget() {
                   type="date" 
                   value={pickupDate}
                   min={minDateStr}
+                  suppressHydrationWarning
                   onChange={(e) => handlePickupDateChange(e.target.value)}
                   className="w-full pl-10 pr-3 py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
                 />
@@ -767,6 +789,7 @@ export default function BookingWidget() {
                     type="date" 
                     value={dropDate}
                     min={pickupDate || minDateStr}
+                    suppressHydrationWarning
                     onChange={(e) => setDropDate(e.target.value)}
                     className="w-full pl-10 pr-3 py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
                   />
@@ -942,15 +965,11 @@ export default function BookingWidget() {
                 </button>
               </>
             ) : activeTab === "local" ? (
-              <select
-                value={selectedPackage.includes("hr") ? selectedPackage : "8hr-80km"}
-                onChange={(e) => setSelectedPackage(e.target.value)}
-                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-sm cursor-pointer"
-              >
-                <option value="4hr-40km">4 Hours / 40 km (Half Day Package)</option>
-                <option value="8hr-80km">8 Hours / 80 km (Full Day Sightseeing)</option>
-                <option value="12hr-120km">12 Hours / 120 km (Extended Full Day)</option>
-              </select>
+              <PackageSelectDropdown
+                value={selectedPackage.includes("hr") ? selectedPackage : (localPackages[0]?.value || "4hr-40km")}
+                onChange={(val) => setSelectedPackage(val)}
+                packages={localPackages}
+              />
             ) : (
               <CityAutocompleteInput
                 value={dropCity}

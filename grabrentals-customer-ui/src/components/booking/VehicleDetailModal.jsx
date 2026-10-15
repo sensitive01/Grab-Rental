@@ -23,6 +23,7 @@ import {
   Award
 } from "lucide-react";
 import { formatVehicleSavaariTitle } from "@/lib/vehicleUtils";
+import { formatPackageLabel } from "@/lib/packageUtils";
 
 export default function VehicleDetailModal({
   isOpen,
@@ -62,15 +63,6 @@ export default function VehicleDetailModal({
   const totalFare = estTripFare + taxes;
 
   const isLocal = trip?.serviceType === "LOCAL" || (trip?.to && trip.to.toLowerCase().includes("hr"));
-
-  const formatPackageLabel = (pkgStr) => {
-    if (!pkgStr) return "8 Hours / 80 Kms";
-    const lower = pkgStr.toLowerCase();
-    if (lower.includes("4hr") || lower.includes("40")) return "4 Hours / 40 Kms";
-    if (lower.includes("12hr") || lower.includes("120")) return "12 Hours / 120 Kms";
-    if (lower.includes("8hr") || lower.includes("80")) return "8 Hours / 80 Kms";
-    return pkgStr;
-  };
   const packageLabel = formatPackageLabel(trip?.to);
 
   const handleProceedBooking = () => {
@@ -94,13 +86,7 @@ export default function VehicleDetailModal({
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">{title}</h2>
-                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                  Available
-                </span>
-              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">{title}</h2>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 {plate} • {isLocal ? "Local Hourly Package Fleet" : "Commercial Outstation Fleet"}
               </p>
@@ -324,6 +310,16 @@ export default function VehicleDetailModal({
         {/* Modal Footer / Price & Book CTA */}
         <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-auto">
           <div>
+            {vehicle.pricing?.discountPercentage > 0 && (
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md tracking-tight">
+                  {vehicle.pricing.discountPercentage}% OFF
+                </span>
+                <span className="text-xs sm:text-sm text-slate-400 line-through font-semibold">
+                  ₹{(vehicle.pricing?.originalPrice || Math.round(estTripFare * 1.1)).toLocaleString()}
+                </span>
+              </div>
+            )}
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-amber-600">₹{Math.round(estTripFare).toLocaleString()}</span>
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -331,7 +327,7 @@ export default function VehicleDetailModal({
               </span>
             </div>
             <div className="text-[11px] font-bold text-slate-500 mt-0.5">
-              + Charges and Taxes
+              + ₹{(vehicle.pricing?.chargesAndTaxesTotal || taxes).toLocaleString()} Charges &amp; Taxes
             </div>
             <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
               Pay 20% (₹{advanceAmount.toLocaleString()}) to confirm • Balance after trip completion

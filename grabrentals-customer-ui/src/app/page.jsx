@@ -194,13 +194,13 @@ export default function Home() {
       </section>
 
       {/* 3. Choose Your Travel Class (Vehicle Cards Grid) */}
-      <section className="bg-white py-12 sm:py-20 border-y border-slate-100">
+      <section className="bg-orange-600 py-12 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2 sm:mb-3">
               {t("choose_travel_class") || "Choose Your Travel Class"}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl mx-auto">
+            <p className="text-xs sm:text-sm text-white/90 font-medium max-w-2xl mx-auto">
               {t("choose_travel_class_sub") || "Experience our premium fleet tailored for every need—from executive sedans to luxury coaches."}
             </p>
           </div>
@@ -280,13 +280,13 @@ export default function Home() {
       </section>
 
       {/* 5. The Standard of Excellence (5 Circular Icon Pillars) */}
-      <section className="py-12 sm:py-20 bg-white border-t border-slate-100">
+      <section className="py-12 sm:py-20 bg-orange-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">
               {t("standard_of_excellence") || "The Standard of Excellence"}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl mx-auto">
+            <p className="text-xs sm:text-sm text-white/90 font-medium max-w-xl mx-auto">
               What makes Grab Rentals the preferred choice for thousands of travelers.
             </p>
           </div>
@@ -297,39 +297,39 @@ export default function Home() {
                 title: t("vp_billing_title") || "Transparent Billing",
                 desc: t("vp_billing_desc") || "Automated GST invoicing with zero hidden fees.",
                 icon: <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-brand-orange" />,
-                bg: "bg-orange-50 border-orange-200/60"
+                bg: "bg-white"
               },
               {
                 title: t("vp_chauffeurs_title") || "Expert Chauffeurs",
                 desc: t("vp_chauffeurs_desc") || "8+ years highway experience & police verified.",
                 icon: <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />,
-                bg: "bg-blue-50 border-blue-200/60"
+                bg: "bg-white"
               },
               {
                 title: t("vp_sanitization_title") || "32-Point Sanitization",
                 desc: t("vp_sanitization_desc") || "Complimentary Water & Tissue inside pristine cabs.",
                 icon: <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />,
-                bg: "bg-emerald-50 border-emerald-200/60"
+                bg: "bg-white"
               },
               {
                 title: t("vp_cancellation_title") || "Zero Cancellation Stress",
                 desc: t("vp_cancellation_desc") || "Instant UPI/Card Reversal on early cancellations.",
                 icon: <BadgeCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />,
-                bg: "bg-amber-50 border-amber-200/60"
+                bg: "bg-white"
               },
               {
                 title: t("all_india_coverage") || "All-India Coverage",
                 desc: t("all_india_coverage_desc") || "Reliable service across 2,000+ Indian cities.",
                 icon: <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />,
-                bg: "bg-rose-50 border-rose-200/60"
+                bg: "bg-white"
               },
             ].map((prop, i) => (
               <div key={i} className="flex flex-col items-center text-center p-2 sm:p-0">
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${prop.bg} rounded-full shadow-2xs border flex items-center justify-center mb-3 sm:mb-4`}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${prop.bg} rounded-full shadow-md flex items-center justify-center mb-3 sm:mb-4`}>
                   {prop.icon}
                 </div>
-                <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 mb-1 sm:mb-1.5">{prop.title}</h4>
-                <p className="text-[11px] sm:text-xs font-medium text-slate-500 leading-relaxed">{prop.desc}</p>
+                <h4 className="font-extrabold text-xs sm:text-sm text-white mb-1 sm:mb-1.5">{prop.title}</h4>
+                <p className="text-[11px] sm:text-xs font-medium text-white/85 leading-relaxed">{prop.desc}</p>
               </div>
             ))}
           </div>
@@ -415,13 +415,13 @@ export default function Home() {
       </section>
 
       {/* 7. What Our Customers Say (Testimonials) */}
-      <section className="py-12 sm:py-20 bg-white border-t border-slate-100">
+      <section className="py-12 sm:py-20 bg-orange-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">
               What Our Customers Say
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+            <p className="text-xs sm:text-sm text-white font-medium">
               Trusted by over 1,20,000+ travelers across India.
             </p>
           </div>

@@ -30,6 +30,14 @@ export const customerApi = {
   },
 
   /**
+   * Get public tariffs configured in admin (including local packages)
+   */
+  async getTariffs() {
+    const res = await axiosClient.get("/api/vehicles/tariffs");
+    return res.data;
+  },
+
+  /**
    * Get public booking details by reference number (e.g. GR-2026-XXXXX)
    * @param {string} reference
    */
@@ -89,3 +97,5 @@ export const customerApi = {
     return res.data;
   },
 };
+
+export default customerApi;

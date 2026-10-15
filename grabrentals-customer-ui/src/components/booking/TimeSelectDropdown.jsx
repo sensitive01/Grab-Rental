@@ -69,13 +69,14 @@ export default function TimeSelectDropdown({
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
+        suppressHydrationWarning
         className={`w-full flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100/90 border border-slate-200 rounded-xl font-bold text-slate-900 transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 ${
           isCompact ? "py-2.5 pl-3.5 pr-3 text-sm" : "py-3 sm:py-3.5 pl-3.5 pr-3 text-xs sm:text-sm"
         }`}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0" suppressHydrationWarning>
           <Clock className={`text-amber-500 shrink-0 ${isCompact ? "w-4 h-4" : "w-4 h-4"}`} />
-          <span className="truncate">{displayLabel}</span>
+          <span className="truncate" suppressHydrationWarning>{displayLabel}</span>
         </div>
         <ChevronDown
           className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${

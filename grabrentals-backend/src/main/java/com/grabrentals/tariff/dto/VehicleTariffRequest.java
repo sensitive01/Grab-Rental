@@ -95,4 +95,7 @@ public class VehicleTariffRequest {
     private BigDecimal airportVendorExtraKmRate;
     @Builder.Default
     private Boolean tollIncluded = false;
+
+    @Builder.Default
+    private BigDecimal discountPercentage = BigDecimal.ZERO;
 }

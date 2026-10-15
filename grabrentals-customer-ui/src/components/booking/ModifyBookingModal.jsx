@@ -4,6 +4,8 @@ import { useState, useMemo, useEffect } from "react";
 import { X, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, ChevronDown } from "lucide-react";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
+import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
+import { fetchLocalPackages, getCachedLocalPackages } from "@/lib/packageUtils";
 import { 
   formatLocalDate,
   getMinPickupDate,
@@ -29,6 +31,19 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const [date, setDate] = useState(currentTrip?.date || defaultDT.date);
   const [time, setTime] = useState(currentTrip?.time || defaultDT.time);
   const [dropDate, setDropDate] = useState(currentTrip?.dropDate || currentTrip?.returnDate || "");
+  const [localPackages, setLocalPackages] = useState(() => getCachedLocalPackages() || []);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLocalPackages().then((pkgs) => {
+      if (isMounted && Array.isArray(pkgs) && pkgs.length > 0) {
+        setLocalPackages(pkgs);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const minPickup = getMinPickupDate();
   const minDateStr = formatLocalDate(minPickup);
@@ -167,15 +182,11 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
           {isLocal ? (
             <div>
               <label className="font-bold text-slate-700 block mb-1">Rental Package</label>
-              <select
+              <PackageSelectDropdown
                 value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 bg-white focus:outline-none focus:border-amber-500 text-xs"
-              >
-                <option value="4hr-40km">4 Hours / 40 km (Quick Errands & Business)</option>
-                <option value="8hr-80km">8 Hours / 80 km (Full Day City Tour & Sightseeing)</option>
-                <option value="12hr-120km">12 Hours / 120 km (Extended Day & Distant Hubs)</option>
-              </select>
+                onChange={(val) => setTo(val)}
+                packages={localPackages}
+              />
             </div>
           ) : (
             <>

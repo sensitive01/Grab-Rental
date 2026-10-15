@@ -353,6 +353,7 @@ public class VehicleTariffService {
         entity.setAirportExtraKmRate(req.getAirportExtraKmRate());
         entity.setAirportVendorExtraKmRate(req.getAirportVendorExtraKmRate());
         entity.setTollIncluded(Boolean.TRUE.equals(req.getTollIncluded()));
+        entity.setDiscountPercentage(req.getDiscountPercentage() != null ? req.getDiscountPercentage() : BigDecimal.ZERO);
 
         VehicleTariff saved = tariffRepository.save(entity);
         return VehicleTariffResponse.fromEntity(saved);
@@ -728,6 +729,7 @@ public class VehicleTariffService {
             hasModelTariff = true;
         }
         result.put("hasTariff", hasModelTariff);
+        result.put("discountPercentage", activeTariff != null && activeTariff.getDiscountPercentage() != null ? activeTariff.getDiscountPercentage() : BigDecimal.ZERO);
 
         // Hourly package attributes if present
         if ("HOURLY".equalsIgnoreCase(sType) || "LOCAL".equalsIgnoreCase(sType)) {

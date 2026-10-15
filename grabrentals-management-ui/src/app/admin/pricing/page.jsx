@@ -522,6 +522,7 @@ export default function AdminPricingPage() {
     airportExtraKmRate: "",
     airportVendorExtraKmRate: "",
     tollIncluded: false,
+    discountPercentage: "",
   });
 
   // Simulator State
@@ -730,6 +731,7 @@ export default function AdminPricingPage() {
       airportExtraKmRate: item.airportExtraKmRate != null ? String(item.airportExtraKmRate) : "",
       airportVendorExtraKmRate: item.airportVendorExtraKmRate != null ? String(item.airportVendorExtraKmRate) : "",
       tollIncluded: Boolean(item.tollIncluded),
+      discountPercentage: item.discountPercentage != null ? String(item.discountPercentage) : "",
     });
     setIsModalOpen(true);
   }
@@ -803,6 +805,7 @@ export default function AdminPricingPage() {
         airportExtraKmRate: parseFloat(formData.weekdayDayRate || 0),
         airportVendorExtraKmRate: parseFloat(formData.vendorWeekdayDayRate || 0),
         tollIncluded: Boolean(formData.tollIncluded),
+        discountPercentage: parseFloat(formData.discountPercentage || 0),
       });
 
       setToast({
@@ -1223,6 +1226,7 @@ export default function AdminPricingPage() {
                 <TableHead className="text-center">Weekday Rates (Cust / Vend)</TableHead>
                 <TableHead className="text-center">Weekend Rates (Cust / Vend)</TableHead>
                 <TableHead className="text-center">Base Min Fare</TableHead>
+                <TableHead className="text-center">Discount %</TableHead>
                 <TableHead className="text-center">Platform Margin</TableHead>
                 <TableHead className="text-right pr-4">Actions</TableHead>
               </TableRow>
@@ -1352,6 +1356,17 @@ export default function AdminPricingPage() {
                         <span className="font-bold text-slate-900">{baseDisplay}</span>
                         <span className="text-[10px] text-slate-400 block">{vendBaseDisplay}</span>
                       </div>
+                    </TableCell>
+
+                    {/* Discount % */}
+                    <TableCell className="text-center">
+                      {parseFloat(t.discountPercentage || 0) > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          {parseFloat(t.discountPercentage)}% OFF
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs font-semibold">—</span>
+                      )}
                     </TableCell>
 
                     {/* Margin */}
@@ -1814,7 +1829,19 @@ export default function AdminPricingPage() {
                     Per-KM Base
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      🚗 Included Min KM
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 80"
+                      value={formData.baseIncludedKm}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, baseIncludedKm: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
+                    />
+                  </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-900 mb-1">
                       👤 Customer Base (₹)
@@ -1840,15 +1867,15 @@ export default function AdminPricingPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                      🚗 Included Min KM
+                    <label className="block text-[10px] font-bold text-amber-900 mb-1">
+                      🏷️ Discount %
                     </label>
                     <input
                       type="number"
-                      placeholder="e.g. 80"
-                      value={formData.baseIncludedKm}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, baseIncludedKm: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
+                      placeholder="e.g. 9"
+                      value={formData.discountPercentage}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-md bg-amber-50/60 font-bold text-amber-900"
                     />
                   </div>
                 </div>
@@ -1866,6 +1893,18 @@ export default function AdminPricingPage() {
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                      ⏰ Included Min Hours
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 8"
+                      value={formData.packageHours}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, packageHours: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs border border-blue-300 rounded-md bg-white font-bold text-blue-950"
+                    />
+                  </div>
                   <div>
                     <label className="block text-[10px] font-bold text-blue-950 mb-1">
                       👤 Customer Base (₹)
@@ -1890,18 +1929,6 @@ export default function AdminPricingPage() {
                       className="w-full px-2.5 py-1.5 text-xs border border-emerald-300 rounded-md bg-emerald-50/60 font-bold text-emerald-900"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-blue-950 mb-1">
-                      ⏰ Included Min Hours
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 8"
-                      value={formData.packageHours}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, packageHours: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 text-xs border border-blue-300 rounded-md bg-white font-bold text-blue-950"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -1916,7 +1943,19 @@ export default function AdminPricingPage() {
                   Minimum Package Threshold
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                    🚗 Included Min KM
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 250"
+                    value={formData.baseIncludedKm}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, baseIncludedKm: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
+                  />
+                </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-700 mb-1">
                     👤 Customer Base (₹)
@@ -1942,15 +1981,15 @@ export default function AdminPricingPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                    🚗 Included Min KM
+                  <label className="block text-[10px] font-bold text-amber-900 mb-1">
+                    🏷️ Discount %
                   </label>
                   <input
                     type="number"
-                    placeholder="e.g. 250"
-                    value={formData.baseIncludedKm}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, baseIncludedKm: e.target.value }))}
-                    className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white font-bold text-slate-900"
+                    placeholder="e.g. 9"
+                    value={formData.discountPercentage}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-md bg-amber-50/60 font-bold text-amber-900"
                   />
                 </div>
               </div>
