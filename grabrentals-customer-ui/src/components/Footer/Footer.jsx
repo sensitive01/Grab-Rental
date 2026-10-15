@@ -65,7 +65,7 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="max-w-7xl mx-auto px-6 pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3">
-          <span>&copy; {new Date().getFullYear()} Grab Rental Technologies Pvt. Ltd. All rights reserved.</span>
+          <span>Copyright @ {new Date().getFullYear()} Grab Rentals. All rights reserved.</span>
           <span className="hidden md:inline">|</span>
           <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
           <span className="hidden md:inline">|</span>
@@ -74,13 +74,16 @@ export default function Footer() {
           <Link href="/refund-policy" className="hover:text-white transition-colors">Cancellation & Refund Policy</Link>
         </div>
         
-        <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-slate-500" /> Secure Payments</span>
-          <div className="flex gap-2">
-            <span className="bg-slate-800 px-2 py-1 rounded">Razorpay</span>
-            <span className="bg-slate-800 px-2 py-1 rounded">UPI</span>
-            <span className="bg-slate-800 px-2 py-1 rounded">Cards</span>
-          </div>
+        <div className="text-xs text-slate-400 flex items-center">
+          <span>Powered by</span>
+          <a 
+            href="https://sensitive.co.in/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-amber-400 hover:text-amber-300 hover:underline font-bold ml-1 transition-colors"
+          >
+            Sensitive Technologies
+          </a>
         </div>
       </div>
     </footer>

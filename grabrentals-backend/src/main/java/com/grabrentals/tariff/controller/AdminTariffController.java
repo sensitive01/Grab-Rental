@@ -23,6 +23,7 @@ public class AdminTariffController {
  
     private final VehicleTariffService tariffService;
     private final CloudinaryService cloudinaryService;
+    private final com.grabrentals.tariff.service.PricingTaxConfigService pricingTaxConfigService;
 
     // ==========================================
     // VEHICLE MODEL CONFIGS & COMMON PHOTOS
@@ -150,5 +151,48 @@ public class AdminTariffController {
     public ResponseEntity<ApiResponse<Void>> deleteTariff(@PathVariable UUID id) {
         tariffService.deleteTariff(id);
         return ResponseEntity.ok(ApiResponse.success("Tariff deleted successfully", null));
+    }
+
+    // ==========================================
+    // PRICING TAX CONFIG (GST & DRIVER ALLOWANCE)
+    // ==========================================
+
+    @GetMapping("/settings/pricing-tax")
+    public ResponseEntity<ApiResponse<com.grabrentals.tariff.entity.PricingTaxConfig>> getPricingTaxConfig() {
+        return ResponseEntity.ok(ApiResponse.success("Pricing tax configuration retrieved", pricingTaxConfigService.getConfig()));
+    }
+
+    @PutMapping("/settings/pricing-tax")
+    public ResponseEntity<ApiResponse<com.grabrentals.tariff.entity.PricingTaxConfig>> updatePricingTaxConfig(
+            @RequestBody Map<String, Object> payload
+    ) {
+        java.math.BigDecimal gst = parseBigDecimal(payload.get("gstPercentage"));
+        java.math.BigDecimal gstAmount = parseBigDecimal(payload.get("gstAmount"));
+        String gstType = payload.get("gstType") != null ? payload.get("gstType").toString() : null;
+
+        java.math.BigDecimal driverAllowance = parseBigDecimal(payload.get("driverAllowancePercentage"));
+        java.math.BigDecimal driverAllowanceAmount = parseBigDecimal(payload.get("driverAllowanceAmount"));
+        String driverAllowanceType = payload.get("driverAllowanceType") != null ? payload.get("driverAllowanceType").toString() : null;
+
+        java.math.BigDecimal lessThan3Years = parseBigDecimal(payload.get("lessThan3YearsFee"));
+        java.math.BigDecimal luggageCarrier = parseBigDecimal(payload.get("luggageCarrierFee"));
+        java.math.BigDecimal languageChauffeur = parseBigDecimal(payload.get("languageChauffeurFee"));
+        java.math.BigDecimal expressway = parseBigDecimal(payload.get("expresswayFee"));
+
+        com.grabrentals.tariff.entity.PricingTaxConfig updated = pricingTaxConfigService.updateConfig(
+                gst, gstAmount, gstType, driverAllowance, driverAllowanceAmount, driverAllowanceType, lessThan3Years, luggageCarrier, languageChauffeur, expressway
+        );
+        return ResponseEntity.ok(ApiResponse.success("Pricing tax configuration updated successfully", updated));
+    }
+
+    private java.math.BigDecimal parseBigDecimal(Object obj) {
+        if (obj == null) return null;
+        if (obj instanceof java.math.BigDecimal) return (java.math.BigDecimal) obj;
+        if (obj instanceof Number) return java.math.BigDecimal.valueOf(((Number) obj).doubleValue());
+        try {
+            return new java.math.BigDecimal(obj.toString());
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

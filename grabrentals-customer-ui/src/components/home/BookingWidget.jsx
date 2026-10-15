@@ -143,6 +143,7 @@ export default function BookingWidget() {
   // Keep min pickup datetime current and ensure loaded/stored pickup is not in the past
   useEffect(() => {
     const currentMin = getMinPickupDateTimeString();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMinPickupDateTime(currentMin);
     const sanitized = sanitizePickupDateTime(pickupDate, pickupTime);
     if (sanitized.date !== pickupDate || sanitized.time !== pickupTime) {
@@ -169,6 +170,7 @@ export default function BookingWidget() {
   // If currently selected time is not in available slots (e.g. was in the past), snap to first available
   useEffect(() => {
     if (availableTimeSlots.length > 0 && !availableTimeSlots.some((s) => s.value === pickupTime)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPickupTime(availableTimeSlots[0].value);
     }
   }, [availableTimeSlots, pickupTime]);
@@ -1189,15 +1191,21 @@ export default function BookingWidget() {
           }
         }}
         onSelectPickup={(selectedLocation, coords) => {
-          setPickupCity(selectedLocation);
-          if (coords) setPickupCoords(coords);
+          setTimeout(() => {
+            setPickupCity(selectedLocation);
+            if (coords) setPickupCoords(coords);
+          }, 0);
         }}
         onSelectDrop={(selectedLocation, coords) => {
-          setDropCity(selectedLocation);
-          if (coords) setDropCoords(coords);
+          setTimeout(() => {
+            setDropCity(selectedLocation);
+            if (coords) setDropCoords(coords);
+          }, 0);
         }}
         onSelectStops={(newStops) => {
-          setStops(newStops);
+          setTimeout(() => {
+            setStops(newStops);
+          }, 0);
         }}
       />
 

@@ -36,8 +36,9 @@ import {
   Sliders,
   History,
   CheckCircle,
-  X,
   Layers,
+  Ticket,
+  X,
 } from "lucide-react";
 
 export const OPERATIONS_NAV = [
@@ -93,6 +94,8 @@ export const ADMIN_NAV = [
       { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
       { label: "Vehicles Models", href: "/admin/vehicle-models", icon: Layers },
       { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
+      { label: "GST & Add-on Pricing", href: "/admin/settings", icon: Sliders },
+      { label: "Coupons & Offers", href: "/admin/coupons", icon: Ticket },
       { label: "Vendors", href: "/admin/vendors", icon: Building2 },
       { label: "Customers", href: "/admin/customers", icon: Users },
       { label: "Users", href: "/admin/operations-users", icon: ShieldCheck },
@@ -128,8 +131,6 @@ export const ADMIN_NAV = [
     title: "System & Security",
     items: [
       { label: "All Users", href: "/admin/users", icon: Users },
-      // { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldCheck },
-      // { label: "System Settings", href: "/admin/settings", icon: Sliders },
       { label: "Audit Logs", href: "/admin/audit-logs", icon: History },
     ],
   },

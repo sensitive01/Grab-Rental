@@ -74,6 +74,8 @@ public class SecurityConfig {
                 ).permitAll()
                 // Public vehicle search & catalog
                 .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
+                // Public coupon validation
+                .requestMatchers("/api/coupons/**").permitAll()
                 // Role-based endpoints
                 .requestMatchers("/api/customer/**").authenticated()
                 .requestMatchers("/api/vendor/**", "/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")

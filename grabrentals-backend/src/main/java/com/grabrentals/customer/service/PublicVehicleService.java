@@ -28,6 +28,7 @@ public class PublicVehicleService {
     private final VehicleRepository vehicleRepository;
     private final BookingRepository bookingRepository;
     private final VehicleTariffService vehicleTariffService;
+    private final com.grabrentals.tariff.service.PricingTaxConfigService pricingTaxConfigService;
 
     public BookingResponse getBookingByReference(String bookingReference) {
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
@@ -59,7 +60,7 @@ public class PublicVehicleService {
 
         List<String> parsedStops = new ArrayList<>();
         if (stops != null && !stops.isBlank()) {
-            String[] parts = stops.split("[|,]");
+            String[] parts = stops.split("\\|");
             for (String p : parts) {
                 if (p != null && !p.trim().isBlank()) {
                     parsedStops.add(p.trim());
@@ -505,10 +506,49 @@ public class PublicVehicleService {
             int availableCount,
             String badge
     ) {
-        BigDecimal discounted = perKmRate.multiply(BigDecimal.valueOf(distanceKm)).setScale(0, RoundingMode.HALF_UP);
+        com.grabrentals.tariff.entity.PricingTaxConfig taxConfig = pricingTaxConfigService.getConfig();
+        String gstType = (taxConfig.getGstType() != null && !taxConfig.getGstType().isBlank())
+                ? taxConfig.getGstType().trim().toUpperCase() : "PERCENTAGE";
+        BigDecimal gstPercent = taxConfig.getGstPercentage() != null ? taxConfig.getGstPercentage() : new BigDecimal("5.00");
+        BigDecimal gstAmount = taxConfig.getGstAmount() != null ? taxConfig.getGstAmount() : BigDecimal.ZERO;
+
+        String driverType = (taxConfig.getDriverAllowanceType() != null && !taxConfig.getDriverAllowanceType().isBlank())
+                ? taxConfig.getDriverAllowanceType().trim().toUpperCase() : "PERCENTAGE";
+        BigDecimal driverPercent = taxConfig.getDriverAllowancePercentage() != null ? taxConfig.getDriverAllowancePercentage() : new BigDecimal("10.00");
+        BigDecimal driverAmount = taxConfig.getDriverAllowanceAmount() != null ? taxConfig.getDriverAllowanceAmount() : BigDecimal.ZERO;
+
+        BigDecimal baseFare = perKmRate.multiply(BigDecimal.valueOf(distanceKm)).setScale(0, RoundingMode.HALF_UP);
+
+        BigDecimal driverAllowance;
+        String driverInclusionLabel;
+        if ("FLAT".equalsIgnoreCase(driverType)) {
+            BigDecimal flatAmt = (driverAmount != null && driverAmount.compareTo(BigDecimal.ZERO) > 0)
+                    ? driverAmount
+                    : (driverPercent.compareTo(new BigDecimal("100")) > 0 ? driverPercent : new BigDecimal("400.00"));
+            driverAllowance = flatAmt.setScale(0, RoundingMode.HALF_UP);
+            driverInclusionLabel = "Driver Allowance (₹" + driverAllowance.toPlainString() + ") Included";
+        } else {
+            BigDecimal safePercent = driverPercent.compareTo(new BigDecimal("100")) > 0 ? new BigDecimal("10.00") : driverPercent;
+            BigDecimal driverRate = safePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            driverAllowance = baseFare.multiply(driverRate).setScale(0, RoundingMode.HALF_UP);
+            driverInclusionLabel = "Driver Allowance (" + safePercent.stripTrailingZeros().toPlainString() + "%) Included";
+        }
+
+        BigDecimal taxes;
+        String gstInclusionLabel;
+        if ("FLAT".equalsIgnoreCase(gstType)) {
+            taxes = gstAmount.setScale(0, RoundingMode.HALF_UP);
+            gstInclusionLabel = "GST (₹" + taxes.toPlainString() + ") & Government Passenger Cess";
+        } else {
+            BigDecimal safeGst = gstPercent.compareTo(new BigDecimal("100")) > 0 ? new BigDecimal("5.00") : gstPercent;
+            BigDecimal gstRate = safeGst.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            taxes = baseFare.add(driverAllowance).multiply(gstRate).setScale(0, RoundingMode.HALF_UP);
+            gstInclusionLabel = "GST (" + safeGst.stripTrailingZeros().toPlainString() + "%) & Government Passenger Cess";
+        }
+
+        BigDecimal discounted = baseFare.add(driverAllowance).add(taxes);
         BigDecimal original = discounted.multiply(new BigDecimal("1.14")).setScale(0, RoundingMode.HALF_UP);
-        BigDecimal taxes = BigDecimal.ZERO; // GST set to 0 for now
-        BigDecimal advance = discounted.multiply(new BigDecimal("0.20")).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal advance = discounted.multiply(new BigDecimal("0.25")).setScale(0, RoundingMode.HALF_UP);
 
         return PublicVehicleCardDto.builder()
                 .id(id)
@@ -524,18 +564,24 @@ public class PublicVehicleService {
                 .pricing(PublicVehicleCardDto.PublicPricingDto.builder()
                         .originalPrice(original)
                         .discountedPrice(discounted)
+                        .baseFare(baseFare)
+                        .driverAllowance(driverAllowance)
                         .chargesAndTaxes(taxes)
                         .advanceAmount(advance)
+                        .gstPercentage(gstPercent)
+                        .driverAllowancePercentage(driverPercent)
                         .build())
                 .fuelOptions(fuelOptions)
                 .inclusions(List.of(
                         "Base Fare and Fuel Charges for " + distanceKm + " km",
-                        "Driver Allowance & Night Driving Included",
-                        "GST & Government Passenger Cess"
+                        driverInclusionLabel,
+                        gstInclusionLabel,
+                        "State Tax & Toll Charges",
+                        "Air Conditioning (AC)"
                 ))
                 .exclusions(List.of(
-                        "Pay " + ("₹" + postLimitRate + "/km") + " after " + distanceKm + " km",
-                        "State Entry Tax, Toll Charges & Parking fees at actuals"
+                        "Pay ₹" + postLimitRate + "/km after " + distanceKm + " km",
+                        "Multiple pickups and drops outside designated route"
                 ))
                 .availableCount(Math.max(availableCount, 1))
                 .badge(badge)
@@ -719,7 +765,13 @@ public class PublicVehicleService {
 
     private double[] lookupCoordinates(String cityName) {
         if (cityName == null || cityName.isBlank()) return null;
-        String clean = cityName.toLowerCase().split(",")[0].replaceAll("\\(.*?\\)", "").trim();
+        String lower = cityName.toLowerCase().replaceAll("\\(.*?\\)", "").trim();
+        for (Map.Entry<String, double[]> entry : CITY_COORDS.entrySet()) {
+            if (lower.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        String clean = lower.split(",")[0].trim();
         for (Map.Entry<String, double[]> entry : CITY_COORDS.entrySet()) {
             if (clean.contains(entry.getKey()) || entry.getKey().contains(clean)) {
                 return entry.getValue();

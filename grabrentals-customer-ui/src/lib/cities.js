@@ -325,7 +325,7 @@ export function detectRouteDistance(from, to, stops = [], tripType = "one-way") 
 
   const points = [from];
   if (stops) {
-    const list = Array.isArray(stops) ? stops : stops.split(/[|,]/);
+    const list = Array.isArray(stops) ? stops : (typeof stops === "string" ? stops.split("|") : []);
     list.forEach((s) => {
       if (s && s.trim()) points.push(s.trim());
     });
@@ -364,7 +364,7 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
   const cleanTo = to.trim();
   const cleanStops = Array.isArray(stops) 
     ? stops.filter(Boolean) 
-    : (typeof stops === "string" && stops.trim() ? stops.split(/[|,]/).map((s) => s.trim()).filter(Boolean) : []);
+    : (typeof stops === "string" && stops.trim() ? stops.split("|").map((s) => s.trim()).filter(Boolean) : []);
   const cacheKey = `${cleanFrom}|${cleanTo}|${cleanStops.join(",")}|${tripType}|${options.originCoords?.lat ?? ""},${options.originCoords?.lng ?? ""}|${options.destinationCoords?.lat ?? ""},${options.destinationCoords?.lng ?? ""}`.toLowerCase();
 
   if (routeDistanceCache.has(cacheKey)) {
@@ -442,7 +442,8 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
           oneWayKm,
           durationHours: Math.round((totalSecs / 3600) * 10) / 10,
           durationText,
-          tollPrice: totalToll,
+          tollPrice: 0, // Kept as 0 for now
+          actualToll: totalToll,
           isGoogle: true,
           isDetected: true
         };

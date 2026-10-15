@@ -913,4 +913,35 @@ export const adminApi = {
       return null;
     }
   },
+
+  // === DYNAMIC PROMO & COUPON SYSTEM ===
+  async getAllCoupons() {
+    try {
+      const response = await axiosClient.get("/api/admin/coupons");
+      return response.data;
+    } catch (err) {
+      console.error("Failed to fetch coupons:", err);
+      throw err;
+    }
+  },
+
+  async createCoupon(data) {
+    const response = await axiosClient.post("/api/admin/coupons", data);
+    return response.data;
+  },
+
+  async updateCoupon(id, data) {
+    const response = await axiosClient.put(`/api/admin/coupons/${id}`, data);
+    return response.data;
+  },
+
+  async deleteCoupon(id) {
+    const response = await axiosClient.delete(`/api/admin/coupons/${id}`);
+    return response.data;
+  },
+
+  async toggleCouponStatus(id) {
+    const response = await axiosClient.patch(`/api/admin/coupons/${id}/toggle`);
+    return response.data;
+  },
 };

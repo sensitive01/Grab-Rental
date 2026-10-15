@@ -11,6 +11,7 @@ export default function VehicleTripHeader({
   tripType = "One way",
   date = "28-09-2026",
   time = "7:00 AM",
+  returnDate = null,
   distanceKm,
   tollPrice,
   duration,
@@ -20,7 +21,7 @@ export default function VehicleTripHeader({
   const { t } = useLanguage();
   const stopsList = Array.isArray(stops)
     ? stops.filter(Boolean)
-    : (typeof stops === "string" && stops.trim() ? stops.split(/[|,]/).map(s => s.trim()).filter(Boolean) : []);
+    : (typeof stops === "string" && stops.trim() ? stops.split("|").map(s => s.trim()).filter(Boolean) : []);
 
   const isLocal = serviceType === "LOCAL" || to.toLowerCase().includes("hr") || tripType.toLowerCase().includes("local");
   const isAirport = serviceType === "AIRPORT" || tripType.toLowerCase().includes("airport") || from.toLowerCase().includes("airport") || to.toLowerCase().includes("airport");
@@ -101,6 +102,18 @@ export default function VehicleTripHeader({
             <span className="text-[10px] uppercase font-bold text-slate-400 block">{t("pickup_time")}</span>
             <span className="font-extrabold text-slate-800">{time}</span>
           </div>
+
+          {tripType.toLowerCase().includes("round") && returnDate ? (
+            <>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-amber-600 block">{t("return_date") || "Return Date"}</span>
+                <span className="font-extrabold text-slate-900 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md inline-block">
+                  {returnDate}
+                </span>
+              </div>
+            </>
+          ) : null}
 
           {isLocal ? (
             <>

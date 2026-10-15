@@ -103,6 +103,7 @@ export default function LocationPickerModal({
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
@@ -116,13 +117,17 @@ export default function LocationPickerModal({
   const leafletInstanceRef = useRef(null);
   const leafletMarkerRef = useRef(null);
   const searchInputRef = useRef(null);
-  const searchTimeoutRef = useRef(null);
   const currentTargetRef = useRef(currentTarget);
+  const stopsRef = useRef(stopsState);
   const sessionTokenRef = useRef(null);
 
   useEffect(() => {
     currentTargetRef.current = currentTarget;
   }, [currentTarget]);
+
+  useEffect(() => {
+    stopsRef.current = stopsState;
+  }, [stopsState]);
 
   // Sync state when modal opens or target/values change
   useEffect(() => {
@@ -330,12 +335,12 @@ export default function LocationPickerModal({
     } else if (typeof target === "string" && target.startsWith("stop-")) {
       const sIdx = parseInt(target.replace("stop-", ""), 10);
       if (sIdx >= 0) {
-        setStopsState((prev) => {
-          const next = [...prev];
-          next[sIdx] = label;
-          if (onSelectStops) onSelectStops(next);
-          return next;
-        });
+        const next = [...(stopsRef.current || [])];
+        next[sIdx] = label;
+        setStopsState(next);
+        if (onSelectStops) {
+          onSelectStops(next);
+        }
         if (coords) {
           setStopsCoords((prev) => ({ ...prev, [sIdx]: coords }));
         }

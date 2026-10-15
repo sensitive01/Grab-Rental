@@ -97,6 +97,7 @@ function SelectVehicleContent() {
     const defaultDT = getDefaultPickupDateTime();
     const dateVal = searchParams.get("pickupDate") || pendingTrip?.date || defaultDT.date;
     const timeVal = searchParams.get("pickupTime") || pendingTrip?.time || defaultDT.time;
+    const dropDateVal = searchParams.get("dropDate") || searchParams.get("returnDate") || pendingTrip?.dropDate || pendingTrip?.returnDate || "";
     const serviceTypeVal = (searchParams.get("serviceType") || pendingTrip?.serviceType || "OUTSTATION").toUpperCase();
 
     return {
@@ -106,6 +107,7 @@ function SelectVehicleContent() {
       tripType: rawTripType.toLowerCase().includes("round") ? "Round trip" : "One way",
       date: dateVal,
       time: timeVal,
+      dropDate: dropDateVal,
       serviceType: serviceTypeVal,
       pickupCoords: pendingTrip?.pickupCoords || null,
       dropCoords: pendingTrip?.dropCoords || null,
@@ -172,6 +174,7 @@ function SelectVehicleContent() {
     const urlTime = searchParams.get("pickupTime") || defaultDT.time;
     const urlServiceType = (searchParams.get("serviceType") || "OUTSTATION").toUpperCase();
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTrip((prev) => {
       if (
         prev.from === urlFrom &&
@@ -345,11 +348,14 @@ function SelectVehicleContent() {
       const reg = car.regNumber || car.vehicleNumber || "Commercial Fleet";
       const perKmRate = car.perKmRate || (type === "SUV" ? 19.5 : type === "Hatchback" ? 11.5 : 13.0);
 
-      const tripDiscountedFare = car.pricing?.discountedPrice || Math.round((activeDistance || 250) * perKmRate);
-      const originalFare = car.pricing?.originalPrice || Math.round(tripDiscountedFare * 1.14);
-      const taxes = car.pricing?.chargesAndTaxes || 0; // GST set to 0 for now
-      const advance = car.pricing?.advanceAmount || Math.round((tripDiscountedFare + taxes) * 0.20);
-      const dailyPrice = car.dailyPrice || Math.round(tripDiscountedFare / 1.15);
+      const baseFare = car.pricing?.baseFare || Math.round((activeDistance || 250) * perKmRate);
+      const tripDiscountedFare = car.pricing?.discountedPrice || baseFare;
+      const displayFare = isLocalBooking ? tripDiscountedFare : baseFare;
+      const originalFare = car.pricing?.originalPrice || Math.round(displayFare * 1.14);
+      const taxes = car.pricing?.chargesAndTaxes || 0;
+      const driverAllowance = car.pricing?.driverAllowance || 0;
+      const advance = car.pricing?.advanceAmount || Math.round((tripDiscountedFare) * 0.25);
+      const dailyPrice = car.dailyPrice || Math.round(displayFare / 1.15);
 
       return {
         id: car.id,
@@ -362,7 +368,7 @@ function SelectVehicleContent() {
         seatingCapacity: seats,
         year,
         dailyPrice,
-        tripFare: tripDiscountedFare,
+        tripFare: displayFare,
         perKmRate,
         location: car.location || cleanCityName(trip.from) || "Bangalore",
         chauffeur: car.chauffeur || "Assigned Commercial Chauffeur",
@@ -375,7 +381,10 @@ function SelectVehicleContent() {
         pricing: {
           originalPrice: originalFare,
           discountedPrice: tripDiscountedFare,
+          baseFare: baseFare,
+          displayFare: displayFare,
           chargesAndTaxes: taxes,
+          driverAllowance: driverAllowance,
           advanceAmount: advance,
           perDayRate: dailyPrice
         },
@@ -383,7 +392,7 @@ function SelectVehicleContent() {
         exclusions: car.exclusions
       };
     });
-  }, [backendVehicles, activeDistance, trip.from]);
+  }, [backendVehicles, activeDistance, trip.from, isLocalBooking]);
 
   // Dynamic Filter Counts based on live vehicles
   const counts = useMemo(() => {
@@ -543,10 +552,16 @@ function SelectVehicleContent() {
           withLuggageCarrier: false,
           seating: vehicle.seatingCapacity,
           perKmRate: vehicle.perKmRate ?? 0,
-          fare: vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
+          fare: vehicle.pricing?.displayFare ?? vehicle.pricing?.baseFare ?? vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
+          baseFare: vehicle.pricing?.baseFare ?? Math.round((activeDistance || 250) * (vehicle.perKmRate || 12)),
+          driverAllowance: vehicle.pricing?.driverAllowance ?? 0,
           taxes: vehicle.pricing?.chargesAndTaxes ?? 0,
-          totalFare: (vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2)) + (vehicle.pricing?.chargesAndTaxes ?? 0),
-          advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2)) * 0.20),
+          gstPercentage: vehicle.pricing?.gstPercentage ?? 5,
+          driverAllowancePercentage: vehicle.pricing?.driverAllowancePercentage ?? 10,
+          totalFare: vehicle.pricing?.discountedPrice ?? (vehicle.pricing?.baseFare ? vehicle.pricing.baseFare * 1.15 : (vehicle.dailyPrice * 1.2)),
+          advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2)) * 0.25),
+          inclusions: vehicle.inclusions || [],
+          exclusions: vehicle.exclusions || [],
           image: vehicle.image,
           regNumber: vehicle.regNumber,
           chauffeur: vehicle.chauffeur
@@ -759,6 +774,7 @@ function SelectVehicleContent() {
           tripType={trip.tripType}
           date={formatDateDisplay(trip.date)}
           time={formatTimeDisplay(trip.time)}
+          returnDate={trip.tripType.toLowerCase().includes("round") && trip.dropDate ? formatDateDisplay(trip.dropDate) : null}
           distanceKm={activeDistance}
           tollPrice={isLocalBooking ? 0 : googleRouteDetails?.tollPrice}
           duration={isLocalBooking ? null : googleRouteDetails?.durationText}
@@ -1069,13 +1085,8 @@ function SelectVehicleContent() {
                           {car.vehicleType || "Hatchback"}
                         </p>
 
-                        {/* Specs: Type • Fuel • Capacity (Manual/Auto & Year removed) */}
+                        {/* Specs: Fuel • Capacity */}
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-slate-600 pt-0.5">
-                          <span className="flex items-center gap-1">
-                            <Car className="w-3.5 h-3.5 text-slate-400" />
-                            {car.vehicleType}
-                          </span>
-                          <span className="text-slate-300">•</span>
                           <span className="flex items-center gap-1">
                             <Fuel className="w-3.5 h-3.5 text-slate-400" />
                             {car.fuelType}
@@ -1098,7 +1109,7 @@ function SelectVehicleContent() {
                       <div>
                         <div className="flex items-baseline gap-2 flex-wrap">
                           <span className="text-xl sm:text-2xl font-black text-amber-600">
-                            ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
+                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </span>
                           {isLocalBooking ? (
                             <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
@@ -1204,8 +1215,6 @@ function SelectVehicleContent() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600">
-                          <span className="flex items-center gap-1"><Car className="w-3.5 h-3.5 text-slate-400" /> {car.vehicleType}</span>
-                          <span>•</span>
                           <span className="flex items-center gap-1"><Fuel className="w-3.5 h-3.5 text-slate-400" /> {car.fuelType}</span>
                           <span>•</span>
                           <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-slate-400" /> {car.seatingCapacity} Seats</span>
@@ -1224,7 +1233,7 @@ function SelectVehicleContent() {
                       <div className="text-left md:text-right">
                         <div className="flex items-baseline gap-2 justify-start md:justify-end flex-wrap">
                           <span className="text-2xl sm:text-3xl font-black text-amber-600">
-                            ₹{(car.pricing?.discountedPrice || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
+                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </span>
                           {isLocalBooking ? (
                             <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">

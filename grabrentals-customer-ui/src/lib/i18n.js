@@ -162,7 +162,7 @@ export const translations = {
 
     // Vans & Tempo
     vans_hero_badge: "9 to 26 Seater Vehicles",
-    vans_hero_title: "Tempo Traveller & Van Rentals",
+    vans_hero_title: "Urbania & Van Rentals",
     vans_hero_subtitle: "Travel together. Rent premium Force Urbania and luxury Tempo Travellers for outstation family trips and group tours.",
     our_van_fleet: "Our Van Fleet",
     van_fleet_sub: "Luxury pushback seats, ample luggage space, and dual AC vents for the ultimate group travel experience.",
@@ -217,7 +217,7 @@ export const translations = {
     per_km_rate: "per km",
     taxes_included: "All Taxes Included",
     advance_to_book: "Advance to Book",
-    request_callback: "Request a Corporate Callback",
+    request_callback: "Corporate / Events Booking Enquiry",
     company_name: "Company Name",
     contact_person: "Contact Person",
     corporate_email: "Corporate Email",

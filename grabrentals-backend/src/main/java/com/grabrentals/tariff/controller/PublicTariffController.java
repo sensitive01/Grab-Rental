@@ -4,6 +4,7 @@ import com.grabrentals.common.response.ApiResponse;
 import com.grabrentals.tariff.dto.VehicleModelConfigResponse;
 import com.grabrentals.tariff.service.VehicleTariffService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,7 @@ import java.util.Map;
 public class PublicTariffController {
 
     private final VehicleTariffService tariffService;
+    private final com.grabrentals.tariff.service.PricingTaxConfigService pricingTaxConfigService;
 
     @GetMapping("/models")
     public ResponseEntity<ApiResponse<List<VehicleModelConfigResponse>>> getActiveModels() {
@@ -45,5 +47,10 @@ public class PublicTariffController {
     @GetMapping("/tariffs")
     public ResponseEntity<ApiResponse<List<com.grabrentals.tariff.dto.VehicleTariffResponse>>> getPublicTariffs() {
         return ResponseEntity.ok(ApiResponse.success("All tariffs retrieved", tariffService.getAllTariffs()));
+    }
+
+    @GetMapping("/pricing-tax")
+    public ResponseEntity<ApiResponse<com.grabrentals.tariff.entity.PricingTaxConfig>> getPricingTaxConfig() {
+        return ResponseEntity.ok(ApiResponse.success("Pricing tax retrieved", pricingTaxConfigService.getConfig()));
     }
 }

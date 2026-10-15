@@ -20,10 +20,18 @@ import {
   Copy,
   AlertCircle,
   Loader2,
-  XCircle,
   AlertTriangle,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles,
+  Luggage,
+  Languages,
+  Fuel,
+  Navigation,
+  CreditCard,
+  Receipt,
+  User,
+  Info
 } from "lucide-react";
 import { customerApi } from "@/lib/customerApi";
 
@@ -41,6 +49,154 @@ function formatDateTime(isoString) {
   }
 }
 
+function parseTripDetails(booking) {
+  if (!booking) return {};
+
+  let cached = {};
+  if (typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem("grab_confirmed_booking");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.bookingReference === booking.bookingReference || parsed.id === booking.id || parsed.id === booking.bookingReference) {
+          cached = parsed;
+        }
+      }
+    } catch {}
+  }
+
+  const spec = booking.specialInstructions || "";
+
+  // Vehicle info
+  const vehicleTitle = cached.carTitle || 
+    (spec.match(/Vehicle:\s*([^|]+)/i)?.[1]?.trim()) || 
+    booking.vehicleModel || 
+    booking.assignedVehicle?.model || 
+    "WagonR, Swift or Similar";
+
+  const vehicleFuel = cached.carFuel || 
+    (spec.match(/Fuel:\s*([^|]+)/i)?.[1]?.trim()) || 
+    "CNG";
+
+  const vehicleImage = cached.carImage || 
+    (spec.match(/Image:\s*([^|]+)/i)?.[1]?.trim()) || 
+    booking.vehicleImage || 
+    booking.assignedVehicle?.image || 
+    "/images/cars/wagon_r.jpg";
+
+  const vehicleSeating = cached.carSeating || 4;
+
+  const distanceKm = cached.distanceKm || 
+    Number(spec.match(/Distance:\s*(\d+)/i)?.[1]) || 
+    0;
+
+  const duration = cached.duration || 
+    (spec.match(/Est\.\s*Duration:\s*([^|]+)/i)?.[1]?.trim()) || 
+    null;
+
+  const perKmRate = cached.perKmRate || 
+    Number(spec.match(/Rate:\s*₹?([0-9.]+)/i)?.[1]) || 
+    null;
+
+  const packageLabel = cached.packageLabel || 
+    (spec.match(/Package:\s*([^|]+)/i)?.[1]?.trim()) || 
+    null;
+
+  const intermediateStops = cached.stops || booking.stops || 
+    (spec.match(/Intermediate Stops:\s*([^|]+)/i)?.[1]?.trim()) || 
+    null;
+
+  // Add-ons
+  const hasLessThan3Years = cached.selectedAddons?.lessThan3Years ?? /Less than 3 years/i.test(spec);
+  const lessThan3YearsFee = cached.lessThan3YearsFee || Number(spec.match(/Less than 3 years[^)]*₹(\d+)/i)?.[1]) || 299;
+
+  const hasLuggageCarrier = cached.selectedAddons?.luggageCarrier ?? /Luggage Carrier/i.test(spec);
+  const luggageCarrierFee = cached.luggageCarrierFee || Number(spec.match(/Luggage Carrier[^)]*₹(\d+)/i)?.[1]) || 249;
+
+  const hasLanguageChauffeur = cached.selectedAddons?.languageChauffeur ?? /Language Chauffeur/i.test(spec);
+  const chauffeurLanguage = cached.chauffeurLanguage || 
+    (spec.match(/Language Chauffeur\s*\(([^)]+)\)/i)?.[1]?.trim()) || 
+    "English";
+  const languageChauffeurFee = cached.languageChauffeurFee || Number(spec.match(/Language Chauffeur[^)]*₹(\d+)/i)?.[1]) || 199;
+
+  const hasExpressway = cached.selectedAddons?.expressway ?? /Expressway Fastag/i.test(spec);
+  const expresswayFee = cached.expresswayFee || Number(spec.match(/Expressway Fastag[^)]*₹(\d+)/i)?.[1]) || 415;
+
+  const hasAnyAddons = hasLessThan3Years || hasLuggageCarrier || hasLanguageChauffeur || hasExpressway;
+  const addonsTotal = (hasLessThan3Years ? lessThan3YearsFee : 0) +
+                      (hasLuggageCarrier ? luggageCarrierFee : 0) +
+                      (hasLanguageChauffeur ? languageChauffeurFee : 0) +
+                      (hasExpressway ? expresswayFee : 0);
+
+  // Coupon
+  const couponCode = cached.couponCode || spec.match(/Coupon Applied:\s*([A-Za-z0-9_-]+)/i)?.[1] || null;
+  const couponDiscount = cached.couponDiscount || Number(spec.match(/Saved ₹(\d+)/i)?.[1]) || 0;
+
+  // Special instructions entered by passenger
+  let userNote = cached.userSpecialInstructions || "";
+  if (!userNote && spec) {
+    const firstTagIdx = spec.search(/\b(Vehicle:|Package:|Intermediate Stops:|Distance:|Image:|Fuel:|Rate:|BaseFare:)/i);
+    if (firstTagIdx > 0) {
+      userNote = spec.substring(0, firstTagIdx).replace(/\|\s*$/, "").trim();
+    } else if (firstTagIdx === -1 && !spec.includes("Vehicle:")) {
+      userNote = spec.trim();
+    }
+  }
+
+  // Financial values
+  const totalFare = Number(booking.totalFare || cached.totalAmount || 0);
+  const advancePaid = Number(booking.advancePaid ?? cached.advanceAmount ?? totalFare);
+  const dueAmount = totalFare > advancePaid ? totalFare - advancePaid : 0;
+
+  let baseFare = cached.baseFare || Number(spec.match(/BaseFare:\s*₹?(\d+)/i)?.[1]);
+  let driverAllowance = cached.driverAllowance || Number(spec.match(/DriverAllowance:\s*₹?(\d+)/i)?.[1]);
+  let driverAllowanceLabel = cached.driverAllowanceLabel || spec.match(/DriverAllowance:\s*₹?\d+\s*\(([^)]+)\)/i)?.[1] || "Driver Allowance";
+  let taxes = cached.taxes || Number(spec.match(/Taxes:\s*₹?(\d+)/i)?.[1]);
+  let gstLabel = cached.gstLabel || spec.match(/Taxes:\s*₹?\d+\s*\(([^)]+)\)/i)?.[1] || "GST";
+
+  if (!baseFare || baseFare <= 0) {
+    const net = Math.max(0, totalFare + couponDiscount - addonsTotal);
+    baseFare = Math.round(net / 1.166);
+    driverAllowance = Math.round(baseFare * 0.10);
+    taxes = Math.max(0, totalFare + couponDiscount - baseFare - driverAllowance - addonsTotal);
+  }
+
+  return {
+    vehicleTitle,
+    vehicleFuel,
+    vehicleImage,
+    vehicleSeating,
+    distanceKm,
+    duration,
+    perKmRate,
+    packageLabel,
+    intermediateStops,
+    hasLessThan3Years,
+    lessThan3YearsFee,
+    hasLuggageCarrier,
+    luggageCarrierFee,
+    hasLanguageChauffeur,
+    chauffeurLanguage,
+    languageChauffeurFee,
+    hasExpressway,
+    expresswayFee,
+    hasAnyAddons,
+    addonsTotal,
+    couponCode,
+    couponDiscount,
+    userNote,
+    totalFare,
+    advancePaid,
+    dueAmount,
+    baseFare,
+    driverAllowance,
+    driverAllowanceLabel,
+    taxes,
+    gstLabel,
+    dropDate: cached.dropDate || cached.returnDateTime || null
+  };
+}
+
 export default function TripDetailsTrackingPage({ params }) {
   const unwrappedParams = use(params);
   const bookingId = unwrappedParams?.id || "";
@@ -51,7 +207,7 @@ export default function TripDetailsTrackingPage({ params }) {
   const [copiedOtp, setCopiedOtp] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
+  const [toast, setToast] = useState(null);
 
   const showNotification = (type, message) => {
     setToast({ type, message });
@@ -73,11 +229,22 @@ export default function TripDetailsTrackingPage({ params }) {
           fetchAndCacheAdminVehicleModels().catch(() => [])
         ]);
         if (!isCancelled && res?.data) {
-          setBooking(res.data);
+          let merged = res.data;
+          if (typeof window !== "undefined") {
+            try {
+              const cached = sessionStorage.getItem("grab_confirmed_booking");
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                if (parsed.bookingReference === bookingId || parsed.id === bookingId) {
+                  merged = { ...parsed, ...res.data };
+                }
+              }
+            } catch {}
+          }
+          setBooking(merged);
         }
       } catch (err) {
         console.warn("Error fetching booking by ID:", err);
-        // Try fallback to session cache if same reference
         if (typeof window !== "undefined") {
           try {
             const cached = sessionStorage.getItem("grab_confirmed_booking");
@@ -162,14 +329,11 @@ export default function TripDetailsTrackingPage({ params }) {
   }
 
   const { dateStr, timeStr } = formatDateTime(booking.pickupDateTime);
-  const totalFare = Number(booking.totalFare || 0);
-  const advancePaid = Number(booking.advancePaid || 0);
-  const dueAmount = totalFare > advancePaid ? totalFare - advancePaid : 0;
+  const parsed = parseTripDetails(booking);
+  const returnDateTimeObj = booking.returnDateTime ? formatDateTime(booking.returnDateTime) : (parsed.dropDate ? formatDateTime(parsed.dropDate) : null);
   const isCancelledState = booking.status === "CANCELLED";
-
   const { modelName, carImage, categoryLabel } = resolveCarModelAndImage(booking);
 
-  // Determine stepper state from booking.status
   const statusStepMap = {
     PENDING_ALLOCATION: 1,
     REASSIGN_REQUIRED: 1,
@@ -180,6 +344,10 @@ export default function TripDetailsTrackingPage({ params }) {
     CANCELLED: 0
   };
   const currentStep = statusStepMap[booking.status] || 1;
+
+  const stopsList = parsed.intermediateStops
+    ? parsed.intermediateStops.split("|").map((s) => s.trim()).filter(Boolean)
+    : [];
 
   return (
     <main className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-10">
@@ -229,16 +397,37 @@ export default function TripDetailsTrackingPage({ params }) {
               }`}>
                 ● {booking.status}
               </span>
+              {parsed.packageLabel && (
+                <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                  {parsed.packageLabel}
+                </span>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
               {booking.pickupCity} ➔ {booking.dropCity}
             </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              {booking.tripType === "ROUND_TRIP" ? "Round Trip" : "One-Way"} • Scheduled for {dateStr} at {timeStr}
+            <p className="text-xs text-slate-500 font-medium flex items-center gap-2 flex-wrap">
+              <span>{booking.tripType === "ROUND_TRIP" ? "Round Trip" : "One-Way Outstation"}</span>
+              <span>•</span>
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" /> {dateStr}
+              </span>
+              <span>•</span>
+              <span className="inline-flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-slate-400" /> {timeStr}
+              </span>
+              {booking.tripType === "ROUND_TRIP" && returnDateTimeObj?.dateStr && (
+                <>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 font-bold">
+                    <Calendar className="w-3.5 h-3.5 text-amber-600" /> Return: {returnDateTimeObj.dateStr}
+                  </span>
+                </>
+              )}
             </p>
           </div>
 
-          {/* Ride OTP Box if confirmed */}
+          {/* Ride OTP Box */}
           {booking.rideOtp && !isCancelledState && (
             <div className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border border-amber-300/80 rounded-2xl p-4 flex items-center gap-4 shrink-0">
               <div className="w-11 h-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
@@ -304,23 +493,127 @@ export default function TripDetailsTrackingPage({ params }) {
           </div>
         )}
 
-        {/* 2-Column Grid: Details & Fare */}
+        {/* 2-Column Grid: Left Details & Right Financial Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* Left: Chauffeur & Vehicle */}
+          {/* Left Column: All chosen details from location to add-ons */}
           <div className="lg:col-span-7 space-y-6">
             
+            {/* 1. Complete Route & Locations Chosen */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-amber-600" /> Route & Location Itinerary
+                </h3>
+                {parsed.distanceKm > 0 && (
+                  <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
+                    {parsed.distanceKm} km {parsed.duration ? `• ~${parsed.duration}` : ""}
+                  </span>
+                )}
+              </div>
+
+              {/* Step-by-step route itinerary */}
+              <div className="space-y-4 text-xs">
+                {/* Pickup */}
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-extrabold text-emerald-800 text-[10px] uppercase tracking-wider">
+                      Pickup Point • {booking.pickupCity}
+                    </span>
+                    <p className="font-bold text-slate-900 text-sm leading-snug">{booking.pickupAddress}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">Scheduled: {dateStr} at {timeStr}</p>
+                  </div>
+                </div>
+
+                {/* Intermediate Halts (if any added) */}
+                {stopsList.length > 0 && (
+                  <div className="pl-3 border-l-2 border-dashed border-amber-300 ml-3 space-y-3 py-1">
+                    {stopsList.map((stop, idx) => (
+                      <div key={idx} className="flex items-start gap-2.5 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/80">
+                        <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-amber-800 text-[10px] uppercase tracking-wider">
+                            Intermediate Halt #{idx + 1}
+                          </span>
+                          <p className="font-bold text-slate-900">{stop}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Drop Destination */}
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-rose-50 border border-rose-300 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-extrabold text-rose-800 text-[10px] uppercase tracking-wider">
+                      Drop Destination • {booking.dropCity}
+                    </span>
+                    <p className="font-bold text-slate-900 text-sm leading-snug">{booking.dropAddress}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">Direct destination delivery</p>
+                  </div>
+                </div>
+
+                {/* Return Trip Leg if Round Trip */}
+                {booking.tripType === "ROUND_TRIP" && (
+                  <div className="flex items-start gap-3 pt-2">
+                    <div className="w-6 h-6 rounded-full bg-teal-50 border border-teal-300 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="font-extrabold text-teal-800 text-[10px] uppercase tracking-wider">
+                        Round Trip Return • {booking.pickupCity}
+                      </span>
+                      <p className="font-bold text-slate-900 text-sm leading-snug">{booking.pickupAddress}</p>
+                      {returnDateTimeObj?.dateStr && (
+                        <p className="text-[11px] text-teal-700 font-bold">
+                          Scheduled Return: {returnDateTimeObj.dateStr}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Route specifications strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 text-center">
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Distance</span>
+                  <span className="text-xs font-black text-slate-900">{parsed.distanceKm || "Calculated"} km</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Trip Mode</span>
+                  <span className="text-xs font-black text-slate-900">{booking.tripType === "ROUND_TRIP" ? "Round Trip" : "One-Way"}</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Est. Duration</span>
+                  <span className="text-xs font-black text-slate-900">{parsed.duration || "Direct Route"}</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Base Tariff</span>
+                  <span className="text-xs font-black text-slate-900">{parsed.perKmRate ? `₹${parsed.perKmRate}/km` : "Standard"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Assigned Vehicle & Chauffeur Specification */}
             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                Assigned Asset & Chauffeur
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <Car className="w-4 h-4 text-amber-600" /> Selected Vehicle & Chauffeur
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Vehicle Card */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3.5">
                   <div className="relative w-16 h-12 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0 shadow-2xs">
                     <Image
-                      src={carImage}
-                      alt={modelName}
+                      src={parsed.vehicleImage || carImage}
+                      alt={parsed.vehicleTitle || modelName}
                       fill
                       sizes="64px"
                       className="object-cover"
@@ -329,12 +622,15 @@ export default function TripDetailsTrackingPage({ params }) {
                   <div className="min-w-0">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Vehicle</span>
                     <h4 className="text-xs font-extrabold text-slate-900 truncate">
-                      {booking.assignedVehicle ? `${booking.assignedVehicle.model} (${booking.assignedVehicle.vehicleNumber})` : modelName}
+                      {booking.assignedVehicle ? `${booking.assignedVehicle.model} (${booking.assignedVehicle.vehicleNumber})` : (parsed.vehicleTitle || modelName)}
                     </h4>
-                    <p className="text-[11px] text-slate-500 font-medium">{categoryLabel}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      {categoryLabel} • {parsed.vehicleFuel}
+                    </p>
                   </div>
                 </div>
 
+                {/* Chauffeur Card */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chauffeur</span>
                   <h4 className="text-xs font-extrabold text-slate-900">
@@ -346,37 +642,134 @@ export default function TripDetailsTrackingPage({ params }) {
                 </div>
               </div>
 
-              {/* Route specifics */}
-              <div className="pt-2 space-y-3 text-xs">
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-400 text-[10px] uppercase">Pickup Point</span>
-                    <p className="font-bold text-slate-800">{booking.pickupAddress}</p>
-                  </div>
-                </div>
+              {/* Vehicle specifications badges */}
+              <div className="flex items-center gap-2 flex-wrap text-[11px] font-bold pt-1">
+                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-slate-500" /> {booking.vehicleCategory || "HATCHBACK"}
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 flex items-center gap-1.5">
+                  <Fuel className="w-3.5 h-3.5 text-slate-500" /> {parsed.vehicleFuel}
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-slate-500" /> {parsed.vehicleSeating} Seater • AC
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 flex items-center gap-1.5">
+                  <Luggage className="w-3.5 h-3.5 text-slate-500" /> {parsed.vehicleSeating >= 6 ? "4 Bags Allowance" : "3 Bags Allowance"}
+                </span>
+              </div>
+            </div>
 
-                {booking.stops && (
-                  booking.stops.split(/[|,]/).map((s) => s.trim()).filter(Boolean).map((stop, sIdx, arr) => (
-                    <div key={sIdx} className="flex items-start gap-2.5 bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60">
-                      <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-bold text-amber-700 text-[10px] uppercase">
-                          Intermediate Halt {arr.length > 1 ? `#${sIdx + 1}` : ""}
-                        </span>
-                        <p className="font-bold text-slate-900">{stop}</p>
-                      </div>
-                    </div>
-                  ))
+            {/* 3. Primary Passenger & Custom Pickup Instructions */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <User className="w-4 h-4 text-amber-600" /> Primary Passenger Details
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Passenger Name</span>
+                  <p className="font-extrabold text-slate-900">{booking.passengerName || booking.customerName || "Customer on File"}</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Contact Phone</span>
+                  <p className="font-extrabold text-slate-900">{booking.passengerPhone || booking.customerPhone || "+91 Contact on File"}</p>
+                </div>
+              </div>
+
+              {parsed.userNote && (
+                <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 space-y-1">
+                  <span className="text-[10px] font-black uppercase text-amber-800 tracking-wider flex items-center gap-1">
+                    <Info className="w-3 h-3 text-amber-600" /> Special Instructions / Notes
+                  </span>
+                  <p className="font-medium text-amber-900">{parsed.userNote}</p>
+                </div>
+              )}
+            </div>
+
+            {/* 4. Selected Add-on Services ("Personalize Your Journey") */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-600" /> Selected Add-ons &quot;Personalize Your Journey&quot;
+                </h3>
+                {parsed.hasAnyAddons && (
+                  <span className="text-[11px] font-extrabold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200">
+                    +₹{parsed.addonsTotal} Total Add-ons
+                  </span>
                 )}
+              </div>
 
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-400 text-[10px] uppercase">Drop Destination</span>
-                    <p className="font-bold text-slate-800">{booking.dropAddress}</p>
-                  </div>
+              {parsed.hasAnyAddons ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {parsed.hasLessThan3Years && (
+                    <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
+                          <Car className="w-3.5 h-3.5 text-amber-700" /> Vehicle &lt; 3 Years Old
+                        </span>
+                        <span className="font-black text-amber-900 font-mono">+₹{parsed.lessThan3YearsFee}</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800">Assured brand new vehicle condition (&lt; 3 years old).</p>
+                    </div>
+                  )}
+
+                  {parsed.hasLuggageCarrier && (
+                    <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
+                          <Luggage className="w-3.5 h-3.5 text-amber-700" /> Rooftop Luggage Carrier
+                        </span>
+                        <span className="font-black text-amber-900 font-mono">+₹{parsed.luggageCarrierFee}</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800">Cab equipped with top carrier for extra baggage.</p>
+                    </div>
+                  )}
+
+                  {parsed.hasLanguageChauffeur && (
+                    <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
+                          <Languages className="w-3.5 h-3.5 text-amber-700" /> Preferred Language Chauffeur
+                        </span>
+                        <span className="font-black text-amber-900 font-mono">+₹{parsed.languageChauffeurFee}</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800">Assigned chauffeur speaks {parsed.chauffeurLanguage}.</p>
+                    </div>
+                  )}
+
+                  {parsed.hasExpressway && (
+                    <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
+                          <Navigation className="w-3.5 h-3.5 text-amber-700" /> Expressway FASTag Pass
+                        </span>
+                        <span className="font-black text-amber-900 font-mono">+₹{parsed.expresswayFee}</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800">Expressway toll charges included.</p>
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <p>Standard ride package chosen. Includes verified commercial fleet, AC, sanitization, and baggage space.</p>
+                </div>
+              )}
+            </div>
+
+            {/* 5. Inclusions & Policies Checklist */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Trip Inclusions & Coverage
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700">
+                <div className="flex items-center gap-2 text-emerald-700">✓ <span className="text-slate-700">Base Fare & Fuel Charges Included</span></div>
+                <div className="flex items-center gap-2 text-emerald-700">✓ <span className="text-slate-700">Driver Allowance & Day Duty Covered</span></div>
+                <div className="flex items-center gap-2 text-emerald-700">✓ <span className="text-slate-700">GST on Commercial Passenger Transport</span></div>
+                <div className="flex items-center gap-2 text-emerald-700">✓ <span className="text-slate-700">State Road Permits & Intercity Tax</span></div>
+                <div className="flex items-center gap-2 text-emerald-700">✓ <span className="text-slate-700">Full AC throughout the journey</span></div>
+                <div className="flex items-center gap-2 text-emerald-700">✓ <span className="text-slate-700">Doorstep Pickup & Destination Drop</span></div>
               </div>
             </div>
 
@@ -400,39 +793,136 @@ export default function TripDetailsTrackingPage({ params }) {
 
           </div>
 
-          {/* Right: Payment Breakdown */}
+          {/* Right Column: Complete Financial & Fare Breakdown */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                Financial Summary
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-amber-600" /> Complete Fare Breakdown
               </h3>
 
-              <div className="space-y-2.5 text-xs text-slate-600">
+              <div className="space-y-3 text-xs text-slate-600">
+                {/* Base fare */}
                 <div className="flex justify-between items-center">
+                  <span>Base Outstation Fare {parsed.distanceKm > 0 ? `(${parsed.distanceKm} km)` : ""}</span>
+                  <span className="font-bold text-slate-900">₹{parsed.baseFare.toLocaleString()}</span>
+                </div>
+
+                {/* Driver Allowance */}
+                <div className="flex justify-between items-center">
+                  <span>{parsed.driverAllowanceLabel}</span>
+                  <span className="font-bold text-slate-900">₹{parsed.driverAllowance.toLocaleString()}</span>
+                </div>
+
+                {/* GST */}
+                <div className="flex justify-between items-center">
+                  <span>{parsed.gstLabel}</span>
+                  <span className="font-bold text-slate-900">₹{parsed.taxes.toLocaleString()}</span>
+                </div>
+
+                {/* Itemized Add-ons */}
+                {parsed.hasLessThan3Years && (
+                  <div className="flex justify-between items-center text-amber-800">
+                    <span>Vehicle &lt; 3 Years Old</span>
+                    <span className="font-bold">+ ₹{parsed.lessThan3YearsFee}</span>
+                  </div>
+                )}
+
+                {parsed.hasLuggageCarrier && (
+                  <div className="flex justify-between items-center text-amber-800">
+                    <span>Cab with Luggage Carrier</span>
+                    <span className="font-bold">+ ₹{parsed.luggageCarrierFee}</span>
+                  </div>
+                )}
+
+                {parsed.hasLanguageChauffeur && (
+                  <div className="flex justify-between items-center text-amber-800">
+                    <span>Language Chauffeur ({parsed.chauffeurLanguage})</span>
+                    <span className="font-bold">+ ₹{parsed.languageChauffeurFee}</span>
+                  </div>
+                )}
+
+                {parsed.hasExpressway && (
+                  <div className="flex justify-between items-center text-amber-800">
+                    <span>Expressway Toll FASTag</span>
+                    <span className="font-bold">+ ₹{parsed.expresswayFee}</span>
+                  </div>
+                )}
+
+                {/* FASTag Toll */}
+                <div className="flex justify-between items-center">
+                  <span>FASTag Highway Toll</span>
+                  <span className="text-emerald-700 font-bold">Included (₹0)</span>
+                </div>
+
+                {/* Coupon discount if any */}
+                {parsed.couponDiscount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-700 font-bold">
+                    <span>Coupon Applied ({parsed.couponCode || "Discount"})</span>
+                    <span>- ₹{parsed.couponDiscount.toLocaleString()}</span>
+                  </div>
+                )}
+
+                {/* Total Booking Fare */}
+                <div className="pt-3 border-t border-slate-200 flex justify-between items-center text-sm font-black text-slate-900">
                   <span>Total Booking Amount</span>
-                  <span className="font-bold text-slate-900">₹{totalFare.toLocaleString()}</span>
+                  <span className="text-base text-slate-950 font-black">₹{parsed.totalFare.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center text-emerald-700 font-bold">
+
+                {/* Advance Received */}
+                <div className="flex justify-between items-center text-emerald-700 font-extrabold bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200/60">
                   <span>Advance Received</span>
-                  <span>✓ ₹{advancePaid.toLocaleString()}</span>
+                  <span>✓ ₹{parsed.advancePaid.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-500">
+
+                {/* Payment Status */}
+                <div className="flex justify-between items-center text-slate-500 pt-1">
                   <span>Payment Status</span>
-                  <span className="font-mono uppercase text-[11px] font-bold">{booking.paymentStatus}</span>
+                  <span className="font-mono uppercase text-[11px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
+                    {booking.paymentStatus || "FULL_PAID"}
+                  </span>
                 </div>
-                {dueAmount > 0 && (
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-sm font-black text-slate-900">
-                    <span>Payable to Driver</span>
-                    <span className="text-amber-700">₹{dueAmount.toLocaleString()}</span>
+
+                {/* Remaining Due to driver if any */}
+                {parsed.dueAmount > 0 && (
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-sm font-black text-amber-900 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200">
+                    <span>Payable to Chauffeur</span>
+                    <span className="text-amber-800">₹{parsed.dueAmount.toLocaleString()}</span>
                   </div>
                 )}
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-50 text-[11px] text-slate-500 space-y-1">
-                <div className="flex items-center gap-1 font-bold text-slate-700">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Official Tax Invoice
+              {/* Tax Invoice Badge */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 text-[11px] text-slate-500 space-y-1 border border-slate-100">
+                <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" /> Official Tax Invoice (SAC: 9966)
                 </div>
-                <p>Includes GST, state passenger permits, and driver trip allowance.</p>
+                <p>Includes GST, commercial passenger permits, and driver trip allowance.</p>
+                <div className="pt-1.5">
+                  <Link
+                    href={`/account/bookings/${booking.bookingReference || booking.id}/invoice`}
+                    className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-800 font-extrabold text-xs underline"
+                  >
+                    Download / Print Tax Invoice ➔
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Need Help Card */}
+            <div className="p-5 rounded-3xl bg-white border border-slate-200 space-y-2">
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-amber-600" /> 24/7 Grab Rentals Trip Support
+              </h4>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Need to change pickup time, update address, or require special assistance? Contact our dispatch desk anytime.
+              </p>
+              <div className="pt-1">
+                <a
+                  href="tel:+919071100200"
+                  className="inline-flex items-center gap-1.5 font-bold text-xs text-amber-700 hover:text-amber-800"
+                >
+                  📞 Call Operations Helpline (+91 90711 00200)
+                </a>
               </div>
             </div>
           </div>

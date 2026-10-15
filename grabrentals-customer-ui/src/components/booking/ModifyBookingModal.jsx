@@ -20,7 +20,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const [stops, setStops] = useState(() => {
     if (Array.isArray(currentTrip?.stops)) return currentTrip.stops;
     if (typeof currentTrip?.stops === "string" && currentTrip.stops.trim()) {
-      return currentTrip.stops.split(/[|,]/).map((s) => s.trim()).filter(Boolean);
+      return currentTrip.stops.split("|").map((s) => s.trim()).filter(Boolean);
     }
     return [];
   });
@@ -28,6 +28,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const defaultDT = getDefaultPickupDateTime();
   const [date, setDate] = useState(currentTrip?.date || defaultDT.date);
   const [time, setTime] = useState(currentTrip?.time || defaultDT.time);
+  const [dropDate, setDropDate] = useState(currentTrip?.dropDate || currentTrip?.returnDate || "");
 
   const minPickup = getMinPickupDate();
   const minDateStr = formatLocalDate(minPickup);
@@ -48,6 +49,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   // If selected time is not in available slots, snap to first available
   useEffect(() => {
     if (availableTimeSlots.length > 0 && !availableTimeSlots.some((s) => s.value === time)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTime(availableTimeSlots[0].value);
     }
   }, [availableTimeSlots, time]);
@@ -83,7 +85,8 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
       tripType: isLocal ? "Hourly Package" : (currentTrip?.tripType || tripType),
       serviceType: isLocal ? "LOCAL" : isAirport ? "AIRPORT" : (currentTrip?.serviceType || "OUTSTATION"),
       date,
-      time
+      time,
+      dropDate: tripType.toLowerCase().includes("round") ? dropDate : undefined
     });
     onClose();
   };
@@ -217,8 +220,8 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
             </>
           )}
 
-          {/* Date & Time: Two Clean Fields with Gap */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Date & Time: Responsive Grid with Return Date for Round Trip */}
+          <div className={`grid grid-cols-1 ${tripType.toLowerCase().includes("round") ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4`}>
             <div>
               <label className="font-bold text-slate-700 block mb-1">Pickup Date</label>
               <div className="relative">
@@ -243,6 +246,23 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
                 size="compact"
               />
             </div>
+
+            {tripType.toLowerCase().includes("round") && (
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Return Date</label>
+                <div className="relative">
+                  <Calendar className="w-4 h-4 text-amber-500 absolute left-3 top-3 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={dropDate}
+                    min={date || minDateStr}
+                    onChange={(e) => setDropDate(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-amber-300 font-semibold text-slate-900 focus:outline-none focus:border-amber-500 cursor-pointer bg-amber-50/30"
+                    required
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 flex justify-end gap-2">

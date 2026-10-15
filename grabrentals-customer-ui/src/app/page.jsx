@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import BookingWidget from "@/components/home/BookingWidget";
+import VehicleClassSelector from "@/components/home/VehicleClassSelector";
 import {
   CheckCircle,
   ShieldCheck,
@@ -204,75 +205,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {[
-              {
-                slug: "sedan",
-                name: t("fleet_sedan_name") || "Executive Sedan",
-                price: `${t("price_starts") || "Starts"} ₹11/km`,
-                desc: "Dzire, Etios, Aura",
-                tags: ["4 Seats", "2 Bags", "AC"],
-                image: "/images/fleet/sedan.jpg"
-              },
-              {
-                slug: "suv",
-                name: t("fleet_suv_name") || "Innova Crysta / SUV",
-                price: `${t("price_starts") || "Starts"} ₹16/km`,
-                desc: "Innova Crysta, Hycross",
-                tags: ["6-7 Seats", "4 Bags", "AC", "Captain Seats"],
-                image: "/images/fleet/suv.jpg"
-              },
-              {
-                slug: "tempo",
-                name: t("fleet_tempo_name") || "Luxury Tempo Traveller",
-                price: `${t("price_starts") || "Starts"} ₹24/km`,
-                desc: "12 to 26 Seater Force Urbania",
-                tags: ["Maharaja Recliner", "AC", "AV System"],
-                image: "/images/fleet/tempo.jpg"
-              },
-              {
-                slug: "bus",
-                name: t("fleet_bus_name") || "Luxury Coaches & Buses",
-                price: `${t("price_starts") || "Starts"} ₹45/km`,
-                desc: "35 to 55 Seater Volvo, Scania",
-                tags: ["Washroom", "Mic", "Air Suspension"],
-                image: "/images/fleet/bus.jpg"
-              },
-            ].map((fleet, idx) => (
-              <Link
-                key={idx}
-                href={`/fleet/${fleet.slug}`}
-                className="bg-white rounded-2xl p-5 border border-slate-200/90 flex flex-col items-center text-center relative hover:shadow-xl hover:border-amber-400 transition-all cursor-pointer group"
-              >
-                <div className="w-full aspect-[16/9] relative mb-4 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
-                  <Image
-                    src={fleet.image}
-                    alt={fleet.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 300px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 mb-0.5 group-hover:text-amber-600 transition-colors">
-                  {fleet.name}
-                </h3>
-                <p className="text-xs font-semibold text-slate-500 mb-3">{fleet.desc}</p>
-                <div className="flex flex-wrap gap-1.5 justify-center mb-5">
-                  {fleet.tags.map(tag => (
-                    <span key={tag} className="text-[9px] font-extrabold uppercase tracking-wider bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded text-slate-600">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-auto flex items-center justify-between w-full pt-3.5 border-t border-slate-100">
-                  <span className="text-sm sm:text-base font-black text-emerald-600">{fleet.price}</span>
-                  <span className="text-xs font-black text-brand-orange group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                    {t("view_details") || "Details →"}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <VehicleClassSelector />
         </div>
       </section>
 

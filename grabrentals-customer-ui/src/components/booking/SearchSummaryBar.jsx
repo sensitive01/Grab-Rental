@@ -16,6 +16,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
     tripType: searchParams?.get("tripType") || "One way",
     date: searchParams?.get("pickupDate") || "28-09-2026",
     time: searchParams?.get("pickupTime") || "07:00 AM",
+    dropDate: searchParams?.get("dropDate") || searchParams?.get("returnDate") || null,
     distanceKm: 365,
     duration: null,
     tollPrice: 0,
@@ -36,6 +37,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
               tripType: parsed.trip.tripType || "One way",
               date: parsed.trip.date || "28-09-2026",
               time: parsed.trip.time || "07:00 AM",
+              dropDate: parsed.trip.dropDate || parsed.trip.returnDate || parsed.dropDate || null,
               serviceType: parsed.trip.serviceType || "OUTSTATION",
               distanceKm: parsed.distanceKm || 365,
               duration: parsed.duration || null,
@@ -55,6 +57,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
             tripType: parsed.tripType || "One way",
             date: parsed.date || "28-09-2026",
             time: parsed.time || "07:00 AM",
+            dropDate: parsed.dropDate || parsed.returnDate || null,
             serviceType: parsed.serviceType || "OUTSTATION",
             distanceKm: parsed.distanceKm || 365,
             duration: parsed.duration || null,
@@ -78,6 +81,24 @@ function SearchSummaryContent({ activeStep = 1 }) {
     return pkgStr;
   };
 
+  const formatDateDisplay = (dStr) => {
+    if (!dStr) return "";
+    try {
+      const parts = String(dStr).split("-");
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          const [yyyy, mm, dd] = parts;
+          return `${dd}/${mm}/${yyyy}`;
+        }
+        return dStr;
+      }
+      return dStr;
+    } catch {
+      return dStr;
+    }
+  };
+
+  const isRoundTrip = !isLocal && (tripInfo.tripType || "").toLowerCase().includes("round");
   const packageLabel = formatPackageLabel(tripInfo.to);
   const cleanCity = (str) => (str ? str.split(",")[0].trim() : "");
 
@@ -97,7 +118,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
               <>
                 {tripInfo.stops && (
                   <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    Via {tripInfo.stops.replace(/\|/g, ", ")}
+                    Via {tripInfo.stops.split("|").map(s => s.split(",")[0].trim()).join(", ")}
                   </span>
                 )}
                 <span className="text-slate-400 font-bold">→</span>
@@ -110,12 +131,20 @@ function SearchSummaryContent({ activeStep = 1 }) {
             )}
           </div>
           
-          <div className="flex items-center gap-4 text-xs font-semibold text-slate-600">
-            <span>{tripInfo.date} • {tripInfo.time}</span>
+          <div className="flex items-center gap-3 sm:gap-4 text-xs font-semibold text-slate-600 flex-wrap">
+            <span>Pickup: {formatDateDisplay(tripInfo.date)} • {tripInfo.time}</span>
+            {isRoundTrip && tripInfo.dropDate && (
+              <>
+                <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                <span className="text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-bold">
+                  Return: {formatDateDisplay(tripInfo.dropDate)}
+                </span>
+              </>
+            )}
             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
             <span>{isLocal ? "Chauffeur-Driven Local Hourly Rental" : "Chauffeur-Driven Outstation"}</span>
             <Link 
-              href={`/outstation/select-vehicle?from=${encodeURIComponent(tripInfo.from)}&to=${encodeURIComponent(tripInfo.to)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}&serviceType=${encodeURIComponent(tripInfo.serviceType || 'OUTSTATION')}`} 
+              href={`/outstation/select-vehicle?from=${encodeURIComponent(tripInfo.from)}&to=${encodeURIComponent(tripInfo.to)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}&serviceType=${encodeURIComponent(tripInfo.serviceType || 'OUTSTATION')}&pickupDate=${encodeURIComponent(tripInfo.date || '')}&pickupTime=${encodeURIComponent(tripInfo.time || '')}${tripInfo.dropDate ? `&dropDate=${encodeURIComponent(tripInfo.dropDate)}` : ''}`} 
               className="text-amber-700 hover:text-amber-900 hover:underline flex items-center gap-1 font-bold ml-2"
             >
               <Edit2 className="w-3.5 h-3.5" /> {t("modify_trip")}

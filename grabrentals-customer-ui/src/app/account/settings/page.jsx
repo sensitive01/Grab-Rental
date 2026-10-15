@@ -41,14 +41,19 @@ function SettingsContent() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
   useEffect(() => {
+    let timer;
     const token = typeof window !== "undefined" ? localStorage.getItem("rental_access_token") : null;
     if (!token) {
-      router.push("/login");
-      return;
+      timer = setTimeout(() => {
+        router.push("/login");
+      }, 0);
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
     }
 
     fetchProfile(token);
-  }, []);
+  }, [router]);
 
   const fetchProfile = async (token) => {
     setIsLoading(true);

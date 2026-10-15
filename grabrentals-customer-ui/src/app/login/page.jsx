@@ -45,11 +45,17 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
+    let timer;
     if (isAuthenticated()) {
       const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
       const redirectUrl = params?.get("redirect") || "/dashboard";
-      router.replace(redirectUrl);
+      timer = setTimeout(() => {
+        router.replace(redirectUrl);
+      }, 0);
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [router]);
 
   // Countdown timer for OTP resend

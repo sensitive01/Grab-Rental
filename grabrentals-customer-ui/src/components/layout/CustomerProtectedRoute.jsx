@@ -10,12 +10,18 @@ export default function CustomerProtectedRoute({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
+    let timer;
     if (!isAuthenticated()) {
       const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
-      router.replace(redirectUrl);
+      timer = setTimeout(() => {
+        router.replace(redirectUrl);
+      }, 0);
     } else {
       setIsAuthorized(true);
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [router, pathname]);
 
   if (!isAuthorized) {

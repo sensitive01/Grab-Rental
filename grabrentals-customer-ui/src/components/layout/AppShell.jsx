@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { 
   ShieldCheck, 
   Star, 
@@ -23,13 +23,14 @@ import {
   Bell,
   Car,
   Clock,
-  Plane
+  Plane,
+  ChevronRight,
+  Globe
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -62,6 +63,18 @@ export default function AppShell({ children }) {
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  // Lock background scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   // Click outside to close Book Now dropdown
   useEffect(() => {
     const handleDocClick = (e) => {
@@ -79,10 +92,10 @@ export default function AppShell({ children }) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("rental_access_token");
       localStorage.removeItem("rental_user");
+      setCurrentUser(null);
+      setUserMenuOpen(false);
+      window.location.href = "/";
     }
-    setCurrentUser(null);
-    setUserMenuOpen(false);
-    router.push("/");
   };
 
   const { t, language, setLanguage } = useLanguage();
@@ -206,27 +219,26 @@ export default function AppShell({ children }) {
 
       {/* B. Sticky Main Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-50 h-16 sm:h-20 px-3 sm:px-6 lg:px-8 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3 lg:gap-8 h-full min-w-0 flex-1">
-          
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
-            <img
-              src="/images/brand-logo.png"
-              alt="Grab Rentals"
-              className="h-9 sm:h-12 w-auto object-contain drop-shadow-sm shrink-0"
-            />
-            <div className="flex flex-col min-w-0">
-              <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight truncate">
-                GRAB RENTALS
-              </span>
-              <span className="hidden sm:block text-[8px] sm:text-[9px] font-bold text-amber-600 uppercase tracking-widest leading-tight truncate">
-                Grab Comfort in Every Mile
-              </span>
-            </div>
-          </Link>
+        
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
+          <img
+            src="/images/brand-logo.png"
+            alt="Grab Rentals"
+            className="h-9 sm:h-12 w-auto object-contain drop-shadow-sm shrink-0"
+          />
+          <div className="flex flex-col min-w-0">
+            <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight truncate">
+              GRAB RENTALS
+            </span>
+            <span className="hidden sm:block text-[8px] sm:text-[9px] font-bold text-amber-600 uppercase tracking-widest leading-tight truncate">
+              Grab Comfort in Every Mile
+            </span>
+          </div>
+        </Link>
 
-          {/* Service Tabs */}
-          <nav className="hidden lg:flex items-center h-full space-x-1 lg:ml-4 whitespace-nowrap overflow-visible flex-1">
+        {/* Service Tabs - Centered */}
+        <nav className="hidden lg:flex items-center justify-center h-full space-x-1 lg:space-x-1.5 whitespace-nowrap overflow-visible flex-1 px-4">
             
             {/* 1. Book Now Dropdown */}
             <div 
@@ -298,7 +310,6 @@ export default function AppShell({ children }) {
               </Link>
             ))}
           </nav>
-        </div>
 
         {/* Header Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto whitespace-nowrap flex-shrink-0">
@@ -424,21 +435,106 @@ export default function AppShell({ children }) {
           </button>
         </div>
 
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
+      </header>
+
+      {/* Mobile Navigation Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] lg:hidden flex justify-end animate-in fade-in duration-200">
+          {/* Backdrop Overlay */}
           <div 
-            className="lg:hidden fixed inset-x-0 top-16 sm:top-20 bottom-0 bg-slate-950/60 backdrop-blur-xs z-50 animate-fade-in"
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Slide-in Drawer Container */}
+          <div 
+            className="relative w-full max-w-[360px] xs:max-w-[380px] sm:max-w-md bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-250 ease-out"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div 
-              className="bg-white border-b border-slate-200 px-5 py-4 shadow-2xl space-y-4 max-h-[calc(100vh-64px)] sm:max-h-[calc(100vh-80px)] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Mobile Language Switcher */}
-              <div className="p-3 bg-slate-900 text-white rounded-2xl">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">
-                  Select Language
-                </span>
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <Link 
+                href="/" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="flex items-center gap-2.5"
+              >
+                <img
+                  src="/images/brand-logo.png"
+                  alt="Grab Rentals"
+                  className="h-8 w-auto object-contain"
+                />
+                <div className="flex flex-col">
+                  <span className="font-black text-sm text-brand-navy leading-tight">
+                    GRAB RENTALS
+                  </span>
+                  <span className="text-[8px] font-bold text-amber-600 uppercase tracking-widest leading-tight">
+                    Comfort in Every Mile
+                  </span>
+                </div>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="Close navigation menu"
+              >
+                <X className="w-5 h-5 text-slate-800" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-4">
+              {/* User Profile Card or Sign In Banner */}
+              {currentUser ? (
+                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-3.5 rounded-2xl shadow-sm border border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shrink-0 shadow-xs">
+                      {(currentUser.name && currentUser.name !== "Customer" ? currentUser.name : "Customer").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-sm truncate text-white leading-tight">
+                        {currentUser.name && currentUser.name !== "Customer" ? currentUser.name : "Valued Customer"}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                        {currentUser.phone || currentUser.email || "+91 Customer"}
+                      </div>
+                      <div className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 uppercase tracking-wider mt-1 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                        <ShieldCheck className="w-2.5 h-2.5 text-amber-400" /> Verified Member
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    href="/account/settings"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors shrink-0"
+                    title="Account Settings"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/80 p-3.5 rounded-2xl flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-black text-slate-900">Welcome to Grab Rentals</div>
+                    <div className="text-[11px] text-slate-600">Sign in for fast bookings & ride tracking</div>
+                  </div>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-3.5 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-amber-400 text-xs font-black shadow-xs shrink-0"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
+
+              {/* Language Switcher */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 space-y-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
+                  <Globe className="w-3.5 h-3.5 text-amber-600" />
+                  <span>{t("select_language") || "Select Language"}</span>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {TOP_LANGUAGES.map((lang) => (
                     <button
@@ -448,10 +544,10 @@ export default function AppShell({ children }) {
                         setLanguage(lang.code);
                         setMobileMenuOpen(false);
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         language === lang.code
-                          ? "bg-amber-500 text-slate-950 font-black shadow-xs"
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          ? "bg-amber-500 text-slate-950 font-black shadow-xs ring-2 ring-amber-500/30"
+                          : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                       }`}
                       title={lang.name}
                     >
@@ -461,10 +557,12 @@ export default function AppShell({ children }) {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {/* Book Now Section */}
+              {/* Book Rides Section */}
+              <div className="space-y-1.5">
+                <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 px-1">
+                  {t("book_now") || "Book Rides"}
+                </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider px-2">Book Now</span>
                   {bookNowItems.map((item) => {
                     const Icon = item.icon;
                     const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
@@ -473,84 +571,156 @@ export default function AppShell({ children }) {
                         key={item.name}
                         href={item.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                          active ? "bg-amber-50 text-amber-950 font-black border border-amber-200" : "text-slate-700 hover:bg-slate-50"
+                        className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${
+                          active
+                            ? "bg-amber-50 border border-amber-200/90 text-amber-950 font-black"
+                            : "bg-white hover:bg-slate-50 border border-slate-100 text-slate-800"
                         }`}
                       >
-                        <span className="flex items-center gap-2.5">
-                          <Icon className="w-4 h-4 text-amber-500" />
-                          <span>{item.name}</span>
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-normal">Search →</span>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            active ? "bg-amber-500 text-slate-950 shadow-xs" : "bg-amber-50 text-amber-600"
+                          }`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold leading-tight">{item.name}</div>
+                            <div className="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">{item.desc}</div>
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-4 h-4 shrink-0 ${active ? "text-amber-600" : "text-slate-400"}`} />
                       </Link>
                     );
                   })}
                 </div>
+              </div>
 
-                {/* Main Menu Links */}
-                <div className="space-y-1 pt-2 border-t border-slate-100">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">Fleet & Corporate</span>
-                  {mainNavLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                        isNavActive(link.href) ? "bg-amber-50 text-amber-950 font-black border border-amber-200" : "text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      <span>{link.name}</span>
-                      <span className="text-[10px] text-slate-400 font-normal">Search →</span>
-                    </Link>
-                  ))}
+              {/* Group & Corporate Fleet */}
+              <div className="space-y-1.5 pt-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-1">
+                  Fleet & Corporate
+                </div>
+                <div className="space-y-1">
+                  {mainNavLinks.map((link) => {
+                    const active = isNavActive(link.href);
+                    return (
+                      <Link
+                        key={link.name}
+                        href={link.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${
+                          active
+                            ? "bg-amber-50 border border-amber-200/90 text-amber-950 font-black"
+                            : "bg-white hover:bg-slate-50 border border-slate-100 text-slate-800"
+                        }`}
+                      >
+                        <span className="text-xs font-bold">{link.name}</span>
+                        <ChevronRight className={`w-4 h-4 shrink-0 ${active ? "text-amber-600" : "text-slate-400"}`} />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 space-y-1.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">Quick Access</span>
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  <User className="w-4 h-4 text-amber-500" /> {t("my_trips_title")}
-                </Link>
-                <Link
-                  href="/account/notifications"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  <span className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-amber-500" /> Activity & Alerts
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px]">2</span>
-                </Link>
-                <Link
-                  href="/account/reviews"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  <Star className="w-4 h-4 text-amber-500" /> Reviews & Ratings
-                </Link>
-                <Link
-                  href="/support"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  <Phone className="w-4 h-4 text-emerald-500" /> {t("helpline_support")}
-                </Link>
-                <Link
-                  href="/account/settings"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  <Settings className="w-4 h-4 text-slate-500" /> {t("profile_settings")}
-                </Link>
+              {/* Quick Access */}
+              <div className="space-y-1.5 pt-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-1">
+                  Account & Support
+                </div>
+                <div className="space-y-1">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
+                  >
+                    <span className="flex items-center gap-2.5 text-xs font-bold">
+                      <User className="w-4 h-4 text-amber-500" />
+                      <span>{t("my_trips_title") || "My Trips & Bookings"}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </Link>
+
+                  <Link
+                    href="/account/notifications"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
+                  >
+                    <span className="flex items-center gap-2.5 text-xs font-bold">
+                      <Bell className="w-4 h-4 text-amber-500" />
+                      <span>Activity & Alerts</span>
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px]">
+                      2
+                    </span>
+                  </Link>
+
+                  <Link
+                    href="/account/reviews"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
+                  >
+                    <span className="flex items-center gap-2.5 text-xs font-bold">
+                      <Star className="w-4 h-4 text-amber-500" />
+                      <span>Reviews & Ratings</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </Link>
+
+                  <Link
+                    href="/account/settings"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
+                  >
+                    <span className="flex items-center gap-2.5 text-xs font-bold">
+                      <Settings className="w-4 h-4 text-slate-500" />
+                      <span>{t("profile_settings") || "Profile Settings"}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </Link>
+                </div>
               </div>
             </div>
+
+            {/* Drawer Footer Actions */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 space-y-2.5 shrink-0">
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href="tel:+919071100200"
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-amber-400 text-slate-800 hover:text-amber-600 text-xs font-bold shadow-2xs transition-all"
+                >
+                  <Phone className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Call 24/7</span>
+                </a>
+                <a
+                  href="https://wa.me/919071100200?text=Hi%20Grab%20Rentals,%20I%20have%20an%20enquiry%20regarding%20booking%20a%20cab%20or%20bus."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-all"
+                >
+                  <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  <span>WhatsApp</span>
+                </a>
+              </div>
+
+              {currentUser && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{t("log_out") || "Log Out"}</span>
+                </button>
+              )}
+            </div>
           </div>
-        )}
-      </header>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1">
@@ -639,7 +809,7 @@ export default function AppShell({ children }) {
         {/* Bottom Bar */}
         <div className="max-w-7xl mx-auto pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3">
-            <span>&copy; {new Date().getFullYear()} Grab Rental Technologies Pvt. Ltd. All rights reserved.</span>
+            <span>Copyright @ {new Date().getFullYear()} Grab Rentals. All rights reserved.</span>
             <span className="hidden md:inline">|</span>
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <span className="hidden md:inline">|</span>
@@ -650,14 +820,16 @@ export default function AppShell({ children }) {
             <Link href="/support" className="hover:text-white transition-colors">Customer Support</Link>
           </div>
           
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 text-slate-400"><Lock className="w-3.5 h-3.5" /> Secure Payments:</span>
-            <div className="flex gap-2 font-semibold text-slate-300">
-              <span className="bg-slate-800 px-2 py-1 rounded">UPI</span>
-              <span className="bg-slate-800 px-2 py-1 rounded">Cards</span>
-              <span className="bg-slate-800 px-2 py-1 rounded">NetBanking</span>
-              <span className="bg-slate-800 px-2 py-1 rounded text-brand-sky">Razorpay</span>
-            </div>
+          <div className="text-xs text-slate-400 flex items-center">
+            <span>Powered by</span>
+            <a 
+              href="https://sensitive.co.in/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-amber-400 hover:text-amber-300 hover:underline font-bold ml-1 transition-colors"
+            >
+              Sensitive Technologies
+            </a>
           </div>
         </div>
       </footer>

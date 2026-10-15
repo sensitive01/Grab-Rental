@@ -145,7 +145,7 @@ function BookingConfirmationContent() {
     if (Array.isArray(booking.stops)) {
       booking.stops.forEach((s) => { if (s && s.trim()) stopsList.push(s.trim()); });
     } else if (typeof booking.stops === "string" && booking.stops.trim()) {
-      booking.stops.split(/[|,]/).forEach((s) => { if (s && s.trim()) stopsList.push(s.trim()); });
+      booking.stops.split("|").forEach((s) => { if (s && s.trim()) stopsList.push(s.trim()); });
     }
   }
 
@@ -157,7 +157,7 @@ function BookingConfirmationContent() {
         const parsed = JSON.parse(confirmed);
         const s = parsed.stops || parsed.trip?.stops;
         if (s) {
-          const list = Array.isArray(s) ? s : String(s).split(/[|,]/);
+          const list = Array.isArray(s) ? s : String(s).split("|");
           list.forEach(item => { if (item && item.trim()) stopsList.push(item.trim()); });
         }
       }
@@ -167,7 +167,7 @@ function BookingConfirmationContent() {
           const parsed = JSON.parse(selected);
           const s = parsed.trip?.stops;
           if (s) {
-            const list = Array.isArray(s) ? s : String(s).split(/[|,]/);
+            const list = Array.isArray(s) ? s : String(s).split("|");
             list.forEach(item => { if (item && item.trim()) stopsList.push(item.trim()); });
           }
         }
@@ -273,6 +273,32 @@ function BookingConfirmationContent() {
                 <p className="text-sm font-extrabold text-slate-900 mt-0.5">{dropAddress}</p>
               </div>
             </div>
+
+            {/* Round Trip Return Leg */}
+            {booking?.tripType === "ROUND_TRIP" && (
+              <div className="relative animate-fade-in">
+                <span className="absolute -left-6 top-1 w-4 h-4 rounded-full border-2 border-teal-500 bg-white ring-4 ring-teal-50"></span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">
+                      Round Trip Return ({pickupCity})
+                    </span>
+                    <span className="text-[9px] font-extrabold bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Return Leg Included
+                    </span>
+                  </div>
+                  <p className="text-sm font-extrabold text-slate-900 mt-0.5">{pickupAddress}</p>
+                  {(booking?.returnDateTime || booking?.dropDate) && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 mt-1">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                        Return: {formatDateTime(booking?.returnDateTime || booking?.dropDate).dateStr}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Dynamic Vehicle & Chauffeur Info */}

@@ -11,10 +11,10 @@ export const FLEET_CATEGORIES = [
     baseDailyRate: 2400,
     hourlyPackage: "₹1,800 for 8 hrs / 80 km",
     airportFlatRate: "₹999 all-inclusive",
-    image: "/images/fleet/sedan.jpg",
+    image: "/images/cars/dzire.jpg",
     gallery: [
-      "/images/fleet/sedan.jpg",
       "/images/cars/dzire.jpg",
+      "/images/cars/ertiga.jpg",
       "/images/cars/wagon_r.jpg"
     ],
     variants: ["Maruti Suzuki Dzire ZXi+", "Toyota Etios Platinum", "Hyundai Aura SX", "Honda Amaze VX"],
