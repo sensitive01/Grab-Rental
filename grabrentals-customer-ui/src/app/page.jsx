@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import BookingWidget from "@/components/home/BookingWidget";
 import VehicleClassSelector from "@/components/home/VehicleClassSelector";
+import WelcomePromoModal from "@/components/home/WelcomePromoModal";
 import {
   CheckCircle,
   ShieldCheck,
@@ -536,6 +537,8 @@ export default function Home() {
         </div>
       </section>
 
+      {/* First-time Visitor Welcome Promo Popup */}
+      <WelcomePromoModal />
     </main>
   );
 }

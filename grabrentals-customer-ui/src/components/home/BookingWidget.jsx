@@ -821,6 +821,7 @@ export default function BookingWidget() {
               <Link 
                 href={buildExploreUrl()}
                 onClick={handleExploreClick}
+                suppressHydrationWarning
                 className="flex items-center justify-center gap-2 w-full bg-[#D97706] hover:bg-[#B45309] text-white py-3 sm:py-3.5 px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md hover:shadow-lg whitespace-nowrap shrink-0"
               >
                 {t("search_cabs")} <ArrowRight className="w-4 h-4" />
@@ -1036,6 +1037,7 @@ export default function BookingWidget() {
                   type="date" 
                   value={pickupDate}
                   min={minDateStr}
+                  suppressHydrationWarning
                   onChange={(e) => handlePickupDateChange(e.target.value)}
                   className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
                 />
@@ -1062,6 +1064,7 @@ export default function BookingWidget() {
             <Link 
               href={buildExploreUrl()}
               onClick={handleExploreClick}
+              suppressHydrationWarning
               className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#D97706] hover:bg-[#B45309] text-white py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wide transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0"
             >
               {t("search_cabs")} <ArrowRight className="w-4 h-4" />
