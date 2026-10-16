@@ -49,6 +49,13 @@ public class BookingResponse {
     private String dropCity;
     private String stops;
     private String pickupAddress;
+    private Double pickupLat;
+    private Double pickupLng;
+    private String pickupDoorNo;
+    private String pickupStreet;
+    private String pickupArea;
+    private String pickupLandmark;
+    private String pickupPincode;
     private String dropAddress;
     private LocalDateTime pickupDateTime;
     private LocalDateTime returnDateTime;
@@ -88,6 +95,13 @@ public class BookingResponse {
                 .dropCity(b.getDropCity())
                 .stops(b.getStops())
                 .pickupAddress(b.getPickupAddress())
+                .pickupLat(b.getPickupLat())
+                .pickupLng(b.getPickupLng())
+                .pickupDoorNo(b.getPickupDoorNo())
+                .pickupStreet(b.getPickupStreet())
+                .pickupArea(b.getPickupArea())
+                .pickupLandmark(b.getPickupLandmark())
+                .pickupPincode(b.getPickupPincode())
                 .dropAddress(b.getDropAddress())
                 .pickupDateTime(b.getPickupDateTime())
                 .returnDateTime(b.getReturnDateTime())

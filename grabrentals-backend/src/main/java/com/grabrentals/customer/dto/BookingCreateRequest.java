@@ -30,6 +30,14 @@ public class BookingCreateRequest {
     @NotBlank(message = "Pickup address is required")
     private String pickupAddress;
 
+    private Double pickupLat;
+    private Double pickupLng;
+    private String pickupDoorNo;
+    private String pickupStreet;
+    private String pickupArea;
+    private String pickupLandmark;
+    private String pickupPincode;
+
     private String dropAddress;
 
     @NotNull(message = "Pickup date and time is required")

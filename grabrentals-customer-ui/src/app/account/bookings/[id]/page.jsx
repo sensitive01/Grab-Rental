@@ -34,6 +34,8 @@ import {
   Info
 } from "lucide-react";
 import { customerApi } from "@/lib/customerApi";
+import { findCityCoordinates } from "@/lib/cities";
+import MapView from "@/components/booking/MapView";
 
 function formatDateTime(isoString) {
   if (!isoString) return { dateStr: "Scheduled", timeStr: "" };
@@ -105,6 +107,15 @@ function parseTripDetails(booking) {
   const intermediateStops = cached.stops || booking.stops || 
     (spec.match(/Intermediate Stops:\s*([^|]+)/i)?.[1]?.trim()) || 
     null;
+
+  const pickupCoords = cached.pickupCoords || 
+    (booking.pickupLat && booking.pickupLng ? { lat: Number(booking.pickupLat), lng: Number(booking.pickupLng) } : null) ||
+    findCityCoordinates(booking.pickupCity || booking.pickupAddress);
+
+  const dropCoords = cached.dropCoords ||
+    findCityCoordinates(booking.dropCity || booking.dropAddress);
+
+  const stopsCoords = cached.stopsCoords || null;
 
   // Add-ons
   const hasLessThan3Years = cached.selectedAddons?.lessThan3Years ?? /Less than 3 years/i.test(spec);
@@ -193,7 +204,11 @@ function parseTripDetails(booking) {
     driverAllowanceLabel,
     taxes,
     gstLabel,
-    dropDate: cached.dropDate || cached.returnDateTime || null
+    pickupCoords,
+    dropCoords,
+    stopsCoords,
+    dropDate: cached.dropDate || cached.returnDateTime || null,
+    createdAt: cached.createdAt || booking.createdAt || null
   };
 }
 
@@ -330,6 +345,7 @@ export default function TripDetailsTrackingPage({ params }) {
 
   const { dateStr, timeStr } = formatDateTime(booking.pickupDateTime);
   const parsed = parseTripDetails(booking);
+  const bookedOnObj = booking.createdAt ? formatDateTime(booking.createdAt) : (parsed.createdAt ? formatDateTime(parsed.createdAt) : null);
   const returnDateTimeObj = booking.returnDateTime ? formatDateTime(booking.returnDateTime) : (parsed.dropDate ? formatDateTime(parsed.dropDate) : null);
   const isCancelledState = booking.status === "CANCELLED";
   const { modelName, carImage, categoryLabel } = resolveCarModelAndImage(booking);
@@ -348,6 +364,28 @@ export default function TripDetailsTrackingPage({ params }) {
   const stopsList = parsed.intermediateStops
     ? parsed.intermediateStops.split("|").map((s) => s.trim()).filter(Boolean)
     : [];
+
+  const pickupMapPoint = parsed.pickupCoords ? {
+    lat: parsed.pickupCoords.lat,
+    lng: parsed.pickupCoords.lng,
+    label: booking.pickupCity || "Pickup"
+  } : null;
+
+  const dropMapPoint = parsed.dropCoords ? {
+    lat: parsed.dropCoords.lat,
+    lng: parsed.dropCoords.lng,
+    label: booking.dropCity || "Drop"
+  } : null;
+
+  const stopsMapPoints = (stopsList || []).map((stop, idx) => {
+    const coords = (parsed.stopsCoords && parsed.stopsCoords[idx]) || findCityCoordinates(stop);
+    if (!coords) return null;
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      label: `Halt #${idx + 1}: ${stop}`
+    };
+  }).filter(Boolean);
 
   return (
     <main className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-10">
@@ -406,25 +444,29 @@ export default function TripDetailsTrackingPage({ params }) {
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
               {booking.pickupCity} ➔ {booking.dropCity}
             </h1>
-            <p className="text-xs text-slate-500 font-medium flex items-center gap-2 flex-wrap">
-              <span>{booking.tripType === "ROUND_TRIP" ? "Round Trip" : "One-Way Outstation"}</span>
-              <span>•</span>
-              <span className="inline-flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" /> {dateStr}
+            <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
+              <span className="font-semibold text-slate-600">{booking.tripType === "ROUND_TRIP" ? "Round Trip" : "One-Way Outstation"}</span>
+              <span className="text-slate-300">•</span>
+              <span className="inline-flex items-center gap-1 font-bold text-slate-900 bg-amber-50/90 border border-amber-200/80 px-2.5 py-1 rounded-lg">
+                <Calendar className="w-3.5 h-3.5 text-amber-600" /> Pickup Date & Time: {dateStr} • {timeStr}
               </span>
-              <span>•</span>
-              <span className="inline-flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-slate-400" /> {timeStr}
-              </span>
-              {booking.tripType === "ROUND_TRIP" && returnDateTimeObj?.dateStr && (
+              {bookedOnObj?.dateStr && (
                 <>
-                  <span>•</span>
-                  <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 font-bold">
-                    <Calendar className="w-3.5 h-3.5 text-amber-600" /> Return: {returnDateTimeObj.dateStr}
+                  <span className="text-slate-300">•</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" /> Booked on: <strong className="text-slate-800 font-bold">{bookedOnObj.dateStr}{bookedOnObj.timeStr ? ` at ${bookedOnObj.timeStr}` : ""}</strong>
                   </span>
                 </>
               )}
-            </p>
+              {booking.tripType === "ROUND_TRIP" && returnDateTimeObj?.dateStr && (
+                <>
+                  <span className="text-slate-300">•</span>
+                  <span className="inline-flex items-center gap-1 text-amber-900 bg-amber-100/70 px-2.5 py-1 rounded-lg border border-amber-200 font-bold">
+                    <Calendar className="w-3.5 h-3.5 text-amber-700" /> Return: {returnDateTimeObj.dateStr}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Ride OTP Box */}
@@ -505,12 +547,21 @@ export default function TripDetailsTrackingPage({ params }) {
                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <Navigation className="w-4 h-4 text-amber-600" /> Route & Location Itinerary
                 </h3>
-                {parsed.distanceKm > 0 && (
-                  <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
-                    {parsed.distanceKm} km {parsed.duration ? `• ~${parsed.duration}` : ""}
-                  </span>
-                )}
               </div>
+
+              {/* Interactive Route Map */}
+              {(pickupMapPoint || dropMapPoint) && (
+                <div className="rounded-2xl overflow-hidden border border-slate-200">
+                  <MapView
+                    pickup={pickupMapPoint}
+                    drop={dropMapPoint}
+                    stops={stopsMapPoints}
+                    overrideDistance={parsed.distanceKm}
+                    overrideDuration={parsed.duration}
+                    className="h-60 sm:h-72 w-full"
+                  />
+                </div>
+              )}
 
               {/* Step-by-step route itinerary */}
               <div className="space-y-4 text-xs">
@@ -524,7 +575,7 @@ export default function TripDetailsTrackingPage({ params }) {
                       Pickup Point • {booking.pickupCity}
                     </span>
                     <p className="font-bold text-slate-900 text-sm leading-snug">{booking.pickupAddress}</p>
-                    <p className="text-[11px] text-slate-500 font-medium">Scheduled: {dateStr} at {timeStr}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">Pickup Date & Time: {dateStr} at {timeStr}</p>
                   </div>
                 </div>
 

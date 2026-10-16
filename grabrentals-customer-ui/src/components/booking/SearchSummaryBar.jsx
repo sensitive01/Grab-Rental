@@ -6,7 +6,13 @@ import { ChevronRight, Edit2, ShieldCheck, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 
-function SearchSummaryContent({ activeStep = 1 }) {
+function SearchSummaryContent({ 
+  activeStep = 1,
+  overrideDistanceKm = null,
+  overrideDuration = null,
+  overrideFrom = null,
+  overrideTo = null
+}) {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const [tripInfo, setTripInfo] = useState({
@@ -17,7 +23,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
     date: searchParams?.get("pickupDate") || "28-09-2026",
     time: searchParams?.get("pickupTime") || "07:00 AM",
     dropDate: searchParams?.get("dropDate") || searchParams?.get("returnDate") || null,
-    distanceKm: 365,
+    distanceKm: 0,
     duration: null,
     tollPrice: 0,
   });
@@ -39,7 +45,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
               time: parsed.trip.time || "07:00 AM",
               dropDate: parsed.trip.dropDate || parsed.trip.returnDate || parsed.dropDate || null,
               serviceType: parsed.trip.serviceType || "OUTSTATION",
-              distanceKm: parsed.distanceKm || 365,
+              distanceKm: parsed.distanceKm || 0,
               duration: parsed.duration || null,
               tollPrice: parsed.tollPrice || 0,
             });
@@ -59,7 +65,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
             time: parsed.time || "07:00 AM",
             dropDate: parsed.dropDate || parsed.returnDate || null,
             serviceType: parsed.serviceType || "OUTSTATION",
-            distanceKm: parsed.distanceKm || 365,
+            distanceKm: parsed.distanceKm || 0,
             duration: parsed.duration || null,
             tollPrice: parsed.tollPrice || 0,
           });
@@ -102,6 +108,13 @@ function SearchSummaryContent({ activeStep = 1 }) {
   const packageLabel = formatPackageLabel(tripInfo.to);
   const cleanCity = (str) => (str ? str.split(",")[0].trim() : "");
 
+  const displayDistanceKm = (overrideDistanceKm != null && Number(overrideDistanceKm) > 0)
+    ? Number(overrideDistanceKm)
+    : tripInfo.distanceKm;
+  const displayDuration = overrideDuration || tripInfo.duration;
+  const displayFrom = overrideFrom || tripInfo.from;
+  const displayTo = overrideTo || tripInfo.to;
+
   return (
     <div className="bg-white border-b border-slate-200 sticky top-20 z-40 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -109,7 +122,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
         <div className="flex flex-col gap-1.5">
           {/* Trip Summary Bar */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(tripInfo.from)}</span>
+            <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(displayFrom)}</span>
             {isLocal ? (
               <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">
                 Package: {packageLabel}
@@ -122,10 +135,14 @@ function SearchSummaryContent({ activeStep = 1 }) {
                   </span>
                 )}
                 <span className="text-slate-400 font-bold">→</span>
-                <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(tripInfo.to)}</span>
+                <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(displayTo)}</span>
                 <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md ml-1 capitalize flex items-center gap-1.5 flex-wrap">
-                  <span>{tripInfo.tripType} • {tripInfo.distanceKm} km</span>
-                  {tripInfo.duration && <span className="text-slate-500 font-semibold">• ~{tripInfo.duration}</span>}
+                  <span>{tripInfo.tripType}{displayDistanceKm > 0 ? ` • ${displayDistanceKm} km` : ""}</span>
+                  {displayDuration && (
+                    <span className="text-slate-500 font-semibold">
+                      • ~{String(displayDuration).replace(/^~/, "").trim()}
+                    </span>
+                  )}
                 </span>
               </>
             )}
@@ -144,7 +161,7 @@ function SearchSummaryContent({ activeStep = 1 }) {
             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
             <span>{isLocal ? "Chauffeur-Driven Local Hourly Rental" : "Chauffeur-Driven Outstation"}</span>
             <Link 
-              href={`/outstation/select-vehicle?from=${encodeURIComponent(tripInfo.from)}&to=${encodeURIComponent(tripInfo.to)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}&serviceType=${encodeURIComponent(tripInfo.serviceType || 'OUTSTATION')}&pickupDate=${encodeURIComponent(tripInfo.date || '')}&pickupTime=${encodeURIComponent(tripInfo.time || '')}${tripInfo.dropDate ? `&dropDate=${encodeURIComponent(tripInfo.dropDate)}` : ''}`} 
+              href={`/outstation/select-vehicle?from=${encodeURIComponent(displayFrom)}&to=${encodeURIComponent(displayTo)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}&serviceType=${encodeURIComponent(tripInfo.serviceType || 'OUTSTATION')}&pickupDate=${encodeURIComponent(tripInfo.date || '')}&pickupTime=${encodeURIComponent(tripInfo.time || '')}${tripInfo.dropDate ? `&dropDate=${encodeURIComponent(tripInfo.dropDate)}` : ''}`} 
               className="text-amber-700 hover:text-amber-900 hover:underline flex items-center gap-1 font-bold ml-2"
             >
               <Edit2 className="w-3.5 h-3.5" /> {t("modify_trip")}
@@ -173,7 +190,13 @@ function SearchSummaryContent({ activeStep = 1 }) {
   );
 }
 
-export default function SearchSummaryBar({ activeStep = 1 }) {
+export default function SearchSummaryBar({ 
+  activeStep = 1,
+  overrideDistanceKm = null,
+  overrideDuration = null,
+  overrideFrom = null,
+  overrideTo = null
+}) {
   return (
     <>
       <Suspense fallback={
@@ -181,7 +204,13 @@ export default function SearchSummaryBar({ activeStep = 1 }) {
           Loading trip summary...
         </div>
       }>
-        <SearchSummaryContent activeStep={activeStep} />
+        <SearchSummaryContent 
+          activeStep={activeStep} 
+          overrideDistanceKm={overrideDistanceKm}
+          overrideDuration={overrideDuration}
+          overrideFrom={overrideFrom}
+          overrideTo={overrideTo}
+        />
       </Suspense>
 
       {/* Dynamic Highway Guarantee Banner */}

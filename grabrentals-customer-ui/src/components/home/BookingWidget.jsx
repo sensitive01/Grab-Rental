@@ -81,6 +81,8 @@ export default function BookingWidget() {
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
   const [stopsCoords, setStopsCoords] = useState([]);
+  const [pickupDetails, setPickupDetails] = useState(null);
+  const [dropDetails, setDropDetails] = useState(null);
 
   // Date & Time inputs (timezone-aware & never in the past)
   const [pickupDate, setPickupDate] = useState(() => getDefaultPickupDateTime().date);
@@ -395,10 +397,22 @@ export default function BookingWidget() {
       params.set("dropDate", dropDate);
     }
     params.set("pickupTime", pickupTime);
+    if (routeEstimate?.distanceKm > 0) {
+      params.set("distanceKm", String(routeEstimate.distanceKm));
+    }
+    if (routeEstimate?.durationText) {
+      params.set("duration", routeEstimate.durationText);
+    }
+    if (routeEstimate?.tollPrice > 0) {
+      params.set("tollPrice", String(routeEstimate.tollPrice));
+    }
     return `/outstation/select-vehicle?${params.toString()}`;
   };
 
-  const handleExploreClick = () => {
+  const handleExploreClick = (e) => {
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+    }
     const validStops = stops.filter((s) => s.trim());
     const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
     
@@ -428,6 +442,8 @@ export default function BookingWidget() {
         pickupCoords,
         dropCoords,
         stopsCoords,
+        pickupDetails,
+        dropDetails,
         distanceKm: routeEstimate.distanceKm,
         durationText: routeEstimate.durationText,
         tollPrice: routeEstimate.tollPrice,
@@ -444,6 +460,9 @@ export default function BookingWidget() {
         dropDate: (activeTab !== "local" && (tripType === "round-trip" || activeTab === "package")) ? dropDate : undefined,
       }));
     }
+
+    const targetUrl = buildExploreUrl();
+    router.push(targetUrl);
   };
 
   const hasStops = allowsStops && stops.length > 0;
@@ -745,29 +764,29 @@ export default function BookingWidget() {
           </div>
 
           {/* ROW 2: Schedule & Action (Pick Up Date, Return Date, Pick Up Time, Explore CTA) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 lg:gap-5 items-end pt-4 mt-2 border-t border-slate-100">
+          <div className="grid grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-5 items-end pt-4 mt-2 border-t border-slate-100 min-w-0">
             
             {/* SEPARATE PICKUP DATE */}
-            <div className={isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <div className={`col-span-1 min-w-0 ${isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}`}>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 truncate">
                 {t("pickup_date") || "Pickup Date"}
               </label>
-              <div className="relative group">
-                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-4 h-4 pointer-events-none" />
+              <div className="relative group min-w-0 w-full">
+                <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
                 <input 
                   type="date" 
                   value={pickupDate}
                   min={minDateStr}
                   suppressHydrationWarning
                   onChange={(e) => handlePickupDateChange(e.target.value)}
-                  className="w-full pl-10 pr-3 py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
+                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
                 />
               </div>
             </div>
 
             {/* SEPARATE PICKUP TIME (Custom Controlled Dropdown) */}
-            <div className={isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <div className={`col-span-1 min-w-0 ${isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}`}>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 truncate">
                 {t("pickup_time") || "Pickup Time"}
               </label>
               <TimeSelectDropdown
@@ -779,30 +798,30 @@ export default function BookingWidget() {
 
             {/* DROP / RETURN DATE (for Round Trip) */}
             {isRoundTrip && (
-              <div className="lg:col-span-3">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+              <div className="col-span-2 sm:col-span-1 lg:col-span-3 min-w-0">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 truncate">
                   {t("return_date")}
                 </label>
-                <div className="relative group">
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-4 h-4 pointer-events-none" />
+                <div className="relative group min-w-0 w-full">
+                  <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
                   <input 
                     type="date" 
                     value={dropDate}
                     min={pickupDate || minDateStr}
                     suppressHydrationWarning
                     onChange={(e) => setDropDate(e.target.value)}
-                    className="w-full pl-10 pr-3 py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
+                    className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
                   />
                 </div>
               </div>
             )}
 
             {/* CTA Button: EXPLORE / SEARCH CABS */}
-            <div className={isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}>
+            <div className={`col-span-2 sm:col-span-1 ${isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}`}>
               <Link 
                 href={buildExploreUrl()}
                 onClick={handleExploreClick}
-                className="flex items-center justify-center gap-2 w-full bg-[#D97706] hover:bg-[#B45309] text-white py-3.5 px-6 rounded-xl font-extrabold text-sm uppercase tracking-wider transition-all shadow-md hover:shadow-lg whitespace-nowrap shrink-0"
+                className="flex items-center justify-center gap-2 w-full bg-[#D97706] hover:bg-[#B45309] text-white py-3 sm:py-3.5 px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md hover:shadow-lg whitespace-nowrap shrink-0"
               >
                 {t("search_cabs")} <ArrowRight className="w-4 h-4" />
               </Link>
@@ -1002,37 +1021,40 @@ export default function BookingWidget() {
             )}
           </div>
 
-          {/* SEPARATE PICKUP DATE */}
-          <div className="w-full sm:w-auto flex-1 min-w-[155px] relative">
-            <div className="flex items-center justify-between mb-2 min-h-[18px]">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                {t("pickup_date") || "Pickup Date"}
-              </label>
+          {/* SEPARATE PICKUP DATE & TIME (Side-by-side in 1 line on mobile) */}
+          <div className="grid grid-cols-2 gap-3 w-full lg:flex lg:flex-1 lg:gap-4 min-w-0">
+            {/* SEPARATE PICKUP DATE */}
+            <div className="col-span-1 w-full lg:flex-1 min-w-0 relative">
+              <div className="flex items-center justify-between mb-2 min-h-[18px]">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                  {t("pickup_date") || "Pickup Date"}
+                </label>
+              </div>
+              <div className="relative group min-w-0 w-full">
+                <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
+                <input 
+                  type="date" 
+                  value={pickupDate}
+                  min={minDateStr}
+                  onChange={(e) => handlePickupDateChange(e.target.value)}
+                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
+                />
+              </div>
             </div>
-            <div className="relative group">
-              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-4 h-4 pointer-events-none" />
-              <input 
-                type="date" 
-                value={pickupDate}
-                min={minDateStr}
-                onChange={(e) => handlePickupDateChange(e.target.value)}
-                className="w-full pl-10 pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer"
+
+            {/* SEPARATE PICKUP TIME (Custom Controlled Dropdown) */}
+            <div className="col-span-1 w-full lg:flex-1 min-w-0 relative">
+              <div className="flex items-center justify-between mb-2 min-h-[18px]">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                  {t("pickup_time") || "Pickup Time"}
+                </label>
+              </div>
+              <TimeSelectDropdown
+                value={pickupTime}
+                onChange={handlePickupTimeChange}
+                availableSlots={availableTimeSlots}
               />
             </div>
-          </div>
-
-          {/* SEPARATE PICKUP TIME (Custom Controlled Dropdown) */}
-          <div className="w-full sm:w-auto flex-1 min-w-[155px] relative">
-            <div className="flex items-center justify-between mb-2 min-h-[18px]">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                {t("pickup_time") || "Pickup Time"}
-              </label>
-            </div>
-            <TimeSelectDropdown
-              value={pickupTime}
-              onChange={handlePickupTimeChange}
-              availableSlots={availableTimeSlots}
-            />
           </div>
 
           {/* CTA Button */}
@@ -1040,7 +1062,7 @@ export default function BookingWidget() {
             <Link 
               href={buildExploreUrl()}
               onClick={handleExploreClick}
-              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#D97706] hover:bg-[#B45309] text-white py-3.5 rounded-lg font-extrabold text-sm uppercase tracking-wide transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0"
+              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#D97706] hover:bg-[#B45309] text-white py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wide transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0"
             >
               {t("search_cabs")} <ArrowRight className="w-4 h-4" />
             </Link>
@@ -1153,7 +1175,8 @@ export default function BookingWidget() {
         initialDropCoords={dropCoords}
         initialAirportCoords={airportCoords}
         initialStopsCoords={stopsCoords}
-        onSelect={(selectedLocation, coords, target, allValues) => {
+        tripType={activeTab === "package" ? "round-trip" : tripType}
+        onSelect={(selectedLocation, coords, target, allValues, details) => {
           if (allValues) {
             if (allValues.airport) {
               setSelectedAirport(allValues.airport);
@@ -1162,10 +1185,12 @@ export default function BookingWidget() {
             if (allValues.pickup) {
               setPickupCity(allValues.pickup);
               if (allValues.pickupCoords) setPickupCoords(allValues.pickupCoords);
+              if (allValues.pickupDetails) setPickupDetails(allValues.pickupDetails);
             }
             if (allValues.drop) {
               setDropCity(allValues.drop);
               if (allValues.dropCoords) setDropCoords(allValues.dropCoords);
+              if (allValues.dropDetails) setDropDetails(allValues.dropDetails);
             }
             if (Array.isArray(allValues.stops)) {
               setStops(allValues.stops);
@@ -1189,6 +1214,7 @@ export default function BookingWidget() {
           } else if (target === "drop") {
             setDropCity(selectedLocation);
             if (coords) setDropCoords(coords);
+            if (details) setDropDetails(details);
           } else if (typeof target === "string" && target.startsWith("stop-")) {
             const idx = parseInt(target.replace("stop-", ""), 10);
             if (idx >= 0) {
@@ -1197,6 +1223,7 @@ export default function BookingWidget() {
           } else {
             setPickupCity(selectedLocation);
             if (coords) setPickupCoords(coords);
+            if (details) setPickupDetails(details);
           }
         }}
         onSelectAirport={(selectedLocation, coords) => {
@@ -1210,16 +1237,18 @@ export default function BookingWidget() {
             }
           }
         }}
-        onSelectPickup={(selectedLocation, coords) => {
+        onSelectPickup={(selectedLocation, coords, details) => {
           setTimeout(() => {
             setPickupCity(selectedLocation);
             if (coords) setPickupCoords(coords);
+            if (details) setPickupDetails(details);
           }, 0);
         }}
-        onSelectDrop={(selectedLocation, coords) => {
+        onSelectDrop={(selectedLocation, coords, details) => {
           setTimeout(() => {
             setDropCity(selectedLocation);
             if (coords) setDropCoords(coords);
+            if (details) setDropDetails(details);
           }, 0);
         }}
         onSelectStops={(newStops) => {

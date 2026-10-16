@@ -69,8 +69,29 @@ public class Booking {
     @Column(name = "stops", length = 500)
     private String stops;
 
-    @Column(name = "pickup_address", nullable = false, length = 300)
+    @Column(name = "pickup_address", nullable = false, length = 500)
     private String pickupAddress;
+
+    @Column(name = "pickup_lat")
+    private Double pickupLat;
+
+    @Column(name = "pickup_lng")
+    private Double pickupLng;
+
+    @Column(name = "pickup_door_no", length = 150)
+    private String pickupDoorNo;
+
+    @Column(name = "pickup_street", length = 255)
+    private String pickupStreet;
+
+    @Column(name = "pickup_area", length = 150)
+    private String pickupArea;
+
+    @Column(name = "pickup_landmark", length = 255)
+    private String pickupLandmark;
+
+    @Column(name = "pickup_pincode", length = 20)
+    private String pickupPincode;
 
     @Column(name = "drop_address", length = 300)
     private String dropAddress;

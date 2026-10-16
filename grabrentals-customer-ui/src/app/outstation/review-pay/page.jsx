@@ -20,7 +20,8 @@ import {
   AlertCircle,
   Tag,
   X,
-  ArrowRight
+  ArrowRight,
+  Navigation
 } from "lucide-react";
 import Image from "next/image";
 import SearchSummaryBar from "@/components/booking/SearchSummaryBar";
@@ -28,8 +29,9 @@ import { customerApi } from "@/lib/customerApi";
 import { isAuthenticated, getCurrentUser, setAuthSession, logout } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
-import { padZero, formatLocalDateTime } from "@/lib/dateTimeUtils";
-import { fetchGoogleRouteDistance } from "@/lib/cities";
+import MapView from "@/components/booking/MapView";
+import { padZero, formatLocalDateTime, isNightPickup } from "@/lib/dateTimeUtils";
+import { fetchGoogleRouteDistance, findCityCoordinates } from "@/lib/cities";
 
 function resolveCarImage(title, category, rawImage) {
   if (rawImage && typeof rawImage === "string" && !rawImage.includes("blob:")) {
@@ -104,7 +106,18 @@ export default function ReviewPayPage() {
   const [passengerName, setPassengerName] = useState("");
   const [passengerPhone, setPassengerPhone] = useState("");
   const [pickupAddress, setPickupAddress] = useState("");
+  const [pickupDoorNo, setPickupDoorNo] = useState("");
+  const [pickupStreet, setPickupStreet] = useState("");
+  const [pickupLandmark, setPickupLandmark] = useState("");
+  const [pickupArea, setPickupArea] = useState("");
+  const [pickupCityName, setPickupCityName] = useState("");
+  const [pickupStateName, setPickupStateName] = useState("");
+  const [pickupPincode, setPickupPincode] = useState("");
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [dropCoords, setDropCoords] = useState(null);
   const [dropAddress, setDropAddress] = useState("");
+  const [customDistanceKm, setCustomDistanceKm] = useState(null);
+  const [customDuration, setCustomDuration] = useState(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapTarget, setMapTarget] = useState("pickup");
@@ -172,10 +185,47 @@ export default function ReviewPayPage() {
           // Prefill pickup & drop addresses if empty
           const isLocalTrip = parsed.trip?.serviceType === "LOCAL" || (parsed.trip?.to && parsed.trip.to.toLowerCase().includes("hr"));
           const isAirportTrip = parsed.trip?.serviceType === "AIRPORT" || (parsed.trip?.tripType && parsed.trip.tripType.toLowerCase().includes("airport"));
-          if (parsed.trip?.from) {
-            setPickupAddress(isAirportTrip && parsed.trip.from.toLowerCase().includes("airport") 
-              ? `${parsed.trip.from} (Arrivals Terminal)`
-              : `${parsed.trip.from} (Pickup Point)`);
+          if (parsed.trip?.pickupDetails) {
+            const pd = parsed.trip.pickupDetails;
+            if (pd.area) setPickupArea(pd.area);
+            if (pd.city) setPickupCityName(pd.city);
+            if (pd.state) setPickupStateName(pd.state);
+            if (pd.pincode) setPickupPincode(pd.pincode);
+            if (pd.fullAddress) {
+              setPickupAddress(pd.fullAddress);
+            } else if (parsed.trip?.from) {
+              setPickupAddress(parsed.trip.from);
+            }
+          } else if (parsed.trip?.from) {
+            const rawFrom = parsed.trip.from;
+            const parts = rawFrom.split(",").map((s) => s.trim());
+            if (parts.length >= 3) {
+              setPickupArea(parts[0] || "");
+              setPickupCityName(parts[1] || "");
+              setPickupStateName(parts[2] || "");
+            } else if (parts.length === 2) {
+              setPickupCityName(parts[0] || "");
+              setPickupStateName(parts[1] || "");
+            } else {
+              setPickupCityName(parts[0] || "");
+            }
+            setPickupAddress(isAirportTrip && rawFrom.toLowerCase().includes("airport") 
+              ? `${rawFrom} (Arrivals Terminal)`
+              : `${rawFrom} (Pickup Point)`);
+          }
+
+          const rawFromCity = parsed.trip?.from;
+          if (parsed.trip?.pickupCoords) {
+            setPickupCoords(parsed.trip.pickupCoords);
+          } else if (rawFromCity) {
+            const pc = findCityCoordinates(rawFromCity);
+            if (pc) setPickupCoords(pc);
+          }
+          if (parsed.trip?.dropCoords) {
+            setDropCoords(parsed.trip.dropCoords);
+          } else if (parsed.trip?.to) {
+            const dc = findCityCoordinates(parsed.trip.to);
+            if (dc) setDropCoords(dc);
           }
           if (parsed.trip?.to) {
             if (isLocalTrip) {
@@ -188,24 +238,62 @@ export default function ReviewPayPage() {
           }
         }
 
+        // 1. Resolve logged-in user profile details for autofill
+        let profileName = "";
+        let profilePhone = "";
+        const user = getCurrentUser();
+        if (user) {
+          if (user.name && user.name.trim().toLowerCase() !== "customer") {
+            profileName = user.name.trim();
+          } else if (user.fullName) {
+            profileName = user.fullName.trim();
+          }
+          const rawPhone = user.phone || user.mobile || user.phoneNumber || "";
+          if (rawPhone) {
+            const digits = rawPhone.replace(/[^0-9]/g, "");
+            profilePhone = digits.length > 10 ? digits.slice(-10) : digits;
+          }
+        }
+
+        // Secondary fallback to previous booking info
+        if (!profileName || !profilePhone) {
+          try {
+            const lastBooking = sessionStorage.getItem("grab_confirmed_booking");
+            if (lastBooking) {
+              const parsedLast = JSON.parse(lastBooking);
+              if (!profileName && parsedLast.passengerName) profileName = parsedLast.passengerName;
+              if (!profilePhone && parsedLast.passengerPhone) {
+                const digits = String(parsedLast.passengerPhone).replace(/[^0-9]/g, "");
+                profilePhone = digits.length > 10 ? digits.slice(-10) : digits;
+              }
+            }
+          } catch {}
+        }
+
         // Restore draft if user previously filled it out
         const savedDraft = sessionStorage.getItem("grab_review_pay_draft");
         if (savedDraft) {
           try {
             const draft = JSON.parse(savedDraft);
-            if (draft.passengerName) setPassengerName(draft.passengerName);
-            if (draft.passengerPhone) setPassengerPhone(draft.passengerPhone);
+            setPassengerName(draft.passengerName || profileName);
+            setPassengerPhone(draft.passengerPhone || profilePhone);
+            if (draft.pickupDoorNo) setPickupDoorNo(draft.pickupDoorNo);
+            if (draft.pickupStreet) setPickupStreet(draft.pickupStreet);
+            if (draft.pickupLandmark) setPickupLandmark(draft.pickupLandmark);
+            if (draft.pickupArea) setPickupArea(draft.pickupArea);
+            if (draft.pickupCityName) setPickupCityName(draft.pickupCityName);
+            if (draft.pickupStateName) setPickupStateName(draft.pickupStateName);
+            if (draft.pickupPincode) setPickupPincode(draft.pickupPincode);
+            if (draft.pickupCoords) setPickupCoords(draft.pickupCoords);
+            if (draft.dropCoords) setDropCoords(draft.dropCoords);
             if (draft.pickupAddress) setPickupAddress(draft.pickupAddress);
             if (draft.dropAddress) setDropAddress(draft.dropAddress);
             if (draft.specialInstructions) setSpecialInstructions(draft.specialInstructions);
             if (draft.paymentPlan) setPaymentPlan(draft.paymentPlan);
           } catch {}
         } else {
-          const user = getCurrentUser();
-          if (user) {
-            if (user.name) setPassengerName(user.name);
-            if (user.phone) setPassengerPhone(user.phone);
-          }
+          if (profileName) setPassengerName(profileName);
+          if (profilePhone) setPassengerPhone(profilePhone);
         }
       } catch (err) {
         console.warn("Could not load stored booking config:", err);
@@ -229,11 +317,15 @@ export default function ReviewPayPage() {
 
   // Dynamic pricing from backend tariff engine
   const car = bookingConfig?.car || {};
-  const distanceKm = bookingConfig?.distanceKm || 0;
+  const distanceKm = customDistanceKm != null ? customDistanceKm : (bookingConfig?.distanceKm || 0);
   const perKmRate = Number(car.perKmRate) || 0;
 
   // Base fare (exclusive of taxes & driver allowance)
-  const baseFare = car.baseFare || (perKmRate > 0 && distanceKm > 0 ? Math.round(perKmRate * distanceKm) : (car.fare || 4047));
+  const baseFare = isLocal 
+    ? (car.baseFare || car.fare || 4047)
+    : (customDistanceKm != null && perKmRate > 0 
+        ? Math.round(perKmRate * distanceKm) 
+        : (car.baseFare || (perKmRate > 0 && distanceKm > 0 ? Math.round(perKmRate * distanceKm) : (car.fare || 4047))));
 
   // Dynamic percentages, flat amounts & add-on pricing from Backend / Settings
   const gstType = pricingConfig.gstType || "PERCENTAGE";
@@ -253,16 +345,23 @@ export default function ReviewPayPage() {
   const languageChauffeurFee = pricingConfig.languageChauffeurFee || 199;
   const expresswayFee = pricingConfig.expresswayFee || 415;
 
+  // Night pickup detection (10:00 PM to 06:00 AM)
+  const pickupTimeStr = bookingConfig?.trip?.time || "";
+  const isNightTrip = isNightPickup(pickupTimeStr);
+
   // Driver Allowance (dynamically calculated from live driverAllowancePercentage or flat driverAllowanceAmount)
   const isDriverAllowanceFlat = driverAllowanceType === "FLAT" && driverAllowanceAmount > 0;
-  const driverAllowance = isDriverAllowanceFlat
+  const rawDriverAllowance = isDriverAllowanceFlat
     ? Math.round(driverAllowanceAmount)
     : (pricingConfigLoaded
         ? Math.round(baseFare * (driverAllowancePercentage / 100))
         : (car.driverAllowance || Math.round(baseFare * (driverAllowancePercentage / 100))));
 
+  // For 10 PM to 6 AM travel, driver allowance is excluded from prepaid billing
+  const driverAllowance = isNightTrip ? 0 : rawDriverAllowance;
+
   const driverAllowanceLabel = isDriverAllowanceFlat
-    ? `Driver Allowance (₹${driverAllowance})`
+    ? `Driver Allowance (₹${rawDriverAllowance})`
     : `Driver Allowance (${driverAllowancePercentage}%)`;
 
   // Add-ons total
@@ -282,39 +381,79 @@ export default function ReviewPayPage() {
     ? `GST (₹${taxes})`
     : `GST (${gstPercentage}%)`;
 
-  // Dynamic FASTag highway toll from booking (0 for local hourly rentals)
-  useEffect(() => {
-    if (!bookingConfig || isLocal) return;
-    const initialToll = Number(bookingConfig.tollPrice);
-    if (initialToll > 0) {
-      setLiveToll(initialToll);
-      return;
-    }
-    const from = bookingConfig.trip?.from;
-    const to = bookingConfig.trip?.to;
-    if (from && to && !isLocal) {
-      fetchGoogleRouteDistance(from, to, bookingConfig.trip?.stops, bookingConfig.trip?.tripType, {
-        originCoords: bookingConfig.trip?.pickupCoords,
-        destinationCoords: bookingConfig.trip?.dropCoords,
-        stopsCoords: bookingConfig.trip?.stopsCoords
-      }).then((res) => {
-        if (res && res.tollPrice > 0) {
-          setLiveToll(res.tollPrice);
-        } else if (res && res.distanceKm > 0) {
-          setLiveToll(Math.round(res.distanceKm * 1.35));
-        }
-      }).catch((e) => console.warn("Could not fetch live toll in review-pay:", e));
-    }
-  }, [bookingConfig, isLocal]);
+  // Dynamic route distance & FASTag toll recalculation when pickup/drop addresses or coordinates change
+  const effectiveFrom = pickupAddress || [pickupArea, pickupCityName, pickupStateName].filter(Boolean).join(", ") || bookingConfig?.trip?.from;
+  const effectiveTo = dropAddress || bookingConfig?.trip?.to;
+  const tripType = bookingConfig?.trip?.tripType || "one-way";
 
-  const tollPrice = isLocal 
+  useEffect(() => {
+    if (!bookingConfig || isLocal || !effectiveFrom || !effectiveTo) return;
+
+    let cancelled = false;
+    async function recalculateRoute() {
+      try {
+        const res = await fetchGoogleRouteDistance(
+          effectiveFrom,
+          effectiveTo,
+          bookingConfig.trip?.stops || [],
+          tripType,
+          {
+            originCoords: pickupCoords,
+            destinationCoords: dropCoords,
+            stopsCoords: bookingConfig.trip?.stopsCoords
+          }
+        );
+        if (!cancelled && res?.isDetected && res.distanceKm > 0) {
+          setCustomDistanceKm(res.distanceKm);
+          if (res.durationText) setCustomDuration(res.durationText);
+          if (res.tollPrice !== undefined && res.tollPrice > 0) {
+            setLiveToll(res.tollPrice);
+          } else if (res.distanceKm > 0) {
+            setLiveToll(Math.round(res.distanceKm * 1.35));
+          }
+          try {
+            const rawStored = sessionStorage.getItem("grab_selected_booking");
+            if (rawStored) {
+              const currentBooking = JSON.parse(rawStored);
+              currentBooking.distanceKm = res.distanceKm;
+              if (res.durationText) currentBooking.duration = res.durationText;
+              sessionStorage.setItem("grab_selected_booking", JSON.stringify(currentBooking));
+            }
+          } catch {
+            // Ignore session write errors
+          }
+        }
+      } catch (err) {
+        console.warn("Could not recalculate route distance on address change:", err);
+      }
+    }
+
+    const timer = setTimeout(recalculateRoute, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isLocal,
+    bookingConfig,
+    effectiveFrom,
+    effectiveTo,
+    tripType,
+    pickupCoords?.lat,
+    pickupCoords?.lng,
+    dropCoords?.lat,
+    dropCoords?.lng
+  ]);
+
+  const tollPrice = (isLocal || isRoundTrip) 
     ? 0 
     : (liveToll !== null 
         ? liveToll 
         : (bookingConfig?.tollPrice > 0 
             ? Math.round(Number(bookingConfig.tollPrice)) 
             : (distanceKm > 0 ? Math.round(distanceKm * 1.35) : 0)));
-  const duration = isLocal ? null : (bookingConfig?.duration || null);
+  const duration = customDuration || (isLocal ? null : (bookingConfig?.duration || null));
 
   const couponDiscount = appliedCouponData?.discountAmount ? Math.round(Number(appliedCouponData.discountAmount)) : 0;
   const totalAmount = Math.max(0, baseFare + driverAllowance + taxes + addonsTotal + tollPrice - couponDiscount);
@@ -376,6 +515,15 @@ export default function ReviewPayPage() {
             passengerName,
             passengerPhone,
             pickupAddress,
+            pickupDoorNo,
+            pickupStreet,
+            pickupLandmark,
+            pickupArea,
+            pickupCityName,
+            pickupStateName,
+            pickupPincode,
+            pickupCoords,
+            dropCoords,
             dropAddress,
             specialInstructions,
             paymentPlan,
@@ -457,6 +605,16 @@ export default function ReviewPayPage() {
       setAuthSession(result.data.accessToken, result.data.user);
       setShowAuthModal(false);
 
+      if (result.data.user) {
+        if (!passengerName && result.data.user.name && result.data.user.name.toLowerCase() !== "customer") {
+          setPassengerName(result.data.user.name);
+        }
+        if (!passengerPhone && result.data.user.phone) {
+          const digits = result.data.user.phone.replace(/[^0-9]/g, "");
+          setPassengerPhone(digits.slice(-10));
+        }
+      }
+
       // Now create the booking with valid session
       await executeBooking();
     } catch (err) {
@@ -532,13 +690,31 @@ export default function ReviewPayPage() {
         }
       }
 
+      const addrParts = [
+        pickupDoorNo ? pickupDoorNo.trim() : "",
+        pickupStreet ? pickupStreet.trim() : "",
+        pickupLandmark ? `Near ${pickupLandmark.trim()}` : "",
+        pickupArea ? pickupArea.trim() : "",
+        pickupCityName ? pickupCityName.trim() : "",
+        pickupStateName ? pickupStateName.trim() : "",
+        pickupPincode ? `- ${pickupPincode.trim()}` : ""
+      ].filter(Boolean);
+      const computedPickupAddress = addrParts.length > 0 ? addrParts.join(", ") : (pickupAddress || bookingConfig?.trip?.from || "Pickup Point");
+
       const bookingPayload = {
         tripType: isLocal ? "HOURLY_PACKAGE" : isAirport ? (bookingConfig?.trip?.tripType || "AIRPORT_TRANSFER") : ((bookingConfig?.trip?.tripType || "One way").toLowerCase().includes("round") ? "ROUND_TRIP" : "ONE_WAY"),
         serviceType: isLocal ? "LOCAL" : isAirport ? "AIRPORT" : (bookingConfig?.trip?.serviceType || "OUTSTATION"),
-        pickupCity: bookingConfig?.trip?.from || "Bangalore",
+        pickupCity: pickupCityName || bookingConfig?.trip?.from || "Bangalore",
         dropCity: isLocal ? (bookingConfig?.trip?.from?.split(",")[0]?.trim() || "Bangalore") : (bookingConfig?.trip?.to || "Coimbatore"),
         stops: (isLocal || isAirport) ? "" : stopsVal,
-        pickupAddress: pickupAddress.trim(),
+        pickupAddress: computedPickupAddress,
+        pickupLat: pickupCoords?.lat != null ? Number(pickupCoords.lat) : null,
+        pickupLng: pickupCoords?.lng != null ? Number(pickupCoords.lng) : null,
+        pickupDoorNo: pickupDoorNo.trim() || null,
+        pickupStreet: pickupStreet.trim() || null,
+        pickupArea: pickupArea.trim() || null,
+        pickupLandmark: pickupLandmark.trim() || null,
+        pickupPincode: pickupPincode.trim() || null,
         dropAddress: dropAddress.trim() || (isLocal ? "Within City Limits / Local Disposal" : `${bookingConfig?.trip?.to || "Destination"} Center`),
         pickupDateTime: pickupIso,
         returnDateTime: returnIso,
@@ -557,9 +733,13 @@ export default function ReviewPayPage() {
         sessionStorage.removeItem("grab_review_pay_draft");
         const confirmedData = {
           ...res.data,
+          pickupCoords: pickupCoords || (res.data.pickupLat && res.data.pickupLng ? { lat: res.data.pickupLat, lng: res.data.pickupLng } : null) || findCityCoordinates(pickupCityName || bookingConfig?.trip?.from),
+          dropCoords: dropCoords || findCityCoordinates(dropAddress || bookingConfig?.trip?.to),
+          stopsCoords: bookingConfig?.trip?.stopsCoords || null,
           returnDateTime: res.data.returnDateTime || returnIso,
           dropDate: rawDropDate || null,
           stops: res.data.stops || stopsVal,
+          createdAt: res.data.createdAt || new Date().toISOString(),
           carTitle: bookingConfig?.car?.title || "Fleet",
           carImage: bookingConfig?.car?.image || "",
           carFuel: bookingConfig?.car?.fuel || "CNG",
@@ -653,9 +833,30 @@ export default function ReviewPayPage() {
     );
   }
 
+  const effectivePickupCoords = pickupCoords || findCityCoordinates(pickupCityName || bookingConfig?.trip?.from);
+  const effectiveDropCoords = dropCoords || findCityCoordinates(dropAddress || bookingConfig?.trip?.to);
+  const rawStopsList = Array.isArray(bookingConfig?.trip?.stops)
+    ? bookingConfig.trip.stops
+    : (bookingConfig?.trip?.stops ? String(bookingConfig.trip.stops).split("|").map((s) => s.trim()).filter(Boolean) : []);
+  const stopsMapList = rawStopsList.map((stop, idx) => {
+    const coords = (bookingConfig?.trip?.stopsCoords && bookingConfig.trip.stopsCoords[idx]) || findCityCoordinates(stop);
+    if (!coords) return null;
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      label: `Halt #${idx + 1}: ${stop}`
+    };
+  }).filter(Boolean);
+
   return (
     <main className="bg-slate-50 min-h-screen pb-24">
-      <SearchSummaryBar activeStep={2} />
+      <SearchSummaryBar 
+        activeStep={2} 
+        overrideDistanceKm={distanceKm}
+        overrideDuration={duration}
+        overrideFrom={pickupCityName || bookingConfig?.trip?.from}
+        overrideTo={dropAddress || bookingConfig?.trip?.to}
+      />
       
       <div className="max-w-7xl mx-auto px-4 lg:px-8 mt-8">
         
@@ -675,9 +876,16 @@ export default function ReviewPayPage() {
             
             {/* 1. Passenger Information */}
             <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-xs relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div className="bg-slate-900 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs">1</div>
-                <h2 className="text-lg font-black text-slate-900">{t("passenger_details")}</h2>
+              <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="bg-slate-900 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs">1</div>
+                  <h2 className="text-lg font-black text-slate-900">{t("passenger_details")}</h2>
+                </div>
+                {(passengerName || passengerPhone) && (
+                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                    Autofilled • Edit anytime
+                  </span>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -719,12 +927,17 @@ export default function ReviewPayPage() {
                       />
                     </div>
                   </div>
+
+                  <p className="col-span-1 md:col-span-2 text-[11px] text-slate-400 font-medium">
+                    Autofilled from your profile. You can edit the name or mobile number anytime for this specific trip.
+                  </p>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                      {t("pickup_address")} *
+                {/* STRUCTURED PICKUP ADDRESS SECTION */}
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
+                      {t("pickup_address") || "Pickup Address & Doorstep Details"} *
                     </label>
                     <button
                       type="button"
@@ -738,16 +951,112 @@ export default function ReviewPayPage() {
                       <span>{t("choose_from_location") || "Choose on Map"}</span>
                     </button>
                   </div>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-emerald-600 absolute left-3.5 top-3" />
-                    <textarea
-                      rows={2}
-                      required
-                      value={pickupAddress}
-                      onChange={(e) => setPickupAddress(e.target.value)}
-                      placeholder="Enter street, apartment/building name, landmark..."
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
-                    ></textarea>
+
+                  <div className="space-y-3">
+                    {/* ROW 1: Manually entered: Address line & Street name */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Address Line (Flat / House / Door / Building No.) *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={pickupDoorNo}
+                          onChange={(e) => setPickupDoorNo(e.target.value)}
+                          placeholder="e.g. Flat 402, Green Heights / House #24"
+                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Street Name (Road / Cross / Main) *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={pickupStreet}
+                          onChange={(e) => setPickupStreet(e.target.value)}
+                          placeholder="e.g. 10th Main Road, 4th Cross"
+                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* ROW 2: Area, City, State, Pincode */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Area *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={pickupArea}
+                          onChange={(e) => setPickupArea(e.target.value)}
+                          placeholder="e.g. Indiranagar"
+                          className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={pickupCityName}
+                          onChange={(e) => setPickupCityName(e.target.value)}
+                          placeholder="e.g. Bengaluru"
+                          className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          State *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={pickupStateName}
+                          onChange={(e) => setPickupStateName(e.target.value)}
+                          placeholder="e.g. Karnataka"
+                          className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Pincode *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          value={pickupPincode}
+                          onChange={(e) => setPickupPincode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                          placeholder="e.g. 560038"
+                          className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* ROW 3: Landmark (Manually entered) */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Landmark (Nearby prominent place / junction)
+                      </label>
+                      <input
+                        type="text"
+                        value={pickupLandmark}
+                        onChange={(e) => setPickupLandmark(e.target.value)}
+                        placeholder="e.g. Opposite Metro Station, Near Apollo Pharmacy"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -797,6 +1106,63 @@ export default function ReviewPayPage() {
                 </div>
               </div>
             </div>
+
+            {/* Live Interactive Route Map Preview */}
+            {(effectivePickupCoords || effectiveDropCoords) && (
+              <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Navigation className="w-4 h-4 text-amber-600" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                      Live Route Map & Trip Telemetry
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMapTarget("pickup");
+                        setIsMapModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl cursor-pointer transition-colors shadow-2xs"
+                    >
+                      Pinpoint Pickup
+                    </button>
+                    {!isLocal && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMapTarget("drop");
+                          setIsMapModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl cursor-pointer transition-colors shadow-2xs"
+                      >
+                        Pinpoint Drop
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl overflow-hidden border border-slate-200">
+                  <MapView
+                    pickup={effectivePickupCoords ? {
+                      lat: effectivePickupCoords.lat,
+                      lng: effectivePickupCoords.lng,
+                      label: pickupCityName || bookingConfig?.trip?.from?.split(",")[0] || "Pickup"
+                    } : null}
+                    drop={effectiveDropCoords ? {
+                      lat: effectiveDropCoords.lat,
+                      lng: effectiveDropCoords.lng,
+                      label: bookingConfig?.trip?.to?.split(",")[0] || "Drop"
+                    } : null}
+                    stops={stopsMapList}
+                    overrideDistance={distanceKm}
+                    overrideDuration={duration}
+                    className="h-60 sm:h-72 w-full"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* 2. Select Payment Plan */}
             <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-xs relative overflow-hidden">
@@ -959,9 +1325,13 @@ export default function ReviewPayPage() {
                   </h4>
                   <ul className="space-y-2.5 font-semibold text-slate-600">
                     <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">Base Fare and Fuel Charges</span></li>
-                    <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">{driverAllowanceLabel}</span></li>
+                    {!isNightTrip && (
+                      <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">{driverAllowanceLabel}</span></li>
+                    )}
                     <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">{gstLabel}</span></li>
-                    <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">State Tax & Toll</span></li>
+                    {!isRoundTrip && (
+                      <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">State Tax & Toll</span></li>
+                    )}
                     <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">{bookingConfig?.car?.seating >= 6 ? "4 bags" : "3 bags"}</span></li>
                     <li className="flex items-center gap-2.5 text-emerald-700">✓ <span className="text-slate-700">AC</span></li>
                   </ul>
@@ -973,7 +1343,17 @@ export default function ReviewPayPage() {
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Exclusions
                   </h4>
                   <ul className="space-y-2.5 font-semibold text-slate-600">
-                    <li className="flex items-start gap-2.5 text-rose-600">✕ <span className="text-slate-700">Beyond package km charged at ₹{perKmRate || 25}/km after {distanceKm || 145} km</span></li>
+                    {isRoundTrip && (
+                      <li className="flex items-start gap-2.5 text-rose-600">✕ <span className="text-slate-700 font-medium">Tolls, State Entry Tax & Parking (Payable at actuals)</span></li>
+                    )}
+                    <li className="flex items-start gap-2.5 text-rose-600">
+                      ✕ <span className="text-slate-700 font-medium">
+                        {isNightTrip 
+                          ? "Driver Allowance (Night travel 10:00 PM – 6:00 AM: excluded from package, payable directly to driver)" 
+                          : "Driver Night Allowance (Between 10:00 PM – 6:00 AM)"}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5 text-rose-600">✕ <span className="text-slate-700">Beyond package km charged at ₹{perKmRate || 25}/km after {distanceKm > 0 ? `${distanceKm} km` : "package limit"}</span></li>
                     <li className="flex items-start gap-2.5 text-rose-600">✕ <span className="text-slate-700">Multiple pickups/drops</span></li>
                   </ul>
                 </div>
@@ -993,6 +1373,7 @@ export default function ReviewPayPage() {
                   <ul className="mt-3 space-y-2 text-[11px] text-slate-600 font-medium list-disc pl-5 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <li>Your Trip has a KM limit. If your usage exceeds this limit, you will be charged for the excess KM used.</li>
                     <li>Your trip includes one pick up in Pick-up city and one drop to destination city. It does not include within city travel.</li>
+                    <li>Driver Night Allowance is applicable if the vehicle is driven between 10:00 PM and 6:00 AM.</li>
                     <li>If your Trip has Hill climbs, cab AC may be switched off during such climbs.</li>
                   </ul>
                 )}
@@ -1108,7 +1489,9 @@ export default function ReviewPayPage() {
 
                   <div className="flex justify-between items-center">
                     <span>{driverAllowanceLabel}</span>
-                    <span className="text-slate-900 font-bold">₹{driverAllowance.toLocaleString()}</span>
+                    <span className={isNightTrip ? "text-amber-700 font-bold" : "text-slate-900 font-bold"}>
+                      {isNightTrip ? "Excluded (Pay to driver)" : `₹${driverAllowance.toLocaleString()}`}
+                    </span>
                   </div>
 
                   <div className="flex justify-between items-center">
@@ -1117,9 +1500,9 @@ export default function ReviewPayPage() {
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span>FASTag Highway Toll</span>
-                    <span className={tollPrice > 0 ? "text-slate-900 font-bold" : "text-emerald-700 font-extrabold"}>
-                      {tollPrice > 0 ? `+ ₹${tollPrice.toLocaleString()}` : "Included (₹0)"}
+                    <span>{isRoundTrip ? "Toll & State Tax" : "FASTag Highway Toll"}</span>
+                    <span className={isRoundTrip ? "text-amber-700 font-bold" : (tollPrice > 0 ? "text-slate-900 font-bold" : "text-emerald-700 font-extrabold")}>
+                      {isRoundTrip ? "Pay at actuals (Excluded)" : (tollPrice > 0 ? `+ ₹${tollPrice.toLocaleString()}` : "Included (₹0)")}
                     </span>
                   </div>
 
@@ -1402,23 +1785,50 @@ export default function ReviewPayPage() {
           isOpen={isMapModalOpen}
           onClose={() => setIsMapModalOpen(false)}
           activeTarget={mapTarget}
+          tripType={tripType}
           pickupValue={pickupAddress || bookingConfig?.trip?.from || "Bangalore, Karnataka"}
           dropValue={dropAddress || bookingConfig?.trip?.to || "Coimbatore, Tamil Nadu"}
-          onSelect={(selectedLocation, coords, target, allValues) => {
-            if (allValues) {
-              if (allValues.pickup) setPickupAddress(allValues.pickup);
-              if (allValues.drop) setDropAddress(allValues.drop);
-            } else if (target === "drop") {
+          initialPickupCoords={pickupCoords}
+          initialDropCoords={dropCoords}
+          onSelect={(selectedLocation, coords, target, allValues, details) => {
+            if (target === "drop") {
               setDropAddress(selectedLocation);
+              if (coords) setDropCoords(coords);
             } else {
               setPickupAddress(selectedLocation);
+              if (coords) setPickupCoords(coords);
+              if (details) {
+                if (details.area) setPickupArea(details.area);
+                if (details.city) setPickupCityName(details.city);
+                if (details.state) setPickupStateName(details.state);
+                if (details.pincode) setPickupPincode(details.pincode);
+              }
+            }
+            if (allValues?.route?.distanceKm > 0 && !isLocal) {
+              setCustomDistanceKm(allValues.route.distanceKm);
+              if (allValues.route.tollPrice !== undefined && allValues.route.tollPrice > 0) {
+                setLiveToll(allValues.route.tollPrice);
+              } else if (allValues.route.distanceKm > 0) {
+                setLiveToll(Math.round(allValues.route.distanceKm * 1.35));
+              }
+              if (allValues.route.durationText) {
+                setCustomDuration(allValues.route.durationText);
+              }
             }
           }}
-          onSelectPickup={(selectedLocation) => {
+          onSelectPickup={(selectedLocation, coords, details) => {
             setPickupAddress(selectedLocation);
+            if (coords) setPickupCoords(coords);
+            if (details) {
+              if (details.area) setPickupArea(details.area);
+              if (details.city) setPickupCityName(details.city);
+              if (details.state) setPickupStateName(details.state);
+              if (details.pincode) setPickupPincode(details.pincode);
+            }
           }}
-          onSelectDrop={(selectedLocation) => {
+          onSelectDrop={(selectedLocation, coords) => {
             setDropAddress(selectedLocation);
+            if (coords) setDropCoords(coords);
           }}
         />
       )}

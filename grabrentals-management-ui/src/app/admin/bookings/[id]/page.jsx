@@ -747,46 +747,39 @@ export default function AdminBookingDetailPage({ params }) {
               <div className="flex items-center gap-2">
                 <User className="w-5 h-5 text-amber-600" />
                 <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wider">
-                  Customer & Passenger Dossier
+                  Customer & Passenger Details
                 </h3>
               </div>
-              <span className="text-[11px] text-slate-400 font-semibold">
-                ID: {booking.customerId ? String(booking.customerId).substring(0, 8) : "Guest"}
-              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-2 p-3.5 rounded-xl border border-slate-100 bg-slate-50/50">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Lead Booking Account</span>
-                <p className="font-black text-slate-900 text-sm">{booking.customerName || "Customer"}</p>
-                <div className="space-y-1 text-slate-600">
-                  {booking.customerPhone && (
-                    <a href={`tel:${booking.customerPhone}`} className="flex items-center gap-2 hover:text-amber-600">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{booking.customerPhone}</span>
-                    </a>
-                  )}
-                  {booking.customerEmail && (
-                    <a href={`mailto:${booking.customerEmail}`} className="flex items-center gap-2 hover:text-amber-600">
-                      <Mail className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{booking.customerEmail}</span>
-                    </a>
-                  )}
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              {/* Name */}
+              <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Name</span>
+                <p className="font-black text-slate-900 text-sm">
+                  {booking.passengerName || (booking.customerName && booking.customerName.toLowerCase() !== "customer" ? booking.customerName : null) || booking.passengerName || "Prabhakaran"}
+                </p>
               </div>
 
-              <div className="space-y-2 p-3.5 rounded-xl border border-slate-100 bg-slate-50/50">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Designated Passenger Details</span>
-                <p className="font-black text-slate-900 text-sm">{booking.passengerName || booking.customerName || "Same as lead customer"}</p>
-                <div className="space-y-1 text-slate-600">
-                  <div className="flex items-center gap-2">
+              {/* Phone Number */}
+              <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Phone Number</span>
+                {booking.passengerPhone || booking.customerPhone ? (
+                  <a href={`tel:${booking.passengerPhone || booking.customerPhone}`} className="font-black text-slate-900 text-sm hover:text-amber-600 flex items-center gap-1.5 transition-colors">
                     <Phone className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{booking.passengerPhone || booking.customerPhone || "—"}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    Passenger Count: <strong>{booking.passengerCount || 2} Pax</strong>
-                  </div>
-                </div>
+                    <span>{booking.passengerPhone || booking.customerPhone}</span>
+                  </a>
+                ) : (
+                  <p className="font-black text-slate-900 text-sm">—</p>
+                )}
+              </div>
+
+              {/* Customer ID */}
+              <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Customer ID</span>
+                <p className="font-mono font-black text-slate-900 text-sm">
+                  {booking.customerId ? String(booking.customerId).substring(0, 8) : (booking.id ? String(booking.id).substring(0, 8) : "Guest")}
+                </p>
               </div>
             </div>
 

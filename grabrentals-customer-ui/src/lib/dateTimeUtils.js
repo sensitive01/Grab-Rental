@@ -132,3 +132,33 @@ export function formatReadableDate(dateStr) {
   }
 }
 
+/**
+ * Determines whether a pickup time falls in the night window (10:00 PM to 06:00 AM).
+ */
+export function isNightPickup(rawTime) {
+  if (!rawTime) return false;
+  try {
+    const str = String(rawTime).trim().toLowerCase();
+    if (str.includes("am") || str.includes("pm")) {
+      const match = str.match(/(\d+)(?::(\d+))?\s*(am|pm)/i);
+      if (match) {
+        let h = parseInt(match[1], 10);
+        const ampm = match[3].toLowerCase();
+        if (ampm === "pm" && h < 12) h += 12;
+        if (ampm === "am" && h === 12) h = 0;
+        return h >= 22 || h < 6;
+      }
+    }
+    const parts = str.split(":");
+    if (parts.length >= 1) {
+      const h = parseInt(parts[0], 10);
+      if (!isNaN(h)) {
+        return h >= 22 || h < 6;
+      }
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+

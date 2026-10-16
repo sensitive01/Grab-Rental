@@ -36,10 +36,11 @@ import {
 } from "lucide-react";
 
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
+import { isNightPickup } from "@/lib/dateTimeUtils";
 
 function estimateRouteDistance(from, to, stops, tripType) {
   const result = detectRouteDistance(from, to, stops, tripType);
-  return result.distanceKm || 320;
+  return result.distanceKm || 0;
 }
 
 function formatDateDisplay(rawDate) {
@@ -69,9 +70,35 @@ function formatTimeDisplay(rawTime) {
   }
 }
 
-function cleanCityName(fullString) {
+function cleanCityName(fullString, cityHint = "") {
+  if (cityHint && cityHint.trim()) {
+    const hint = cityHint.trim();
+    if (hint.toLowerCase() === "bengaluru") return "Bangalore";
+    return hint;
+  }
   if (!fullString) return "";
-  return fullString.split(",")[0].trim();
+  const lower = fullString.toLowerCase();
+  if (lower.includes("bangalore") || lower.includes("bengaluru") || lower.includes("basavanagudi") || lower.includes("mallikarjuna") || lower.includes("indiranagar") || lower.includes("koramangala") || lower.includes("whitefield") || lower.includes("jayanagar")) return "Bangalore";
+  if (lower.includes("coimbatore")) return "Coimbatore";
+  if (lower.includes("chennai") || lower.includes("madras")) return "Chennai";
+  if (lower.includes("mysore") || lower.includes("mysuru")) return "Mysore";
+  if (lower.includes("hyderabad")) return "Hyderabad";
+  if (lower.includes("mumbai") || lower.includes("bombay")) return "Mumbai";
+  if (lower.includes("pune")) return "Pune";
+  if (lower.includes("delhi") || lower.includes("new delhi")) return "Delhi";
+  
+  const parts = fullString.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      if (!/^\d+$/.test(p) && !p.toLowerCase().includes("india") && p.length > 2) {
+        if (!/^(no\.|flat|house|#|\d+)/i.test(p)) {
+          return p;
+        }
+      }
+    }
+  }
+  return parts[0] || fullString;
 }
 
 function SelectVehicleContent() {
@@ -113,6 +140,8 @@ function SelectVehicleContent() {
       pickupCoords: pendingTrip?.pickupCoords || null,
       dropCoords: pendingTrip?.dropCoords || null,
       stopsCoords: pendingTrip?.stopsCoords || null,
+      pickupDetails: pendingTrip?.pickupDetails || null,
+      dropDetails: pendingTrip?.dropDetails || null,
     };
   });
 
@@ -125,7 +154,50 @@ function SelectVehicleContent() {
 
   // Real backend vehicles state (NO mock data)
   const [backendVehicles, setBackendVehicles] = useState([]);
-  const [backendDistance, setBackendDistance] = useState(null);
+  const [backendDistance, setBackendDistance] = useState(() => {
+    const urlDist = Number(searchParams?.get("distanceKm"));
+    if (urlDist > 0) return urlDist;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = sessionStorage.getItem("grab_pending_trip");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.distanceKm > 0) return parsed.distanceKm;
+        }
+      } catch {}
+    }
+    return null;
+  });
+  const [googleRouteDetails, setGoogleRouteDetails] = useState(() => {
+    const urlDist = Number(searchParams?.get("distanceKm"));
+    const urlDuration = searchParams?.get("duration");
+    const urlToll = Number(searchParams?.get("tollPrice"));
+    if (urlDist > 0) {
+      return {
+        isDetected: true,
+        distanceKm: urlDist,
+        durationText: urlDuration || null,
+        tollPrice: urlToll || Math.round(urlDist * 1.35),
+      };
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const stored = sessionStorage.getItem("grab_pending_trip");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.distanceKm > 0) {
+            return {
+              isDetected: true,
+              distanceKm: parsed.distanceKm,
+              durationText: parsed.durationText || null,
+              tollPrice: parsed.tollPrice || Math.round(parsed.distanceKm * 1.35),
+            };
+          }
+        }
+      } catch {}
+    }
+    return null;
+  });
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
   const [serviceStatus, setServiceStatus] = useState({
     available: true,
@@ -233,14 +305,24 @@ function SelectVehicleContent() {
         serviceType: urlServiceType
       };
     });
+
+    const urlDistance = Number(searchParams.get("distanceKm"));
+    if (urlDistance > 0) {
+      setBackendDistance(urlDistance);
+      setGoogleRouteDetails((prev) => ({
+        ...(prev || {}),
+        isDetected: true,
+        distanceKm: urlDistance,
+        durationText: searchParams.get("duration") || prev?.durationText || null,
+        tollPrice: Number(searchParams.get("tollPrice")) || prev?.tollPrice || Math.round(urlDistance * 1.35),
+      }));
+    }
   }, [searchParams]);
 
   // Compute Active Distance
   const isLocalBooking = trip.serviceType === "LOCAL" || (trip.to && trip.to.toLowerCase().includes("hr"));
 
   const packageLabel = formatPackageLabel(trip.to);
-
-  const [googleRouteDetails, setGoogleRouteDetails] = useState(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -275,7 +357,7 @@ function SelectVehicleContent() {
 
   const activeDistance = isLocalBooking 
     ? parsePackageKm(trip.to) 
-    : (backendDistance || googleRouteDetails?.distanceKm || fallbackDistance);
+    : (googleRouteDetails?.distanceKm || backendDistance || fallbackDistance || 0);
 
   // Fetch live vehicles from backend API
   useEffect(() => {
@@ -284,14 +366,18 @@ function SelectVehicleContent() {
     async function fetchLiveVehicles() {
       setIsLoadingVehicles(true);
       try {
+        const dynamicDistance = googleRouteDetails?.distanceKm || backendDistance || undefined;
+        const resolvedFromCity = trip.pickupDetails?.city || cleanCityName(trip.from);
         const res = await customerApi.searchVehicles({
           from: trip.from,
+          fromCity: resolvedFromCity,
           to: trip.to,
           stops: trip.stops,
           tripType: trip.tripType.toLowerCase().includes("round") ? "ROUND_TRIP" : "ONE_WAY",
           pickupDate: trip.date,
           pickupTime: trip.time,
-          serviceType: trip.serviceType || "OUTSTATION"
+          serviceType: trip.serviceType || "OUTSTATION",
+          distanceKm: dynamicDistance
         });
 
         if (!isCancelled && res?.data) {
@@ -312,7 +398,7 @@ function SelectVehicleContent() {
               setBackendVehicles(res.data.vehicles);
             }
           }
-          if (res.data.distanceKm) {
+          if (res.data.distanceKm && !googleRouteDetails?.distanceKm) {
             setBackendDistance(res.data.distanceKm);
           }
         }
@@ -369,7 +455,7 @@ function SelectVehicleContent() {
 
       const standardRateFare = isLocalBooking
         ? (car.pricing?.originalPrice || car.dailyPrice || 2000)
-        : (car.pricing?.originalPrice || Math.round((activeDistance || 250) * perKmRate));
+        : (car.pricing?.originalPrice || (activeDistance > 0 ? Math.round(activeDistance * perKmRate) : (car.baseFare || car.fare || 0)));
 
       const discountPercentage = parseFloat(car.pricing?.discountPercentage || car.discountPercentage || 0);
 
@@ -385,20 +471,24 @@ function SelectVehicleContent() {
       const baseFare = displayFare;
       const tripDiscountedFare = displayFare;
 
-      // Driver Allowance (0 for local package since driver fee is included)
-      const driverAllowance = isLocalBooking
-        ? 0
-        : (pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0
-            ? Math.round(pricingConfig.driverAllowanceAmount)
-            : Math.round(displayFare * (pricingConfig.driverAllowancePercentage / 100)));
+      // Check if night pickup (10 PM to 6 AM)
+      const isNightTime = isNightPickup(trip.time);
+
+      // Driver Allowance (0 for local package or 10 PM - 6 AM night travel since excluded from prepaid billing)
+      const rawDriverAllowance = (pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0)
+        ? Math.round(pricingConfig.driverAllowanceAmount)
+        : Math.round(displayFare * (pricingConfig.driverAllowancePercentage / 100));
+
+      const driverAllowance = (isLocalBooking || isNightTime) ? 0 : rawDriverAllowance;
 
       // GST / Taxes
       const taxes = (pricingConfig.gstType === "FLAT" && pricingConfig.gstAmount > 0)
         ? Math.round(pricingConfig.gstAmount)
         : Math.round((displayFare + driverAllowance) * (pricingConfig.gstPercentage / 100));
 
-      // Toll price (0 for local, dynamic FASTag toll for outstation)
-      const tollPrice = isLocalBooking
+      // Toll price (0 for local, 0 for round trips, dynamic FASTag toll for outstation one-way)
+      const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
+      const tollPrice = (isLocalBooking || isRoundTripBooking)
         ? 0
         : (googleRouteDetails?.tollPrice > 0
             ? Math.round(googleRouteDetails.tollPrice)
@@ -409,6 +499,28 @@ function SelectVehicleContent() {
 
       const advance = car.pricing?.advanceAmount || Math.round((tripDiscountedFare) * 0.25);
       const dailyPrice = car.dailyPrice || Math.round(displayFare / 1.15);
+
+      let resolvedInclusions = car.inclusions || [];
+      if (isRoundTripBooking && Array.isArray(resolvedInclusions)) {
+        resolvedInclusions = resolvedInclusions.filter(inc => !inc.toLowerCase().includes("state tax") && !inc.toLowerCase().includes("toll"));
+      }
+      if (isNightTime && Array.isArray(resolvedInclusions)) {
+        resolvedInclusions = resolvedInclusions.filter(inc => !inc.toLowerCase().includes("driver"));
+      }
+
+      const baseExclusions = Array.isArray(car.exclusions) ? car.exclusions : [];
+      const resolvedExclusions = [
+        ...(isRoundTripBooking ? ["Tolls, State Entry Tax & Parking fees at actuals"] : []),
+        ...(isNightTime
+          ? ["Driver Allowance (Night travel 10:00 PM – 6:00 AM: excluded from package, payable to driver)"]
+          : ["Driver Night Allowance (Between 10:00 PM – 6:00 AM)"]),
+        ...baseExclusions.filter(exc => 
+          !exc.toLowerCase().includes("state entry") && 
+          !exc.toLowerCase().includes("toll") && 
+          !exc.toLowerCase().includes("night") &&
+          !(isNightTime && exc.toLowerCase().includes("driver"))
+        )
+      ];
 
       return {
         id: car.id,
@@ -446,11 +558,11 @@ function SelectVehicleContent() {
           advanceAmount: advance,
           perDayRate: dailyPrice
         },
-        inclusions: car.inclusions,
-        exclusions: car.exclusions
+        inclusions: resolvedInclusions,
+        exclusions: resolvedExclusions
       };
     });
-  }, [backendVehicles, activeDistance, trip.from, isLocalBooking, pricingConfig, googleRouteDetails]);
+  }, [backendVehicles, activeDistance, trip.from, trip.tripType, isLocalBooking, pricingConfig, googleRouteDetails]);
 
   // Dynamic Filter Counts based on live vehicles
   const counts = useMemo(() => {
@@ -596,11 +708,14 @@ function SelectVehicleContent() {
   };
 
   const handleCarSelect = (vehicle) => {
+    const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
     if (typeof window !== "undefined") {
       const selectedData = {
         trip,
         distanceKm: activeDistance,
-        tollPrice: vehicle.pricing?.tollPrice ?? (googleRouteDetails?.tollPrice || (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0)),
+        tollPrice: (isRoundTripBooking || isLocalBooking)
+          ? 0
+          : (vehicle.pricing?.tollPrice ?? (googleRouteDetails?.tollPrice || (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0))),
         duration: googleRouteDetails?.durationText || null,
         car: {
           id: vehicle.id,
@@ -611,8 +726,8 @@ function SelectVehicleContent() {
           seating: vehicle.seatingCapacity,
           perKmRate: vehicle.perKmRate ?? 0,
           fare: vehicle.pricing?.displayFare ?? vehicle.pricing?.baseFare ?? vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
-          baseFare: vehicle.pricing?.baseFare ?? Math.round((activeDistance || 250) * (vehicle.perKmRate || 12)),
-          driverAllowance: vehicle.pricing?.driverAllowance ?? 0,
+          baseFare: vehicle.pricing?.baseFare ?? (activeDistance > 0 ? Math.round(activeDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
+          driverAllowance: (isNightPickup(trip.time) || isLocalBooking) ? 0 : (vehicle.pricing?.driverAllowance ?? 0),
           taxes: vehicle.pricing?.chargesAndTaxes ?? 0,
           gstPercentage: vehicle.pricing?.gstPercentage ?? 5,
           driverAllowancePercentage: vehicle.pricing?.driverAllowancePercentage ?? 10,
@@ -826,8 +941,8 @@ function SelectVehicleContent() {
         
         {/* Dynamic Route Header */}
         <VehicleTripHeader
-          from={cleanCityName(trip.from)}
-          to={isLocalBooking ? trip.to : cleanCityName(trip.to)}
+          from={cleanCityName(trip.from, trip.pickupDetails?.city)}
+          to={isLocalBooking ? trip.to : cleanCityName(trip.to, trip.dropDetails?.city)}
           stops={trip.stops}
           tripType={trip.tripType}
           date={formatDateDisplay(trip.date)}

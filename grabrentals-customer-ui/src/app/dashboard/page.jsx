@@ -22,11 +22,14 @@ import {
   RotateCcw, 
   Headphones, 
   Star,
-  Loader2
+  Loader2,
+  Navigation
 } from "lucide-react";
 import { customerApi } from "@/lib/customerApi";
 import { isAuthenticated, getCurrentUser } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
+import { findCityCoordinates } from "@/lib/cities";
+import MapView from "@/components/booking/MapView";
 
 export default function CustomerDashboard() {
   const { t } = useLanguage();
@@ -34,6 +37,11 @@ export default function CustomerDashboard() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [expandedMaps, setExpandedMaps] = useState({});
+
+  const toggleMap = (id) => {
+    setExpandedMaps((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     let isCancelled = false;
@@ -128,7 +136,7 @@ export default function CustomerDashboard() {
       statusColor = "bg-blue-50 text-blue-700 border-blue-200";
     }
 
-    // Format Date & Time
+    // Format Pickup Date & Time
     let dateStr = "Upcoming Trip";
     let timeStr = "Scheduled";
     if (b.pickupDateTime) {
@@ -143,6 +151,39 @@ export default function CustomerDashboard() {
       }
     }
 
+    // Format Booking Creation Date & Time
+    let bookedDateStr = null;
+    let bookedTimeStr = null;
+    let bookedOnStr = null;
+    const rawCreated = b.createdAt || b.created_at;
+    if (rawCreated) {
+      try {
+        const cdt = new Date(rawCreated);
+        if (!isNaN(cdt.getTime())) {
+          bookedDateStr = cdt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+          bookedTimeStr = cdt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+          bookedOnStr = `${bookedDateStr} • ${bookedTimeStr}`;
+        }
+      } catch {}
+    }
+
+    // Coordinates for the directions route map
+    const pickupCoords = b.pickupCoords ||
+      (b.pickupLat && b.pickupLng ? { lat: Number(b.pickupLat), lng: Number(b.pickupLng) } : null) ||
+      findCityCoordinates(b.pickupAddress || b.pickupCity);
+
+    const dropCoords = b.dropCoords ||
+      findCityCoordinates(b.dropAddress || b.dropCity);
+
+    let stopsCoords = b.stopsCoords || null;
+    if (!stopsCoords && b.stops) {
+      const stopsArr = typeof b.stops === "string" ? b.stops.split("|").map((s) => s.trim()).filter(Boolean) : (Array.isArray(b.stops) ? b.stops : []);
+      stopsCoords = stopsArr.map((s, idx) => {
+        const c = findCityCoordinates(s);
+        return c ? { lat: c.lat, lng: c.lng, label: `Halt #${idx + 1}: ${s}` } : null;
+      }).filter(Boolean);
+    }
+
     const total = Number(b.totalFare || 0);
     const advance = Number(b.advancePaid || 0);
     const due = Number(b.dueAmount != null ? b.dueAmount : Math.max(0, total - advance));
@@ -155,9 +196,15 @@ export default function CustomerDashboard() {
       tripType: (b.tripType || "ONE_WAY").replace(/_/g, " "),
       from: b.pickupAddress || b.pickupCity || "Pickup Location",
       to: b.dropAddress || b.dropCity || "Destination",
-      distance: b.distance ? `${b.distance} km` : "Direct Outstation",
+      distance: b.distance ? `${b.distance} km` : (b.distanceKm ? `${b.distanceKm} km` : "Direct Outstation"),
       date: dateStr,
       time: timeStr,
+      bookedDate: bookedDateStr,
+      bookedTime: bookedTimeStr,
+      bookedOn: bookedOnStr,
+      pickupCoords,
+      dropCoords,
+      stopsCoords,
       car: modelName,
       carImage: carImage,
       carType: categoryLabel,
@@ -283,12 +330,12 @@ export default function CustomerDashboard() {
                 className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow overflow-hidden"
               >
                 {/* Header Bar */}
-                <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-black text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200">
+                <div className="px-6 py-3.5 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="text-xs font-mono font-black text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
                       {booking.id}
                     </span>
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{booking.tripType}</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{booking.tripType}</span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -305,7 +352,7 @@ export default function CustomerDashboard() {
                   <div className="lg:col-span-6 space-y-4">
                     <div className="relative pl-6 space-y-3 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pickup</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pickup Location</span>
                         <p className="text-sm font-extrabold text-slate-900 leading-snug">{booking.from}</p>
                       </div>
                       <div>
@@ -314,14 +361,53 @@ export default function CustomerDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 pt-2 border-t border-slate-100">
-                      <span className="flex items-center gap-1.5 text-slate-700">
-                        <Calendar className="w-4 h-4 text-amber-500" /> {booking.date}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-slate-700">
-                        <Clock className="w-4 h-4 text-amber-500" /> {booking.time}
-                      </span>
-                      <span className="text-slate-400">• {booking.distance}</span>
+                    <div className="pt-3 border-t border-slate-100 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+                        {/* 1. Pickup Date & Time */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                            Pickup Date & Time
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-700">
+                            <span className="flex items-center gap-1.5 bg-amber-50/90 text-slate-900 px-2.5 py-1 rounded-lg border border-amber-200/70 font-bold whitespace-nowrap">
+                              <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" /> {booking.date}
+                            </span>
+                            <span className="flex items-center gap-1.5 bg-amber-50/90 text-slate-900 px-2.5 py-1 rounded-lg border border-amber-200/70 font-bold whitespace-nowrap">
+                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" /> {booking.time}
+                            </span>
+                          </div>
+                          {/* <span className="text-slate-400 font-medium text-[11px] block mt-0.5">• {booking.distance}</span> */}
+                        </div>
+
+                        {/* 2. Booked Date & Time */}
+                        {booking.bookedDate && booking.bookedTime && (
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                              Booked Date & Time
+                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-700">
+                              <span className="flex items-center gap-1.5 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 font-bold whitespace-nowrap">
+                                <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {booking.bookedDate}
+                              </span>
+                              <span className="flex items-center gap-1.5 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 font-bold whitespace-nowrap">
+                                <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {booking.bookedTime}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Map Toggle Button */}
+                      <div className="pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => toggleMap(booking.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs hover:border-amber-300"
+                        >
+                          <Navigation className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{expandedMaps[booking.id] ? "Hide Directions Map" : "View Directions Map"}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -426,6 +512,35 @@ export default function CustomerDashboard() {
                   </div>
 
                 </div>
+
+                {/* Expandable Directions Map ("Here") */}
+                {expandedMaps[booking.id] && (
+                  <div className="border-t border-slate-100 p-4 sm:p-6 bg-slate-50/70 animate-in fade-in duration-200">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                          <Navigation className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-bold text-slate-900">Driving Highway Route & Directions</h5>
+                          <p className="text-[11px] text-slate-500">{booking.from} ➔ {booking.to}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                        {booking.distance}
+                      </span>
+                    </div>
+                    <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xs">
+                      <MapView
+                        pickup={booking.pickupCoords}
+                        drop={booking.dropCoords}
+                        stops={booking.stopsCoords || []}
+                        overrideDistance={booking.distance}
+                        className="h-64 sm:h-72 w-full"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

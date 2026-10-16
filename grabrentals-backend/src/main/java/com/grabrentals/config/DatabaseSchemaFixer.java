@@ -62,6 +62,13 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
         executeSafe("ALTER TABLE vehicle_tariffs ADD COLUMN IF NOT EXISTS state VARCHAR(100)");
         executeSafe("ALTER TABLE vehicle_tariffs ADD COLUMN IF NOT EXISTS city VARCHAR(100)");
         executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS vendor_payout NUMERIC(12,2)");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_lat NUMERIC(10, 6)");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_lng NUMERIC(10, 6)");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_door_no VARCHAR(150)");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_street VARCHAR(255)");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_area VARCHAR(150)");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_landmark VARCHAR(255)");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_pincode VARCHAR(20)");
 
         // Set default vendor rates for existing tariffs if empty (75% of customer rates by default)
         executeSafe("UPDATE vehicle_tariffs SET service_type = 'OUTSTATION' WHERE service_type IS NULL");

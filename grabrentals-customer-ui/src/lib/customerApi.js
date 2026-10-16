@@ -10,12 +10,14 @@ export const customerApi = {
     const res = await axiosClient.get("/api/vehicles/search", {
       params: {
         from: params.from,
+        fromCity: params.fromCity,
         to: params.to,
         stops: params.stops,
         tripType: params.tripType,
         pickupDate: params.pickupDate,
         pickupTime: params.pickupTime,
         serviceType: params.serviceType,
+        distanceKm: params.distanceKm,
       },
     });
     return res.data;

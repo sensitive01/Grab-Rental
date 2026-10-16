@@ -48,6 +48,14 @@ public class PublicVehicleService {
      * Search available vehicles for an outstation or local route with real pricing calculations.
      */
     public VehicleSearchResponseDto searchVehicles(String from, String to, String stops, String tripType, String pickupDate, String pickupTime, String serviceType) {
+        return searchVehicles(from, null, to, stops, tripType, pickupDate, pickupTime, serviceType, null);
+    }
+
+    public VehicleSearchResponseDto searchVehicles(String from, String to, String stops, String tripType, String pickupDate, String pickupTime, String serviceType, Integer overrideDistanceKm) {
+        return searchVehicles(from, null, to, stops, tripType, pickupDate, pickupTime, serviceType, overrideDistanceKm);
+    }
+
+    public VehicleSearchResponseDto searchVehicles(String from, String fromCity, String to, String stops, String tripType, String pickupDate, String pickupTime, String serviceType, Integer overrideDistanceKm) {
         String cleanFrom = (from != null && !from.isBlank()) ? from.trim() : "Bangalore";
         String cleanTo = (to != null && !to.isBlank()) ? to.trim() : "Coimbatore";
         String normalizedTripType = (tripType != null && tripType.toLowerCase().contains("round")) ? "Round trip" : "One way";
@@ -85,12 +93,15 @@ public class PublicVehicleService {
                 pkgKm = 80;
             }
             distanceKm = pkgKm;
+        } else if (overrideDistanceKm != null && overrideDistanceKm > 0) {
+            distanceKm = overrideDistanceKm;
         } else {
             distanceKm = calculateDistanceWithStops(cleanFrom, cleanTo, parsedStops, normalizedTripType);
         }
         long tDist = System.currentTimeMillis();
 
-        String[] cityAndState = extractCityAndState(cleanFrom);
+        String lookupString = (fromCity != null && !fromCity.isBlank()) ? fromCity.trim() : cleanFrom;
+        String[] cityAndState = extractCityAndState(lookupString);
         String pickupCity = cityAndState[0];
         String pickupState = cityAndState[1];
 
@@ -211,7 +222,8 @@ public class PublicVehicleService {
                         List.of(fuel),
                         5,
                         badge,
-                        discPct
+                        discPct,
+                        "ROUND_TRIP".equalsIgnoreCase(normalizedTripType)
                 );
                 card.setVehicleType(typeTitle);
                 card.setFuelType(fuel);
@@ -390,7 +402,8 @@ public class PublicVehicleService {
                             List.of(fuel),
                             1,
                             badge,
-                            discPct
+                            discPct,
+                            "ROUND_TRIP".equalsIgnoreCase(normalizedTripType)
                     );
                     card.setVehicleNumber(v.getVehicleNumber());
                     card.setRegNumber(v.getRegistrationNumber() != null && !v.getRegistrationNumber().isBlank() ? v.getRegistrationNumber() : v.getVehicleNumber());
@@ -505,6 +518,40 @@ public class PublicVehicleService {
         if (locationStr == null || locationStr.isBlank()) {
             return new String[]{"Bangalore", "Karnataka"};
         }
+        String lower = locationStr.toLowerCase();
+
+        // 1. Direct landmark & known hub matching
+        if (lower.contains("bangalore") || lower.contains("bengaluru") || lower.contains("basavanagudi") || 
+            lower.contains("mallikarjuna") || lower.contains("indiranagar") || lower.contains("koramangala") || 
+            lower.contains("whitefield") || lower.contains("jayanagar") || lower.contains("hebbal") || 
+            lower.contains("electronic city") || lower.contains("marathahalli") || lower.contains("yelahanka") ||
+            lower.contains("rajajinagar") || lower.contains("banashankari") || lower.contains("btm") || lower.contains("hsi")) {
+            return new String[]{"Bangalore", "Karnataka"};
+        }
+        if (lower.contains("coimbatore") || lower.contains("gandhipuram") || lower.contains("peelamedu") || lower.contains("rs puram")) {
+            return new String[]{"Coimbatore", "Tamil Nadu"};
+        }
+        if (lower.contains("chennai") || lower.contains("madras") || lower.contains("t nagar") || lower.contains("adyar") || lower.contains("velachery")) {
+            return new String[]{"Chennai", "Tamil Nadu"};
+        }
+        if (lower.contains("mysore") || lower.contains("mysuru")) return new String[]{"Mysore", "Karnataka"};
+        if (lower.contains("hyderabad") || lower.contains("secunderabad") || lower.contains("gachibowli") || lower.contains("hitec city")) return new String[]{"Hyderabad", "Telangana"};
+        if (lower.contains("mumbai") || lower.contains("bombay") || lower.contains("bandra") || lower.contains("andheri")) return new String[]{"Mumbai", "Maharashtra"};
+        if (lower.contains("pune") || lower.contains("hinjewadi")) return new String[]{"Pune", "Maharashtra"};
+        if (lower.contains("delhi") || lower.contains("new delhi") || lower.contains("gurgaon") || lower.contains("noida")) return new String[]{"Delhi", "Delhi"};
+        if (lower.contains("madurai")) return new String[]{"Madurai", "Tamil Nadu"};
+        if (lower.contains("salem")) return new String[]{"Salem", "Tamil Nadu"};
+        if (lower.contains("trichy") || lower.contains("tiruchirappalli")) return new String[]{"Trichy", "Tamil Nadu"};
+        if (lower.contains("kochi") || lower.contains("cochin") || lower.contains("ernakulam")) return new String[]{"Kochi", "Kerala"};
+
+        // 2. Check against all known Indian city keys in CITY_COORDS
+        for (String cKey : CITY_COORDS.keySet()) {
+            if (lower.contains(cKey)) {
+                String cName = Character.toUpperCase(cKey.charAt(0)) + cKey.substring(1);
+                return new String[]{cName, "India"};
+            }
+        }
+
         String[] rawParts = locationStr.split(",");
         List<String> parts = new ArrayList<>();
         for (String p : rawParts) {
@@ -555,7 +602,8 @@ public class PublicVehicleService {
             List<String> fuelOptions,
             int availableCount,
             String badge,
-            BigDecimal discountPercentage
+            BigDecimal discountPercentage,
+            boolean isRoundTrip
     ) {
         com.grabrentals.tariff.entity.PricingTaxConfig taxConfig = pricingTaxConfigService.getConfig();
         String gstType = (taxConfig.getGstType() != null && !taxConfig.getGstType().isBlank())
@@ -632,14 +680,25 @@ public class PublicVehicleService {
                         .discountPercentage(discountPercentage != null ? discountPercentage : BigDecimal.ZERO)
                         .build())
                 .fuelOptions(fuelOptions)
-                .inclusions(List.of(
+                .inclusions(isRoundTrip ? List.of(
+                        "Base Fare and Fuel Charges for " + distanceKm + " km",
+                        driverInclusionLabel,
+                        gstInclusionLabel,
+                        "Air Conditioning (AC)"
+                ) : List.of(
                         "Base Fare and Fuel Charges for " + distanceKm + " km",
                         driverInclusionLabel,
                         gstInclusionLabel,
                         "State Tax & Toll Charges",
                         "Air Conditioning (AC)"
                 ))
-                .exclusions(List.of(
+                .exclusions(isRoundTrip ? List.of(
+                        "Tolls, State Entry Tax & Parking fees at actuals",
+                        "Driver Night Allowance (Between 10:00 PM – 6:00 AM)",
+                        "Pay ₹" + postLimitRate + "/km after " + distanceKm + " km",
+                        "Multiple pickups and drops outside designated route"
+                ) : List.of(
+                        "Driver Night Allowance (Between 10:00 PM – 6:00 AM)",
                         "Pay ₹" + postLimitRate + "/km after " + distanceKm + " km",
                         "Multiple pickups and drops outside designated route"
                 ))
@@ -671,7 +730,6 @@ public class PublicVehicleService {
         int oneWay;
         if (stops == null || stops.isEmpty()) {
             oneWay = getSegmentDistance(from, to);
-            if (oneWay == 180) oneWay = 320; // Default outstation distance if unrecognized route
         } else {
             List<String> points = new ArrayList<>();
             points.add(from);
@@ -785,42 +843,16 @@ public class PublicVehicleService {
         String f = (from != null ? from : "").toLowerCase();
         String t = (to != null ? to : "").toLowerCase();
 
-        // 1. Explicit highway overrides
-        if (matchesPair(f, t, "bangalore", "coimbatore") || matchesPair(f, t, "bengaluru", "coimbatore")) return 365;
-        if (matchesPair(f, t, "bangalore", "chennai") || matchesPair(f, t, "bengaluru", "chennai")) return 347;
-        if (matchesPair(f, t, "bangalore", "mysore") || matchesPair(f, t, "bengaluru", "mysore")) return 145;
-        if (matchesPair(f, t, "bangalore", "hyderabad") || matchesPair(f, t, "bengaluru", "hyderabad")) return 575;
-        if (matchesPair(f, t, "bangalore", "ooty") || matchesPair(f, t, "bengaluru", "ooty")) return 275;
-        if (matchesPair(f, t, "bangalore", "pondicherry") || matchesPair(f, t, "bengaluru", "pondicherry")) return 315;
-        if (matchesPair(f, t, "bangalore", "salem") || matchesPair(f, t, "bengaluru", "salem")) return 200;
-        if (matchesPair(f, t, "bangalore", "madurai") || matchesPair(f, t, "bengaluru", "madurai")) return 435;
-        if (matchesPair(f, t, "bangalore", "trichy") || matchesPair(f, t, "bengaluru", "trichy")) return 330;
-        if (matchesPair(f, t, "bangalore", "kochi") || matchesPair(f, t, "bengaluru", "kochi")) return 540;
-        if (matchesPair(f, t, "salem", "coimbatore")) return 165;
-        if (matchesPair(f, t, "salem", "madurai")) return 235;
-        if (matchesPair(f, t, "mysore", "ooty")) return 125;
-        if (matchesPair(f, t, "coimbatore", "ooty")) return 85;
-        if (matchesPair(f, t, "chennai", "coimbatore")) return 505;
-        if (matchesPair(f, t, "chennai", "madurai")) return 460;
-        if (matchesPair(f, t, "chennai", "pondicherry")) return 150;
-        if (matchesPair(f, t, "chennai", "salem")) return 340;
-        if (matchesPair(f, t, "mumbai", "pune")) return 155;
-        if (matchesPair(f, t, "mumbai", "nashik")) return 165;
-        if (matchesPair(f, t, "delhi", "jaipur")) return 280;
-        if (matchesPair(f, t, "delhi", "agra")) return 235;
-        if (matchesPair(f, t, "agra", "jaipur")) return 240;
-        if (matchesPair(f, t, "kochi", "trivandrum")) return 205;
-
-        // 2. Automatic GPS Coordinate Haversine + road winding factor (1.28x)
+        // Dynamic GPS Coordinate Haversine + road winding factor (1.28x)
         double[] c1 = lookupCoordinates(f);
         double[] c2 = lookupCoordinates(t);
         if (c1 != null && c2 != null) {
             double airKm = haversineKm(c1[0], c1[1], c2[0], c2[1]);
             int roadKm = (int) Math.round(airKm * 1.28);
-            return Math.max(roadKm, 40);
+            return Math.max(roadKm, 25);
         }
 
-        return 220;
+        return 0;
     }
 
     private double[] lookupCoordinates(String cityName) {

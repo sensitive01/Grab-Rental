@@ -45,6 +45,12 @@ const AIRPORT_HUBS = [
   { name: "Delhi IGI Airport (DEL)", state: "New Delhi", lat: 28.5562, lng: 77.1000 }
 ];
 
+// Constant fallbacks to avoid creating new object/array references on render
+const EMPTY_STOPS = [];
+const DEFAULT_BLR_COORDS = { lat: 12.9716, lng: 77.5946 };
+const DEFAULT_CBE_COORDS = { lat: 11.0168, lng: 76.9558 };
+const DEFAULT_AIRPORT_COORDS = { lat: 13.1986, lng: 77.7066 };
+
 export default function LocationPickerModal({
   isOpen,
   onClose,
@@ -55,7 +61,8 @@ export default function LocationPickerModal({
   pickupValue = "",
   dropValue = "",
   airportValue = "",
-  stops = [],
+  tripType = "one-way",
+  stops = EMPTY_STOPS,
   onSelectPickup,
   onSelectDrop,
   onSelectAirport,
@@ -77,20 +84,22 @@ export default function LocationPickerModal({
   const [pickupCityState, setPickupCityState] = useState(pickupValue || (activeTarget === "pickup" ? initialValue : "") || "Bangalore, Karnataka");
   const [dropCityState, setDropCityState] = useState(dropValue || (activeTarget === "drop" ? initialValue : "") || "Coimbatore, Tamil Nadu");
   const [airportCityState, setAirportCityState] = useState(airportValue || (activeTarget === "airport" ? initialValue : "") || "Kempegowda International Airport (BLR), Bengaluru");
-  const [stopsState, setStopsState] = useState(Array.isArray(stops) ? [...stops] : []);
+  const [stopsState, setStopsState] = useState(Array.isArray(stops) ? [...stops] : EMPTY_STOPS);
 
-  const [pickupCoords, setPickupCoords] = useState(initialPickupCoords || { lat: 12.9716, lng: 77.5946 });
-  const [dropCoords, setDropCoords] = useState(initialDropCoords || { lat: 11.0168, lng: 76.9558 });
-  const [airportCoords, setAirportCoords] = useState(initialAirportCoords || { lat: 13.1986, lng: 77.7066 });
+  const [pickupCoords, setPickupCoords] = useState(initialPickupCoords || DEFAULT_BLR_COORDS);
+  const [dropCoords, setDropCoords] = useState(initialDropCoords || DEFAULT_CBE_COORDS);
+  const [airportCoords, setAirportCoords] = useState(initialAirportCoords || DEFAULT_AIRPORT_COORDS);
   const [stopsCoords, setStopsCoords] = useState(initialStopsCoords || {});
 
   // Live modal route calculation
   const [modalRoute, setModalRoute] = useState(null);
 
   // Map & location states
-  const [coordinates, setCoordinates] = useState({ lat: 12.9716, lng: 77.5946 });
+  const [coordinates, setCoordinates] = useState(DEFAULT_BLR_COORDS);
   const [selectedAddress, setSelectedAddress] = useState(initialValue || "Bangalore, Karnataka");
   const [cityLabel, setCityLabel] = useState(initialValue || "Bangalore, Karnataka");
+  const [pickupAddressDetails, setPickupAddressDetails] = useState(null);
+  const [dropAddressDetails, setDropAddressDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -121,6 +130,7 @@ export default function LocationPickerModal({
   const stopsRef = useRef(stopsState);
   const sessionTokenRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const prevIsOpenRef = useRef(false);
 
   useEffect(() => {
     currentTargetRef.current = currentTarget;
@@ -130,52 +140,56 @@ export default function LocationPickerModal({
     stopsRef.current = stopsState;
   }, [stopsState]);
 
-  // Sync state when modal opens or target/values change
+  // Sync state only when modal transitions from closed to open
   useEffect(() => {
-    if (!isOpen) return;
-
-    const target = activeTarget || "pickup";
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentTarget(target);
-
-    const activePick = pickupValue || (target === "pickup" && initialValue ? initialValue : "") || pickupCityState;
-    const activeDrop = dropValue || (target === "drop" && initialValue ? initialValue : "") || dropCityState;
-    const activeAirport = airportValue || (target === "airport" && initialValue ? initialValue : "") || airportCityState;
-
-    if (initialAirportCoords?.lat && initialAirportCoords?.lng) {
-      setAirportCoords(initialAirportCoords);
-    } else if (airportValue) {
-      setAirportCityState(airportValue);
-      const ac = findCityCoordinates(airportValue);
-      if (ac) setAirportCoords({ lat: ac.lat, lng: ac.lng });
+    if (!isOpen) {
+      prevIsOpenRef.current = false;
+      return;
     }
-    if (airportValue) setAirportCityState(airportValue);
 
-    if (initialPickupCoords?.lat && initialPickupCoords?.lng) {
-      setPickupCoords(initialPickupCoords);
-    } else if (pickupValue) {
-      setPickupCityState(pickupValue);
-      const pc = findCityCoordinates(pickupValue);
-      if (pc) setPickupCoords({ lat: pc.lat, lng: pc.lng });
-    }
-    if (pickupValue) setPickupCityState(pickupValue);
+    const justOpened = !prevIsOpenRef.current;
+    prevIsOpenRef.current = true;
 
-    if (initialDropCoords?.lat && initialDropCoords?.lng) {
-      setDropCoords(initialDropCoords);
-    } else if (dropValue) {
-      setDropCityState(dropValue);
-      const dc = findCityCoordinates(dropValue);
-      if (dc) setDropCoords({ lat: dc.lat, lng: dc.lng });
-    }
-    if (dropValue) setDropCityState(dropValue);
+    if (justOpened) {
+      const target = activeTarget || "pickup";
+      setCurrentTarget(target);
 
-    if (Array.isArray(stops)) {
-      setStopsState([...stops]);
+      const activePick = pickupValue || (target === "pickup" && initialValue ? initialValue : "") || "Bangalore, Karnataka";
+      const activeDrop = dropValue || (target === "drop" && initialValue ? initialValue : "") || "Coimbatore, Tamil Nadu";
+      const activeAirport = airportValue || (target === "airport" && initialValue ? initialValue : "") || "Kempegowda International Airport (BLR), Bengaluru";
+
+      setPickupCityState(activePick);
+      setDropCityState(activeDrop);
+      setAirportCityState(activeAirport);
+
+      let pCoords = initialPickupCoords;
+      if (!pCoords?.lat || !pCoords?.lng) {
+        const pc = findCityCoordinates(activePick);
+        pCoords = pc ? { lat: pc.lat, lng: pc.lng } : DEFAULT_BLR_COORDS;
+      }
+      setPickupCoords(pCoords);
+
+      let dCoords = initialDropCoords;
+      if (!dCoords?.lat || !dCoords?.lng) {
+        const dc = findCityCoordinates(activeDrop);
+        dCoords = dc ? { lat: dc.lat, lng: dc.lng } : DEFAULT_CBE_COORDS;
+      }
+      setDropCoords(dCoords);
+
+      let aCoords = initialAirportCoords;
+      if (!aCoords?.lat || !aCoords?.lng) {
+        const ac = findCityCoordinates(activeAirport);
+        aCoords = ac ? { lat: ac.lat, lng: ac.lng } : DEFAULT_AIRPORT_COORDS;
+      }
+      setAirportCoords(aCoords);
+
+      const initStops = Array.isArray(stops) ? [...stops] : EMPTY_STOPS;
+      setStopsState(initStops);
       if (initialStopsCoords && Object.keys(initialStopsCoords).length > 0) {
         setStopsCoords(initialStopsCoords);
       } else {
         const initCoords = {};
-        stops.forEach((s, idx) => {
+        initStops.forEach((s, idx) => {
           if (s) {
             const sc = findCityCoordinates(s);
             if (sc) initCoords[idx] = { lat: sc.lat, lng: sc.lng };
@@ -183,36 +197,35 @@ export default function LocationPickerModal({
         });
         setStopsCoords(initCoords);
       }
+
+      let currentCityVal = activePick;
+      let newCoords = pCoords;
+
+      if (target === "airport") {
+        currentCityVal = activeAirport;
+        newCoords = aCoords;
+      } else if (target === "drop") {
+        currentCityVal = activeDrop;
+        newCoords = dCoords;
+      } else if (typeof target === "string" && target.startsWith("stop-")) {
+        const sIdx = parseInt(target.replace("stop-", ""), 10);
+        currentCityVal = initStops[sIdx] || "";
+        newCoords = findCityCoordinates(currentCityVal) || pCoords;
+      }
+
+      setSelectedAddress(currentCityVal || "");
+      setCityLabel(currentCityVal || "");
+      setCoordinates(newCoords);
     }
-
-    let currentCityVal = activePick;
-    let newCoords = pickupCoords;
-
-    if (target === "airport") {
-      currentCityVal = activeAirport;
-      const matchedCoords = findCityCoordinates(activeAirport);
-      newCoords = matchedCoords ? { lat: matchedCoords.lat, lng: matchedCoords.lng } : airportCoords;
-    } else if (target === "drop") {
-      currentCityVal = activeDrop;
-      const matchedCoords = findCityCoordinates(activeDrop);
-      newCoords = matchedCoords ? { lat: matchedCoords.lat, lng: matchedCoords.lng } : dropCoords;
-    } else if (typeof target === "string" && target.startsWith("stop-")) {
-      const sIdx = parseInt(target.replace("stop-", ""), 10);
-      currentCityVal = stops[sIdx] || "";
-      const matchedCoords = findCityCoordinates(currentCityVal);
-      newCoords = matchedCoords ? { lat: matchedCoords.lat, lng: matchedCoords.lng } : pickupCoords;
-    } else {
-      currentCityVal = activePick;
-      const matchedCoords = findCityCoordinates(activePick);
-      newCoords = matchedCoords ? { lat: matchedCoords.lat, lng: matchedCoords.lng } : pickupCoords;
-    }
-
-    setSelectedAddress(currentCityVal || "");
-    setCityLabel(currentCityVal || "");
-    setCoordinates(newCoords);
   }, [isOpen, activeTarget, pickupValue, dropValue, airportValue, stops, initialValue, initialPickupCoords, initialDropCoords, initialAirportCoords, initialStopsCoords]);
 
-  // Compute live driving distance dynamically inside modal
+  // Compute live driving distance dynamically inside modal using primitive dependencies
+  const pickupLat = pickupCoords?.lat;
+  const pickupLng = pickupCoords?.lng;
+  const dropLat = dropCoords?.lat;
+  const dropLng = dropCoords?.lng;
+  const stopsSerialized = Array.isArray(stopsState) ? stopsState.filter(Boolean).join("|") : "";
+
   useEffect(() => {
     let cancelled = false;
     async function calcRoute() {
@@ -225,7 +238,7 @@ export default function LocationPickerModal({
           pickupCityState,
           dropCityState,
           stopsState,
-          "one-way",
+          tripType,
           {
             originCoords: pickupCoords,
             destinationCoords: dropCoords,
@@ -233,7 +246,17 @@ export default function LocationPickerModal({
           }
         );
         if (!cancelled && res?.isDetected) {
-          setModalRoute(res);
+          setModalRoute((prev) => {
+            if (
+              prev &&
+              prev.distanceKm === res.distanceKm &&
+              prev.tollPrice === res.tollPrice &&
+              prev.durationHours === res.durationHours
+            ) {
+              return prev;
+            }
+            return res;
+          });
         }
       } catch (err) {
         console.warn("Modal route distance fetch failed:", err);
@@ -243,30 +266,58 @@ export default function LocationPickerModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, pickupCityState, dropCityState, stopsState, pickupCoords, dropCoords, stopsCoords]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, pickupCityState, dropCityState, stopsSerialized, pickupLat, pickupLng, dropLat, dropLng]);
 
   // Load Google Maps Script if API key is provided
   useEffect(() => {
     if (!isOpen || !hasGoogleMapsKey) return;
 
-    if (window.google && window.google.maps) {
+    // Listen for Google Maps auth failure (e.g. referrer restriction on localhost)
+    window.gm_authFailure = () => {
+      console.warn("Google Maps auth failure (check API key restrictions or billing). Falling back to OpenStreetMap.");
+      setGoogleMapsError(true);
+    };
+
+    if (window.google && window.google.maps && window.google.maps.Map) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGoogleMapsLoaded(true);
       return;
     }
 
     const scriptId = "google-maps-script";
-    if (document.getElementById(scriptId)) {
-      setGoogleMapsLoaded(true);
+    const existing = document.getElementById(scriptId);
+    if (existing) {
+      if (window.google?.maps?.Map) {
+        setGoogleMapsLoaded(true);
+      } else {
+        existing.addEventListener("load", () => {
+          if (window.google?.maps?.Map) setGoogleMapsLoaded(true);
+        });
+        existing.addEventListener("error", () => setGoogleMapsError(true));
+      }
       return;
     }
 
     const script = document.createElement("script");
     script.id = scriptId;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`;
     script.async = true;
     script.defer = true;
-    script.onload = () => setGoogleMapsLoaded(true);
+    script.onload = () => {
+      if (window.google?.maps?.Map) {
+        setGoogleMapsLoaded(true);
+      } else {
+        // Fallback check if Map is slightly delayed
+        setTimeout(() => {
+          if (window.google?.maps?.Map) {
+            setGoogleMapsLoaded(true);
+          } else {
+            setGoogleMapsError(true);
+          }
+        }, 100);
+      }
+    };
     script.onerror = () => setGoogleMapsError(true);
     document.head.appendChild(script);
   }, [isOpen, hasGoogleMapsKey, apiKey]);
@@ -320,7 +371,7 @@ export default function LocationPickerModal({
   }, [hasGoogleMapsKey, googleMapsError]);
 
   // Central handler to apply chosen address and coordinates to whichever target is active
-  const applyLocationToActiveTarget = useCallback((label, coords) => {
+  const applyLocationToActiveTarget = useCallback((label, coords, details = null) => {
     const target = currentTargetRef.current;
     setSelectedAddress(label);
     setCityLabel(label);
@@ -328,20 +379,18 @@ export default function LocationPickerModal({
     if (target === "airport") {
       setAirportCityState(label);
       if (coords) setAirportCoords(coords);
-      if (onSelectAirport) onSelectAirport(label, coords);
     } else if (target === "drop") {
       setDropCityState(label);
       if (coords) setDropCoords(coords);
-      if (onSelectDrop) onSelectDrop(label, coords);
+      if (details) setDropAddressDetails(details);
     } else if (typeof target === "string" && target.startsWith("stop-")) {
       const sIdx = parseInt(target.replace("stop-", ""), 10);
       if (sIdx >= 0) {
-        const next = [...(stopsRef.current || [])];
-        next[sIdx] = label;
-        setStopsState(next);
-        if (onSelectStops) {
-          onSelectStops(next);
-        }
+        setStopsState((prev) => {
+          const next = [...(prev || [])];
+          next[sIdx] = label;
+          return next;
+        });
         if (coords) {
           setStopsCoords((prev) => ({ ...prev, [sIdx]: coords }));
         }
@@ -349,9 +398,9 @@ export default function LocationPickerModal({
     } else {
       setPickupCityState(label);
       if (coords) setPickupCoords(coords);
-      if (onSelectPickup) onSelectPickup(label, coords);
+      if (details) setPickupAddressDetails(details);
     }
-  }, [onSelectDrop, onSelectPickup, onSelectAirport, onSelectStops]);
+  }, []);
 
   // Reverse Geocode using Google Maps Geocoder
   const reverseGeocodeGoogle = useCallback((lat, lng) => {
@@ -361,33 +410,63 @@ export default function LocationPickerModal({
       if (status === "OK" && results?.[0]) {
         const fullAddr = results[0].formatted_address;
         let poiName = "";
+        let area = "";
         let locality = "";
         let adminArea = "";
+        let pincode = "";
         for (const comp of results[0].address_components) {
+          const types = comp.types || [];
           if (
-            comp.types.includes("point_of_interest") ||
-            comp.types.includes("establishment") ||
-            comp.types.includes("premise") ||
-            comp.types.includes("bus_station") ||
-            comp.types.includes("transit_station")
+            types.includes("point_of_interest") ||
+            types.includes("establishment") ||
+            types.includes("premise") ||
+            types.includes("bus_station") ||
+            types.includes("transit_station")
           ) {
             poiName = comp.long_name;
           }
-          if (comp.types.includes("locality")) locality = comp.long_name;
-          if (comp.types.includes("administrative_area_level_1")) adminArea = comp.long_name;
+          if (
+            types.includes("sublocality") ||
+            types.includes("sublocality_level_1") ||
+            types.includes("sublocality_level_2") ||
+            types.includes("neighborhood") ||
+            types.includes("suburb")
+          ) {
+            if (!area) area = comp.long_name;
+          }
+          if (types.includes("locality")) locality = comp.long_name;
+          if (!locality && types.includes("administrative_area_level_2")) {
+            locality = comp.long_name;
+          }
+          if (types.includes("administrative_area_level_1")) adminArea = comp.long_name;
+          if (types.includes("postal_code")) pincode = comp.long_name;
         }
 
         let specificLabel = "";
-        if (poiName) {
-          const parts = [poiName];
-          if (locality && !poiName.toLowerCase().includes(locality.toLowerCase())) parts.push(locality);
-          if (adminArea && !poiName.toLowerCase().includes(adminArea.toLowerCase())) parts.push(adminArea);
-          specificLabel = parts.join(", ");
-        } else {
-          specificLabel = fullAddr.split(",").slice(0, 3).join(", ").trim();
+        const streetPart = poiName || fullAddr.split(",").slice(0, 2).join(", ").trim();
+        const parts = [streetPart];
+        if (area && !parts.some((p) => p.toLowerCase().includes(area.toLowerCase()))) {
+          parts.push(area);
         }
+        if (locality && !parts.some((p) => p.toLowerCase().includes(locality.toLowerCase()))) {
+          parts.push(locality);
+        }
+        if (adminArea && !parts.some((p) => p.toLowerCase().includes(adminArea.toLowerCase()))) {
+          parts.push(adminArea);
+        }
+        specificLabel = parts.join(", ");
 
-        applyLocationToActiveTarget(specificLabel || fullAddr, { lat, lng });
+        const details = {
+          area: area || "",
+          city: locality || "",
+          state: adminArea || "India",
+          pincode: pincode || "",
+          fullAddress: fullAddr,
+          lat,
+          lng
+        };
+
+        applyLocationToActiveTarget(specificLabel || fullAddr, { lat, lng }, details);
       }
     });
   }, [applyLocationToActiveTarget]);
@@ -405,15 +484,28 @@ export default function LocationPickerModal({
           const parts = data.display_name.split(",");
           const addr = data.address || {};
           const poi = addr.amenity || addr.building || addr.bus_stop || parts[0]?.trim();
-          const city = addr.city || addr.town || addr.village || addr.suburb || "";
+          const area = addr.suburb || addr.neighbourhood || addr.residential || addr.quarter || addr.subdistrict || "";
+          const city = addr.city || addr.town || addr.village || addr.city_district || addr.county || "";
           const state = addr.state || "India";
+          const pincode = addr.postcode || "";
           let formatted = poi;
           if (city && !poi.toLowerCase().includes(city.toLowerCase())) {
             formatted = `${poi}, ${city}, ${state}`;
           } else {
             formatted = `${poi}, ${state}`;
           }
-          applyLocationToActiveTarget(formatted, { lat, lng });
+
+          const details = {
+            area: area || "",
+            city: city || "",
+            state: state || "India",
+            pincode: pincode || "",
+            fullAddress: data.display_name,
+            lat,
+            lng
+          };
+
+          applyLocationToActiveTarget(formatted, { lat, lng }, details);
           return;
         }
       }
@@ -422,7 +514,15 @@ export default function LocationPickerModal({
     }
 
     const fallback = `Location at ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
-    applyLocationToActiveTarget(fallback, { lat, lng });
+    applyLocationToActiveTarget(fallback, { lat, lng }, {
+      area: "",
+      city: "",
+      state: "India",
+      pincode: "",
+      fullAddress: fallback,
+      lat,
+      lng
+    });
   }, [applyLocationToActiveTarget]);
 
   // Clean up and reset map instances when modal closes so reopening creates a fresh map
@@ -527,7 +627,7 @@ export default function LocationPickerModal({
         markerInstanceRef.current = null;
       }
     };
-  }, [isOpen, googleMapsLoaded, hasGoogleMapsKey, coordinates, reverseGeocodeGoogle]);
+  }, [isOpen, googleMapsLoaded, hasGoogleMapsKey, coordinates?.lat, coordinates?.lng, reverseGeocodeGoogle]);
 
   // Initialize or update Leaflet Map (Free interactive OpenStreetMap with draggable pin)
   useEffect(() => {
@@ -889,8 +989,8 @@ export default function LocationPickerModal({
       if (s && s.trim()) saveCustomCity(s.trim());
     });
 
-    if (onSelectPickup) onSelectPickup(pickupCityState, pickupCoords);
-    if (onSelectDrop) onSelectDrop(dropCityState, dropCoords);
+    if (onSelectPickup) onSelectPickup(pickupCityState, pickupCoords, pickupAddressDetails);
+    if (onSelectDrop) onSelectDrop(dropCityState, dropCoords, dropAddressDetails);
     if (onSelectAirport) onSelectAirport(airportCityState, airportCoords);
     const validStops = stopsState.filter((s) => s && s.trim());
     if (onSelectStops) onSelectStops(validStops);
@@ -914,13 +1014,16 @@ export default function LocationPickerModal({
       onSelect(activeVal, activeCoords, currentTarget, {
         pickup: pickupCityState,
         pickupCoords,
+        pickupDetails: pickupAddressDetails,
         drop: dropCityState,
         dropCoords,
+        dropDetails: dropAddressDetails,
         airport: airportCityState,
         airportCoords,
         stops: validStops,
-        stopsCoords
-      });
+        stopsCoords,
+        route: modalRoute
+      }, currentTarget === "drop" ? dropAddressDetails : pickupAddressDetails);
     }
 
     onClose();

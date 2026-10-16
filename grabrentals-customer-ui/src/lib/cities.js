@@ -138,36 +138,6 @@ export const INDIAN_CITIES = [
 
 const STORAGE_KEY = "grabrentals_custom_cities";
 
-// Known Highway Road Distances (in km) for popular pairs
-const HIGHWAY_DISTANCE_OVERRIDES = {
-  "bangalore-coimbatore": 365,
-  "bangalore-chennai": 347,
-  "bangalore-mysore": 145,
-  "bangalore-hyderabad": 575,
-  "bangalore-ooty": 275,
-  "bangalore-pondicherry": 315,
-  "bangalore-salem": 200,
-  "bangalore-madurai": 435,
-  "bangalore-trichy": 330,
-  "bangalore-kochi": 540,
-  "bangalore-coorg": 250,
-  "bangalore-chikmagalur": 245,
-  "salem-coimbatore": 165,
-  "salem-madurai": 235,
-  "mysore-ooty": 125,
-  "coimbatore-ooty": 85,
-  "chennai-coimbatore": 505,
-  "chennai-madurai": 460,
-  "chennai-pondicherry": 150,
-  "chennai-salem": 340,
-  "mumbai-pune": 155,
-  "mumbai-nashik": 165,
-  "delhi-jaipur": 280,
-  "delhi-agra": 235,
-  "agra-jaipur": 240,
-  "kochi-trivandrum": 205
-};
-
 /**
  * Get stored custom user-added cities from localStorage
  */
@@ -244,24 +214,38 @@ export function searchCities(query = "") {
  */
 export function findCityCoordinates(cityName) {
   if (!cityName) return null;
-  const clean = cityName.toLowerCase().split(",")[0].replace(/\(.*?\)/g, "").trim();
+  const raw = String(cityName);
   const all = getAllCities();
 
-  const match = all.find((c) => 
-    c.name.toLowerCase() === clean ||
-    (c.aliases && c.aliases.some((a) => a.toLowerCase() === clean))
-  );
-
-  if (match && match.lat && match.lng) {
-    return { lat: match.lat, lng: match.lng };
+  // 1. Try each comma-separated segment from right to left (e.g. "Hospital, Bengaluru, Karnataka" -> checks Bengaluru first)
+  const segments = raw.split(",").map((s) => s.replace(/\(.*?\)/g, "").trim().toLowerCase()).filter(Boolean);
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const seg = segments[i];
+    const match = all.find((c) => 
+      c.name.toLowerCase() === seg ||
+      (c.aliases && c.aliases.some((a) => a.toLowerCase() === seg))
+    );
+    if (match && match.lat && match.lng) {
+      return { lat: match.lat, lng: match.lng };
+    }
   }
 
-  // Fallback: partial match
-  const partial = all.find((c) =>
-    clean.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(clean)
-  );
-  if (partial && partial.lat && partial.lng) {
-    return { lat: partial.lat, lng: partial.lng };
+  // 2. Search whole string for known city names and aliases
+  const full = raw.toLowerCase();
+  for (const c of all) {
+    const cName = c.name.toLowerCase();
+    if (full.includes(cName)) {
+      if (c.lat && c.lng) return { lat: c.lat, lng: c.lng };
+    }
+    if (c.aliases) {
+      for (const a of c.aliases) {
+        const aName = a.toLowerCase();
+        const isShort = aName.length <= 4;
+        if (isShort ? new RegExp(`\\b${aName}\\b`, "i").test(full) : full.includes(aName)) {
+          if (c.lat && c.lng) return { lat: c.lat, lng: c.lng };
+        }
+      }
+    }
   }
 
   return null;
@@ -294,13 +278,7 @@ export function getSegmentDistance(fromCity, toCity) {
 
   if (c1 === c2) return 25; // Local city trip
 
-  // Check known highway override
-  const key1 = `${c1}-${c2}`;
-  const key2 = `${c2}-${c1}`;
-  if (HIGHWAY_DISTANCE_OVERRIDES[key1]) return HIGHWAY_DISTANCE_OVERRIDES[key1];
-  if (HIGHWAY_DISTANCE_OVERRIDES[key2]) return HIGHWAY_DISTANCE_OVERRIDES[key2];
-
-  // Try GPS coordinates
+  // Calculate dynamically from GPS coordinates with road curvature factor
   const coords1 = findCityCoordinates(fromCity);
   const coords2 = findCityCoordinates(toCity);
 
@@ -308,11 +286,10 @@ export function getSegmentDistance(fromCity, toCity) {
     const directKm = haversineDistanceKm(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
     // Indian highway road winding factor is typically 1.25x - 1.30x of air distance
     const roadKm = Math.round(directKm * 1.28);
-    return Math.max(roadKm, 40);
+    return Math.max(roadKm, 25);
   }
 
-  // Generic fallback if unknown town
-  return 220;
+  return 0;
 }
 
 /**
@@ -399,7 +376,10 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
       origin,
       destination,
       travelMode: "DRIVE",
-      extraComputations: ["TOLLS"]
+      extraComputations: ["TOLLS"],
+      routeModifiers: {
+        tollPasses: ["IN_FASTAG"]
+      }
     };
     if (intermediates.length > 0) {
       body.intermediates = intermediates;
@@ -410,7 +390,7 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.travelAdvisory.tollInfo"
+        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.travelAdvisory.tollInfo"
       },
       body: JSON.stringify(body)
     });
@@ -445,6 +425,7 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
           durationText,
           tollPrice: dynamicToll,
           actualToll: dynamicToll,
+          encodedPolyline: route.polyline?.encodedPolyline || null,
           isGoogle: true,
           isDetected: true
         };
