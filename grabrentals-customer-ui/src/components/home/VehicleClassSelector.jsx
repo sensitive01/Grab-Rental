@@ -75,8 +75,8 @@ export default function VehicleClassSelector({ onSelect, defaultSelected = "seda
             onClick={() => handleSelect(fleet)}
             className={`bg-white rounded-2xl p-3 sm:p-4 flex flex-col items-center text-center relative cursor-pointer transition-all duration-200 select-none group ${
               isSelected
-                ? "border-2 border-amber-400 shadow-[0_8px_24px_rgba(245,158,11,0.14)] -translate-y-0.5"
-                : "border border-slate-200/90 hover:border-amber-300 hover:shadow-md"
+                ? "border-2 border-[#0082fe] shadow-[0_8px_24px_rgba(0,130,254,0.18)] -translate-y-0.5"
+                : "border border-slate-200/90 hover:border-blue-300 hover:shadow-md"
             }`}
           >
             {/* Vehicle Image Container */}
@@ -94,8 +94,8 @@ export default function VehicleClassSelector({ onSelect, defaultSelected = "seda
             <h3
               className={`text-sm sm:text-base font-bold mb-2.5 transition-colors ${
                 isSelected
-                  ? "text-amber-500 font-extrabold"
-                  : "text-slate-900 group-hover:text-amber-600"
+                  ? "text-[#0082fe] font-extrabold"
+                  : "text-slate-900 group-hover:text-[#0082fe]"
               }`}
             >
               {fleet.name}
@@ -109,7 +109,7 @@ export default function VehicleClassSelector({ onSelect, defaultSelected = "seda
               </div>
 
               {/* AC / Non-AC Badge */}
-              <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider bg-[#FFF9EC] border border-[#FDE68A] text-amber-800 truncate shadow-2xs">
+              <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider bg-blue-50 border border-blue-200 text-blue-900 truncate shadow-2xs">
                 {fleet.ac}
               </div>
             </div>

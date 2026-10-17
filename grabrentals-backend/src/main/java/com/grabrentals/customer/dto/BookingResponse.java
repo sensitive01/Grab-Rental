@@ -70,6 +70,19 @@ public class BookingResponse {
     private BigDecimal advancePaid;
     private BigDecimal dueAmount;
     private String paymentStatus;
+    private String paymentMethod;
+    private String paymentProofUrl;
+    private String paymentUtrNumber;
+    private Instant paymentVerifiedAt;
+    private String paymentVerifiedBy;
+    private String paymentRejectionReason;
+    private String couponCode;
+    private BigDecimal couponDiscount;
+    private Boolean isPetFriendly;
+    private String petType;
+    private Integer petCount;
+    private BigDecimal petCharge;
+    private BigDecimal vendorPetPayout;
 
     // Workflow status
     private BookingStatus status;
@@ -114,6 +127,19 @@ public class BookingResponse {
                 .advancePaid(b.getAdvancePaid())
                 .dueAmount(b.getDueAmount())
                 .paymentStatus(b.getPaymentStatus())
+                .paymentMethod(b.getPaymentMethod())
+                .paymentProofUrl(b.getPaymentProofUrl())
+                .paymentUtrNumber(b.getPaymentUtrNumber())
+                .paymentVerifiedAt(b.getPaymentVerifiedAt())
+                .paymentVerifiedBy(b.getPaymentVerifiedBy())
+                .paymentRejectionReason(b.getPaymentRejectionReason())
+                .couponCode(b.getCouponCode())
+                .couponDiscount(b.getCouponDiscount())
+                .isPetFriendly(b.getIsPetFriendly())
+                .petType(b.getPetType())
+                .petCount(b.getPetCount())
+                .petCharge(b.getPetCharge())
+                .vendorPetPayout(b.getVendorPetPayout())
                 .status(b.getStatus())
                 .specialInstructions(b.getSpecialInstructions())
                 .vendorDeclineReason(b.getVendorDeclineReason())

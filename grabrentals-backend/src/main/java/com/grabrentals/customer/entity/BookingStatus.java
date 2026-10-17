@@ -1,6 +1,7 @@
 package com.grabrentals.customer.entity;
 
 public enum BookingStatus {
+    PENDING_PAYMENT_VERIFICATION,
     PENDING_ALLOCATION,
     ASSIGNED_TO_VENDOR,
     CONFIRMED,

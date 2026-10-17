@@ -10,6 +10,7 @@ import com.grabrentals.user.entity.UserStatus;
 import com.grabrentals.user.repository.UserRepository;
 import com.grabrentals.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -25,6 +27,9 @@ public class AdminService {
     private final com.grabrentals.vendor.repository.VendorProfileRepository vendorProfileRepository;
     private final com.grabrentals.vendor.repository.VehicleRepository vehicleRepository;
     private final com.grabrentals.vendor.repository.DriverRepository driverRepository;
+    private final com.grabrentals.customer.repository.CustomerProfileRepository customerProfileRepository;
+    private final com.grabrentals.notification.repository.NotificationRepository notificationRepository;
+    private final com.grabrentals.customer.repository.BookingRepository bookingRepository;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final com.grabrentals.security.CustomUserDetailsService userDetailsService;
@@ -257,22 +262,52 @@ public class AdminService {
             throw new IllegalArgumentException("System administrator accounts cannot be deleted");
         }
 
-        // 1. Delete associated drivers if any
+        // 1. Delete associated customer bookings and vendor bookings if any
+        List<com.grabrentals.customer.entity.Booking> customerBookings = bookingRepository.findByCustomerIdOrderByCreatedAtDesc(id);
+        if (customerBookings != null && !customerBookings.isEmpty()) {
+            bookingRepository.deleteAll(customerBookings);
+        }
+        List<com.grabrentals.customer.entity.Booking> vendorBookings = bookingRepository.findByVendorIdOrderByCreatedAtDesc(id);
+        if (vendorBookings != null && !vendorBookings.isEmpty()) {
+            bookingRepository.deleteAll(vendorBookings);
+        }
+
+        // 2. Unassign and delete associated drivers if any
         List<com.grabrentals.vendor.entity.Driver> drivers = driverRepository.findByUserIdOrderByCreatedAtDesc(id);
         if (drivers != null && !drivers.isEmpty()) {
+            for (com.grabrentals.vendor.entity.Driver d : drivers) {
+                try {
+                    bookingRepository.unassignDriver(d.getId());
+                } catch (Exception ignored) {}
+            }
             driverRepository.deleteAll(drivers);
         }
 
-        // 2. Delete associated vehicles if any
+        // 3. Unassign and delete associated vehicles if any
         List<com.grabrentals.vendor.entity.Vehicle> vehicles = vehicleRepository.findByUserIdOrderByCreatedAtDesc(id);
         if (vehicles != null && !vehicles.isEmpty()) {
+            for (com.grabrentals.vendor.entity.Vehicle v : vehicles) {
+                try {
+                    bookingRepository.unassignVehicle(v.getId());
+                } catch (Exception ignored) {}
+            }
             vehicleRepository.deleteAll(vehicles);
         }
 
-        // 3. Delete fleet profile if any
+        // 3. Delete fleet/vendor profile if any
         vendorProfileRepository.findByUserId(id).ifPresent(vendorProfileRepository::delete);
 
-        // 4. Delete user entity
+        // 4. Delete customer profile if any (fixes foreign key constraint fk69orkdj1un5rh845ngvvmd1xs)
+        customerProfileRepository.findByUserId(id).ifPresent(customerProfileRepository::delete);
+
+        // 5. Delete notifications for this user if any
+        try {
+            notificationRepository.deleteByRecipientUserId(id);
+        } catch (Exception ex) {
+            log.warn("Could not delete user notifications for {}: {}", id, ex.getMessage());
+        }
+
+        // 6. Delete user entity
         userRepository.delete(user);
 
         // 5. Evict security cache

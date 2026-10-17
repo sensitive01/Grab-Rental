@@ -1,22 +1,51 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { Phone, X } from "lucide-react";
 
 export default function WelcomePromoModal() {
   const [isOpen, setIsOpen] = useState(false);
+  const [promoConfig, setPromoConfig] = useState({
+    imageUrl: "/images/promo/grab-welcome-poster-blue.jpg",
+    active: true,
+  });
 
   useEffect(() => {
     // Show popup once per browser session on first homepage visit
     const hasSeen = sessionStorage.getItem("grab_welcome_popup_v1");
-    if (!hasSeen) {
-      // Gentle delay for smooth page entrance
-      const timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 700);
-      return () => clearTimeout(timer);
-    }
+    if (hasSeen) return;
+
+    // Fetch dynamic promo popup configuration from backend
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    
+    fetch(`${API_BASE_URL}/api/promo-popup`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((res) => {
+        if (res?.success && res?.data) {
+          if (res.data.active === false) {
+            // Disabled by admin, do not show popup
+            return;
+          }
+          if (res.data.imageUrl) {
+            setPromoConfig({
+              imageUrl: res.data.imageUrl,
+              active: res.data.active ?? true,
+            });
+          }
+        }
+        // Gentle delay for smooth page entrance
+        const timer = setTimeout(() => {
+          setIsOpen(true);
+        }, 700);
+        return () => clearTimeout(timer);
+      })
+      .catch((err) => {
+        console.warn("Could not load dynamic promo popup, using fallback poster:", err);
+        const timer = setTimeout(() => {
+          setIsOpen(true);
+        }, 700);
+        return () => clearTimeout(timer);
+      });
   }, []);
 
   const handleClose = () => {
@@ -38,7 +67,7 @@ export default function WelcomePromoModal() {
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !promoConfig.active || !promoConfig.imageUrl) return null;
 
   return (
     <div 
@@ -63,21 +92,19 @@ export default function WelcomePromoModal() {
 
         {/* 2-Column Content Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Left Side: Uploaded Poster Image */}
+          {/* Left Side: Uploaded Poster Image from Admin */}
           <div className="relative bg-gradient-to-b from-sky-50/30 via-slate-50 to-white flex items-center justify-center p-4 sm:p-5 border-b md:border-b-0 md:border-r border-slate-100">
-            <div className="relative w-full aspect-square max-w-[280px] md:max-w-full drop-shadow-md rounded-2xl overflow-hidden">
-              <Image
-                src="/images/promo/grab-welcome-poster-blue.jpg"
+            <div className="relative w-full aspect-square max-w-[280px] md:max-w-full drop-shadow-md rounded-2xl overflow-hidden flex items-center justify-center">
+              <img
+                src={promoConfig.imageUrl}
                 alt="Grab Rentals - Your Holiday Our Responsibility"
-                fill
-                priority
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 50vw"
+                className="w-full h-full object-contain"
+                loading="eager"
               />
             </div>
           </div>
 
-          {/* Right Side: Text & Contact Actions */}
+          {/* Right Side: Text & Contact Actions Details */}
           <div className="p-6 sm:p-8 flex flex-col justify-center text-center md:text-left bg-white">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Grab Rentals

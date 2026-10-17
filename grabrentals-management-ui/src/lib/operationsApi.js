@@ -402,4 +402,12 @@ export const operationsApi = {
     }
     return createApiResponse(0);
   },
+
+  async verifyBookingPayment(bookingIdOrRef, { action, rejectionReason }) {
+    const res = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/verify-payment`, {
+      action,
+      rejectionReason,
+    });
+    return res.data;
+  },
 };

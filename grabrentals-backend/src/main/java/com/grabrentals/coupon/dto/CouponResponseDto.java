@@ -27,6 +27,12 @@ public class CouponResponseDto {
     private LocalDateTime validFrom;
     private LocalDateTime validUntil;
     private Boolean active;
+    private com.grabrentals.coupon.entity.TargetAudience targetAudience;
+    private String specificIdentifiers;
+    private Integer perUserLimit;
+    private String serviceType;
+    private String state;
+    private String city;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -46,6 +52,12 @@ public class CouponResponseDto {
                 .validFrom(c.getValidFrom())
                 .validUntil(c.getValidUntil())
                 .active(c.getActive())
+                .targetAudience(c.getTargetAudience())
+                .specificIdentifiers(c.getSpecificIdentifiers())
+                .perUserLimit(c.getPerUserLimit())
+                .serviceType(c.getServiceType())
+                .state(c.getState() != null ? c.getState() : "ALL")
+                .city(c.getCity() != null ? c.getCity() : "ALL")
                 .createdAt(c.getCreatedAt())
                 .updatedAt(c.getUpdatedAt())
                 .build();

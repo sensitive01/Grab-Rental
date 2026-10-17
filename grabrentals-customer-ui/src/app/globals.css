@@ -5,16 +5,43 @@
 @theme {
   --font-sans: "Plus Jakarta Sans", "Inter", "Noto Sans Tamil", "Noto Sans Kannada", "Noto Sans Telugu", "Noto Sans Devanagari", sans-serif;
   
-  --color-brand-amber: #D97706;
-  --color-brand-amber-hover: #B45309;
-  --color-brand-amber-active: #92400E;
-  --color-brand-orange: #EA580C;
+  --color-brand-amber: #0082fe;
+  --color-brand-amber-hover: #006ed6;
+  --color-brand-amber-active: #005bb3;
+  --color-brand-orange: #0082fe;
+  --color-brand-primary: #0082fe;
+  --color-brand-primary-hover: #006ed6;
   --color-brand-navy: #0F172A;
   --color-brand-navy-dark: #020617;
   --color-brand-emerald: #10B981;
   --color-brand-emerald-dark: #059669;
   --color-brand-sky: #38BDF8;
   --color-brand-sky-dark: #0284C7;
+
+  /* Global Amber & Orange theme override to Brand Electric Blue #0082fe */
+  --color-amber-50: #f0f7ff;
+  --color-amber-100: #e0effe;
+  --color-amber-200: #bae0fd;
+  --color-amber-300: #7cc5fb;
+  --color-amber-400: #36a4f9;
+  --color-amber-500: #0082fe;
+  --color-amber-600: #006ed6;
+  --color-amber-700: #005bb3;
+  --color-amber-800: #044b91;
+  --color-amber-900: #0a3f74;
+  --color-amber-950: #07274a;
+
+  --color-orange-50: #f0f7ff;
+  --color-orange-100: #e0effe;
+  --color-orange-200: #bae0fd;
+  --color-orange-300: #7cc5fb;
+  --color-orange-400: #36a4f9;
+  --color-orange-500: #0082fe;
+  --color-orange-600: #006ed6;
+  --color-orange-700: #005bb3;
+  --color-orange-800: #044b91;
+  --color-orange-900: #0a3f74;
+  --color-orange-950: #07274a;
 }
 
 @layer base {

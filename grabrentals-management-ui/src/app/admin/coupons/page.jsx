@@ -32,7 +32,13 @@ import {
   Clock,
   Sparkles,
   Users,
+  UserCheck,
+  UserPlus,
+  Target,
+  Globe,
+  MapPin,
 } from "lucide-react";
+import { STATES_AND_CITIES, ALL_INDIAN_STATES } from "@/lib/locations";
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState([]);
@@ -47,6 +53,7 @@ export default function AdminCouponsPage() {
   const [editingCoupon, setEditingCoupon] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isCustomCityInput, setIsCustomCityInput] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -60,6 +67,12 @@ export default function AdminCouponsPage() {
     usageLimit: "",
     validUntil: "",
     active: true,
+    targetAudience: "ALL_USERS",
+    specificIdentifiers: "",
+    perUserLimit: "1",
+    serviceType: "ALL",
+    state: "ALL",
+    city: "ALL",
   });
 
   const loadCoupons = async () => {
@@ -109,6 +122,7 @@ export default function AdminCouponsPage() {
 
   const handleOpenCreate = () => {
     setEditingCoupon(null);
+    setIsCustomCityInput(false);
     setFormData({
       code: "",
       title: "",
@@ -120,12 +134,21 @@ export default function AdminCouponsPage() {
       usageLimit: "500",
       validUntil: "",
       active: true,
+      targetAudience: "ALL_USERS",
+      specificIdentifiers: "",
+      perUserLimit: "1",
+      serviceType: "ALL",
+      state: "ALL",
+      city: "ALL",
     });
     setModalOpen(true);
   };
 
   const handleOpenEdit = (c) => {
     setEditingCoupon(c);
+    const stateCities = STATES_AND_CITIES[c.state] || [];
+    const isCustom = Boolean(c.city && c.city !== "ALL" && !stateCities.includes(c.city));
+    setIsCustomCityInput(isCustom);
     setFormData({
       code: c.code || "",
       title: c.title || "",
@@ -137,6 +160,12 @@ export default function AdminCouponsPage() {
       usageLimit: c.usageLimit ? String(c.usageLimit) : "",
       validUntil: c.validUntil ? c.validUntil.slice(0, 16) : "",
       active: c.active !== false,
+      targetAudience: c.targetAudience || "ALL_USERS",
+      specificIdentifiers: c.specificIdentifiers || "",
+      perUserLimit: c.perUserLimit ? String(c.perUserLimit) : "1",
+      serviceType: c.serviceType || "ALL",
+      state: c.state || "ALL",
+      city: c.city || "ALL",
     });
     setModalOpen(true);
   };
@@ -165,6 +194,12 @@ export default function AdminCouponsPage() {
         usageLimit: formData.usageLimit ? parseInt(formData.usageLimit, 10) : null,
         validUntil: formData.validUntil ? `${formData.validUntil}:00` : null,
         active: formData.active,
+        targetAudience: formData.targetAudience,
+        specificIdentifiers: formData.targetAudience === "SPECIFIC_USERS" ? (formData.specificIdentifiers.trim() || null) : null,
+        perUserLimit: formData.perUserLimit ? parseInt(formData.perUserLimit, 10) : null,
+        serviceType: formData.serviceType || "ALL",
+        state: formData.state || "ALL",
+        city: formData.city || "ALL",
       };
 
       if (editingCoupon) {
@@ -358,6 +393,7 @@ export default function AdminCouponsPage() {
                   onSort={handleSort}
                 />
                 <TableHead>Discount</TableHead>
+                <TableHead>Target Audience</TableHead>
                 <TableHead>Min Ride</TableHead>
                 <TableHead>Usage</TableHead>
                 <TableHead>Validity</TableHead>
@@ -369,13 +405,13 @@ export default function AdminCouponsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={8} className="text-center py-12 text-slate-500">
                     Loading promotional coupons from database...
                   </TableCell>
                 </TableRow>
               ) : paginatedCoupons.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={8} className="text-center py-12 text-slate-500">
                     No coupons found. Click &quot;Create New Coupon&quot; to add your first promo offer.
                   </TableCell>
                 </TableRow>
@@ -395,6 +431,24 @@ export default function AdminCouponsPage() {
                         {c.description && (
                           <p className="text-[11px] text-slate-400 font-medium">{c.description}</p>
                         )}
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                          {c.serviceType && c.serviceType !== "ALL" && (
+                            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                              {c.serviceType}
+                            </span>
+                          )}
+                          {(c.state && c.state !== "ALL") || (c.city && c.city !== "ALL") ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <MapPin className="w-2.5 h-2.5 text-emerald-600" />
+                              {c.city && c.city !== "ALL" ? `${c.city}, ${c.state}` : c.state}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                              <MapPin className="w-2.5 h-2.5 text-slate-400" />
+                              Pan-India
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
 
@@ -418,6 +472,34 @@ export default function AdminCouponsPage() {
                           </span>
                         )}
                       </div>
+                    </TableCell>
+
+                    {/* Target Audience */}
+                    <TableCell>
+                      {c.targetAudience === "NEW_USERS_ONLY" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          <UserPlus className="w-3 h-3 text-amber-600" />
+                          New Users
+                        </span>
+                      ) : c.targetAudience === "EXISTING_USERS_ONLY" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                          <UserCheck className="w-3 h-3 text-blue-600" />
+                          Existing Users
+                        </span>
+                      ) : c.targetAudience === "SPECIFIC_USERS" ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 cursor-help"
+                          title={c.specificIdentifiers || "Specific whitelisted numbers/emails"}
+                        >
+                          <Target className="w-3 h-3 text-purple-600" />
+                          Specific Users
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                          <Globe className="w-3 h-3 text-slate-500" />
+                          All Users
+                        </span>
+                      )}
                     </TableCell>
 
                     {/* Min Ride */}
@@ -684,6 +766,260 @@ export default function AdminCouponsPage() {
                 }
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
               />
+            </div>
+          </div>
+
+          {/* Target Audience & User Eligibility Section */}
+          <div className="pt-3 border-t border-slate-200/80 space-y-3">
+            <div>
+              <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-0.5">
+                Target Audience &amp; Eligibility *
+              </label>
+              <p className="text-[11px] text-slate-500">
+                Choose which customer segment is permitted to redeem this coupon offer.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* All Users */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, targetAudience: "ALL_USERS" })}
+                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                  formData.targetAudience === "ALL_USERS"
+                    ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <Globe className={`w-4 h-4 ${formData.targetAudience === "ALL_USERS" ? "text-amber-600" : "text-slate-400"}`} />
+                  <span className={`w-2 h-2 rounded-full ${formData.targetAudience === "ALL_USERS" ? "bg-amber-600" : "bg-transparent"}`} />
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs font-bold text-slate-900">All Users</p>
+                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Open to any traveler</p>
+                </div>
+              </button>
+
+              {/* New Users Only */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, targetAudience: "NEW_USERS_ONLY" })}
+                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                  formData.targetAudience === "NEW_USERS_ONLY"
+                    ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <UserPlus className={`w-4 h-4 ${formData.targetAudience === "NEW_USERS_ONLY" ? "text-amber-600" : "text-slate-400"}`} />
+                  <span className={`w-2 h-2 rounded-full ${formData.targetAudience === "NEW_USERS_ONLY" ? "bg-amber-600" : "bg-transparent"}`} />
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs font-bold text-slate-900">New Users</p>
+                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5">1st ride booking only</p>
+                </div>
+              </button>
+
+              {/* Existing Users Only */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, targetAudience: "EXISTING_USERS_ONLY" })}
+                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                  formData.targetAudience === "EXISTING_USERS_ONLY"
+                    ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <UserCheck className={`w-4 h-4 ${formData.targetAudience === "EXISTING_USERS_ONLY" ? "text-amber-600" : "text-slate-400"}`} />
+                  <span className={`w-2 h-2 rounded-full ${formData.targetAudience === "EXISTING_USERS_ONLY" ? "bg-amber-600" : "bg-transparent"}`} />
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs font-bold text-slate-900">Existing Users</p>
+                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Returning riders only</p>
+                </div>
+              </button>
+
+              {/* Specific Users */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, targetAudience: "SPECIFIC_USERS" })}
+                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                  formData.targetAudience === "SPECIFIC_USERS"
+                    ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/20"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <Target className={`w-4 h-4 ${formData.targetAudience === "SPECIFIC_USERS" ? "text-amber-600" : "text-slate-400"}`} />
+                  <span className={`w-2 h-2 rounded-full ${formData.targetAudience === "SPECIFIC_USERS" ? "bg-amber-600" : "bg-transparent"}`} />
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs font-bold text-slate-900">Specific Users</p>
+                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Whitelist phone/email</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Whitelist Input if SPECIFIC_USERS */}
+            {formData.targetAudience === "SPECIFIC_USERS" && (
+              <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/50 space-y-1.5 animate-in fade-in duration-200">
+                <label className="block text-xs font-black text-amber-950">
+                  Allowed Mobile Numbers or Email Addresses *
+                </label>
+                <textarea
+                  rows={2}
+                  required
+                  value={formData.specificIdentifiers}
+                  onChange={(e) => setFormData({ ...formData, specificIdentifiers: e.target.value })}
+                  placeholder="E.g. 9876543210, 9071100200, client@vip.com, partner@company.in"
+                  className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:border-amber-600"
+                />
+                <p className="text-[10px] text-amber-800">
+                  Only travelers whose mobile number (last 10 digits) or email address matches this whitelist can apply this coupon. Separate multiple items with commas.
+                </p>
+              </div>
+            )}
+
+            {/* Per User Limit & Service Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Per-User Usage Limit (times per customer)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.perUserLimit}
+                  onChange={(e) => setFormData({ ...formData, perUserLimit: e.target.value })}
+                  placeholder="1 (Blank for unlimited per customer)"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
+                />
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Max times a single customer phone can redeem this coupon.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Applicable Journey Type
+                </label>
+                <select
+                  value={formData.serviceType}
+                  onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
+                >
+                  <option value="ALL">All Journeys (Outstation, Local &amp; Airport)</option>
+                  <option value="OUTSTATION">Outstation Journeys Only</option>
+                  <option value="LOCAL">Local Hourly Rentals Only</option>
+                  <option value="AIRPORT">Airport Transfers Only</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Applicable Location (State & City) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Applicable State</span>
+                </label>
+                <select
+                  value={formData.state}
+                  onChange={(e) => {
+                    const newState = e.target.value;
+                    setFormData({
+                      ...formData,
+                      state: newState,
+                      city: "ALL",
+                    });
+                    setIsCustomCityInput(false);
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
+                >
+                  <option value="ALL">All States (Pan-India)</option>
+                  {ALL_INDIAN_STATES.map((stateName) => (
+                    <option key={stateName} value={stateName}>
+                      {stateName}
+                    </option>
+                  ))}
+                  {formData.state &&
+                    formData.state !== "ALL" &&
+                    !ALL_INDIAN_STATES.includes(formData.state) && (
+                      <option value={formData.state}>{formData.state}</option>
+                    )}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Restrict coupon to rides starting in this state.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Applicable City</span>
+                </label>
+                {formData.state === "ALL" ? (
+                  <select
+                    disabled
+                    value="ALL"
+                    className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 cursor-not-allowed outline-none"
+                  >
+                    <option value="ALL">All Cities (Pan-India)</option>
+                  </select>
+                ) : isCustomCityInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={formData.city === "ALL" ? "" : formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder={`Enter custom city in ${formData.state}`}
+                      className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomCityInput(false);
+                        setFormData({ ...formData, city: "ALL" });
+                      }}
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
+                      title="Choose from list"
+                    >
+                      List
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={formData.city}
+                    onChange={(e) => {
+                      if (e.target.value === "__CUSTOM__") {
+                        setIsCustomCityInput(true);
+                        setFormData({ ...formData, city: "" });
+                      } else {
+                        setFormData({ ...formData, city: e.target.value });
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
+                  >
+                    <option value="ALL">All Cities in {formData.state}</option>
+                    {(STATES_AND_CITIES[formData.state] || []).map((cityName) => (
+                      <option key={cityName} value={cityName}>
+                        {cityName}
+                      </option>
+                    ))}
+                    {formData.city &&
+                      formData.city !== "ALL" &&
+                      !(STATES_AND_CITIES[formData.state] || []).includes(formData.city) && (
+                        <option value={formData.city}>{formData.city}</option>
+                      )}
+                    <option value="__CUSTOM__">+ Other / Enter City Manually</option>
+                  </select>
+                )}
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Set to ALL or pick a specific pickup city in {formData.state === "ALL" ? "India" : formData.state}.
+                </p>
+              </div>
             </div>
           </div>
 

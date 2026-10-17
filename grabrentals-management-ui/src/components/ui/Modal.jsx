@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function Modal({ isOpen, onClose, title, subtitle, children, size = "md", footer }) {
+export function Modal({ isOpen, onClose, title, subtitle, children, size = "md", className, footer }) {
   useEffect(() => {
     function handleEscape(e) {
       if (e.key === "Escape" && isOpen) {
@@ -27,6 +27,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = "md",
     sm: "max-w-md",
     md: "max-w-lg",
     lg: "max-w-2xl",
+    "2xl": "max-w-3xl",
     xl: "max-w-4xl",
     full: "max-w-6xl",
   };
@@ -35,8 +36,9 @@ export function Modal({ isOpen, onClose, title, subtitle, children, size = "md",
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
         className={cn(
-          "w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-8 max-h-[90vh]",
-          sizes[size]
+          "w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[92vh]",
+          sizes[size] || size,
+          className
         )}
         onClick={(e) => e.stopPropagation()}
       >

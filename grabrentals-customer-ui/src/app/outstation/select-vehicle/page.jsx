@@ -142,6 +142,9 @@ function SelectVehicleContent() {
       stopsCoords: pendingTrip?.stopsCoords || null,
       pickupDetails: pendingTrip?.pickupDetails || null,
       dropDetails: pendingTrip?.dropDetails || null,
+      isPetFriendly: searchParams.get("isPetFriendly") === "true" || pendingTrip?.isPetFriendly || false,
+      petType: searchParams.get("petType") || pendingTrip?.petType || "",
+      petCount: searchParams.get("petCount") || pendingTrip?.petCount || 1,
     };
   });
 
@@ -717,6 +720,13 @@ function SelectVehicleContent() {
           ? 0
           : (vehicle.pricing?.tollPrice ?? (googleRouteDetails?.tollPrice || (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0))),
         duration: googleRouteDetails?.durationText || null,
+        petDetails: {
+          isPetFriendly: Boolean(trip.isPetFriendly),
+          petType: trip.petType || "Dog",
+          petCount: trip.petCount || 1,
+          petCharge: vehicle.pricing?.petCharge != null ? Number(vehicle.pricing.petCharge) : 0,
+          vendorPetCharge: vehicle.pricing?.vendorPetCharge != null ? Number(vehicle.pricing.vendorPetCharge) : 0,
+        },
         car: {
           id: vehicle.id,
           title: vehicle.title,
@@ -727,6 +737,8 @@ function SelectVehicleContent() {
           perKmRate: vehicle.perKmRate ?? 0,
           fare: vehicle.pricing?.displayFare ?? vehicle.pricing?.baseFare ?? vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
           baseFare: vehicle.pricing?.baseFare ?? (activeDistance > 0 ? Math.round(activeDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
+          petCharge: vehicle.pricing?.petCharge != null ? Number(vehicle.pricing.petCharge) : 0,
+          vendorPetCharge: vehicle.pricing?.vendorPetCharge != null ? Number(vehicle.pricing.vendorPetCharge) : 0,
           driverAllowance: (isNightPickup(trip.time) || isLocalBooking) ? 0 : (vehicle.pricing?.driverAllowance ?? 0),
           taxes: vehicle.pricing?.chargesAndTaxes ?? 0,
           gstPercentage: vehicle.pricing?.gstPercentage ?? 5,
@@ -766,7 +778,7 @@ function SelectVehicleContent() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("search_placeholder")}
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
+            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition"
           />
         </div>
       </div>
@@ -790,11 +802,11 @@ function SelectVehicleContent() {
                 className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group py-0.5"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-[#0082fe] border-[#0082fe] text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
                     {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                   </div>
                   <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                    <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
+                    <Car className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0082fe]" />
                     {item.label}
                   </span>
                 </div>
@@ -843,11 +855,11 @@ function SelectVehicleContent() {
                 className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group py-0.5"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-[#0082fe] border-[#0082fe] text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
                     {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                   </div>
                   <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                    <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
+                    <Fuel className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0082fe]" />
                     {item.label}
                   </span>
                 </div>
@@ -876,11 +888,11 @@ function SelectVehicleContent() {
                 className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer select-none group py-0.5"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-amber-600 border-amber-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${isChecked ? "bg-[#0082fe] border-[#0082fe] text-white" : "border-slate-300 bg-white group-hover:border-slate-400"}`}>
                     {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                   </div>
                   <span className="flex items-center gap-1.5 group-hover:text-slate-900">
-                    <Settings2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600" />
+                    <Settings2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0082fe]" />
                     {item.label}
                   </span>
                 </div>
@@ -902,7 +914,7 @@ function SelectVehicleContent() {
             placeholder="Min"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0082fe]"
           />
           <span className="text-slate-400 font-bold">-</span>
           <input
@@ -910,7 +922,7 @@ function SelectVehicleContent() {
             placeholder="Max"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0082fe]"
           />
         </div>
       </div>
@@ -923,7 +935,7 @@ function SelectVehicleContent() {
           <select
             value={seatingCapacity}
             onChange={(e) => setSeatingCapacity(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 appearance-none cursor-pointer"
+            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0082fe] appearance-none cursor-pointer"
           >
             <option value="all">Any Capacity</option>
             <option value="4-5">4 - 5 Seats</option>
@@ -964,12 +976,12 @@ function SelectVehicleContent() {
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-amber-600" />
+                <SlidersHorizontal className="w-4 h-4 text-[#0082fe]" />
                 <h3 className="font-extrabold text-slate-900 text-base">
                   {t("search_filters")}
                 </h3>
                 {activeFiltersCount > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black flex items-center justify-center">
                     {activeFiltersCount}
                   </span>
                 )}
@@ -978,7 +990,7 @@ function SelectVehicleContent() {
                 type="button"
                 onClick={handleResetFilters}
                 title={t("reset_filters")}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition cursor-pointer"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#0082fe] hover:bg-blue-50 transition cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -990,9 +1002,9 @@ function SelectVehicleContent() {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-200 text-amber-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 text-blue-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                <RotateCcw className="w-3.5 h-3.5 text-[#0082fe]" />
                 Clear Filters
               </button>
             </div>
@@ -1011,12 +1023,12 @@ function SelectVehicleContent() {
                 <button
                   type="button"
                   onClick={() => setIsMobileFilterOpen(true)}
-                  className="lg:hidden shrink-0 flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
+                  className="lg:hidden shrink-0 flex items-center gap-2 px-3.5 py-2 bg-[#0082fe] hover:bg-[#006ed6] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
                   <span>Filters</span>
                   {activeFiltersCount > 0 && (
-                    <span className="w-5 h-5 rounded-full bg-white text-amber-600 text-[10px] font-black flex items-center justify-center">
+                    <span className="w-5 h-5 rounded-full bg-white text-[#0082fe] text-[10px] font-black flex items-center justify-center">
                       {activeFiltersCount}
                     </span>
                   )}
@@ -1030,7 +1042,7 @@ function SelectVehicleContent() {
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0082fe] cursor-pointer"
                     >
                       <option value="newest">Newest Added</option>
                       <option value="price_asc">Price: Low to High</option>
@@ -1046,7 +1058,7 @@ function SelectVehicleContent() {
                       type="button"
                       onClick={() => setViewMode("grid")}
                       title="Grid View"
-                      className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "grid" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
+                      className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "grid" ? "bg-[#0082fe] text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
                     >
                       <LayoutGrid className="w-4 h-4" />
                     </button>
@@ -1054,7 +1066,7 @@ function SelectVehicleContent() {
                       type="button"
                       onClick={() => setViewMode("list")}
                       title="List View"
-                      className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "list" ? "bg-amber-600 text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
+                      className={`p-1.5 rounded-md transition cursor-pointer ${viewMode === "list" ? "bg-[#0082fe] text-white shadow-2xs" : "text-slate-400 hover:text-slate-700"}`}
                     >
                       <ListIcon className="w-4 h-4" />
                     </button>
@@ -1067,41 +1079,41 @@ function SelectVehicleContent() {
                 <div className="lg:hidden flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
                   <span className="text-[11px] font-bold text-slate-400 mr-1">Active:</span>
                   {selectedTypes.map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span key={t} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
                       {t}
-                      <button type="button" onClick={() => toggleType(t)} className="cursor-pointer hover:text-amber-900">
+                      <button type="button" onClick={() => toggleType(t)} className="cursor-pointer hover:text-blue-900">
                         <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
                   ))}
                   {selectedFuels.map((f) => (
-                    <span key={f} className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span key={f} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
                       {f}
-                      <button type="button" onClick={() => toggleFuel(f)} className="cursor-pointer hover:text-amber-900">
+                      <button type="button" onClick={() => toggleFuel(f)} className="cursor-pointer hover:text-blue-900">
                         <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
                   ))}
                   {selectedTransmissions.map((tr) => (
-                    <span key={tr} className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span key={tr} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
                       {tr}
-                      <button type="button" onClick={() => toggleTransmission(tr)} className="cursor-pointer hover:text-amber-900">
+                      <button type="button" onClick={() => toggleTransmission(tr)} className="cursor-pointer hover:text-blue-900">
                         <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
                   ))}
                   {(minPrice || maxPrice) && (
-                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
                       ₹{minPrice || 0} - ₹{maxPrice || "Any"}
-                      <button type="button" onClick={() => { setMinPrice(""); setMaxPrice(""); }} className="cursor-pointer hover:text-amber-900">
+                      <button type="button" onClick={() => { setMinPrice(""); setMaxPrice(""); }} className="cursor-pointer hover:text-blue-900">
                         <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
                   )}
                   {seatingCapacity !== "all" && (
-                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
                       {seatingCapacity} seats
-                      <button type="button" onClick={() => setSeatingCapacity("all")} className="cursor-pointer hover:text-amber-900">
+                      <button type="button" onClick={() => setSeatingCapacity("all")} className="cursor-pointer hover:text-blue-900">
                         <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
@@ -1109,7 +1121,7 @@ function SelectVehicleContent() {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="text-[10px] font-bold text-amber-600 hover:underline ml-auto cursor-pointer"
+                    className="text-[10px] font-bold text-[#0082fe] hover:underline ml-auto cursor-pointer"
                   >
                     Clear all
                   </button>
@@ -1135,12 +1147,12 @@ function SelectVehicleContent() {
                 ))}
               </div>
             ) : !serviceStatus.available ? (
-              <div className="bg-white rounded-2xl border-2 border-amber-200/80 p-8 sm:p-12 text-center space-y-4 shadow-sm">
-                <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
-                  <MapPin className="w-8 h-8 text-amber-600 animate-bounce" />
+              <div className="bg-white rounded-2xl border-2 border-blue-200/80 p-8 sm:p-12 text-center space-y-4 shadow-sm">
+                <div className="w-16 h-16 rounded-2xl bg-blue-100 text-[#0082fe] flex items-center justify-center mx-auto shadow-inner">
+                  <MapPin className="w-8 h-8 text-[#0082fe] animate-bounce" />
                 </div>
                 <div className="space-y-1">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-900 uppercase tracking-wider">
                     🚀 Launching Soon
                   </span>
                   <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
@@ -1153,7 +1165,7 @@ function SelectVehicleContent() {
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
                     onClick={() => setIsModifyOpen(true)}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
                   >
                     Change Pickup Location
                   </button>
@@ -1167,7 +1179,7 @@ function SelectVehicleContent() {
               </div>
             ) : paginatedVehicles.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
-                <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                <div className="w-14 h-14 rounded-full bg-blue-50 text-[#0082fe] flex items-center justify-center mx-auto">
                   <Car className="w-7 h-7" />
                 </div>
                 <h4 className="text-base font-bold text-slate-800">
@@ -1183,14 +1195,14 @@ function SelectVehicleContent() {
                 {backendVehicles.length === 0 ? (
                   <button
                     onClick={() => setIsModifyOpen(true)}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                    className="px-4 py-2 bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
                   >
                     Modify Route
                   </button>
                 ) : (
                   <button
                     onClick={handleResetFilters}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                    className="px-4 py-2 bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
                   >
                     Reset Filters
                   </button>
@@ -1201,7 +1213,7 @@ function SelectVehicleContent() {
                 {paginatedVehicles.map((car) => (
                   <div
                     key={car.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between group"
+                    className="bg-white rounded-2xl border border-slate-200 p-4 hover:border-[#0082fe] hover:shadow-md transition-all flex flex-col justify-between group"
                   >
                     {/* Top Row: Left Image + Right Info */}
                     <div className="flex gap-4 items-start">
@@ -1228,7 +1240,7 @@ function SelectVehicleContent() {
                         <div>
                           <h4 
                             onClick={() => setSelectedVehicleForDetail(car)}
-                            className="font-bold text-slate-900 text-sm sm:text-base leading-tight line-clamp-2 hover:text-amber-600 cursor-pointer"
+                            className="font-bold text-slate-900 text-sm sm:text-base leading-tight line-clamp-2 hover:text-[#0082fe] cursor-pointer"
                           >
                             {car.title}
                           </h4>
@@ -1264,7 +1276,7 @@ function SelectVehicleContent() {
                               </span>
                             </div>
                           )}
-                          <div className="text-lg sm:text-2xl font-black text-amber-600 leading-tight">
+                          <div className="text-lg sm:text-2xl font-black text-[#0082fe] leading-tight">
                             ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                           </div>
                           <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
@@ -1272,7 +1284,7 @@ function SelectVehicleContent() {
                           </div>
                           {isLocalBooking ? (
                             <p className="text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight mt-0.5">
-                              Included: <strong className="text-amber-700">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                              Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
                             </p>
                           ) : activeDistance > 0 ? (
                             <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight mt-0.5">
@@ -1289,7 +1301,7 @@ function SelectVehicleContent() {
                     <div className="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-end">
                       <button
                         onClick={() => handleCarSelect(car)}
-                        className="w-full sm:w-auto px-5 py-2 text-xs sm:text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-2xs transition flex items-center justify-center gap-1 cursor-pointer"
+                        className="w-full sm:w-auto px-5 py-2 text-xs sm:text-sm font-bold text-white bg-[#0082fe] hover:bg-[#006ed6] rounded-xl shadow-2xs transition flex items-center justify-center gap-1 cursor-pointer"
                       >
                         {t("select_car_button")}
                       </button>
@@ -1304,7 +1316,7 @@ function SelectVehicleContent() {
                 {paginatedVehicles.map((car) => (
                   <div
                     key={car.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 hover:border-amber-400 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group"
+                    className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 hover:border-[#0082fe] hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <div 
@@ -1325,7 +1337,7 @@ function SelectVehicleContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 
                             onClick={() => setSelectedVehicleForDetail(car)}
-                            className="font-bold text-slate-900 text-base hover:text-amber-600 cursor-pointer"
+                            className="font-bold text-slate-900 text-base hover:text-[#0082fe] cursor-pointer"
                           >
                             {car.title}
                           </h4>
@@ -1363,7 +1375,7 @@ function SelectVehicleContent() {
                             </span>
                           </div>
                         )}
-                        <div className="text-2xl sm:text-3xl font-black text-amber-600 leading-tight">
+                        <div className="text-2xl sm:text-3xl font-black text-[#0082fe] leading-tight">
                           ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
                         </div>
                         <div className="text-[11px] font-bold text-slate-500 md:text-right mt-0.5">
@@ -1371,7 +1383,7 @@ function SelectVehicleContent() {
                         </div>
                         {isLocalBooking ? (
                           <p className="text-[11px] font-bold text-slate-700">
-                            Included: <strong className="text-amber-700">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                            Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
                           </p>
                         ) : activeDistance > 0 ? (
                           <p className="text-[11px] font-medium text-slate-500">
@@ -1383,7 +1395,7 @@ function SelectVehicleContent() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleCarSelect(car)}
-                          className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-2xs transition cursor-pointer"
+                          className="px-5 py-2 text-xs font-bold text-white bg-[#0082fe] hover:bg-[#006ed6] rounded-lg shadow-2xs transition cursor-pointer"
                         >
                           {t("select_car_button")}
                         </button>
@@ -1415,7 +1427,7 @@ function SelectVehicleContent() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${currentPage === pageNum ? "bg-amber-600 text-white shadow-2xs" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${currentPage === pageNum ? "bg-[#0082fe] text-white shadow-2xs" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
                     >
                       {pageNum}
                     </button>
@@ -1462,7 +1474,7 @@ function SelectVehicleContent() {
           <div className="relative w-full max-w-md bg-white h-full max-h-screen flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-200">
             <div className="flex items-center justify-between p-4 px-5 border-b border-slate-200 bg-white">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#0082fe] flex items-center justify-center">
                   <SlidersHorizontal className="w-4 h-4" />
                 </div>
                 <div>
@@ -1480,7 +1492,7 @@ function SelectVehicleContent() {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline px-2 py-1 cursor-pointer"
+                    className="text-xs font-bold text-[#0082fe] hover:text-[#006ed6] hover:underline px-2 py-1 cursor-pointer"
                   >
                     Reset
                   </button>
@@ -1511,10 +1523,10 @@ function SelectVehicleContent() {
               <button
                 type="button"
                 onClick={() => setIsMobileFilterOpen(false)}
-                className="flex-2 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white font-black text-xs transition cursor-pointer text-center shadow-md flex items-center justify-center gap-2"
+                className="flex-2 py-3 px-4 rounded-xl bg-[#0082fe] hover:bg-[#006ed6] active:scale-98 text-white font-black text-xs transition cursor-pointer text-center shadow-md flex items-center justify-center gap-2"
               >
                 <span>Apply Filters</span>
-                <span className="bg-amber-600/80 px-2 py-0.5 rounded-full text-[11px]">
+                <span className="bg-[#006ed6]/80 px-2 py-0.5 rounded-full text-[11px]">
                   {filteredVehicles.length}
                 </span>
               </button>

@@ -98,4 +98,7 @@ public class VehicleTariffRequest {
 
     @Builder.Default
     private BigDecimal discountPercentage = BigDecimal.ZERO;
+
+    private BigDecimal petCharge;
+    private BigDecimal vendorPetCharge;
 }

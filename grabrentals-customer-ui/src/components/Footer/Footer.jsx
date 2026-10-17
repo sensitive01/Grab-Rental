@@ -46,6 +46,7 @@ export default function Footer() {
             <li><Link href="/book/vehicles" className="hover:text-brand-amber transition-colors">Premium SUVs (Innova Crysta)</Link></li>
             <li><Link href="/vans" className="hover:text-brand-amber transition-colors">Tempo Travellers (9-26 Seater)</Link></li>
             <li><Link href="/buses" className="hover:text-brand-amber transition-colors">Luxury Volvo Coaches</Link></li>
+            <li><Link href="/pet-friendly-cabs" className="hover:text-brand-amber transition-colors">🐶 Pet Friendly Cabs</Link></li>
             <li><Link href="/corporate" className="hover:text-brand-amber transition-colors">Corporate Fleet Solutions</Link></li>
           </ul>
         </div>

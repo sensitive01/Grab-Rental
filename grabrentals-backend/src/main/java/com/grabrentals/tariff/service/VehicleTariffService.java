@@ -354,6 +354,8 @@ public class VehicleTariffService {
         entity.setAirportVendorExtraKmRate(req.getAirportVendorExtraKmRate());
         entity.setTollIncluded(Boolean.TRUE.equals(req.getTollIncluded()));
         entity.setDiscountPercentage(req.getDiscountPercentage() != null ? req.getDiscountPercentage() : BigDecimal.ZERO);
+        entity.setPetCharge(req.getPetCharge() != null ? req.getPetCharge() : BigDecimal.ZERO);
+        entity.setVendorPetCharge(req.getVendorPetCharge() != null ? req.getVendorPetCharge() : BigDecimal.ZERO);
 
         VehicleTariff saved = tariffRepository.save(entity);
         return VehicleTariffResponse.fromEntity(saved);
@@ -730,6 +732,15 @@ public class VehicleTariffService {
         }
         result.put("hasTariff", hasModelTariff);
         result.put("discountPercentage", activeTariff != null && activeTariff.getDiscountPercentage() != null ? activeTariff.getDiscountPercentage() : BigDecimal.ZERO);
+        
+        BigDecimal petCharge = (activeTariff != null && activeTariff.getPetCharge() != null)
+                ? activeTariff.getPetCharge()
+                : BigDecimal.ZERO;
+        BigDecimal vendorPetCharge = (activeTariff != null && activeTariff.getVendorPetCharge() != null)
+                ? activeTariff.getVendorPetCharge()
+                : BigDecimal.ZERO;
+        result.put("petCharge", petCharge);
+        result.put("vendorPetCharge", vendorPetCharge);
 
         // Hourly package attributes if present
         if ("HOURLY".equalsIgnoreCase(sType) || "LOCAL".equalsIgnoreCase(sType)) {
@@ -752,10 +763,21 @@ public class VehicleTariffService {
                     vendorHourlyRatePerHour = isNight ? activeTariff.getHourlyVendorWeekdayNightRate() : activeTariff.getHourlyVendorWeekdayDayRate();
                 }
 
-                hCust = isWeekend && activeTariff.getHourlyCustomerWeekendFare() != null
+                BigDecimal candidateCust = isWeekend && activeTariff.getHourlyCustomerWeekendFare() != null
                         ? activeTariff.getHourlyCustomerWeekendFare() : activeTariff.getHourlyCustomerFare();
-                hVend = isWeekend && activeTariff.getHourlyVendorWeekendFare() != null
+                if (candidateCust != null && candidateCust.compareTo(new BigDecimal("100.00")) < 0
+                        && activeTariff.getHourlyCustomerFare() != null && activeTariff.getHourlyCustomerFare().compareTo(new BigDecimal("100.00")) >= 0) {
+                    candidateCust = activeTariff.getHourlyCustomerFare();
+                }
+                hCust = candidateCust;
+
+                BigDecimal candidateVend = isWeekend && activeTariff.getHourlyVendorWeekendFare() != null
                         ? activeTariff.getHourlyVendorWeekendFare() : activeTariff.getHourlyVendorFare();
+                if (candidateVend != null && candidateVend.compareTo(new BigDecimal("100.00")) < 0
+                        && activeTariff.getHourlyVendorFare() != null && activeTariff.getHourlyVendorFare().compareTo(new BigDecimal("100.00")) >= 0) {
+                    candidateVend = activeTariff.getHourlyVendorFare();
+                }
+                hVend = candidateVend;
 
                 // If package fare is not explicitly set, calculate based on hourlyRatePerHour * pkgHours
                 if ((hCust == null || hCust.compareTo(BigDecimal.ZERO) <= 0) && hourlyRatePerHour != null && hourlyRatePerHour.compareTo(BigDecimal.ZERO) > 0) {

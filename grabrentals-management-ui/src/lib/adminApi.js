@@ -944,4 +944,54 @@ export const adminApi = {
     const response = await axiosClient.patch(`/api/admin/coupons/${id}/toggle`);
     return response.data;
   },
+
+  // === PROMO POPUP BANNER ===
+  async getPromoPopup() {
+    const response = await axiosClient.get("/api/admin/promo-popup");
+    return response.data;
+  },
+
+  async uploadPromoPopupImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await axiosClient.post("/api/admin/promo-popup/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  async updatePromoPopup(data) {
+    const response = await axiosClient.put("/api/admin/promo-popup", data);
+    return response.data;
+  },
+
+  async togglePromoPopupStatus() {
+    const response = await axiosClient.patch("/api/admin/promo-popup/toggle");
+    return response.data;
+  },
+
+  async resetPromoPopup() {
+    const response = await axiosClient.post("/api/admin/promo-popup/reset");
+    return response.data;
+  },
+
+  // === UPI PAYMENT CONFIGURATION ===
+  async getUpiConfig() {
+    const response = await axiosClient.get("/api/admin/upi/config");
+    return response.data;
+  },
+
+  async updateUpiConfig(data) {
+    const response = await axiosClient.put("/api/admin/upi/config", data);
+    return response.data;
+  },
+
+  // === PAYMENT PROOF VERIFICATION ===
+  async verifyBookingPayment(bookingIdOrRef, { action, rejectionReason }) {
+    const response = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/verify-payment`, {
+      action,
+      rejectionReason,
+    });
+    return response.data;
+  },
 };

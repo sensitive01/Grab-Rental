@@ -46,9 +46,11 @@ export default function VehicleAssignmentPage() {
         ]);
         const list = (bookRes.data || []).filter(
           (b) =>
-            b.status === "PENDING_ALLOCATION" ||
-            b.id === preselectedBookingId ||
-            b.rawId === preselectedBookingId
+            (b.status === "PENDING_ALLOCATION" ||
+              b.id === preselectedBookingId ||
+              b.rawId === preselectedBookingId) &&
+            b.status !== "PENDING_PAYMENT_VERIFICATION" &&
+            b.paymentStatus !== "UNDER_REVIEW"
         );
         setAllBookings(list);
         setVehicles(vehRes.data || []);
@@ -104,6 +106,14 @@ export default function VehicleAssignmentPage() {
       setToast({
         type: "warning",
         message: "Please select an available vehicle to confirm dispatch.",
+      });
+      return;
+    }
+
+    if (selectedBooking.status === "PENDING_PAYMENT_VERIFICATION" || selectedBooking.paymentStatus === "UNDER_REVIEW") {
+      setToast({
+        type: "warning",
+        message: "Payment verification is required before allocating fleet. Please verify payment first.",
       });
       return;
     }
@@ -258,6 +268,11 @@ export default function VehicleAssignmentPage() {
                     <Badge variant="warning" size="sm">
                       {selectedBooking.vehicleCategory}
                     </Badge>
+                    {Boolean(selectedBooking.isPetFriendly) && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                        🐾 {selectedBooking.petType || "Pet"} ({selectedBooking.petCount || 1})
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300">
                     Target Booking
@@ -338,8 +353,13 @@ export default function VehicleAssignmentPage() {
                           {b.vehicleCategory}
                         </Badge>
                       </div>
-                      <div className="font-semibold text-slate-800 mt-1">
-                        {b.customerName}
+                      <div className="font-semibold text-slate-800 mt-1 flex items-center justify-between">
+                        <span>{b.customerName}</span>
+                        {Boolean(b.isPetFriendly) && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-300">
+                            🐾 {b.petType || "Pet"}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-slate-500 mt-0.5 truncate">
                         {b.pickupLocation} ➔ {b.dropLocation}

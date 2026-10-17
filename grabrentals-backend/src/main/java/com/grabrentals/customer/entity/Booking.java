@@ -69,7 +69,7 @@ public class Booking {
     @Column(name = "stops", length = 500)
     private String stops;
 
-    @Column(name = "pickup_address", nullable = false, length = 500)
+    @Column(name = "pickup_address", nullable = false, columnDefinition = "TEXT")
     private String pickupAddress;
 
     @Column(name = "pickup_lat")
@@ -93,7 +93,7 @@ public class Booking {
     @Column(name = "pickup_pincode", length = 20)
     private String pickupPincode;
 
-    @Column(name = "drop_address", length = 300)
+    @Column(name = "drop_address", columnDefinition = "TEXT")
     private String dropAddress;
 
     @Column(name = "pickup_datetime", nullable = false)
@@ -129,11 +129,54 @@ public class Booking {
     @Column(name = "payment_status", length = 30)
     private String paymentStatus;
 
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+
+    @Column(name = "payment_proof_url", columnDefinition = "TEXT")
+    private String paymentProofUrl;
+
+    @Column(name = "payment_utr_number", length = 100)
+    private String paymentUtrNumber;
+
+    @Column(name = "payment_verified_at")
+    private Instant paymentVerifiedAt;
+
+    @Column(name = "payment_verified_by", length = 150)
+    private String paymentVerifiedBy;
+
+    @Column(name = "payment_rejection_reason", columnDefinition = "TEXT")
+    private String paymentRejectionReason;
+
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
+
+    @Column(name = "coupon_discount", precision = 12, scale = 2)
+    private BigDecimal couponDiscount;
+
+    @Column(name = "is_pet_friendly")
+    @Builder.Default
+    private Boolean isPetFriendly = false;
+
+    @Column(name = "pet_type", length = 100)
+    private String petType;
+
+    @Column(name = "pet_count")
+    @Builder.Default
+    private Integer petCount = 1;
+
+    @Column(name = "pet_charge", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal petCharge = BigDecimal.ZERO;
+
+    @Column(name = "vendor_pet_payout", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal vendorPetPayout = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 40)
     private BookingStatus status;
 
-    @Column(name = "special_instructions", length = 500)
+    @Column(name = "special_instructions", columnDefinition = "TEXT")
     private String specialInstructions;
 
     @Column(name = "vendor_decline_reason", length = 500)

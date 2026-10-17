@@ -65,4 +65,20 @@ public class BookingCreateRequest {
     private String paymentStatus;
 
     private String specialInstructions;
+
+    private String couponCode;
+
+    private BigDecimal couponDiscount;
+
+    private String paymentMethod;
+
+    private String paymentProofUrl;
+
+    private String paymentUtrNumber;
+
+    private Boolean isPetFriendly;
+    private String petType;
+    private Integer petCount;
+    private BigDecimal petCharge;
+    private BigDecimal vendorPetPayout;
 }

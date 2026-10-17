@@ -21,6 +21,7 @@ import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { Modal } from "@/components/ui/Modal";
 import { Toast } from "@/components/ui/Toast";
 import { formatINR, getStatusStyle } from "@/lib/utils";
+import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
 import {
   Eye,
   CalendarCheck,
@@ -35,6 +36,7 @@ import {
   Phone,
   ShieldCheck,
   ArrowRight,
+  QrCode,
 } from "lucide-react";
 
 function formatDateTime(val) {
@@ -81,8 +83,29 @@ export default function AdminMasterBookingsPage() {
   const [loadingFleet, setLoadingFleet] = useState(false);
   const [submittingAllocation, setSubmittingAllocation] = useState(false);
   const [toast, setToast] = useState(null);
+  const [verifyModalBooking, setVerifyModalBooking] = useState(null);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   const [reloadTrigger, setReloadTrigger] = useState(0);
+
+  const handleVerifyPayment = async (bookingId, { action, rejectionReason }) => {
+    setVerifyingPayment(true);
+    try {
+      const res = await operationsApi.verifyBookingPayment(bookingId, { action, rejectionReason });
+      if (res?.success) {
+        setToast({
+          type: "success",
+          message: action === "APPROVE" ? "Payment approved! Booking confirmed for fleet allocation." : "Payment rejected.",
+        });
+        setVerifyModalBooking(null);
+        setReloadTrigger((prev) => prev + 1);
+      }
+    } catch (err) {
+      setToast({ type: "error", message: err.message || "Failed to verify payment." });
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -112,6 +135,14 @@ export default function AdminMasterBookingsPage() {
 
   // Open Fleet Allocation Modal
   const openAllocateModal = async (booking) => {
+    if (booking.status === "PENDING_PAYMENT_VERIFICATION" || booking.paymentStatus === "UNDER_REVIEW") {
+      setToast({
+        type: "warning",
+        message: "Payment verification is required before allocating fleet. Please verify the customer's payment first.",
+      });
+      return;
+    }
+
     setSelectedBooking(booking);
     setSelectedVehicle(null);
     setSelectedDriver(null);
@@ -309,6 +340,7 @@ export default function AdminMasterBookingsPage() {
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
               >
                 <option value="ALL">All Statuses ({bookings.length})</option>
+                <option value="PENDING_PAYMENT_VERIFICATION">Pending Payment Verification</option>
                 <option value="PENDING_ALLOCATION">Pending Allocation</option>
                 <option value="CONFIRMED">Confirmed</option>
                 <option value="ASSIGNED_TO_VENDOR">Assigned to Vendor</option>
@@ -419,6 +451,7 @@ export default function AdminMasterBookingsPage() {
                 const booked = formatDateTime(b.createdAt);
                 const pickup = formatDateTime(b.pickupDateTime || b.pickupTime);
                 const isAllocated = Boolean(b.assignedVehicleNumber);
+                const isPendingVerification = b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW";
 
                 return (
                   <TableRow key={b.id}>
@@ -447,6 +480,11 @@ export default function AdminMasterBookingsPage() {
                         {b.vehicleCategory && (
                           <span className="text-[10px] font-semibold text-blue-600">
                             • {b.vehicleCategory}
+                          </span>
+                        )}
+                        {Boolean(b.isPetFriendly) && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                            🐾 {b.petType || "Pet"} ({b.petCount || 1})
                           </span>
                         )}
                       </div>
@@ -496,6 +534,10 @@ export default function AdminMasterBookingsPage() {
                             {b.assignedDriverName || "Chauffeur pending vendor"}
                           </div>
                         </div>
+                      ) : isPendingVerification ? (
+                        <span className="text-xs text-amber-600/90 font-medium italic">
+                          Verify Payment First
+                        </span>
                       ) : (
                         <span className="text-xs text-amber-600 font-medium italic">
                           Unallocated
@@ -505,32 +547,60 @@ export default function AdminMasterBookingsPage() {
 
                     {/* Fare */}
                     <TableCell>
-                      <span className="font-bold text-xs text-slate-900">
+                      <span className="font-bold text-xs text-slate-900 block">
                         {formatINR(b.fare || b.totalFare || 0)}
                       </span>
+                      {Boolean(b.isPetFriendly) && (
+                        <div className="text-[10px] font-bold text-amber-700 mt-0.5">
+                          🐾 Pet: +₹{b.petCharge || 0}
+                        </div>
+                      )}
                     </TableCell>
 
                     {/* Status */}
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}
-                      >
-                        {statusStyle.label}
-                      </span>
+                      {b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW" ? (
+                        <button
+                          onClick={() => setVerifyModalBooking(b)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition-colors animate-pulse"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span>Verify Payment</span>
+                        </button>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}
+                        >
+                          {statusStyle.label}
+                        </span>
+                      )}
                     </TableCell>
 
                     {/* Action */}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          size="xs"
-                          variant={isAllocated ? "secondary" : "amber"}
-                          icon={Car}
-                          onClick={() => openAllocateModal(b)}
-                          title={isAllocated ? "Reallocate Fleet" : "Allocate Commercial Vehicle"}
-                        >
-                          {isAllocated ? "Reallocate" : "Allocate"}
-                        </Button>
+                        {isPendingVerification ? (
+                          <Button
+                            size="xs"
+                            variant="secondary"
+                            icon={Car}
+                            disabled
+                            title="Payment verification required before allocating fleet"
+                            className="opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200"
+                          >
+                            Allocate
+                          </Button>
+                        ) : (
+                          <Button
+                            size="xs"
+                            variant={isAllocated ? "secondary" : "amber"}
+                            icon={Car}
+                            onClick={() => openAllocateModal(b)}
+                            title={isAllocated ? "Reallocate Fleet" : "Allocate Commercial Vehicle"}
+                          >
+                            {isAllocated ? "Reallocate" : "Allocate"}
+                          </Button>
+                        )}
                         <Link href={`/admin/bookings/${b.id}`}>
                           <Button size="xs" variant="secondary" icon={Eye} title="Audit Booking Details">
                             Audit
@@ -788,6 +858,15 @@ export default function AdminMasterBookingsPage() {
           </div>
         )}
       </Modal>
+
+      {/* Payment Proof Verification Modal */}
+      <PaymentVerificationModal
+        isOpen={Boolean(verifyModalBooking)}
+        onClose={() => setVerifyModalBooking(null)}
+        booking={verifyModalBooking}
+        onVerify={handleVerifyPayment}
+        loading={verifyingPayment}
+      />
 
       {/* Toast Feedback */}
       {toast && (

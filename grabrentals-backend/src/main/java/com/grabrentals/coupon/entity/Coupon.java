@@ -60,6 +60,30 @@ public class Coupon {
     @Builder.Default
     private Boolean active = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_audience", length = 30)
+    @Builder.Default
+    private TargetAudience targetAudience = TargetAudience.ALL_USERS;
+
+    @Column(name = "specific_identifiers", columnDefinition = "TEXT")
+    private String specificIdentifiers;
+
+    @Column(name = "per_user_limit")
+    @Builder.Default
+    private Integer perUserLimit = 1;
+
+    @Column(name = "service_type", length = 30)
+    @Builder.Default
+    private String serviceType = "ALL";
+
+    @Column(name = "state", length = 100)
+    @Builder.Default
+    private String state = "ALL";
+
+    @Column(name = "city", length = 100)
+    @Builder.Default
+    private String city = "ALL";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

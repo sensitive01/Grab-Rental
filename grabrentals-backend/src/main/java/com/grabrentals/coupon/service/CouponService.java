@@ -5,8 +5,12 @@ import com.grabrentals.coupon.dto.CouponRequestDto;
 import com.grabrentals.coupon.dto.CouponResponseDto;
 import com.grabrentals.coupon.dto.CouponValidateResponseDto;
 import com.grabrentals.coupon.entity.Coupon;
+import com.grabrentals.coupon.entity.CouponRedemption;
 import com.grabrentals.coupon.entity.DiscountType;
+import com.grabrentals.coupon.entity.TargetAudience;
+import com.grabrentals.coupon.repository.CouponRedemptionRepository;
 import com.grabrentals.coupon.repository.CouponRepository;
+import com.grabrentals.customer.repository.BookingRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +30,8 @@ import java.util.stream.Collectors;
 public class CouponService {
 
     private final CouponRepository couponRepository;
+    private final BookingRepository bookingRepository;
+    private final CouponRedemptionRepository couponRedemptionRepository;
 
     @PostConstruct
     public void initSeedCoupons() {
@@ -33,13 +40,16 @@ public class CouponService {
             Coupon welcome = Coupon.builder()
                     .code("WELCOME10")
                     .title("Welcome Discount")
-                    .description("10% off up to ₹250 on outstation bookings")
+                    .description("10% off up to ₹250 on first outstation booking")
                     .discountType(DiscountType.PERCENTAGE)
                     .discountValue(new BigDecimal("10.00"))
                     .maxDiscountAmount(new BigDecimal("250.00"))
                     .minRideAmount(new BigDecimal("1000.00"))
                     .usageLimit(1000)
                     .usedCount(0)
+                    .targetAudience(TargetAudience.NEW_USERS_ONLY)
+                    .perUserLimit(1)
+                    .serviceType("ALL")
                     .validFrom(LocalDateTime.now().minusDays(1))
                     .validUntil(LocalDateTime.now().plusMonths(6))
                     .active(true)
@@ -54,6 +64,9 @@ public class CouponService {
                     .minRideAmount(new BigDecimal("2000.00"))
                     .usageLimit(500)
                     .usedCount(0)
+                    .targetAudience(TargetAudience.ALL_USERS)
+                    .perUserLimit(2)
+                    .serviceType("ALL")
                     .validFrom(LocalDateTime.now().minusDays(1))
                     .validUntil(LocalDateTime.now().plusMonths(6))
                     .active(true)
@@ -68,18 +81,45 @@ public class CouponService {
                     .minRideAmount(new BigDecimal("4000.00"))
                     .usageLimit(250)
                     .usedCount(0)
+                    .targetAudience(TargetAudience.EXISTING_USERS_ONLY)
+                    .perUserLimit(1)
+                    .serviceType("OUTSTATION")
                     .validFrom(LocalDateTime.now().minusDays(1))
                     .validUntil(LocalDateTime.now().plusMonths(6))
                     .active(true)
                     .build();
 
             couponRepository.saveAll(List.of(welcome, grab200, mega500));
-            log.info("Seeded 3 default coupons: WELCOME10, GRAB200, MEGA500");
+            log.info("Default promo coupons seeded successfully.");
         }
     }
 
     @Transactional(readOnly = true)
     public CouponValidateResponseDto validateCoupon(String code, BigDecimal rideAmount) {
+        return validateCoupon(code, rideAmount, null, null, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public CouponValidateResponseDto validateCoupon(
+            String code,
+            BigDecimal rideAmount,
+            String customerPhone,
+            String customerEmail,
+            String tripType
+    ) {
+        return validateCoupon(code, rideAmount, customerPhone, customerEmail, tripType, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public CouponValidateResponseDto validateCoupon(
+            String code,
+            BigDecimal rideAmount,
+            String customerPhone,
+            String customerEmail,
+            String tripType,
+            String state,
+            String city
+    ) {
         if (code == null || code.trim().isEmpty()) {
             return CouponValidateResponseDto.builder()
                     .valid(false)
@@ -134,7 +174,7 @@ public class CouponService {
             return CouponValidateResponseDto.builder()
                     .valid(false)
                     .code(cleanCode)
-                    .message("This coupon has reached its maximum usage limit.")
+                    .message("This coupon has reached its maximum total usage limit.")
                     .build();
         }
 
@@ -144,6 +184,145 @@ public class CouponService {
                     .code(cleanCode)
                     .message("Minimum ride amount of ₹" + coupon.getMinRideAmount().stripTrailingZeros().toPlainString() + " required to use this coupon.")
                     .build();
+        }
+
+        // Service Type restriction check
+        if (coupon.getServiceType() != null && !coupon.getServiceType().equalsIgnoreCase("ALL")) {
+            if (tripType != null && !tripType.isBlank()) {
+                if (!coupon.getServiceType().equalsIgnoreCase(tripType.trim())) {
+                    return CouponValidateResponseDto.builder()
+                            .valid(false)
+                            .code(cleanCode)
+                            .message("This coupon is only valid for " + coupon.getServiceType() + " journeys.")
+                            .build();
+                }
+            }
+        }
+
+        // State restriction check
+        if (coupon.getState() != null && !coupon.getState().equalsIgnoreCase("ALL") && !coupon.getState().isBlank()) {
+            if (state != null && !state.isBlank()) {
+                if (!coupon.getState().trim().equalsIgnoreCase(state.trim())) {
+                    return CouponValidateResponseDto.builder()
+                            .valid(false)
+                            .code(cleanCode)
+                            .message("This coupon is only valid for journeys starting in " + coupon.getState() + ".")
+                            .build();
+                }
+            }
+        }
+
+        // City restriction check
+        if (coupon.getCity() != null && !coupon.getCity().equalsIgnoreCase("ALL") && !coupon.getCity().isBlank()) {
+            if (city != null && !city.isBlank()) {
+                String reqCity = city.trim().toLowerCase();
+                String allowedCity = coupon.getCity().trim().toLowerCase();
+                if (!reqCity.contains(allowedCity) && !allowedCity.contains(reqCity)) {
+                    return CouponValidateResponseDto.builder()
+                            .valid(false)
+                            .code(cleanCode)
+                            .message("This coupon is only valid for journeys starting in " + coupon.getCity() + ".")
+                            .build();
+                }
+            }
+        }
+
+        // Normalize phone number (last 10 digits)
+        String cleanPhone = null;
+        if (customerPhone != null && !customerPhone.isBlank()) {
+            String digits = customerPhone.replaceAll("[^0-9]", "");
+            cleanPhone = digits.length() > 10 ? digits.substring(digits.length() - 10) : digits;
+        }
+
+        String cleanEmail = (customerEmail != null && !customerEmail.isBlank())
+                ? customerEmail.trim().toLowerCase()
+                : null;
+
+        // Target Audience Eligibility Checks
+        TargetAudience audience = coupon.getTargetAudience() != null ? coupon.getTargetAudience() : TargetAudience.ALL_USERS;
+
+        if (audience == TargetAudience.NEW_USERS_ONLY) {
+            if (cleanPhone != null || cleanEmail != null) {
+                long pastBookings = bookingRepository.countValidBookingsByPhoneOrEmail(cleanPhone, cleanEmail);
+                if (pastBookings > 0) {
+                    return CouponValidateResponseDto.builder()
+                            .valid(false)
+                            .code(cleanCode)
+                            .message("This offer is exclusively for first-time customers on their first booking.")
+                            .build();
+                }
+            }
+        } else if (audience == TargetAudience.EXISTING_USERS_ONLY) {
+            if (cleanPhone != null || cleanEmail != null) {
+                long pastBookings = bookingRepository.countValidBookingsByPhoneOrEmail(cleanPhone, cleanEmail);
+                if (pastBookings == 0) {
+                    return CouponValidateResponseDto.builder()
+                            .valid(false)
+                            .code(cleanCode)
+                            .message("This loyalty offer is reserved for returning Grab Rentals travelers.")
+                            .build();
+                }
+            }
+        } else if (audience == TargetAudience.SPECIFIC_USERS) {
+            if (coupon.getSpecificIdentifiers() != null && !coupon.getSpecificIdentifiers().isBlank()) {
+                List<String> allowedList = Arrays.stream(coupon.getSpecificIdentifiers().split("[,;\\n]+"))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(String::toLowerCase)
+                        .collect(Collectors.toList());
+
+                boolean matched = false;
+                if (cleanPhone != null) {
+                    for (String allowed : allowedList) {
+                        String allowedDigits = allowed.replaceAll("[^0-9]", "");
+                        if (!allowedDigits.isEmpty()) {
+                            String last10 = allowedDigits.length() > 10 ? allowedDigits.substring(allowedDigits.length() - 10) : allowedDigits;
+                            if (last10.equals(cleanPhone)) {
+                                matched = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!matched && cleanEmail != null) {
+                    matched = allowedList.contains(cleanEmail);
+                }
+
+                if (!matched) {
+                    return CouponValidateResponseDto.builder()
+                            .valid(false)
+                            .code(cleanCode)
+                            .message("This exclusive promotional offer is reserved for selected accounts.")
+                            .build();
+                }
+            }
+        }
+
+        // Per-User Limit Check (defaults to 1 if not explicitly set)
+        int perLimit = (coupon.getPerUserLimit() != null && coupon.getPerUserLimit() > 0)
+                ? coupon.getPerUserLimit()
+                : 1;
+
+        if (cleanPhone != null || cleanEmail != null) {
+            long redemptions = 0;
+            if (cleanPhone != null) {
+                redemptions = Math.max(redemptions, couponRedemptionRepository.countByCouponCodeIgnoreCaseAndCustomerPhone(cleanCode, cleanPhone));
+            }
+            if (cleanEmail != null) {
+                redemptions = Math.max(redemptions, couponRedemptionRepository.countByCouponCodeIgnoreCaseAndCustomerEmail(cleanCode, cleanEmail));
+            }
+
+            // Also check confirmed bookings table in case redemption was logged on a previous booking
+            long bookingUsage = bookingRepository.countBookingsWithCouponForCustomer(cleanCode, cleanPhone, cleanEmail);
+            redemptions = Math.max(redemptions, bookingUsage);
+
+            if (redemptions >= perLimit) {
+                return CouponValidateResponseDto.builder()
+                        .valid(false)
+                        .code(cleanCode)
+                        .message("You have already used this coupon the maximum allowed number of times (" + perLimit + ").")
+                        .build();
+            }
         }
 
         // Calculate discount
@@ -177,18 +356,36 @@ public class CouponService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CouponResponseDto> getAllCoupons() {
-        return couponRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
+        List<Coupon> list = couponRepository.findAllByOrderByCreatedAtDesc();
+        for (Coupon c : list) {
+            long redemptions = couponRedemptionRepository.countByCouponCodeIgnoreCase(c.getCode());
+            long bookings = bookingRepository.countBookingsByCouponCode(c.getCode());
+            int maxUsed = (int) Math.max(c.getUsedCount() != null ? c.getUsedCount() : 0, Math.max(redemptions, bookings));
+            if (c.getUsedCount() == null || c.getUsedCount() != maxUsed) {
+                c.setUsedCount(maxUsed);
+                couponRepository.save(c);
+            }
+        }
+        return list.stream()
                 .map(CouponResponseDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CouponResponseDto> getActiveCoupons() {
-        return couponRepository.findByActiveTrueOrderByCreatedAtDesc()
-                .stream()
+        List<Coupon> list = couponRepository.findByActiveTrueOrderByCreatedAtDesc();
+        for (Coupon c : list) {
+            long redemptions = couponRedemptionRepository.countByCouponCodeIgnoreCase(c.getCode());
+            long bookings = bookingRepository.countBookingsByCouponCode(c.getCode());
+            int maxUsed = (int) Math.max(c.getUsedCount() != null ? c.getUsedCount() : 0, Math.max(redemptions, bookings));
+            if (c.getUsedCount() == null || c.getUsedCount() != maxUsed) {
+                c.setUsedCount(maxUsed);
+                couponRepository.save(c);
+            }
+        }
+        return list.stream()
                 .map(CouponResponseDto::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -217,12 +414,19 @@ public class CouponService {
                 .minRideAmount(req.getMinRideAmount())
                 .usageLimit(req.getUsageLimit())
                 .usedCount(0)
+                .targetAudience(req.getTargetAudience() != null ? req.getTargetAudience() : TargetAudience.ALL_USERS)
+                .specificIdentifiers(req.getSpecificIdentifiers())
+                .perUserLimit(req.getPerUserLimit())
+                .serviceType(req.getServiceType() != null && !req.getServiceType().isBlank() ? req.getServiceType() : "ALL")
+                .state(req.getState() != null && !req.getState().isBlank() ? req.getState().trim() : "ALL")
+                .city(req.getCity() != null && !req.getCity().isBlank() ? req.getCity().trim() : "ALL")
                 .validFrom(req.getValidFrom() != null ? req.getValidFrom() : LocalDateTime.now())
                 .validUntil(req.getValidUntil())
                 .active(req.getActive() != null ? req.getActive() : true)
                 .build();
 
         Coupon saved = couponRepository.save(c);
+        log.info("Created new coupon '{}' with audience '{}'", saved.getCode(), saved.getTargetAudience());
         return CouponResponseDto.fromEntity(saved);
     }
 
@@ -244,11 +448,18 @@ public class CouponService {
         c.setMaxDiscountAmount(req.getMaxDiscountAmount());
         c.setMinRideAmount(req.getMinRideAmount());
         c.setUsageLimit(req.getUsageLimit());
+        if (req.getTargetAudience() != null) c.setTargetAudience(req.getTargetAudience());
+        if (req.getSpecificIdentifiers() != null) c.setSpecificIdentifiers(req.getSpecificIdentifiers());
+        if (req.getPerUserLimit() != null) c.setPerUserLimit(req.getPerUserLimit());
+        if (req.getServiceType() != null) c.setServiceType(req.getServiceType());
+        if (req.getState() != null) c.setState(req.getState().isBlank() ? "ALL" : req.getState().trim());
+        if (req.getCity() != null) c.setCity(req.getCity().isBlank() ? "ALL" : req.getCity().trim());
         if (req.getValidFrom() != null) c.setValidFrom(req.getValidFrom());
         if (req.getValidUntil() != null) c.setValidUntil(req.getValidUntil());
         if (req.getActive() != null) c.setActive(req.getActive());
 
         Coupon updated = couponRepository.save(c);
+        log.info("Updated coupon '{}' with audience '{}'", updated.getCode(), updated.getTargetAudience());
         return CouponResponseDto.fromEntity(updated);
     }
 
@@ -270,11 +481,32 @@ public class CouponService {
     }
 
     @Transactional
-    public void recordCouponUsage(String code) {
+    public void recordCouponUsage(String code, String phone, String email) {
         if (code == null || code.trim().isEmpty()) return;
-        couponRepository.findByCodeIgnoreCase(code.trim()).ifPresent(c -> {
+        String cleanCode = code.trim().toUpperCase();
+
+        couponRepository.findByCodeIgnoreCase(cleanCode).ifPresent(c -> {
             c.setUsedCount((c.getUsedCount() != null ? c.getUsedCount() : 0) + 1);
             couponRepository.save(c);
+
+            String cleanPhone = null;
+            if (phone != null && !phone.isBlank()) {
+                String digits = phone.replaceAll("[^0-9]", "");
+                cleanPhone = digits.length() > 10 ? digits.substring(digits.length() - 10) : digits;
+            }
+
+            CouponRedemption redemption = CouponRedemption.builder()
+                    .couponCode(cleanCode)
+                    .customerPhone(cleanPhone)
+                    .customerEmail(email != null ? email.trim().toLowerCase() : null)
+                    .build();
+            couponRedemptionRepository.save(redemption);
+            log.info("Recorded coupon redemption for code '{}' by phone '{}'", cleanCode, cleanPhone);
         });
+    }
+
+    @Transactional
+    public void recordCouponUsage(String code) {
+        recordCouponUsage(code, null, null);
     }
 }

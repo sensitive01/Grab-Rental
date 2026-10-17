@@ -85,6 +85,22 @@ public class OperationsBookingController {
         return ResponseEntity.ok(ApiResponse.success("Trip status updated successfully to " + request.getStatus(), response));
     }
 
+    @PostMapping("/bookings/{idOrRef}/verify-payment")
+    public ResponseEntity<ApiResponse<BookingResponse>> verifyPayment(
+            @PathVariable String idOrRef,
+            @Valid @RequestBody com.grabrentals.customer.dto.PaymentVerificationRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings/{}/verify-payment - action: {} by {}",
+                idOrRef, request.getAction(), operator.getEmail());
+        BookingResponse response = bookingService.verifyPayment(idOrRef, request, operator);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Payment " + ("APPROVE".equalsIgnoreCase(request.getAction()) ? "verified and approved" : "rejected") + " successfully",
+                response
+        ));
+    }
+
     @GetMapping("/vehicles")
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getAllVehicles() {
         List<VehicleResponse> vehicles = vehicleRepository.findAll()

@@ -63,6 +63,14 @@ public class PricingTaxConfig {
     @Builder.Default
     private BigDecimal expresswayFee = new BigDecimal("415.00");
 
+    @Column(name = "default_pet_charge", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal defaultPetCharge = new BigDecimal("499.00");
+
+    @Column(name = "default_vendor_pet_charge", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal defaultVendorPetCharge = new BigDecimal("350.00");
+
     @LastModifiedDate
     @Column(name = "updated_at")
     private Instant updatedAt;

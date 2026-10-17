@@ -39,4 +39,14 @@ public class CouponRequestDto {
     private LocalDateTime validUntil;
 
     private Boolean active;
+
+    private com.grabrentals.coupon.entity.TargetAudience targetAudience;
+
+    private String specificIdentifiers;
+
+    private Integer perUserLimit;
+
+    private String serviceType;
+    private String state;
+    private String city;
 }

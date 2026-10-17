@@ -42,10 +42,14 @@ export default function TopNavigation() {
               alt="Grab Rentals"
               className="h-10 w-auto object-contain drop-shadow-sm"
             />
-            <div className="flex flex-col">
-              <span className="font-extrabold text-sm tracking-tight text-brand-navy">GRAB RENTALS</span>
-              <span className="text-[8px] text-amber-600 font-bold uppercase tracking-wider">
-                Grab Comfort in Every Mile
+            <div className="flex flex-col w-fit">
+              <span className="font-extrabold text-sm tracking-tight text-brand-navy whitespace-nowrap">GRAB RENTALS</span>
+              <span className="flex justify-between w-full text-[7px] text-[#0082fe] font-bold uppercase tracking-wider select-none">
+                <span>GRAB</span>
+                <span>COMFORT</span>
+                <span>IN</span>
+                <span>EVERY</span>
+                <span>MILE</span>
               </span>
             </div>
           </Link>

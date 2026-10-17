@@ -78,6 +78,8 @@ public class VehicleTariffResponse {
     private BigDecimal airportVendorExtraKmRate;
     private Boolean tollIncluded;
     private BigDecimal discountPercentage;
+    private BigDecimal petCharge;
+    private BigDecimal vendorPetCharge;
 
     private Instant createdAt;
     private Instant updatedAt;
@@ -139,6 +141,8 @@ public class VehicleTariffResponse {
                 .airportVendorExtraKmRate(entity.getAirportVendorExtraKmRate())
                 .tollIncluded(entity.getTollIncluded())
                 .discountPercentage(entity.getDiscountPercentage() != null ? entity.getDiscountPercentage() : BigDecimal.ZERO)
+                .petCharge(entity.getPetCharge() != null ? entity.getPetCharge() : BigDecimal.ZERO)
+                .vendorPetCharge(entity.getVendorPetCharge() != null ? entity.getVendorPetCharge() : BigDecimal.ZERO)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

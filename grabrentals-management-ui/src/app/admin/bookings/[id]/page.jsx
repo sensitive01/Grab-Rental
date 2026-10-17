@@ -228,6 +228,14 @@ export default function AdminBookingDetailPage({ params }) {
   // Open Allocation Modal
   const openAllocateModal = async () => {
     if (!booking) return;
+    if (booking.status === "PENDING_PAYMENT_VERIFICATION" || booking.paymentStatus === "UNDER_REVIEW") {
+      setToast({
+        type: "warning",
+        message: "Payment verification is required before allocating fleet. Please verify the customer's payment first.",
+      });
+      return;
+    }
+
     setSelectedVehicle(null);
     setSelectedDriver(null);
     setAssignChauffeurNow(false);
@@ -402,7 +410,18 @@ export default function AdminBookingDetailPage({ params }) {
               </Button>
             </Link>
 
-            {booking.status === "PENDING_ALLOCATION" || booking.status === "REASSIGN_REQUIRED" ? (
+            {booking.status === "PENDING_PAYMENT_VERIFICATION" || booking.paymentStatus === "UNDER_REVIEW" ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Car}
+                disabled
+                title="Payment verification required before allocating fleet"
+                className="opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200"
+              >
+                Verification Required
+              </Button>
+            ) : booking.status === "PENDING_ALLOCATION" || booking.status === "REASSIGN_REQUIRED" ? (
               <Button
                 variant="primary"
                 size="sm"
@@ -527,6 +546,18 @@ export default function AdminBookingDetailPage({ params }) {
                 <span className="text-[10px] uppercase font-bold text-amber-600 block mb-0.5">Ride Security OTP</span>
                 <span className="font-mono font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200 text-xs tracking-wider">
                   {booking.rideOtp}
+                </span>
+              </div>
+            </>
+          )}
+
+          {Boolean(booking.isPetFriendly) && (
+            <>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-amber-700 block mb-0.5">Pet Friendly Cab</span>
+                <span className="inline-flex items-center gap-1.5 font-black text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded border border-amber-300 text-xs">
+                  🐾 {booking.petType || "Pet"} ({booking.petCount || 1})
                 </span>
               </div>
             </>
@@ -852,6 +883,15 @@ export default function AdminBookingDetailPage({ params }) {
                 ))
               )}
 
+              {Boolean(booking.isPetFriendly) && (
+                <div className="flex justify-between py-1 border-b border-amber-100 text-amber-900 font-semibold bg-amber-50/70 px-2 rounded">
+                  <span className="flex items-center gap-1">
+                    🐾 <span>Pet Travel Surcharge ({booking.petType || "Pet"} × {booking.petCount || 1})</span>
+                  </span>
+                  <span className="font-bold">+{formatINR(booking.petCharge || 0)}</span>
+                </div>
+              )}
+
               {specParsed.couponInfo && (
                 <div className="flex justify-between py-1 border-b border-emerald-100 text-emerald-700 font-semibold">
                   <span className="flex items-center gap-1">
@@ -892,6 +932,12 @@ export default function AdminBookingDetailPage({ params }) {
                     <span>Vendor Net Payout</span>
                     <span>{formatINR(vendorPayout)}</span>
                   </div>
+                  {Boolean(booking.isPetFriendly) && (
+                    <div className="flex justify-between text-[11px] text-amber-800 font-semibold">
+                      <span>🐾 Includes Vendor Pet Surcharge</span>
+                      <span>+{formatINR(booking.vendorPetPayout || 0)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-[11px] text-slate-500">
                     <span>Platform Commission</span>
                     <span>{formatINR(platformMargin)}</span>

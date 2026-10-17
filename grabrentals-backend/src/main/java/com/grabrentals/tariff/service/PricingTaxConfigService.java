@@ -54,6 +54,12 @@ public class PricingTaxConfigService {
                 if (config.getExpresswayFee() == null) {
                     config.setExpresswayFee(new BigDecimal("415.00"));
                 }
+                if (config.getDefaultPetCharge() == null) {
+                    config.setDefaultPetCharge(new BigDecimal("499.00"));
+                }
+                if (config.getDefaultVendorPetCharge() == null) {
+                    config.setDefaultVendorPetCharge(new BigDecimal("350.00"));
+                }
                 return config;
             }
         } catch (Exception e) {
@@ -70,6 +76,8 @@ public class PricingTaxConfigService {
                 .luggageCarrierFee(new BigDecimal("249.00"))
                 .languageChauffeurFee(new BigDecimal("199.00"))
                 .expresswayFee(new BigDecimal("415.00"))
+                .defaultPetCharge(new BigDecimal("499.00"))
+                .defaultVendorPetCharge(new BigDecimal("350.00"))
                 .build();
     }
 

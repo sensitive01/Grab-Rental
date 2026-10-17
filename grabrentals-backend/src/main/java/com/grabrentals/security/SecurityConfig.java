@@ -70,12 +70,13 @@ public class SecurityConfig {
                     "/api/fleet/drivers/upload",
                     "/api/vendor/profile/upload",
                     "/api/vendor/compliance/upload",
-                    "/api/admin/models/upload"
+                    "/api/admin/models/upload",
+                    "/api/admin/promo-popup/upload"
                 ).permitAll()
                 // Public vehicle search & catalog
                 .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
-                // Public coupon validation
-                .requestMatchers("/api/coupons/**").permitAll()
+                // Public promo popup, coupon validation, and UPI checkout
+                .requestMatchers("/api/coupons/**", "/api/promo-popup/**", "/api/upi/**").permitAll()
                 // Role-based endpoints
                 .requestMatchers("/api/customer/**").authenticated()
                 .requestMatchers("/api/vendor/**", "/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")

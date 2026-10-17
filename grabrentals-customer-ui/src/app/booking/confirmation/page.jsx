@@ -177,27 +177,34 @@ function BookingConfirmationContent() {
     }
   }
 
+  const isPaymentUnderReview = 
+    booking?.status === "PENDING_PAYMENT_VERIFICATION" || 
+    booking?.paymentStatus === "UNDER_REVIEW" ||
+    Boolean(booking?.paymentProofUrl && booking?.status !== "CONFIRMED" && booking?.status !== "ALLOCATED" && booking?.status !== "ON_TRIP" && booking?.status !== "COMPLETED");
+
   return (
     <main className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-6">
         
         {/* Success Hero Card */}
         <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 shadow-xs text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500"></div>
+          <div className={`absolute top-0 left-0 right-0 h-2 ${isPaymentUnderReview ? "bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500" : "bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500"}`}></div>
           
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border-4 border-emerald-100 flex items-center justify-center mx-auto mb-4 shadow-inner">
-            <CheckCircle2 className="w-8 h-8" />
+          <div className={`w-16 h-16 rounded-full ${isPaymentUnderReview ? "bg-amber-50 text-amber-600 border-4 border-amber-100" : "bg-emerald-50 text-emerald-600 border-4 border-emerald-100"} flex items-center justify-center mx-auto mb-4 shadow-inner`}>
+            {isPaymentUnderReview ? <Clock className="w-8 h-8 animate-pulse" /> : <CheckCircle2 className="w-8 h-8" />}
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold mb-3">
-            <Sparkles className="w-3.5 h-3.5" /> 100% Guaranteed Ride • Verified Commercial Chauffeur
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${isPaymentUnderReview ? "bg-amber-50 border border-amber-200 text-amber-800" : "bg-emerald-50 border border-emerald-200 text-emerald-700"} text-xs font-bold mb-3`}>
+            <Sparkles className="w-3.5 h-3.5" /> {isPaymentUnderReview ? "Payment Under Review • Fast-Track Verification" : "100% Guaranteed Ride • Verified Commercial Chauffeur"}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {t("booking_confirmed")}
+            {isPaymentUnderReview ? "Booking Placed — Verifying Payment" : t("booking_confirmed")}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 max-w-md mx-auto">
-            Your outstation trip request is confirmed in our dispatch system. A verified chauffeur is being assigned.
+          <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 max-w-md mx-auto leading-relaxed">
+            {isPaymentUnderReview
+              ? "We received your UPI payment screenshot! Our central operations desk is verifying your transaction reference. Fleet and chauffeur allocation will be confirmed immediately upon verification."
+              : "Your outstation trip request is confirmed in our dispatch system. A verified chauffeur is being assigned."}
           </p>
 
           {/* Booking ID Pill */}
@@ -223,9 +230,16 @@ function BookingConfirmationContent() {
                 {booking?.tripType === "ROUND_TRIP" ? "Round Trip" : "One-Way"} Outstation Ride
                 {stopsList.length > 0 && <span className="text-amber-700 font-bold ml-1.5">• Via {stopsList.join(", ")}</span>}
               </p>
+              {Boolean(booking?.isPetFriendly) && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-800 bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-300">
+                    🐾 Pet Friendly Cab Reserved ({booking?.petType || "Pet"} × {booking?.petCount || 1})
+                  </span>
+                </div>
+              )}
             </div>
-            <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-extrabold uppercase tracking-wide">
-              {booking?.status || "CONFIRMED"}
+            <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide border ${isPaymentUnderReview ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}>
+              {isPaymentUnderReview ? "Pending Payment Verification" : (booking?.status || "CONFIRMED")}
             </span>
           </div>
 
@@ -345,6 +359,53 @@ function BookingConfirmationContent() {
                 </div>
               </div>
               <span className="text-2xl font-black font-mono tracking-widest text-slate-900">{booking.rideOtp}</span>
+            </div>
+          )}
+
+          {/* UPI Verification Info Card if under review */}
+          {isPaymentUnderReview && (
+            <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-300 text-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-amber-950">Payment Verification In Progress</h4>
+                    <p className="text-[11px] text-amber-800">Reviewed by Operations within 15 minutes</p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-900">
+                  UNDER REVIEW
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200/60">
+                {booking?.paymentUtrNumber && (
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-200">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Submitted UTR Reference</span>
+                    <span className="font-mono font-black text-slate-800 text-xs">{booking.paymentUtrNumber}</span>
+                  </div>
+                )}
+                {booking?.paymentProofUrl && (
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Proof Receipt</span>
+                      <span className="text-emerald-700 font-bold text-xs flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Attached
+                      </span>
+                    </div>
+                    <a
+                      href={booking.paymentProofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-300 transition-colors"
+                    >
+                      View Receipt
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

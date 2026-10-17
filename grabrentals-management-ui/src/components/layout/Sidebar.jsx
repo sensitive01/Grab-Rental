@@ -38,6 +38,7 @@ import {
   CheckCircle,
   Layers,
   Ticket,
+  QrCode,
   X,
 } from "lucide-react";
 
@@ -96,6 +97,8 @@ export const ADMIN_NAV = [
       { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
       { label: "GST & Add-on Pricing", href: "/admin/settings", icon: Sliders },
       { label: "Coupons & Offers", href: "/admin/coupons", icon: Ticket },
+      { label: "Promo Popup", href: "/admin/promo-popup", icon: Sparkles },
+      { label: "UPI & Payment QR", href: "/admin/upi-settings", icon: QrCode },
       { label: "Vendors", href: "/admin/vendors", icon: Building2 },
       { label: "Customers", href: "/admin/customers", icon: Users },
       { label: "Users", href: "/admin/operations-users", icon: ShieldCheck },

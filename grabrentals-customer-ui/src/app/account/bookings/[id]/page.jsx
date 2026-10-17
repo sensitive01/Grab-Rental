@@ -133,11 +133,41 @@ function parseTripDetails(booking) {
   const hasExpressway = cached.selectedAddons?.expressway ?? /Expressway Fastag/i.test(spec);
   const expresswayFee = cached.expresswayFee || Number(spec.match(/Expressway Fastag[^)]*₹(\d+)/i)?.[1]) || 415;
 
-  const hasAnyAddons = hasLessThan3Years || hasLuggageCarrier || hasLanguageChauffeur || hasExpressway;
-  const addonsTotal = (hasLessThan3Years ? lessThan3YearsFee : 0) +
-                      (hasLuggageCarrier ? luggageCarrierFee : 0) +
-                      (hasLanguageChauffeur ? languageChauffeurFee : 0) +
-                      (hasExpressway ? expresswayFee : 0);
+  // Pet Friendly Ride & Add-on
+  const isPetFriendly = Boolean(
+    booking.isPetFriendly ??
+    cached.isPetFriendly ??
+    (/🐾\s*Pet Friendly Cab/i.test(spec) || /Pet Fee:/i.test(spec))
+  );
+
+  const petType =
+    booking.petType ||
+    cached.petType ||
+    (spec.match(/Pet Friendly Cab\s*\(([^×,)]+)/i)?.[1]?.trim()) ||
+    "Pet";
+
+  const petCount =
+    booking.petCount ||
+    cached.petCount ||
+    Number(spec.match(/([0-9]+)\s*,\s*Pet Fee/i)?.[1]) ||
+    1;
+
+  let petCharge =
+    booking.petCharge != null && Number(booking.petCharge) > 0 ? Number(booking.petCharge) :
+    (cached.petCharge != null && Number(cached.petCharge) > 0 ? Number(cached.petCharge) :
+    (Number(spec.match(/Pet Fee:\s*₹?([0-9.]+)/i)?.[1]) || 0));
+
+  const vendorPetPayout =
+    booking.vendorPetPayout != null && Number(booking.vendorPetPayout) > 0 ? Number(booking.vendorPetPayout) :
+    (cached.vendorPetPayout != null && Number(cached.vendorPetPayout) > 0 ? Number(cached.vendorPetPayout) :
+    (Number(spec.match(/Vendor Pet Fee:\s*₹?([0-9.]+)/i)?.[1]) || 0));
+
+  const hasAnyAddons = hasLessThan3Years || hasLuggageCarrier || hasLanguageChauffeur || hasExpressway || isPetFriendly;
+  const standardAddonsTotal = (hasLessThan3Years ? lessThan3YearsFee : 0) +
+                              (hasLuggageCarrier ? luggageCarrierFee : 0) +
+                              (hasLanguageChauffeur ? languageChauffeurFee : 0) +
+                              (hasExpressway ? expresswayFee : 0);
+  const addonsTotal = standardAddonsTotal + (isPetFriendly ? petCharge : 0);
 
   // Coupon
   const couponCode = cached.couponCode || spec.match(/Coupon Applied:\s*([A-Za-z0-9_-]+)/i)?.[1] || null;
@@ -153,6 +183,12 @@ function parseTripDetails(booking) {
       userNote = spec.trim();
     }
   }
+  if (userNote) {
+    userNote = userNote
+      .replace(/🐾\s*Pet Friendly Cab\s*\([^)]*\)\s*\|\s*/gi, "")
+      .replace(/🐾\s*Pet Friendly Cab\s*\([^)]*\)/gi, "")
+      .trim();
+  }
 
   // Financial values
   const totalFare = Number(booking.totalFare || cached.totalAmount || 0);
@@ -165,11 +201,19 @@ function parseTripDetails(booking) {
   let taxes = cached.taxes || Number(spec.match(/Taxes:\s*₹?(\d+)/i)?.[1]);
   let gstLabel = cached.gstLabel || spec.match(/Taxes:\s*₹?\d+\s*\(([^)]+)\)/i)?.[1] || "GST";
 
+  // Reconcile petCharge if isPetFriendly but petCharge is 0 while total exceeds known items
+  if (isPetFriendly && petCharge === 0) {
+    const knownNet = (baseFare || 0) + (driverAllowance || 0) + (taxes || 0) + standardAddonsTotal - couponDiscount;
+    if (totalFare > knownNet) {
+      petCharge = totalFare - knownNet;
+    }
+  }
+
   if (!baseFare || baseFare <= 0) {
-    const net = Math.max(0, totalFare + couponDiscount - addonsTotal);
+    const net = Math.max(0, totalFare + couponDiscount - standardAddonsTotal - (isPetFriendly ? petCharge : 0));
     baseFare = Math.round(net / 1.166);
     driverAllowance = Math.round(baseFare * 0.10);
-    taxes = Math.max(0, totalFare + couponDiscount - baseFare - driverAllowance - addonsTotal);
+    taxes = Math.max(0, totalFare + couponDiscount - baseFare - driverAllowance - standardAddonsTotal - (isPetFriendly ? petCharge : 0));
   }
 
   return {
@@ -207,6 +251,11 @@ function parseTripDetails(booking) {
     pickupCoords,
     dropCoords,
     stopsCoords,
+    isPetFriendly,
+    petType,
+    petCount,
+    petCharge,
+    vendorPetPayout,
     dropDate: cached.dropDate || cached.returnDateTime || null,
     createdAt: cached.createdAt || booking.createdAt || null
   };
@@ -351,12 +400,14 @@ export default function TripDetailsTrackingPage({ params }) {
   const { modelName, carImage, categoryLabel } = resolveCarModelAndImage(booking);
 
   const statusStepMap = {
-    PENDING_ALLOCATION: 1,
-    REASSIGN_REQUIRED: 1,
-    ASSIGNED_TO_VENDOR: 2,
-    CONFIRMED: 3,
-    IN_TRANSIT: 4,
-    COMPLETED: 5,
+    PENDING_PAYMENT_VERIFICATION: 2,
+    PENDING_ALLOCATION: 3,
+    REASSIGN_REQUIRED: 3,
+    ASSIGNED_TO_VENDOR: 4,
+    CONFIRMED: 5,
+    ON_THE_WAY: 5,
+    IN_TRANSIT: 5,
+    COMPLETED: 6,
     CANCELLED: 0
   };
   const currentStep = statusStepMap[booking.status] || 1;
@@ -428,16 +479,23 @@ export default function TripDetailsTrackingPage({ params }) {
               <span className="text-xs font-mono font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
                 {booking.bookingReference || booking.id}
               </span>
-              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
                 isCancelledState 
                   ? "bg-rose-50 border border-rose-200 text-rose-700" 
+                  : booking.status === "PENDING_PAYMENT_VERIFICATION"
+                  ? "bg-amber-50 border border-amber-300 text-amber-800 animate-pulse"
                   : "bg-emerald-50 border border-emerald-200 text-emerald-700 animate-pulse"
               }`}>
-                ● {booking.status}
+                ● {booking.status === "PENDING_PAYMENT_VERIFICATION" ? "Verifying Payment" : booking.status}
               </span>
               {parsed.packageLabel && (
                 <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
                   {parsed.packageLabel}
+                </span>
+              )}
+              {parsed.isPetFriendly && (
+                <span className="text-[11px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                  🐾 Pet Friendly Cab ({parsed.petType})
                 </span>
               )}
             </div>
@@ -500,22 +558,24 @@ export default function TripDetailsTrackingPage({ params }) {
               Live Trip Progression
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 relative">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 relative">
               {[
                 { stepNum: 1, label: "Booking Placed", desc: "Order recorded" },
-                { stepNum: 2, label: "Vendor Dispatched", desc: "Assigned to vendor" },
-                { stepNum: 3, label: "Ride Confirmed", desc: "Driver & OTP issued" },
-                { stepNum: 4, label: "In Transit", desc: "On-road telemetry" },
-                { stepNum: 5, label: "Completed", desc: "Drop-off & invoice" },
+                { stepNum: 2, label: "Verifying Payment", desc: "Payment proof review" },
+                { stepNum: 3, label: "Vendor Dispatched", desc: "Assigned to vendor" },
+                { stepNum: 4, label: "Ride Confirmed", desc: "Driver & OTP issued" },
+                { stepNum: 5, label: "In Transit", desc: "On-road telemetry" },
+                { stepNum: 6, label: "Completed", desc: "Drop-off & invoice" },
               ].map((s) => {
-                const isDone = currentStep > s.stepNum || (currentStep === s.stepNum && currentStep === 5);
-                const isCurrent = currentStep === s.stepNum && currentStep !== 5;
+                const totalSteps = 6;
+                const isDone = currentStep > s.stepNum || (currentStep === totalSteps && s.stepNum === totalSteps);
+                const isCurrent = currentStep === s.stepNum && currentStep !== totalSteps;
 
                 return (
                   <div key={s.stepNum} className="flex sm:flex-col items-center sm:text-center gap-3 sm:gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
                       isCurrent
-                        ? "bg-amber-500 text-slate-950 ring-4 ring-amber-100"
+                        ? "bg-[#0082fe] text-white ring-4 ring-blue-100 shadow-sm animate-pulse"
                         : isDone
                         ? "bg-emerald-600 text-white" 
                         : "bg-slate-100 text-slate-400 border border-slate-200"
@@ -523,7 +583,7 @@ export default function TripDetailsTrackingPage({ params }) {
                       {isDone ? "✓" : s.stepNum}
                     </div>
                     <div>
-                      <h4 className={`text-xs font-extrabold ${isCurrent ? "text-amber-700" : "text-slate-900"}`}>
+                      <h4 className={`text-xs font-extrabold ${isCurrent ? "text-[#0082fe]" : "text-slate-900"}`}>
                         {s.label}
                       </h4>
                       <p className="text-[10px] text-slate-400">{s.desc}</p>
@@ -799,6 +859,20 @@ export default function TripDetailsTrackingPage({ params }) {
                       <p className="text-[11px] text-amber-800">Expressway toll charges included.</p>
                     </div>
                   )}
+
+                  {parsed.isPetFriendly && (
+                    <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-300 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
+                          🐾 Pet Friendly Cab ({parsed.petType} × {parsed.petCount})
+                        </span>
+                        <span className="font-black text-amber-900 font-mono">
+                          {parsed.petCharge > 0 ? `+₹${parsed.petCharge.toLocaleString()}` : "FREE"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800">Sanitized pet-ready cab with pet travel accommodation.</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 flex items-center gap-3">
@@ -896,6 +970,16 @@ export default function TripDetailsTrackingPage({ params }) {
                   <div className="flex justify-between items-center text-amber-800">
                     <span>Expressway Toll FASTag</span>
                     <span className="font-bold">+ ₹{parsed.expresswayFee}</span>
+                  </div>
+                )}
+
+                {/* Pet Travel Charges */}
+                {parsed.isPetFriendly && (
+                  <div className="flex justify-between items-center text-amber-900 font-bold bg-amber-50/80 p-2.5 rounded-xl border border-amber-200">
+                    <span className="flex items-center gap-1.5">
+                      🐾 <span>Pet Travel Charges ({parsed.petType} × {parsed.petCount})</span>
+                    </span>
+                    <span className="font-mono">{parsed.petCharge > 0 ? `+ ₹${parsed.petCharge.toLocaleString()}` : "FREE (₹0)"}</span>
                   </div>
                 )}
 

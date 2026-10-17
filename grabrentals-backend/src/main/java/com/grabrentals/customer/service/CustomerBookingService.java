@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ public class CustomerBookingService {
     private final NotificationService notificationService;
     private final com.grabrentals.tariff.service.VehicleTariffService vehicleTariffService;
     private final PublicVehicleService publicVehicleService;
+    private final com.grabrentals.coupon.service.CouponService couponService;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -61,9 +63,20 @@ public class CustomerBookingService {
             due = BigDecimal.ZERO;
         }
 
-        String paymentStatus = request.getPaymentStatus();
-        if (paymentStatus == null || paymentStatus.isBlank()) {
-            paymentStatus = advance.compareTo(BigDecimal.ZERO) > 0 ? "ADVANCE_PAID" : "PENDING";
+        boolean isUpiPayment = (request.getPaymentMethod() != null && request.getPaymentMethod().toUpperCase().contains("UPI"))
+                || (request.getPaymentProofUrl() != null && !request.getPaymentProofUrl().isBlank());
+
+        BookingStatus initialStatus = isUpiPayment
+                ? BookingStatus.PENDING_PAYMENT_VERIFICATION
+                : BookingStatus.PENDING_ALLOCATION;
+
+        String initialPaymentStatus;
+        if (isUpiPayment) {
+            initialPaymentStatus = "UNDER_REVIEW";
+        } else if (request.getPaymentStatus() != null && !request.getPaymentStatus().isBlank()) {
+            initialPaymentStatus = request.getPaymentStatus();
+        } else {
+            initialPaymentStatus = advance.compareTo(BigDecimal.ZERO) > 0 ? "ADVANCE_PAID" : "PENDING";
         }
 
         BigDecimal vendorPayout = request.getVendorPayout();
@@ -97,12 +110,34 @@ public class CustomerBookingService {
                 .vendorPayout(vendorPayout)
                 .advancePaid(advance)
                 .dueAmount(due)
-                .paymentStatus(paymentStatus)
-                .status(BookingStatus.PENDING_ALLOCATION)
+                .paymentStatus(initialPaymentStatus)
+                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : (isUpiPayment ? "UPI_QR" : null))
+                .paymentProofUrl(request.getPaymentProofUrl())
+                .paymentUtrNumber(request.getPaymentUtrNumber())
+                .couponCode(request.getCouponCode() != null && !request.getCouponCode().isBlank() ? request.getCouponCode().trim().toUpperCase() : null)
+                .couponDiscount(request.getCouponDiscount())
+                .isPetFriendly(Boolean.TRUE.equals(request.getIsPetFriendly()))
+                .petType(request.getPetType())
+                .petCount(request.getPetCount() != null ? request.getPetCount() : 1)
+                .petCharge(request.getPetCharge() != null ? request.getPetCharge() : BigDecimal.ZERO)
+                .vendorPetPayout(request.getVendorPetPayout() != null ? request.getVendorPetPayout() : BigDecimal.ZERO)
+                .status(initialStatus)
                 .specialInstructions(request.getSpecialInstructions())
                 .build();
 
         Booking saved = bookingRepository.save(booking);
+
+        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+            try {
+                couponService.recordCouponUsage(
+                        request.getCouponCode().trim(),
+                        saved.getPassengerPhone(),
+                        customer != null ? customer.getEmail() : null
+                );
+            } catch (Exception ex) {
+                log.warn("Failed to record coupon usage for code '{}': {}", request.getCouponCode(), ex.getMessage());
+            }
+        }
 
         try {
             auditLogService.logEvent(CreateAuditLogRequest.builder()
@@ -113,7 +148,7 @@ public class CustomerBookingService {
                     .userRole(customer.getRole().name())
                     .module("CUSTOMER_BOOKINGS")
                     .targetEntity("Booking: " + ref)
-                    .details("New booking created by customer. Ref: " + ref)
+                    .details("New booking created by customer. Ref: " + ref + (isUpiPayment ? " with UPI payment proof." : ""))
                     .status("SUCCESS")
                     .build());
         } catch (Exception ex) {
@@ -121,18 +156,87 @@ public class CustomerBookingService {
         }
 
         try {
+            String notifTitle = isUpiPayment ? "Payment Verification Needed" : "Fast Dispatch Alert";
+            String notifMsg = isUpiPayment
+                    ? "New booking #" + ref + " (" + (request.getPickupCity() != null ? request.getPickupCity() : "Origin") + " to " + (request.getDropCity() != null ? request.getDropCity() : "Destination") + ") submitted with UPI proof - requires payment verification."
+                    : "New booking #" + ref + " (" + (request.getPickupCity() != null ? request.getPickupCity() : "Origin") + " to " + (request.getDropCity() != null ? request.getDropCity() : "Destination") + ") requires vehicle allocation.";
+
             notificationService.createNotification(
                     Role.OPERATIONS,
-                    "Fast Dispatch Alert",
-                    "New booking #" + ref + " (" + (request.getPickupCity() != null ? request.getPickupCity() : "Origin") + " to " + (request.getDropCity() != null ? request.getDropCity() : "Destination") + ") requires vehicle allocation.",
+                    notifTitle,
+                    notifMsg,
                     "HIGH",
-                    "BOOKING_CREATED",
+                    isUpiPayment ? "PAYMENT_PROOF_SUBMITTED" : "BOOKING_CREATED",
                     ref,
-                    "/operations/assignments/vehicle?bookingId=" + ref
+                    "/operations/bookings?search=" + ref
             );
         } catch (Exception ex) {
             log.warn("Failed to create notification: {}", ex.getMessage());
         }
+
+        return BookingResponse.fromEntity(saved);
+    }
+
+    /**
+     * Verify customer payment proof (Admin or Operations)
+     */
+    @Transactional
+    public BookingResponse verifyPayment(String idOrRef, PaymentVerificationRequest request, User adminOrOpsUser) {
+        Booking booking = null;
+        try {
+            UUID id = UUID.fromString(idOrRef);
+            booking = bookingRepository.findById(id).orElse(null);
+        } catch (IllegalArgumentException ignored) {}
+
+        if (booking == null) {
+            booking = bookingRepository.findByBookingReference(idOrRef)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + idOrRef));
+        }
+
+        boolean approve = "APPROVE".equalsIgnoreCase(request.getAction());
+
+        if (approve) {
+            booking.setPaymentStatus("ADVANCE_PAID");
+            booking.setStatus(BookingStatus.PENDING_ALLOCATION);
+            booking.setPaymentVerifiedAt(Instant.now());
+            booking.setPaymentVerifiedBy(adminOrOpsUser.getName() + " (" + adminOrOpsUser.getEmail() + ")");
+            booking.setPaymentRejectionReason(null);
+            log.info("Payment verified and approved for booking #{} by {}", booking.getBookingReference(), adminOrOpsUser.getEmail());
+
+            try {
+                notificationService.createNotification(
+                        Role.OPERATIONS,
+                        "Payment Verified",
+                        "Payment for booking #" + booking.getBookingReference() + " was verified and approved. Ready for vehicle allocation.",
+                        "HIGH",
+                        "PAYMENT_VERIFIED",
+                        booking.getBookingReference(),
+                        "/operations/assignments/vehicle?bookingId=" + booking.getBookingReference()
+                );
+            } catch (Exception ignored) {}
+        } else {
+            booking.setPaymentStatus("REJECTED");
+            booking.setPaymentRejectionReason(request.getRejectionReason() != null ? request.getRejectionReason() : "Payment proof could not be verified.");
+            booking.setPaymentVerifiedAt(Instant.now());
+            booking.setPaymentVerifiedBy(adminOrOpsUser.getName() + " (" + adminOrOpsUser.getEmail() + ")");
+            log.warn("Payment rejected for booking #{} by {}. Reason: {}", booking.getBookingReference(), adminOrOpsUser.getEmail(), booking.getPaymentRejectionReason());
+        }
+
+        Booking saved = bookingRepository.save(booking);
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("PAYMENT")
+                    .event(approve ? "PAYMENT_APPROVED" : "PAYMENT_REJECTED")
+                    .userId(adminOrOpsUser.getId().toString())
+                    .userName(adminOrOpsUser.getName())
+                    .userRole(adminOrOpsUser.getRole().name())
+                    .module("PAYMENT_VERIFICATION")
+                    .targetEntity("Booking: " + saved.getBookingReference())
+                    .details((approve ? "Approved payment for " : "Rejected payment for ") + saved.getBookingReference() + (request.getRejectionReason() != null ? ". Reason: " + request.getRejectionReason() : ""))
+                    .status(approve ? "SUCCESS" : "WARNING")
+                    .build());
+        } catch (Exception ignored) {}
 
         return BookingResponse.fromEntity(saved);
     }
@@ -151,6 +255,10 @@ public class CustomerBookingService {
         if (booking == null) {
             booking = bookingRepository.findByBookingReference(idOrRef)
                     .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + idOrRef));
+        }
+
+        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT_VERIFICATION) {
+            throw new BadRequestException("Payment verification is pending for this booking. Please verify payment before allocating fleet.");
         }
 
         if (booking.getStatus() != BookingStatus.PENDING_ALLOCATION && booking.getStatus() != BookingStatus.REASSIGN_REQUIRED) {
@@ -653,6 +761,7 @@ public class CustomerBookingService {
 
             int distanceKm = extractDistanceKm(booking);
 
+            BigDecimal finalPayout;
             if ("AIRPORT".equalsIgnoreCase(serviceType)) {
                 BigDecimal airportVendorFare = (BigDecimal) rateContext.get("airportVendorFare");
                 Integer airportIncludedKm = (Integer) rateContext.get("airportIncludedKm");
@@ -662,10 +771,10 @@ public class CustomerBookingService {
                 if (airportVendorExtraKmRate == null) airportVendorExtraKmRate = new BigDecimal("11.00");
 
                 if (distanceKm <= airportIncludedKm) {
-                    return airportVendorFare;
+                    finalPayout = airportVendorFare;
                 } else {
                     int extraKm = distanceKm - airportIncludedKm;
-                    return airportVendorFare.add(airportVendorExtraKmRate.multiply(BigDecimal.valueOf(extraKm))).setScale(2, RoundingMode.HALF_UP);
+                    finalPayout = airportVendorFare.add(airportVendorExtraKmRate.multiply(BigDecimal.valueOf(extraKm)));
                 }
             } else if ("LOCAL".equalsIgnoreCase(serviceType)) {
                 BigDecimal hourlyVendorFare = (BigDecimal) rateContext.get("hourlyVendorFare");
@@ -676,10 +785,10 @@ public class CustomerBookingService {
                 if (vendorExtraKmRate == null) vendorExtraKmRate = new BigDecimal("12.00");
 
                 if (distanceKm <= packageKm) {
-                    return hourlyVendorFare;
+                    finalPayout = hourlyVendorFare;
                 } else {
                     int extraKm = distanceKm - packageKm;
-                    return hourlyVendorFare.add(vendorExtraKmRate.multiply(BigDecimal.valueOf(extraKm))).setScale(2, RoundingMode.HALF_UP);
+                    finalPayout = hourlyVendorFare.add(vendorExtraKmRate.multiply(BigDecimal.valueOf(extraKm)));
                 }
             } else {
                 // OUTSTATION: Exactly vendorRatePerKm * distanceKm (with vendorBaseFare as minimum guarantee floor)
@@ -694,8 +803,18 @@ public class CustomerBookingService {
                     payout = vendorBaseFare;
                 }
 
-                return payout.setScale(2, RoundingMode.HALF_UP);
+                finalPayout = payout;
             }
+
+            if (Boolean.TRUE.equals(booking.getIsPetFriendly())) {
+                BigDecimal vendorPetCharge = (BigDecimal) rateContext.get("vendorPetCharge");
+                if (vendorPetCharge == null || vendorPetCharge.compareTo(BigDecimal.ZERO) <= 0) {
+                    vendorPetCharge = new BigDecimal("350.00");
+                }
+                finalPayout = finalPayout.add(vendorPetCharge);
+            }
+
+            return finalPayout.setScale(2, RoundingMode.HALF_UP);
         } catch (Exception ex) {
             log.warn("Could not calculate tariff vendor payout: {}", ex.getMessage());
             return null;

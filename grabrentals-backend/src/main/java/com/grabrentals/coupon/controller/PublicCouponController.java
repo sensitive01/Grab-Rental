@@ -23,7 +23,15 @@ public class PublicCouponController {
     public ResponseEntity<ApiResponse<CouponValidateResponseDto>> validateCoupon(
             @Valid @RequestBody CouponValidateRequestDto request
     ) {
-        CouponValidateResponseDto result = couponService.validateCoupon(request.getCode(), request.getRideAmount());
+        CouponValidateResponseDto result = couponService.validateCoupon(
+                request.getCode(),
+                request.getRideAmount(),
+                request.getCustomerPhone(),
+                request.getCustomerEmail(),
+                request.getTripType(),
+                request.getState(),
+                request.getCity()
+        );
         return ResponseEntity.ok(ApiResponse.<CouponValidateResponseDto>builder()
                 .success(result.isValid())
                 .message(result.getMessage())

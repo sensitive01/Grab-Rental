@@ -236,13 +236,6 @@ export default function Home() {
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
-              <Link
-                href="/outstation"
-                className="text-xs sm:text-sm font-extrabold text-brand-orange hover:underline inline-flex items-center gap-1"
-              >
-                <span>{t("view_all_routes") || "View All Routes"}</span>
-                <span>→</span>
-              </Link>
             </div>
           </div>
 
@@ -251,10 +244,9 @@ export default function Home() {
             className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 overflow-x-auto no-scrollbar pb-2 sm:pb-0"
           >
             {corridors.map((corridor, i) => (
-              <Link
+              <div
                 key={i}
-                href={`/outstation?route=${corridor.slug}`}
-                className="min-w-[240px] sm:min-w-0 bg-white border border-slate-200/90 rounded-2xl overflow-hidden hover:border-amber-400 hover:shadow-lg transition-all group flex flex-col shrink-0"
+                className="min-w-[240px] sm:min-w-0 bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs flex flex-col shrink-0 select-none cursor-default"
               >
                 <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
                   <Image
@@ -262,11 +254,11 @@ export default function Home() {
                     alt={corridor.route}
                     fill
                     sizes="(max-width: 768px) 240px, 200px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover"
                   />
                 </div>
                 <div className="p-3.5 flex flex-col justify-between flex-grow">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 group-hover:text-brand-orange mb-2 leading-tight transition-colors">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 mb-2 leading-tight">
                     {corridor.route}
                   </h4>
                   <div className="flex items-center justify-between text-xs font-bold pt-1 border-t border-slate-100">
@@ -274,7 +266,7 @@ export default function Home() {
                     <span className="text-emerald-600 font-extrabold">{corridor.price}</span>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>

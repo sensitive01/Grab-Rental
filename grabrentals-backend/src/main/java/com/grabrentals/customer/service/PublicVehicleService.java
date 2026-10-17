@@ -306,6 +306,11 @@ public class PublicVehicleService {
                     ));
                 }
 
+                if (card.getPricing() != null) {
+                    card.getPricing().setPetCharge((BigDecimal) rateContext.get("petCharge"));
+                    card.getPricing().setVendorPetCharge((BigDecimal) rateContext.get("vendorPetCharge"));
+                }
+
                 cards.add(card);
             }
         } else {
@@ -485,6 +490,11 @@ public class PublicVehicleService {
                                 "Extra KM Charge: ₹" + extraKm + "/km beyond " + airportKm + " km",
                                 "Airport Toll & Parking (if applicable) at actuals"
                         ));
+                    }
+
+                    if (card.getPricing() != null) {
+                        card.getPricing().setPetCharge((BigDecimal) rateContext.get("petCharge"));
+                        card.getPricing().setVendorPetCharge((BigDecimal) rateContext.get("vendorPetCharge"));
                     }
 
                     cards.add(card);

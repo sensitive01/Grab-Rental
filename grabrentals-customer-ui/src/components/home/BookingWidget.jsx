@@ -507,7 +507,7 @@ export default function BookingWidget() {
               onClick={(e) => handleTabClick(tab.id, e)}
               className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id
-                  ? "text-brand-amber border-brand-amber bg-orange-50/50 rounded-t-lg"
+                  ? "text-brand-amber border-brand-amber bg-blue-50/50 rounded-t-lg"
                   : "text-slate-500 border-transparent hover:text-slate-800"
               }`}
             >
@@ -544,16 +544,16 @@ export default function BookingWidget() {
                 key={item.id}
                 className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${
                   isSelected
-                    ? "bg-amber-50/70 border-amber-500 text-amber-950 shadow-xs ring-1 ring-amber-500/30 font-bold"
+                    ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
                     : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
                 }`}
               >
                 <div
                   className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
-                    isSelected ? "border-amber-600" : "border-slate-300"
+                    isSelected ? "border-[#0082fe]" : "border-slate-300"
                   }`}
                 >
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-amber-600" />}
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
                 </div>
                 <input
                   type="radio"
@@ -583,16 +583,16 @@ export default function BookingWidget() {
                 key={item.id}
                 className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${
                   isSelected
-                    ? "bg-amber-50/70 border-amber-500 text-amber-950 shadow-xs ring-1 ring-amber-500/30 font-bold"
+                    ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
                     : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
                 }`}
               >
                 <div
                   className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
-                    isSelected ? "border-amber-600" : "border-slate-300"
+                    isSelected ? "border-[#0082fe]" : "border-slate-300"
                   }`}
                 >
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-amber-600" />}
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
                 </div>
                 <input
                   type="radio"
@@ -641,9 +641,9 @@ export default function BookingWidget() {
                   setMapTarget("pickup");
                   setIsMapModalOpen(true);
                 }}
-                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group"
               >
-                <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                 <span>{t("choose_from_location") || "Choose from Location"}</span>
               </button>
             </div>
@@ -654,7 +654,7 @@ export default function BookingWidget() {
                 type="button"
                 onClick={handleSwap}
                 title="Swap Pickup & Destination"
-                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-sm group cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-blue-50 transition-all shadow-sm group cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
@@ -683,7 +683,7 @@ export default function BookingWidget() {
                   onChange={(val, coords) => handleStopChange(index, val, coords)}
                   placeholder="Type stop city (e.g. Salem)"
                   iconColor="text-brand-amber"
-                  inputClassName="bg-amber-50/40 border-amber-200 rounded-xl"
+                  inputClassName="bg-blue-50/40 border-blue-200 rounded-xl"
                   rightElement={
                     <button
                       type="button"
@@ -729,9 +729,9 @@ export default function BookingWidget() {
                   <button
                     type="button"
                     onClick={() => handleAddStop()}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group whitespace-nowrap"
                   >
-                    <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                    <Plus className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                     <span>{t("add_stop") || "Add Stop"}</span>
                   </button>
                 )}
@@ -754,9 +754,9 @@ export default function BookingWidget() {
                   setMapTarget("drop");
                   setIsMapModalOpen(true);
                 }}
-                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group whitespace-nowrap"
               >
-                <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                 <span>{t("choose_to_location") || "Choose to Location"}</span>
               </button>
             </div>
@@ -772,7 +772,7 @@ export default function BookingWidget() {
                 {t("pickup_date") || "Pickup Date"}
               </label>
               <div className="relative group min-w-0 w-full">
-                <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
+                <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-[#0082fe] w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
                 <input 
                   type="date" 
                   value={pickupDate}
@@ -803,7 +803,7 @@ export default function BookingWidget() {
                   {t("return_date")}
                 </label>
                 <div className="relative group min-w-0 w-full">
-                  <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
+                  <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-[#0082fe] w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
                   <input 
                     type="date" 
                     value={dropDate}
@@ -822,7 +822,7 @@ export default function BookingWidget() {
                 href={buildExploreUrl()}
                 onClick={handleExploreClick}
                 suppressHydrationWarning
-                className="flex items-center justify-center gap-2 w-full bg-[#D97706] hover:bg-[#B45309] text-white py-3 sm:py-3.5 px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md hover:shadow-lg whitespace-nowrap shrink-0"
+                className="flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white py-3 sm:py-3.5 px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0"
               >
                 {t("search_cabs")} <ArrowRight className="w-4 h-4" />
               </Link>
@@ -867,9 +867,9 @@ export default function BookingWidget() {
                     setMapTarget("airport");
                     setIsMapModalOpen(true);
                   }}
-                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group whitespace-nowrap"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                   <span>{t("choose_from_location") || "Choose From Map"}</span>
                 </button>
               </>
@@ -894,9 +894,9 @@ export default function BookingWidget() {
                     setMapTarget("pickup");
                     setIsMapModalOpen(true);
                   }}
-                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group whitespace-nowrap"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                   <span>{t("choose_from_location") || "Choose from Location"}</span>
                 </button>
               </>
@@ -910,7 +910,7 @@ export default function BookingWidget() {
                 type="button"
                 onClick={handleSwap}
                 title={activeTab === "airport" ? "Switch between Drop to Airport & Pickup from Airport" : "Swap Pickup & Destination"}
-                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-orange-50 transition-all shadow-sm group cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-blue-50 transition-all shadow-sm group cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
@@ -949,9 +949,9 @@ export default function BookingWidget() {
                 <button
                   type="button"
                   onClick={() => handleAddStop()}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group whitespace-nowrap"
                 >
-                  <Plus className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <Plus className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                   <span>{t("add_stop") || "Add Stop"}</span>
                 </button>
               )}
@@ -978,9 +978,9 @@ export default function BookingWidget() {
                     setMapTarget("airport");
                     setIsMapModalOpen(true);
                   }}
-                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group whitespace-nowrap"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                   <span>{t("choose_to_location") || "Choose From Map"}</span>
                 </button>
               </>
@@ -1014,9 +1014,9 @@ export default function BookingWidget() {
                   setMapTarget("drop");
                   setIsMapModalOpen(true);
                 }}
-                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors cursor-pointer group whitespace-nowrap"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0082fe] hover:text-[#006ed6] hover:underline transition-colors cursor-pointer group whitespace-nowrap"
               >
-                <MapPin className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
                 <span>{t("choose_to_location") || "Choose to Location"}</span>
               </button>
             )}
@@ -1032,7 +1032,7 @@ export default function BookingWidget() {
                 </label>
               </div>
               <div className="relative group min-w-0 w-full">
-                <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-amber-500 w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
+                <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-[#0082fe] w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
                 <input 
                   type="date" 
                   value={pickupDate}
@@ -1065,7 +1065,7 @@ export default function BookingWidget() {
               href={buildExploreUrl()}
               onClick={handleExploreClick}
               suppressHydrationWarning
-              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#D97706] hover:bg-[#B45309] text-white py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wide transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0"
+              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0"
             >
               {t("search_cabs")} <ArrowRight className="w-4 h-4" />
             </Link>
@@ -1075,7 +1075,7 @@ export default function BookingWidget() {
 
       {/* Automatic Route Distance & Driving Time Detection Banner */}
       {routeEstimate.isDetected && routeEstimate.distanceKm > 0 && activeTab !== "local" && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-amber-50/70 border border-amber-200/80 px-4 py-2.5 rounded-xl">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-blue-50/70 border border-blue-200/80 px-4 py-2.5 rounded-xl">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="flex h-2.5 w-2.5 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -1096,7 +1096,7 @@ export default function BookingWidget() {
             </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="text-xs font-bold text-amber-800 bg-white/90 px-3 py-1 rounded-lg border border-amber-200/60 flex items-center gap-1.5 shadow-2xs">
+            <div className="text-xs font-bold text-blue-900 bg-white/90 px-3 py-1 rounded-lg border border-blue-200/60 flex items-center gap-1.5 shadow-2xs">
               {activeTab === "package" ? (
                 <span>🛡️ Fastag Tolls, State Border Permits & Driver Allowance Included</span>
               ) : (
@@ -1111,7 +1111,7 @@ export default function BookingWidget() {
       )}
 
       {/* Trust Guarantee & Promo Strip (Orange Banner matching design) */}
-      <div className="mt-4 sm:mt-6 p-3 sm:px-5 sm:py-2.5 rounded-xl bg-[#EA580C] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-sm">
+      <div className="mt-4 sm:mt-6 p-3 sm:px-5 sm:py-2.5 rounded-xl bg-[#0082fe] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-sm shadow-[#0082fe]/20">
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-6">
           {activeTab === "airport" ? (
             <>
@@ -1135,7 +1135,7 @@ export default function BookingWidget() {
                 <span className="font-bold text-white tracking-tight">🏖️ Special Multi-Day Roadtrips: Goa, Ladakh & Beyond</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-300 shrink-0"></span>
+                <span className="w-2 h-2 rounded-full bg-sky-300 shrink-0"></span>
                 <span className="font-bold text-white tracking-tight">Zero Hidden Taxes • Dedicated Chauffeur on Standby</span>
               </div>
             </>
@@ -1158,7 +1158,7 @@ export default function BookingWidget() {
         </div>
         
         {/* Promo Pill on Far Right */}
-        <div className="bg-white text-[#EA580C] font-black text-xs px-3.5 py-1.5 rounded-lg shadow-xs whitespace-nowrap w-full sm:w-auto text-center">
+        <div className="bg-white text-[#0082fe] font-black text-xs px-3.5 py-1.5 rounded-lg shadow-xs whitespace-nowrap w-full sm:w-auto text-center">
           {activeTab === "airport" ? "100% On-Time Guarantee" : (t("flat_discount_promo") || "Flat 10% Off First Outstation Ride")}
         </div>
       </div>

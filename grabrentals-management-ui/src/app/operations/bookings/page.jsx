@@ -19,10 +19,13 @@ import {
   Tabs,
   SearchInput,
 } from "@/components/ui/Table";
-import { CalendarCheck, Eye, PlusCircle, UserCheck } from "lucide-react";
+import { Toast } from "@/components/ui/Toast";
+import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
+import { CalendarCheck, Eye, PlusCircle, UserCheck, QrCode, ShieldCheck } from "lucide-react";
 
 const TABS = [
   { id: "ALL", label: "All Bookings" },
+  { id: "PENDING_PAYMENT_VERIFICATION", label: "Verify Payment", alert: true },
   { id: "PENDING_ALLOCATION", label: "Needs Allocation" },
   { id: "ASSIGNED", label: "Assigned" },
   { id: "EN_ROUTE", label: "En Route" },
@@ -36,6 +39,9 @@ export default function OperationsBookingsPage() {
   const [activeTab, setActiveTab] = useState("ALL");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [verifyModalBooking, setVerifyModalBooking] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [toast, setToast] = useState(null);
   const pageSize = 8;
 
   useEffect(() => {
@@ -51,6 +57,34 @@ export default function OperationsBookingsPage() {
     }
     load();
   }, []);
+
+  const reloadBookings = async () => {
+    try {
+      const res = await operationsApi.getBookings();
+      setBookings(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleVerifyPayment = async (bookingId, { action, rejectionReason }) => {
+    setVerifying(true);
+    try {
+      const res = await operationsApi.verifyBookingPayment(bookingId, { action, rejectionReason });
+      if (res?.success) {
+        setToast({
+          type: "success",
+          message: action === "APPROVE" ? "Payment approved! Booking ready for vehicle dispatch." : "Payment rejected.",
+        });
+        setVerifyModalBooking(null);
+        await reloadBookings();
+      }
+    } catch (err) {
+      setToast({ type: "error", message: err.message || "Failed to verify payment." });
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
@@ -146,6 +180,11 @@ export default function OperationsBookingsPage() {
                         {b.pickupLocation} ➔ {b.dropLocation}
                       </div>
                       <div className="text-[11px] text-slate-500">{b.serviceType}</div>
+                      {Boolean(b.isPetFriendly) && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 mt-0.5">
+                          🐾 {b.petType || "Pet"} ({b.petCount || 1})
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="text-xs text-slate-800 font-medium">{b.startDate}</div>
@@ -164,6 +203,10 @@ export default function OperationsBookingsPage() {
                             {b.assignedDriverName}
                           </div>
                         </div>
+                      ) : (b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW") ? (
+                        <span className="text-[11px] font-medium text-amber-600/80 italic">
+                          Verify payment first
+                        </span>
                       ) : (
                         <Link href={`/operations/assignments/vehicle?bookingId=${b.id}`}>
                           <span className="text-[11px] font-bold text-amber-600 hover:underline">
@@ -175,18 +218,35 @@ export default function OperationsBookingsPage() {
                     <TableCell>
                       <div className="font-bold text-slate-900 text-xs">{formatINR(b.fare ?? b.totalFare)}</div>
                       <div className="text-[10px] text-slate-500">{b.paymentStatus}</div>
+                      {Boolean(b.isPetFriendly) && (
+                        <div className="text-[10px] font-bold text-amber-700 mt-0.5">
+                          🐾 Pet: +₹{b.petCharge || 0}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}>
-                        {statusStyle.label}
-                      </span>
+                      {b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW" ? (
+                        <button
+                          onClick={() => setVerifyModalBooking(b)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition-colors animate-pulse"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span>Verify Payment</span>
+                        </button>
+                      ) : (
+                        <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}>
+                          {statusStyle.label}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/operations/bookings/${b.id}`}>
-                        <Button variant="secondary" size="xs" icon={Eye}>
-                          Details
-                        </Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link href={`/operations/bookings/${b.id}`}>
+                          <Button variant="secondary" size="xs" icon={Eye}>
+                            Details
+                          </Button>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -203,6 +263,15 @@ export default function OperationsBookingsPage() {
           pageSize={pageSize}
         />
       </Card>
+
+      {/* Payment Proof Verification Modal */}
+      <PaymentVerificationModal
+        isOpen={Boolean(verifyModalBooking)}
+        onClose={() => setVerifyModalBooking(null)}
+        booking={verifyModalBooking}
+        onVerify={handleVerifyPayment}
+        loading={verifying}
+      />
     </div>
   );
 }

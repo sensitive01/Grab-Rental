@@ -18,4 +18,12 @@ public class CouponValidateRequestDto {
 
     @NotNull(message = "Ride amount is required for validation")
     private BigDecimal rideAmount;
+
+    private String customerPhone;
+
+    private String customerEmail;
+
+    private String tripType;
+    private String state;
+    private String city;
 }

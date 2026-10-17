@@ -203,6 +203,14 @@ public class VehicleTariff {
     @Builder.Default
     private BigDecimal discountPercentage = BigDecimal.ZERO;
 
+    @Column(name = "pet_charge", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal petCharge = BigDecimal.ZERO;
+
+    @Column(name = "vendor_pet_charge", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal vendorPetCharge = BigDecimal.ZERO;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

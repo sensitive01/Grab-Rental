@@ -170,6 +170,11 @@ export default function BookingInvoicePage({ params }) {
               <p className="text-xs text-slate-600">Vehicle: {booking?.vehicleModel || booking?.vehicleCategory || "AC Chauffeur Fleet"}</p>
               <p className="text-xs text-slate-600">Registration: <span className="font-mono font-bold">{booking?.vehicleNumber || "Verified Commercial Cab"}</span></p>
               <p className="text-xs text-slate-500">Departure: {pickupDateStr}</p>
+              {booking?.isPetFriendly && (
+                <p className="text-xs text-amber-800 font-bold pt-1">
+                  🐾 Pet Friendly Cab ({booking?.petType || "Pet"} × {booking?.petCount || 1})
+                </p>
+              )}
             </div>
           </div>
 
@@ -220,6 +225,21 @@ export default function BookingInvoicePage({ params }) {
                   <td className="py-3.5 px-3 text-right font-mono">₹0.00</td>
                   <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-700">₹0.00 (Incl)</td>
                 </tr>
+                {Boolean(booking?.isPetFriendly) && (
+                  <tr>
+                    <td className="py-3.5 px-2 font-bold text-slate-400">4</td>
+                    <td className="py-3.5 px-3">
+                      <p className="font-bold text-slate-900">Pet Friendly Travel Accommodation & Cabin Sanitization</p>
+                      <span className="text-[11px] text-slate-400">🐾 {booking?.petType || "Pet"} ({booking?.petCount || 1} pet)</span>
+                    </td>
+                    <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
+                    <td className="py-3.5 px-3 text-center">1 Surcharge</td>
+                    <td className="py-3.5 px-3 text-right font-mono">₹{Number(booking?.petCharge || 0).toLocaleString()}.00</td>
+                    <td className="py-3.5 px-3 text-right font-mono font-bold text-amber-800">
+                      {Number(booking?.petCharge || 0) > 0 ? `₹${Number(booking?.petCharge || 0).toLocaleString()}.00` : "FREE (₹0.00)"}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

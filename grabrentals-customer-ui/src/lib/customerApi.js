@@ -53,6 +53,7 @@ export const customerApi = {
    */
   async createBooking(data) {
     const res = await axiosClient.post("/api/customer/bookings", {
+      ...data,
       tripType: data.tripType || "ONE_WAY",
       pickupCity: data.pickupCity || data.from || "Bangalore",
       dropCity: data.dropCity || data.to || "Mysore",
@@ -68,7 +69,33 @@ export const customerApi = {
       totalFare: Number(data.totalFare || data.fare || 1500),
       advancePaid: Number(data.advancePaid || data.advance || 0),
       paymentStatus: data.paymentStatus || "PENDING",
+      paymentMethod: data.paymentMethod || null,
+      paymentProofUrl: data.paymentProofUrl || null,
+      paymentUtrNumber: data.paymentUtrNumber || null,
       specialInstructions: data.specialInstructions || "",
+    });
+    return res.data;
+  },
+
+  /**
+   * Fetch active business UPI configuration
+   */
+  async getUpiConfig() {
+    const res = await axiosClient.get("/api/upi/config");
+    return res.data;
+  },
+
+  /**
+   * Upload customer payment receipt screenshot
+   * @param {File} file
+   */
+  async uploadPaymentProof(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await axiosClient.post("/api/upi/upload-proof", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
     return res.data;
   },

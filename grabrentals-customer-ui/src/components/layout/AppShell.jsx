@@ -133,6 +133,7 @@ export default function AppShell({ children }) {
     { name: t("tempo_traveller") || "Urbania / Tempo Traveller", href: "/vans" },
     { name: t("luxury_buses") || "Bus Hire", href: "/buses" },
     { name: t("packages") || "Tour Packages", href: "/packages" },
+    { name: t("pet_friendly_cabs") || "🐶 Pet Friendly Cabs", href: "/pet-friendly-cabs" },
     { name: t("corporate_events") || "Corporate & Events", href: "/corporate" },
   ];
 
@@ -160,9 +161,9 @@ export default function AppShell({ children }) {
             {/* Mobile Quick Helpline */}
             <a 
               href="tel:+919071100200" 
-              className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition-colors"
+              className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors"
             >
-              <Phone className="w-3 h-3 text-amber-400" />
+              <Phone className="w-3 h-3 text-sky-400" />
               <span>+91 90711 00200</span>
             </a>
 
@@ -200,7 +201,7 @@ export default function AppShell({ children }) {
                     className={`transition-all cursor-pointer ${
                       isActive
                         ? "text-brand-amber font-extrabold underline underline-offset-4 decoration-2"
-                        : "text-white/90 hover:text-amber-400 font-semibold"
+                        : "text-white/90 hover:text-sky-300 font-semibold"
                     }`}
                     title={lang.name}
                   >
@@ -227,12 +228,16 @@ export default function AppShell({ children }) {
             alt="Grab Rentals"
             className="h-9 sm:h-12 w-auto object-contain drop-shadow-sm shrink-0"
           />
-          <div className="flex flex-col min-w-0">
-            <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight truncate">
+          <div className="flex flex-col w-fit min-w-0">
+            <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight whitespace-nowrap">
               GRAB RENTALS
             </span>
-            <span className="hidden sm:block text-[8px] sm:text-[9px] font-bold text-amber-600 uppercase tracking-widest leading-tight truncate">
-              Grab Comfort in Every Mile
+            <span className="hidden sm:flex justify-between w-full text-[7.5px] sm:text-[8px] lg:text-[8.5px] font-bold text-[#0082fe] uppercase tracking-wider leading-tight select-none">
+              <span>GRAB</span>
+              <span>COMFORT</span>
+              <span>IN</span>
+              <span>EVERY</span>
+              <span>MILE</span>
             </span>
           </div>
         </Link>
@@ -274,12 +279,12 @@ export default function AppShell({ children }) {
                           onClick={() => setBookNowOpen(false)}
                           className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${
                             active
-                              ? "bg-amber-50 text-amber-950 font-bold"
+                              ? "bg-blue-50 text-blue-950 font-bold"
                               : "text-slate-700 hover:bg-slate-50 hover:text-slate-950"
                           }`}
                         >
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                            active ? "bg-amber-500 text-white shadow-xs" : "bg-slate-100 text-slate-600"
+                            active ? "bg-[#0082fe] text-white shadow-xs" : "bg-slate-100 text-slate-600"
                           }`}>
                             <Icon className="w-4 h-4" />
                           </div>
@@ -317,11 +322,11 @@ export default function AppShell({ children }) {
           {/* Call 24/7 Helpline Icon (Visible sm and up) */}
           <a
             href="tel:+919071100200"
-            className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-600 border border-slate-200/90 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#0082fe] border border-slate-200/90 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
             title="Call 24/7 Helpline (+91 90711 00200)"
             aria-label="Call 24/7 Helpline"
           >
-            <Phone className="w-4 h-4 text-slate-600 group-hover:text-amber-600 transition-colors" />
+            <Phone className="w-4 h-4 text-slate-600 group-hover:text-[#0082fe] transition-colors" />
           </a>
 
           {/* WhatsApp Support Icon */}
@@ -345,7 +350,7 @@ export default function AppShell({ children }) {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-1 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
-                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-[11px] sm:text-[10px]">
+                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-[#0082fe] text-white font-black flex items-center justify-center text-[11px] sm:text-[10px]">
                     {(currentUser.name && currentUser.name !== "Customer" ? currentUser.name : t("customer_badge") || "Customer").charAt(0).toUpperCase()}
                   </div>
                   <span className="hidden sm:inline max-w-[110px] truncate">
@@ -370,7 +375,7 @@ export default function AppShell({ children }) {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <Settings className="w-4 h-4 text-amber-400" />
+                          <Settings className="w-4 h-4 text-sky-400" />
                           <span>{t("my_account") || "Account Settings"}</span>
                         </Link>
                         <Link 
@@ -378,7 +383,7 @@ export default function AppShell({ children }) {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <User className="w-4 h-4 text-amber-400" />
+                          <User className="w-4 h-4 text-sky-400" />
                           <span>{t("my_bookings") || "My Trips"}</span>
                         </Link>
                         <Link 
@@ -386,7 +391,7 @@ export default function AppShell({ children }) {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <Bell className="w-4 h-4 text-amber-400" />
+                          <Bell className="w-4 h-4 text-sky-400" />
                           <span>Notifications</span>
                         </Link>
                         <Link 
@@ -394,7 +399,7 @@ export default function AppShell({ children }) {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <Star className="w-4 h-4 text-amber-400" />
+                          <Star className="w-4 h-4 text-sky-400" />
                           <span>Reviews & Ratings</span>
                         </Link>
                       </div>
@@ -417,7 +422,7 @@ export default function AppShell({ children }) {
               href="/login"
               className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold tracking-wide transition-all shadow-sm group"
             >
-              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#0082fe]/20 flex items-center justify-center text-[#0082fe]">
                 <User className="w-3.5 h-3.5" />
               </div>
               <span className="hidden sm:inline">{t("sign_in_register") || "SignIn"}</span>
@@ -464,12 +469,16 @@ export default function AppShell({ children }) {
                   alt="Grab Rentals"
                   className="h-8 w-auto object-contain"
                 />
-                <div className="flex flex-col">
-                  <span className="font-black text-sm text-brand-navy leading-tight">
+                <div className="flex flex-col w-fit">
+                  <span className="font-black text-sm text-brand-navy leading-tight whitespace-nowrap">
                     GRAB RENTALS
                   </span>
-                  <span className="text-[8px] font-bold text-amber-600 uppercase tracking-widest leading-tight">
-                    Comfort in Every Mile
+                  <span className="flex justify-between w-full text-[7px] font-bold text-[#0082fe] uppercase tracking-wider leading-tight select-none">
+                    <span>GRAB</span>
+                    <span>COMFORT</span>
+                    <span>IN</span>
+                    <span>EVERY</span>
+                    <span>MILE</span>
                   </span>
                 </div>
               </Link>
@@ -489,7 +498,7 @@ export default function AppShell({ children }) {
               {currentUser ? (
                 <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-3.5 rounded-2xl shadow-sm border border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shrink-0 shadow-xs">
+                    <div className="w-10 h-10 rounded-full bg-[#0082fe] text-white font-black flex items-center justify-center text-sm shrink-0 shadow-xs">
                       {(currentUser.name && currentUser.name !== "Customer" ? currentUser.name : "Customer").charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -499,8 +508,8 @@ export default function AppShell({ children }) {
                       <div className="text-[11px] text-slate-400 truncate mt-0.5">
                         {currentUser.phone || currentUser.email || "+91 Customer"}
                       </div>
-                      <div className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 uppercase tracking-wider mt-1 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                        <ShieldCheck className="w-2.5 h-2.5 text-amber-400" /> Verified Member
+                      <div className="inline-flex items-center gap-1 text-[9px] font-bold text-sky-400 uppercase tracking-wider mt-1 bg-[#0082fe]/10 px-1.5 py-0.5 rounded">
+                        <ShieldCheck className="w-2.5 h-2.5 text-sky-400" /> Verified Member
                       </div>
                     </div>
                   </div>
@@ -514,7 +523,7 @@ export default function AppShell({ children }) {
                   </Link>
                 </div>
               ) : (
-                <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/80 p-3.5 rounded-2xl flex items-center justify-between">
+                <div className="bg-gradient-to-br from-[#0082fe]/10 via-[#0082fe]/5 to-transparent border border-blue-200/80 p-3.5 rounded-2xl flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="text-xs font-black text-slate-900">Welcome to Grab Rentals</div>
                     <div className="text-[11px] text-slate-600">Sign in for fast bookings & ride tracking</div>
@@ -522,7 +531,7 @@ export default function AppShell({ children }) {
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="px-3.5 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-amber-400 text-xs font-black shadow-xs shrink-0"
+                    className="px-3.5 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-sky-300 text-xs font-black shadow-xs shrink-0"
                   >
                     Sign In
                   </Link>
@@ -532,7 +541,7 @@ export default function AppShell({ children }) {
               {/* Language Switcher */}
               <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 space-y-2">
                 <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
-                  <Globe className="w-3.5 h-3.5 text-amber-600" />
+                  <Globe className="w-3.5 h-3.5 text-[#0082fe]" />
                   <span>{t("select_language") || "Select Language"}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -546,7 +555,7 @@ export default function AppShell({ children }) {
                       }}
                       className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         language === lang.code
-                          ? "bg-amber-500 text-slate-950 font-black shadow-xs ring-2 ring-amber-500/30"
+                          ? "bg-[#0082fe] text-white font-black shadow-xs ring-2 ring-[#0082fe]/30"
                           : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                       }`}
                       title={lang.name}
@@ -559,7 +568,7 @@ export default function AppShell({ children }) {
 
               {/* Book Rides Section */}
               <div className="space-y-1.5">
-                <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 px-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-[#0082fe] px-1">
                   {t("book_now") || "Book Rides"}
                 </div>
                 <div className="space-y-1">
@@ -573,13 +582,13 @@ export default function AppShell({ children }) {
                         onClick={() => setMobileMenuOpen(false)}
                         className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${
                           active
-                            ? "bg-amber-50 border border-amber-200/90 text-amber-950 font-black"
+                            ? "bg-blue-50 border border-blue-200/90 text-blue-950 font-black"
                             : "bg-white hover:bg-slate-50 border border-slate-100 text-slate-800"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                            active ? "bg-amber-500 text-slate-950 shadow-xs" : "bg-amber-50 text-amber-600"
+                            active ? "bg-[#0082fe] text-white shadow-xs" : "bg-blue-50 text-[#0082fe]"
                           }`}>
                             <Icon className="w-4 h-4" />
                           </div>
@@ -588,7 +597,7 @@ export default function AppShell({ children }) {
                             <div className="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">{item.desc}</div>
                           </div>
                         </div>
-                        <ChevronRight className={`w-4 h-4 shrink-0 ${active ? "text-amber-600" : "text-slate-400"}`} />
+                        <ChevronRight className={`w-4 h-4 shrink-0 ${active ? "text-[#0082fe]" : "text-slate-400"}`} />
                       </Link>
                     );
                   })}
@@ -634,7 +643,7 @@ export default function AppShell({ children }) {
                     className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
                   >
                     <span className="flex items-center gap-2.5 text-xs font-bold">
-                      <User className="w-4 h-4 text-amber-500" />
+                      <User className="w-4 h-4 text-[#0082fe]" />
                       <span>{t("my_trips_title") || "My Trips & Bookings"}</span>
                     </span>
                     <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -646,10 +655,10 @@ export default function AppShell({ children }) {
                     className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
                   >
                     <span className="flex items-center gap-2.5 text-xs font-bold">
-                      <Bell className="w-4 h-4 text-amber-500" />
+                      <Bell className="w-4 h-4 text-[#0082fe]" />
                       <span>Activity & Alerts</span>
                     </span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px]">
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#0082fe] text-white font-black text-[10px]">
                       2
                     </span>
                   </Link>
@@ -660,7 +669,7 @@ export default function AppShell({ children }) {
                     className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
                   >
                     <span className="flex items-center gap-2.5 text-xs font-bold">
-                      <Star className="w-4 h-4 text-amber-500" />
+                      <Star className="w-4 h-4 text-[#0082fe]" />
                       <span>Reviews & Ratings</span>
                     </span>
                     <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -686,9 +695,9 @@ export default function AppShell({ children }) {
               <div className="grid grid-cols-2 gap-2">
                 <a
                   href="tel:+919071100200"
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-amber-400 text-slate-800 hover:text-amber-600 text-xs font-bold shadow-2xs transition-all"
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-blue-300 text-slate-800 hover:text-[#0082fe] text-xs font-bold shadow-2xs transition-all"
                 >
-                  <Phone className="w-3.5 h-3.5 text-amber-600" />
+                  <Phone className="w-3.5 h-3.5 text-[#0082fe]" />
                   <span>Call 24/7</span>
                 </a>
                 <a
@@ -739,9 +748,15 @@ export default function AppShell({ children }) {
                 alt="Grab Rentals"
                 className="h-10 w-auto object-contain drop-shadow-sm"
               />
-              <div className="flex flex-col">
-                <span className="font-black text-lg text-white leading-tight">GRAB RENTALS</span>
-                <span className="text-[9px] font-bold text-amber-400 tracking-wider uppercase">Grab Comfort in Every Mile</span>
+              <div className="flex flex-col w-fit">
+                <span className="font-black text-lg text-white leading-tight whitespace-nowrap">GRAB RENTALS</span>
+                <span className="flex justify-between w-full text-[8px] font-bold text-sky-400 tracking-wider uppercase select-none">
+                  <span>GRAB</span>
+                  <span>COMFORT</span>
+                  <span>IN</span>
+                  <span>EVERY</span>
+                  <span>MILE</span>
+                </span>
               </div>
             </div>
             <p className="text-sm leading-relaxed mt-2 text-slate-400">
@@ -826,7 +841,7 @@ export default function AppShell({ children }) {
               href="https://sensitive.co.in/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-amber-400 hover:text-amber-300 hover:underline font-bold ml-1 transition-colors"
+              className="text-sky-400 hover:text-sky-300 hover:underline font-bold ml-1 transition-colors"
             >
               Sensitive Technologies
             </a>

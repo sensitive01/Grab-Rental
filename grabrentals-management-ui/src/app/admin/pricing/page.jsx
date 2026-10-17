@@ -504,6 +504,8 @@ export default function AdminPricingPage() {
     // Hourly Rates for Local (₹/hr)
     hourlyCustomerFare: "",
     hourlyVendorFare: "",
+    hourlyCustomerWeekendFare: "",
+    hourlyVendorWeekendFare: "",
     hourlyWeekdayDayRate: "",
     hourlyVendorWeekdayDayRate: "",
     hourlyWeekdayNightRate: "",
@@ -523,6 +525,8 @@ export default function AdminPricingPage() {
     airportVendorExtraKmRate: "",
     tollIncluded: false,
     discountPercentage: "",
+    petCharge: "",
+    vendorPetCharge: "",
   });
 
   // Simulator State
@@ -640,6 +644,8 @@ export default function AdminPricingPage() {
 
       hourlyCustomerFare: "",
       hourlyVendorFare: "",
+      hourlyCustomerWeekendFare: "",
+      hourlyVendorWeekendFare: "",
       hourlyWeekdayDayRate: "",
       hourlyVendorWeekdayDayRate: "",
       hourlyWeekdayNightRate: "",
@@ -657,6 +663,8 @@ export default function AdminPricingPage() {
       airportExtraKmRate: "",
       airportVendorExtraKmRate: "",
       tollIncluded: false,
+      petCharge: "",
+      vendorPetCharge: "",
     });
     setIsModalOpen(true);
   }
@@ -714,6 +722,8 @@ export default function AdminPricingPage() {
 
       hourlyCustomerFare: item.hourlyCustomerFare != null ? String(item.hourlyCustomerFare) : (sType === "LOCAL" ? String(item.baseFare || "") : ""),
       hourlyVendorFare: item.hourlyVendorFare != null ? String(item.hourlyVendorFare) : (sType === "LOCAL" ? String(item.vendorBaseFare || "") : ""),
+      hourlyCustomerWeekendFare: item.hourlyCustomerWeekendFare != null ? String(item.hourlyCustomerWeekendFare) : "",
+      hourlyVendorWeekendFare: item.hourlyVendorWeekendFare != null ? String(item.hourlyVendorWeekendFare) : "",
       hourlyWeekdayDayRate: item.hourlyWeekdayDayRate != null ? String(item.hourlyWeekdayDayRate) : "",
       hourlyVendorWeekdayDayRate: item.hourlyVendorWeekdayDayRate != null ? String(item.hourlyVendorWeekdayDayRate) : "",
       hourlyWeekdayNightRate: item.hourlyWeekdayNightRate != null ? String(item.hourlyWeekdayNightRate) : "",
@@ -732,6 +742,8 @@ export default function AdminPricingPage() {
       airportVendorExtraKmRate: item.airportVendorExtraKmRate != null ? String(item.airportVendorExtraKmRate) : "",
       tollIncluded: Boolean(item.tollIncluded),
       discountPercentage: item.discountPercentage != null ? String(item.discountPercentage) : "",
+      petCharge: item.petCharge != null ? String(item.petCharge) : "",
+      vendorPetCharge: item.vendorPetCharge != null ? String(item.vendorPetCharge) : "",
     });
     setIsModalOpen(true);
   }
@@ -788,10 +800,10 @@ export default function AdminPricingPage() {
         hourlyWeekendNightRate: parseFloat(formData.hourlyWeekendNightRate || 0),
         hourlyVendorWeekendNightRate: parseFloat(formData.hourlyVendorWeekendNightRate || 0),
 
-        hourlyCustomerFare: parseFloat(formData.hourlyCustomerFare || formData.hourlyWeekdayDayRate || formData.baseFare || 0),
-        hourlyVendorFare: parseFloat(formData.hourlyVendorFare || formData.hourlyVendorWeekdayDayRate || formData.vendorBaseFare || 0),
-        hourlyCustomerWeekendFare: parseFloat(formData.hourlyWeekendDayRate || formData.hourlyCustomerFare || formData.baseFare || 0),
-        hourlyVendorWeekendFare: parseFloat(formData.hourlyVendorWeekendDayRate || formData.hourlyVendorFare || formData.vendorBaseFare || 0),
+        hourlyCustomerFare: parseFloat(formData.hourlyCustomerFare || formData.baseFare || 0),
+        hourlyVendorFare: parseFloat(formData.hourlyVendorFare || formData.vendorBaseFare || 0),
+        hourlyCustomerWeekendFare: parseFloat(formData.hourlyCustomerWeekendFare || formData.hourlyCustomerFare || formData.baseFare || 0),
+        hourlyVendorWeekendFare: parseFloat(formData.hourlyVendorWeekendFare || formData.hourlyVendorFare || formData.vendorBaseFare || 0),
         extraHourRate: parseFloat(formData.hourlyWeekdayDayRate || 0),
         vendorExtraHourRate: parseFloat(formData.hourlyVendorWeekdayDayRate || 0),
         extraKmRate: parseFloat(formData.weekdayDayRate || 0),
@@ -806,6 +818,8 @@ export default function AdminPricingPage() {
         airportVendorExtraKmRate: parseFloat(formData.vendorWeekdayDayRate || 0),
         tollIncluded: Boolean(formData.tollIncluded),
         discountPercentage: parseFloat(formData.discountPercentage || 0),
+        petCharge: parseFloat(formData.petCharge || 0),
+        vendorPetCharge: parseFloat(formData.vendorPetCharge || 0),
       });
 
       setToast({
@@ -1355,6 +1369,11 @@ export default function AdminPricingPage() {
                       <div className="text-xs">
                         <span className="font-bold text-slate-900">{baseDisplay}</span>
                         <span className="text-[10px] text-slate-400 block">{vendBaseDisplay}</span>
+                        {parseFloat(t.petCharge || 0) > 0 && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 mt-1">
+                            🐾 Pet: ₹{parseFloat(t.petCharge)} (Vend: ₹{parseFloat(t.vendorPetCharge || 0)})
+                          </span>
+                        )}
                       </div>
                     </TableCell>
 
@@ -1829,7 +1848,7 @@ export default function AdminPricingPage() {
                     Per-KM Base
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-700 mb-1">
                       🚗 Included Min KM
@@ -1943,7 +1962,7 @@ export default function AdminPricingPage() {
                   Minimum Package Threshold
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-700 mb-1">
                     🚗 Included Min KM
@@ -1996,12 +2015,68 @@ export default function AdminPricingPage() {
             </div>
           )}
 
-          {/* STEP 6: SET PRICE FOR CUSTOMER & VENDOR */}
+          {/* STEP 6: PET FRIENDLY SURCHARGES (SEPARATE SECTION) */}
+          <div className="p-3.5 bg-gradient-to-r from-amber-50/80 via-orange-50/40 to-amber-50/80 border border-amber-200/90 rounded-xl space-y-2.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-300 text-amber-700 flex items-center justify-center text-xs font-bold shadow-2xs">
+                  🐾
+                </span>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                    Step 6: Pet Travel Charges (Customer Fare & Vendor Payout)
+                  </h4>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Applied automatically when customer books via Pet-Friendly Cabs
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300 uppercase tracking-wide">
+                Pet Add-on Surcharge
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+              <div className="p-2.5 bg-white border border-amber-200 rounded-lg shadow-2xs">
+                <label className="block text-[11px] font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                  <span className="text-amber-600 font-extrabold">🐾</span>
+                  <span>Customer Pet Charge (₹)</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 500"
+                  value={formData.petCharge}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, petCharge: e.target.value }))}
+                  className="w-full px-2.5 py-1.5 text-xs font-black border border-slate-300 rounded-md bg-white text-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Added to trip fare when booked from Pet-Friendly Cabs tab
+                </span>
+              </div>
+              <div className="p-2.5 bg-white border border-purple-200 rounded-lg shadow-2xs">
+                <label className="block text-[11px] font-bold text-purple-950 mb-1 flex items-center gap-1.5">
+                  <span className="text-purple-600 font-extrabold">🤝</span>
+                  <span>Vendor Pet Payout (₹)</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 350"
+                  value={formData.vendorPetCharge}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, vendorPetCharge: e.target.value }))}
+                  className="w-full px-2.5 py-1.5 text-xs font-black border border-purple-300 rounded-md bg-purple-50/40 text-purple-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Additional surcharge disbursed to vendor/driver for pet rides
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* STEP 7: SET PRICE FOR CUSTOMER & VENDOR */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
                 <IndianRupee className="w-3.5 h-3.5 text-emerald-600" />
-                Step 6: Set Price for Customer & Vendor ({formData.serviceType === "LOCAL" ? "Local" : formData.serviceType === "AIRPORT" ? "Airport" : formData.serviceType === "ROUND_TRIP" ? "Round Trip" : "One Way"})
+                Step 7: Set Price for Customer & Vendor ({formData.serviceType === "LOCAL" ? "Local" : formData.serviceType === "AIRPORT" ? "Airport" : formData.serviceType === "ROUND_TRIP" ? "Round Trip" : "One Way"})
               </h4>
               <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                 Customer (Selling) vs Vendor (Payout)
