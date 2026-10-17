@@ -49,6 +49,8 @@ export default function PetBookingWidget() {
   // Locations
   const [pickupCity, setPickupCity] = useState("Bangalore, Karnataka");
   const [dropCity, setDropCity] = useState("Coimbatore, Tamil Nadu");
+  const [pickupDetails, setPickupDetails] = useState(null);
+  const [dropDetails, setDropDetails] = useState(null);
   const [stops, setStops] = useState([]); // for multicity
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
@@ -144,6 +146,9 @@ export default function PetBookingWidget() {
     const tempCoords = pickupCoords;
     setPickupCoords(dropCoords);
     setDropCoords(tempCoords);
+    const tempDetails = pickupDetails;
+    setPickupDetails(dropDetails);
+    setDropDetails(tempDetails);
   };
 
   // Route Estimate
@@ -234,6 +239,9 @@ export default function PetBookingWidget() {
       params.set("dropDate", dropDate);
     }
     params.set("pickupTime", pickupTime);
+    if (pickupDetails?.city) params.set("fromCity", pickupDetails.city);
+    if (pickupDetails?.state) params.set("fromState", pickupDetails.state);
+    if (dropDetails?.city) params.set("toCity", dropDetails.city);
     if (routeEstimate?.distanceKm > 0) {
       params.set("distanceKm", String(routeEstimate.distanceKm));
     }
@@ -285,8 +293,26 @@ export default function PetBookingWidget() {
 
     try {
       localStorage.setItem("grabrentals_booking_config", JSON.stringify(bookingConfig));
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("grab_pending_trip", JSON.stringify({
+          from: fromLoc,
+          to: toLoc,
+          fromCity: pickupDetails?.city || undefined,
+          fromState: pickupDetails?.state || undefined,
+          toCity: dropDetails?.city || undefined,
+          pickupDetails,
+          dropDetails,
+          type: bookingConfig.trip.type,
+          date: pickupDate,
+          returnDate: bookingConfig.trip.returnDate,
+          time: pickupTime,
+          isPetFriendly: true,
+          petDetails: bookingConfig.petDetails,
+          serviceType,
+        }));
+      }
     } catch (err) {
-      console.warn("Could not save pet booking config to localStorage", err);
+      console.warn("Could not save pet booking config to storage", err);
     }
 
     router.push(buildExploreUrl());
@@ -380,9 +406,10 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
+                    if (details) setPickupDetails(details);
                   }}
                   placeholder="Enter pickup city (e.g. Bangalore)"
                 />
@@ -408,9 +435,10 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={dropCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setDropCity(val);
                     setDropCoords(coords || null);
+                    if (details) setDropDetails(details);
                   }}
                   placeholder="Enter destination city (e.g. Coimbatore)"
                 />
@@ -461,9 +489,10 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
+                    if (details) setPickupDetails(details);
                   }}
                   placeholder="Enter pickup city (e.g. Bangalore)"
                 />
@@ -489,9 +518,10 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={dropCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setDropCity(val);
                     setDropCoords(coords || null);
+                    if (details) setDropDetails(details);
                   }}
                   placeholder="Enter destination city (e.g. Coimbatore)"
                 />
@@ -509,9 +539,10 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
+                    if (details) setPickupDetails(details);
                   }}
                   placeholder="Enter starting city (e.g. Bangalore)"
                 />
@@ -530,9 +561,10 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={dropCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setDropCity(val);
                     setDropCoords(coords || null);
+                    if (details) setDropDetails(details);
                   }}
                   placeholder="Enter final destination (e.g. Ooty)"
                 />
@@ -551,9 +583,10 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
+                    if (details) setPickupDetails(details);
                   }}
                   placeholder="Enter pickup city (e.g. Bangalore)"
                 />
@@ -640,9 +673,10 @@ export default function PetBookingWidget() {
                     </label>
                     <CityAutocompleteInput
                       value={dropCity}
-                      onChange={(val, coords) => {
+                      onChange={(val, coords, details) => {
                         setDropCity(val);
                         setDropCoords(coords || null);
+                        if (details) setDropDetails(details);
                       }}
                       placeholder="Enter destination area (e.g. Indiranagar)"
                     />
@@ -657,9 +691,10 @@ export default function PetBookingWidget() {
                     </label>
                     <CityAutocompleteInput
                       value={pickupCity}
-                      onChange={(val, coords) => {
+                      onChange={(val, coords, details) => {
                         setPickupCity(val);
                         setPickupCoords(coords || null);
+                        if (details) setPickupDetails(details);
                       }}
                       placeholder="Enter pickup area (e.g. Koramangala)"
                     />

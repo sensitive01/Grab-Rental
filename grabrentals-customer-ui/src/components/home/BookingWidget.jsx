@@ -328,6 +328,10 @@ export default function BookingWidget() {
   };
 
   const handleSwap = () => {
+    const tempDetails = pickupDetails;
+    setPickupDetails(dropDetails);
+    setDropDetails(tempDetails);
+
     if (activeTab === "airport") {
       if (airportTripType === "drop") {
         setDropCity(pickupCity);
@@ -392,6 +396,10 @@ export default function BookingWidget() {
       params.set("tripType", tripType);
     }
 
+    if (pickupDetails?.city) params.set("fromCity", pickupDetails.city);
+    if (pickupDetails?.state) params.set("fromState", pickupDetails.state);
+    if (dropDetails?.city) params.set("toCity", dropDetails.city);
+
     params.set("pickupDate", pickupDate);
     if ((tripType === "round-trip" || activeTab === "package") && dropDate && activeTab !== "local") {
       params.set("dropDate", dropDate);
@@ -434,7 +442,10 @@ export default function BookingWidget() {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("grab_pending_trip", JSON.stringify({
         from: fromLoc,
+        fromCity: pickupDetails?.city || undefined,
+        fromState: pickupDetails?.state || undefined,
         to: toLoc,
+        toCity: dropDetails?.city || undefined,
         airportTripType: activeTab === "airport" ? airportTripType : undefined,
         airport: activeTab === "airport" ? selectedAirport : undefined,
         package: pkgVal,
@@ -627,9 +638,10 @@ export default function BookingWidget() {
               </div>
               <CityAutocompleteInput 
                 value={pickupCity}
-                onChange={(val, coords) => {
+                onChange={(val, coords, details) => {
                   setPickupCity(val);
                   setPickupCoords(coords || null);
+                  if (details) setPickupDetails(details);
                 }}
                 placeholder="e.g. Bangalore (Bengaluru)" 
                 iconColor="text-brand-emerald"
@@ -738,9 +750,10 @@ export default function BookingWidget() {
               </div>
               <CityAutocompleteInput 
                 value={dropCity}
-                onChange={(val, coords) => {
+                onChange={(val, coords, details) => {
                   setDropCity(val);
                   setDropCoords(coords || null);
+                  if (details) setDropDetails(details);
                 }}
                 placeholder="e.g. Coimbatore, Tamil Nadu" 
                 iconColor="text-brand-orange"
@@ -877,9 +890,10 @@ export default function BookingWidget() {
               <>
                 <CityAutocompleteInput 
                   value={pickupCity}
-                  onChange={(val, coords) => {
+                  onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
+                    if (details) setPickupDetails(details);
                   }}
                   onOpenMap={() => {
                     setMapTarget("pickup");
@@ -993,9 +1007,10 @@ export default function BookingWidget() {
             ) : (
               <CityAutocompleteInput
                 value={dropCity}
-                onChange={(val, coords) => {
+                onChange={(val, coords, details) => {
                   setDropCity(val);
                   setDropCoords(coords || null);
+                  if (details) setDropDetails(details);
                 }}
                 onOpenMap={() => {
                   setMapTarget("drop");

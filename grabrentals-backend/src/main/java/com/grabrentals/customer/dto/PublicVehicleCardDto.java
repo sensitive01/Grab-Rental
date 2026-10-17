@@ -56,6 +56,8 @@ public class PublicVehicleCardDto {
         private BigDecimal advanceAmount;
         private BigDecimal gstPercentage;
         private BigDecimal driverAllowancePercentage;
+        private String driverAllowanceType;
+        private String driverAllowanceLabel;
         private BigDecimal discountPercentage;
         private BigDecimal petCharge;
         private BigDecimal vendorPetCharge;

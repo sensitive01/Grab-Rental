@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-export function PageHeader({ title, subtitle, action, breadcrumbs = [] }) {
+export function PageHeader({ title, subtitle, action, actions, breadcrumbs = [] }) {
+  const actionContent = action || actions;
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -31,7 +32,7 @@ export function PageHeader({ title, subtitle, action, breadcrumbs = [] }) {
         </h1>
         {subtitle && <p className="text-xs sm:text-sm text-slate-500 mt-1">{subtitle}</p>}
       </div>
-      {action && <div className="flex items-center gap-2.5 shrink-0">{action}</div>}
+      {actionContent && <div className="flex items-center gap-2.5 shrink-0">{actionContent}</div>}
     </div>
   );
 }

@@ -70,18 +70,38 @@ function formatTimeDisplay(rawTime) {
   }
 }
 
+const INDIAN_STATES = new Set([
+  "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh",
+  "goa", "gujarat", "haryana", "himachal pradesh", "jharkhand", "karnataka",
+  "kerala", "madhya pradesh", "maharashtra", "manipur", "meghalaya", "mizoram",
+  "nagaland", "odisha", "punjab", "rajasthan", "sikkim", "tamil nadu",
+  "telangana", "tripura", "uttar pradesh", "uttarakhand", "west bengal",
+  "delhi", "chandigarh", "puducherry", "pondicherry", "jammu and kashmir", "ladakh"
+]);
+
 function cleanCityName(fullString, cityHint = "") {
-  if (cityHint && cityHint.trim()) {
+  if (cityHint && typeof cityHint === "string" && cityHint.trim()) {
     const hint = cityHint.trim();
-    if (hint.toLowerCase() === "bengaluru") return "Bangalore";
+    const hintLower = hint.toLowerCase();
+    if (hintLower === "bengaluru") return "Bangalore";
+    if (hintLower === "mysuru") return "Mysore";
     return hint;
   }
   if (!fullString) return "";
   const lower = fullString.toLowerCase();
   if (lower.includes("bangalore") || lower.includes("bengaluru") || lower.includes("basavanagudi") || lower.includes("mallikarjuna") || lower.includes("indiranagar") || lower.includes("koramangala") || lower.includes("whitefield") || lower.includes("jayanagar")) return "Bangalore";
+  if (lower.includes("madurai")) return "Madurai";
   if (lower.includes("coimbatore")) return "Coimbatore";
   if (lower.includes("chennai") || lower.includes("madras")) return "Chennai";
   if (lower.includes("mysore") || lower.includes("mysuru")) return "Mysore";
+  if (lower.includes("salem")) return "Salem";
+  if (lower.includes("trichy") || lower.includes("tiruchirappalli")) return "Trichy";
+  if (lower.includes("tirunelveli")) return "Tirunelveli";
+  if (lower.includes("dindigul")) return "Dindigul";
+  if (lower.includes("erode")) return "Erode";
+  if (lower.includes("tiruppur")) return "Tiruppur";
+  if (lower.includes("vellore")) return "Vellore";
+  if (lower.includes("thanjavur")) return "Thanjavur";
   if (lower.includes("hyderabad")) return "Hyderabad";
   if (lower.includes("mumbai") || lower.includes("bombay")) return "Mumbai";
   if (lower.includes("pune")) return "Pune";
@@ -91,7 +111,9 @@ function cleanCityName(fullString, cityHint = "") {
   if (parts.length > 1) {
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
-      if (!/^\d+$/.test(p) && !p.toLowerCase().includes("india") && p.length > 2) {
+      const pLower = p.toLowerCase();
+      // Skip numbers, pincodes, India, and state names
+      if (!/^\d+$/.test(p) && !pLower.includes("india") && !INDIAN_STATES.has(pLower) && p.length > 2) {
         if (!/^(no\.|flat|house|#|\d+)/i.test(p)) {
           return p;
         }
@@ -142,6 +164,9 @@ function SelectVehicleContent() {
       stopsCoords: pendingTrip?.stopsCoords || null,
       pickupDetails: pendingTrip?.pickupDetails || null,
       dropDetails: pendingTrip?.dropDetails || null,
+      fromCity: searchParams.get("fromCity") || pendingTrip?.fromCity || pendingTrip?.pickupDetails?.city || "",
+      fromState: searchParams.get("fromState") || pendingTrip?.fromState || pendingTrip?.pickupDetails?.state || "",
+      toCity: searchParams.get("toCity") || pendingTrip?.toCity || pendingTrip?.dropDetails?.city || "",
       isPetFriendly: searchParams.get("isPetFriendly") === "true" || pendingTrip?.isPetFriendly || false,
       petType: searchParams.get("petType") || pendingTrip?.petType || "",
       petCount: searchParams.get("petCount") || pendingTrip?.petCount || 1,
@@ -370,11 +395,14 @@ function SelectVehicleContent() {
       setIsLoadingVehicles(true);
       try {
         const dynamicDistance = googleRouteDetails?.distanceKm || backendDistance || undefined;
-        const resolvedFromCity = trip.pickupDetails?.city || cleanCityName(trip.from);
+        const resolvedFromCity = cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city);
+        const resolvedToCity = cleanCityName(trip.to, trip.toCity || trip.dropDetails?.city);
         const res = await customerApi.searchVehicles({
           from: trip.from,
           fromCity: resolvedFromCity,
+          fromState: trip.fromState || trip.pickupDetails?.state || undefined,
           to: trip.to,
+          toCity: resolvedToCity,
           stops: trip.stops,
           tripType: trip.tripType.toLowerCase().includes("round") ? "ROUND_TRIP" : "ONE_WAY",
           pickupDate: trip.date,
@@ -387,8 +415,8 @@ function SelectVehicleContent() {
           if (res.data.serviceAvailable === false) {
             setServiceStatus({
               available: false,
-              city: res.data.serviceCity || cleanCityName(trip.from),
-              message: res.data.serviceMessage || `Service will Be Soon in ${res.data.serviceCity || cleanCityName(trip.from)}`,
+              city: res.data.serviceCity || resolvedFromCity,
+              message: res.data.serviceMessage || `Service will Be Soon in ${res.data.serviceCity || resolvedFromCity}`,
             });
             setBackendVehicles([]);
           } else {
@@ -458,7 +486,9 @@ function SelectVehicleContent() {
 
       const standardRateFare = isLocalBooking
         ? (car.pricing?.originalPrice || car.dailyPrice || 2000)
-        : (car.pricing?.originalPrice || (activeDistance > 0 ? Math.round(activeDistance * perKmRate) : (car.baseFare || car.fare || 0)));
+        : (activeDistance > 0 && perKmRate > 0
+            ? Math.round(activeDistance * perKmRate)
+            : (car.pricing?.originalPrice || car.baseFare || car.fare || 0));
 
       const discountPercentage = parseFloat(car.pricing?.discountPercentage || car.discountPercentage || 0);
 
@@ -477,12 +507,15 @@ function SelectVehicleContent() {
       // Check if night pickup (10 PM to 6 AM)
       const isNightTime = isNightPickup(trip.time);
 
-      // Driver Allowance (0 for local package or 10 PM - 6 AM night travel since excluded from prepaid billing)
-      const rawDriverAllowance = (pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0)
-        ? Math.round(pricingConfig.driverAllowanceAmount)
-        : Math.round(displayFare * (pricingConfig.driverAllowancePercentage / 100));
+      // Driver Allowance: prioritize backend vehicle's resolved driver allowance from dedicated rules
+      const backendAllowance = car.pricing?.driverAllowance;
+      const rawDriverAllowance = (backendAllowance != null && backendAllowance >= 0)
+        ? Math.round(backendAllowance)
+        : ((pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0)
+          ? Math.round(pricingConfig.driverAllowanceAmount)
+          : Math.round(displayFare * (pricingConfig.driverAllowancePercentage / 100)));
 
-      const driverAllowance = (isLocalBooking || isNightTime) ? 0 : rawDriverAllowance;
+      const driverAllowance = (isLocalBooking) ? 0 : rawDriverAllowance;
 
       // GST / Taxes
       const taxes = (pricingConfig.gstType === "FLAT" && pricingConfig.gstAmount > 0)
@@ -538,7 +571,7 @@ function SelectVehicleContent() {
         dailyPrice,
         tripFare: displayFare,
         perKmRate,
-        location: car.location || cleanCityName(trip.from) || "Bangalore",
+        location: car.location || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city) || "Bangalore",
         chauffeur: car.chauffeur || "Assigned Commercial Chauffeur",
         chauffeurRating: car.chauffeurRating || 4.85,
         status: car.status || "Available",
@@ -735,8 +768,10 @@ function SelectVehicleContent() {
           withLuggageCarrier: false,
           seating: vehicle.seatingCapacity,
           perKmRate: vehicle.perKmRate ?? 0,
+          discountPercentage: vehicle.pricing?.discountPercentage ?? vehicle.discountPercentage ?? 0,
+          originalPrice: vehicle.pricing?.originalPrice ?? (activeDistance > 0 ? Math.round(activeDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
           fare: vehicle.pricing?.displayFare ?? vehicle.pricing?.baseFare ?? vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
-          baseFare: vehicle.pricing?.baseFare ?? (activeDistance > 0 ? Math.round(activeDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
+          baseFare: vehicle.pricing?.baseFare ?? vehicle.pricing?.displayFare ?? (activeDistance > 0 ? Math.round(activeDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
           petCharge: vehicle.pricing?.petCharge != null ? Number(vehicle.pricing.petCharge) : 0,
           vendorPetCharge: vehicle.pricing?.vendorPetCharge != null ? Number(vehicle.pricing.vendorPetCharge) : 0,
           driverAllowance: (isNightPickup(trip.time) || isLocalBooking) ? 0 : (vehicle.pricing?.driverAllowance ?? 0),
@@ -749,7 +784,8 @@ function SelectVehicleContent() {
           exclusions: vehicle.exclusions || [],
           image: vehicle.image,
           regNumber: vehicle.regNumber,
-          chauffeur: vehicle.chauffeur
+          chauffeur: vehicle.chauffeur,
+          pricing: vehicle.pricing
         }
       };
       sessionStorage.setItem("grab_selected_booking", JSON.stringify(selectedData));
@@ -953,8 +989,8 @@ function SelectVehicleContent() {
         
         {/* Dynamic Route Header */}
         <VehicleTripHeader
-          from={cleanCityName(trip.from, trip.pickupDetails?.city)}
-          to={isLocalBooking ? trip.to : cleanCityName(trip.to, trip.dropDetails?.city)}
+          from={cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}
+          to={isLocalBooking ? trip.to : cleanCityName(trip.to, trip.toCity || trip.dropDetails?.city)}
           stops={trip.stops}
           tripType={trip.tripType}
           date={formatDateDisplay(trip.date)}
@@ -1156,11 +1192,11 @@ function SelectVehicleContent() {
                     🚀 Launching Soon
                   </span>
                   <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
-                    Service will Be Soon in {serviceStatus.city || cleanCityName(trip.from)}
+                    Service will Be Soon in {serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}
                   </h3>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                  We are actively expanding our fleet network to <strong className="text-slate-900">{serviceStatus.city || cleanCityName(trip.from)}</strong>. Verified drivers, transparent per-KM fares, and instant bookings will be available in this hub very soon!
+                  We are actively expanding our fleet network to <strong className="text-slate-900">{serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}</strong>. Verified drivers, transparent per-KM fares, and instant bookings will be available in this hub very soon!
                 </p>
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button

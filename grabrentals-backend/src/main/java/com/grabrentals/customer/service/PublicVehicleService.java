@@ -29,6 +29,7 @@ public class PublicVehicleService {
     private final BookingRepository bookingRepository;
     private final VehicleTariffService vehicleTariffService;
     private final com.grabrentals.tariff.service.PricingTaxConfigService pricingTaxConfigService;
+    private final com.grabrentals.tariff.service.DriverAllowanceService driverAllowanceService;
 
     public BookingResponse getBookingByReference(String bookingReference) {
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
@@ -129,12 +130,52 @@ public class PublicVehicleService {
         }
 
         // Priority 1: Use active Vehicle Models configured by Admin in the catalog
-        List<VehicleModelConfigResponse> activeConfigs = vehicleTariffService.getActiveModelConfigs();
+        List<VehicleModelConfigResponse> activeConfigs = new ArrayList<>(
+                vehicleTariffService.getActiveModelConfigs() != null ? vehicleTariffService.getActiveModelConfigs() : Collections.emptyList()
+        );
+
+        // Auto-include any models configured in active tariffs for this service that are not yet in vehicle_model_configs
+        Set<String> existingModelKeys = new HashSet<>();
+        for (VehicleModelConfigResponse c : activeConfigs) {
+            String k = (c.getModelName() != null ? c.getModelName().trim().toLowerCase() : "") + "_"
+                    + (c.getCategory() != null ? c.getCategory().trim().toLowerCase() : "");
+            existingModelKeys.add(k);
+        }
+
+        if (tariffs != null) {
+            for (VehicleTariff t : tariffs) {
+                if (t.getModelName() == null || t.getModelName().isBlank()) continue;
+                // Only consider tariffs matching this city/state
+                boolean matchesCity = (t.getCity() != null && VehicleTariffService.areCitiesEqual(pickupCity, t.getCity()));
+                boolean matchesState = (t.getState() != null && pickupState != null && t.getState().trim().equalsIgnoreCase(pickupState.trim()));
+                boolean isAllLocation = (t.getCity() == null || t.getCity().isBlank() || "all".equalsIgnoreCase(t.getCity().trim()));
+
+                if (!matchesCity && !matchesState && !isAllLocation) {
+                    continue;
+                }
+
+                String modelKey = t.getModelName().trim().toLowerCase() + "_"
+                        + (t.getCategory() != null ? t.getCategory().trim().toLowerCase() : "");
+                if (!existingModelKeys.contains(modelKey)) {
+                    existingModelKeys.add(modelKey);
+                    VehicleModelConfigResponse synthetic = VehicleModelConfigResponse.builder()
+                            .modelName(t.getModelName().trim())
+                            .category(t.getCategory() != null ? t.getCategory().trim() : "Hatchback")
+                            .seatingCapacity(t.getSeatingCapacity() != null ? t.getSeatingCapacity().trim() : "4")
+                            .fuelType(t.getFuelType() != null ? t.getFuelType().trim() : "Diesel")
+                            .active(true)
+                            .commonPhotoUrl(vehicleTariffService.resolveCommonPhoto(t.getCategory(), t.getModelName(), t.getSeatingCapacity()))
+                            .build();
+                    activeConfigs.add(synthetic);
+                }
+            }
+        }
+
         long tConfigs = System.currentTimeMillis();
 
         List<PublicVehicleCardDto> cards = new ArrayList<>();
 
-        if (activeConfigs != null && !activeConfigs.isEmpty()) {
+        if (!activeConfigs.isEmpty()) {
             for (VehicleModelConfigResponse config : activeConfigs) {
                 String model = (config.getModelName() != null && !config.getModelName().isBlank())
                         ? config.getModelName().trim()
@@ -223,7 +264,11 @@ public class PublicVehicleService {
                         5,
                         badge,
                         discPct,
-                        "ROUND_TRIP".equalsIgnoreCase(normalizedTripType)
+                        "ROUND_TRIP".equalsIgnoreCase(normalizedTripType),
+                        model,
+                        pickupCity,
+                        pickupState,
+                        pickupTime
                 );
                 card.setVehicleType(typeTitle);
                 card.setFuelType(fuel);
@@ -408,7 +453,11 @@ public class PublicVehicleService {
                             1,
                             badge,
                             discPct,
-                            "ROUND_TRIP".equalsIgnoreCase(normalizedTripType)
+                            "ROUND_TRIP".equalsIgnoreCase(normalizedTripType),
+                            model,
+                            pickupCity,
+                            pickupState,
+                            pickupTime
                     );
                     card.setVehicleNumber(v.getVehicleNumber());
                     card.setRegNumber(v.getRegistrationNumber() != null && !v.getRegistrationNumber().isBlank() ? v.getRegistrationNumber() : v.getVehicleNumber());
@@ -613,18 +662,17 @@ public class PublicVehicleService {
             int availableCount,
             String badge,
             BigDecimal discountPercentage,
-            boolean isRoundTrip
+            boolean isRoundTrip,
+            String modelName,
+            String city,
+            String state,
+            String pickupTime
     ) {
         com.grabrentals.tariff.entity.PricingTaxConfig taxConfig = pricingTaxConfigService.getConfig();
         String gstType = (taxConfig.getGstType() != null && !taxConfig.getGstType().isBlank())
                 ? taxConfig.getGstType().trim().toUpperCase() : "PERCENTAGE";
         BigDecimal gstPercent = taxConfig.getGstPercentage() != null ? taxConfig.getGstPercentage() : new BigDecimal("5.00");
         BigDecimal gstAmount = taxConfig.getGstAmount() != null ? taxConfig.getGstAmount() : BigDecimal.ZERO;
-
-        String driverType = (taxConfig.getDriverAllowanceType() != null && !taxConfig.getDriverAllowanceType().isBlank())
-                ? taxConfig.getDriverAllowanceType().trim().toUpperCase() : "PERCENTAGE";
-        BigDecimal driverPercent = taxConfig.getDriverAllowancePercentage() != null ? taxConfig.getDriverAllowancePercentage() : new BigDecimal("10.00");
-        BigDecimal driverAmount = taxConfig.getDriverAllowanceAmount() != null ? taxConfig.getDriverAllowanceAmount() : BigDecimal.ZERO;
 
         BigDecimal standardBaseFare = perKmRate.multiply(BigDecimal.valueOf(distanceKm)).setScale(0, RoundingMode.HALF_UP);
         BigDecimal originalBaseFare = standardBaseFare;
@@ -636,19 +684,52 @@ public class PublicVehicleService {
             baseFare = standardBaseFare.subtract(discountAmt);
         }
 
+        // Dedicated Driver Allowance Rule lookup (Car model, City, State, Day/Night Shift)
+        com.grabrentals.tariff.entity.DriverAllowance customAllowance = (driverAllowanceService != null)
+                ? driverAllowanceService.resolveAllowance(modelName, city, state, pickupTime)
+                : null;
+
+        String driverType;
+        BigDecimal driverPercent;
         BigDecimal driverAllowance;
         String driverInclusionLabel;
-        if ("FLAT".equalsIgnoreCase(driverType)) {
-            BigDecimal flatAmt = (driverAmount != null && driverAmount.compareTo(BigDecimal.ZERO) > 0)
-                    ? driverAmount
-                    : (driverPercent.compareTo(new BigDecimal("100")) > 0 ? driverPercent : new BigDecimal("400.00"));
-            driverAllowance = flatAmt.setScale(0, RoundingMode.HALF_UP);
-            driverInclusionLabel = "Driver Allowance (₹" + driverAllowance.toPlainString() + ") Included";
+
+        if (customAllowance != null) {
+            driverType = (customAllowance.getAllowanceType() != null && !customAllowance.getAllowanceType().isBlank())
+                    ? customAllowance.getAllowanceType().trim().toUpperCase() : "FLAT";
+            if ("FLAT".equalsIgnoreCase(driverType)) {
+                driverAllowance = (customAllowance.getAllowanceValue() != null)
+                        ? customAllowance.getAllowanceValue().setScale(0, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO;
+                driverPercent = BigDecimal.ZERO;
+                driverInclusionLabel = "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
+            } else {
+                BigDecimal safePercent = customAllowance.getAllowanceValue() != null
+                        ? customAllowance.getAllowanceValue()
+                        : new BigDecimal("10.00");
+                BigDecimal driverRate = safePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                driverAllowance = baseFare.multiply(driverRate).setScale(0, RoundingMode.HALF_UP);
+                driverPercent = safePercent;
+                driverInclusionLabel = "Driver Allowance (" + safePercent.stripTrailingZeros().toPlainString() + "%)";
+            }
         } else {
-            BigDecimal safePercent = driverPercent.compareTo(new BigDecimal("100")) > 0 ? new BigDecimal("10.00") : driverPercent;
-            BigDecimal driverRate = safePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
-            driverAllowance = baseFare.multiply(driverRate).setScale(0, RoundingMode.HALF_UP);
-            driverInclusionLabel = "Driver Allowance (" + safePercent.stripTrailingZeros().toPlainString() + "%) Included";
+            driverType = (taxConfig.getDriverAllowanceType() != null && !taxConfig.getDriverAllowanceType().isBlank())
+                    ? taxConfig.getDriverAllowanceType().trim().toUpperCase() : "PERCENTAGE";
+            driverPercent = taxConfig.getDriverAllowancePercentage() != null ? taxConfig.getDriverAllowancePercentage() : new BigDecimal("10.00");
+            BigDecimal driverAmount = taxConfig.getDriverAllowanceAmount() != null ? taxConfig.getDriverAllowanceAmount() : BigDecimal.ZERO;
+
+            if ("FLAT".equalsIgnoreCase(driverType)) {
+                BigDecimal flatAmt = (driverAmount != null && driverAmount.compareTo(BigDecimal.ZERO) > 0)
+                        ? driverAmount
+                        : (driverPercent.compareTo(new BigDecimal("100")) > 0 ? driverPercent : new BigDecimal("400.00"));
+                driverAllowance = flatAmt.setScale(0, RoundingMode.HALF_UP);
+                driverInclusionLabel = "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
+            } else {
+                BigDecimal safePercent = driverPercent.compareTo(new BigDecimal("100")) > 0 ? new BigDecimal("10.00") : driverPercent;
+                BigDecimal driverRate = safePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                driverAllowance = baseFare.multiply(driverRate).setScale(0, RoundingMode.HALF_UP);
+                driverInclusionLabel = "Driver Allowance (" + safePercent.stripTrailingZeros().toPlainString() + "%)";
+            }
         }
 
         BigDecimal taxes;
@@ -687,6 +768,8 @@ public class PublicVehicleService {
                         .advanceAmount(advance)
                         .gstPercentage(gstPercent)
                         .driverAllowancePercentage(driverPercent)
+                        .driverAllowanceType(driverType)
+                        .driverAllowanceLabel(driverInclusionLabel)
                         .discountPercentage(discountPercentage != null ? discountPercentage : BigDecimal.ZERO)
                         .build())
                 .fuelOptions(fuelOptions)

@@ -146,21 +146,86 @@ export function resolveCarModelAndImage(booking, modelsList = adminModelsCache) 
  * - Ertiga, Xylo or Similar
  */
 export function formatVehicleSavaariTitle(rawTitle = "", category = "", vehicleType = "") {
-  const combined = `${rawTitle || ""} ${category || ""} ${vehicleType || ""}`.toLowerCase();
+  let cleaned = (rawTitle || "").replace(/\s+or\s+(Equivalent|Similar)/i, "").trim();
+  const lower = cleaned.toLowerCase();
 
-  if (combined.includes("hycross") || (combined.includes("crysta") && combined.includes("innova")) || combined.includes("crysta, hycross")) {
+  // If specific model is identified in the title, present that model name with "or Similar"
+  if (lower.includes("wagon") || lower.includes("wagonr") || lower.includes("wagon-r")) {
+    return "WagonR or Similar";
+  }
+  if (lower.includes("swift")) {
+    return "Swift or Similar";
+  }
+  if (lower.includes("celerio")) {
+    return "Celerio or Similar";
+  }
+  if (lower.includes("tiago")) {
+    return "Tiago or Similar";
+  }
+  if (lower.includes("alto")) {
+    return "Alto or Similar";
+  }
+  if (lower.includes("dzire")) {
+    return "Dzire or Similar";
+  }
+  if (lower.includes("etios")) {
+    return "Etios or Similar";
+  }
+  if (lower.includes("aura")) {
+    return "Aura or Similar";
+  }
+  if (lower.includes("amaze")) {
+    return "Amaze or Similar";
+  }
+  if (lower.includes("hycross")) {
+    return "Innova Hycross or Similar";
+  }
+  if (lower.includes("crysta")) {
+    return "Innova Crysta or Similar";
+  }
+  if (lower.includes("innova")) {
+    return "Innova or Similar";
+  }
+  if (lower.includes("ertiga") || lower.includes("ertica")) {
+    return "Ertiga or Similar";
+  }
+  if (lower.includes("carens")) {
+    return "Carens or Similar";
+  }
+  if (lower.includes("rumion")) {
+    return "Rumion or Similar";
+  }
+  if (lower.includes("xylo")) {
+    return "Xylo or Similar";
+  }
+  if (lower.includes("urbania")) {
+    return "Force Urbania or Similar";
+  }
+  if (lower.includes("tempo") || lower.includes("traveller")) {
+    return "Tempo Traveller or Similar";
+  }
+  if (lower.includes("bus")) {
+    return "Mini Bus or Coach";
+  }
+
+  // If cleaned is an actual model name (not just generic "Hatchback", "Sedan", "SUV", "Vehicle", "Standard Fleet")
+  const genericTerms = ["hatchback", "sedan", "suv", "vehicle", "standard fleet", "fleet", "car", "cab"];
+  if (cleaned && !genericTerms.includes(lower)) {
+    return `${cleaned} or Similar`;
+  }
+
+  // Fallback to Category-level bundled titles
+  const combined = `${rawTitle || ""} ${category || ""} ${vehicleType || ""}`.toLowerCase();
+  if (combined.includes("hycross") || combined.includes("crysta") || combined.includes("innova")) {
     return "Crysta, Hycross or Similar";
   }
-  if (combined.includes("innova") || combined.includes("crysta")) {
-    return "Crysta, Hycross or Similar";
-  }
-  if (combined.includes("ertiga") || combined.includes("ertica") || combined.includes("xylo") || combined.includes("carens") || combined.includes("rumion") || combined.includes("suv_6")) {
+  if (combined.includes("ertiga") || combined.includes("xylo") || combined.includes("carens") || combined.includes("suv")) {
     return "Ertiga, Xylo or Similar";
   }
-  if (combined.includes("wagon") || combined.includes("swift") || combined.includes("celerio") || combined.includes("tiago") || combined.includes("alto") || combined.includes("indica") || combined.includes("hatchback")) {
+  if (combined.includes("wagon") || combined.includes("swift") || combined.includes("hatchback")) {
     return "WagonR, Swift or Similar";
   }
-  if (combined.includes("dzire") || combined.includes("etios") || combined.includes("aura") || combined.includes("amaze") || combined.includes("tigir") || combined.includes("sedan")) {
+  if (combined.includes("dzire") || combined.includes("etios") || combined.includes("sedan")) {
     return "Dzire, Etios, or Similar";
   }
   if (combined.includes("urbania") || combined.includes("tempo") || combined.includes("traveller") || combined.includes("van")) {
@@ -170,11 +235,5 @@ export function formatVehicleSavaariTitle(rawTitle = "", category = "", vehicleT
     return "Mini Bus, Coach or Similar";
   }
 
-  if (rawTitle && rawTitle.toLowerCase().includes("or similar")) {
-    return rawTitle;
-  }
-  if (rawTitle) {
-    return `${rawTitle} or Similar`;
-  }
-  return "WagonR, Swift or Similar";
+  return rawTitle ? `${rawTitle} or Similar` : "WagonR, Swift or Similar";
 }

@@ -19,6 +19,8 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const isAirport = currentTrip?.serviceType === "AIRPORT" || (currentTrip?.tripType && currentTrip.tripType.toLowerCase().includes("airport"));
   const [from, setFrom] = useState(currentTrip?.from || "Bangalore, Karnataka");
   const [to, setTo] = useState(currentTrip?.to || (isLocal ? "8hr-80km" : "Coimbatore, Tamil Nadu"));
+  const [pickupDetails, setPickupDetails] = useState(currentTrip?.pickupDetails || null);
+  const [dropDetails, setDropDetails] = useState(currentTrip?.dropDetails || null);
   const [stops, setStops] = useState(() => {
     if (Array.isArray(currentTrip?.stops)) return currentTrip.stops;
     if (typeof currentTrip?.stops === "string" && currentTrip.stops.trim()) {
@@ -94,8 +96,14 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
     e.preventDefault();
     const validStops = stops.filter((s) => s && s.trim());
     onSave({
+      ...currentTrip,
       from,
       to,
+      fromCity: pickupDetails?.city || currentTrip?.fromCity,
+      fromState: pickupDetails?.state || currentTrip?.fromState,
+      toCity: dropDetails?.city || currentTrip?.toCity,
+      pickupDetails: pickupDetails || currentTrip?.pickupDetails,
+      dropDetails: dropDetails || currentTrip?.dropDetails,
       stops: (isLocal || isAirport) ? "" : validStops.join("|"),
       tripType: isLocal ? "Hourly Package" : (currentTrip?.tripType || tripType),
       serviceType: isLocal ? "LOCAL" : isAirport ? "AIRPORT" : (currentTrip?.serviceType || "OUTSTATION"),
@@ -170,7 +178,10 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
             <label className="font-bold text-slate-700 block mb-1">Pickup City</label>
             <CityAutocompleteInput
               value={from}
-              onChange={setFrom}
+              onChange={(val, coords, details) => {
+                setFrom(val);
+                if (details) setPickupDetails(details);
+              }}
               placeholder="Enter pickup city..."
               iconColor="text-emerald-600"
               inputClassName="py-2.5 rounded-xl"
@@ -221,7 +232,10 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
                 <label className="font-bold text-slate-700 block mb-1">Destination City</label>
                 <CityAutocompleteInput
                   value={to}
-                  onChange={setTo}
+                  onChange={(val, coords, details) => {
+                    setTo(val);
+                    if (details) setDropDetails(details);
+                  }}
                   placeholder="Enter destination city..."
                   iconColor="text-amber-600"
                   inputClassName="py-2.5 rounded-xl"

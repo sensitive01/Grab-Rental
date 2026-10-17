@@ -136,6 +136,7 @@ export default function CityAutocompleteInput({
     let lat = null;
     let lng = null;
     let specificLabel = result.title;
+    let locationDetails = null;
 
     if (result.placePrediction) {
       try {
@@ -152,18 +153,40 @@ export default function CityAutocompleteInput({
         const placeName = (place.displayName || result.title || "").trim();
         let locality = "";
         let adminArea = "";
+        let district = "";
+        let sublocality = "";
+        let postalCode = "";
+
         if (place.addressComponents) {
           for (const comp of place.addressComponents) {
-            if (comp.types?.includes("locality")) locality = comp.longText || comp.name;
-            if (comp.types?.includes("administrative_area_level_1")) adminArea = comp.longText || comp.name;
+            const types = comp.types || [];
+            if (types.includes("locality")) locality = comp.longText || comp.name || "";
+            if (types.includes("sublocality") || types.includes("sublocality_level_1")) sublocality = comp.longText || comp.name || "";
+            if (types.includes("administrative_area_level_2")) district = comp.longText || comp.name || "";
+            if (types.includes("administrative_area_level_1")) adminArea = comp.longText || comp.name || "";
+            if (types.includes("postal_code")) postalCode = comp.longText || comp.name || "";
           }
         }
 
-        // Build specific label keeping the exact place name (e.g. "Theni Old Bus Stand, Theni, Tamil Nadu")
+        // Normalize city: prefer locality, fallback to district
+        let resolvedCity = locality || district || "";
+        if (resolvedCity.toLowerCase() === "bengaluru") resolvedCity = "Bangalore";
+        if (resolvedCity.toLowerCase() === "mysuru") resolvedCity = "Mysore";
+
+        locationDetails = {
+          city: resolvedCity,
+          state: adminArea,
+          district: district,
+          sublocality: sublocality,
+          pincode: postalCode,
+          formattedAddress: place.formattedAddress || specificLabel
+        };
+
+        // Build specific label keeping the exact place name (e.g. "East Tower, Madurai, Tamil Nadu")
         specificLabel = placeName;
         const extraParts = [];
-        if (locality && !placeName.toLowerCase().includes(locality.toLowerCase())) {
-          extraParts.push(locality);
+        if (resolvedCity && !placeName.toLowerCase().includes(resolvedCity.toLowerCase())) {
+          extraParts.push(resolvedCity);
         }
         if (adminArea && !placeName.toLowerCase().includes(adminArea.toLowerCase())) {
           extraParts.push(adminArea);
@@ -177,10 +200,18 @@ export default function CityAutocompleteInput({
       }
     }
 
+    if (!locationDetails) {
+      locationDetails = {
+        city: "",
+        state: "",
+        formattedAddress: specificLabel
+      };
+    }
+
     saveCustomCity(specificLabel);
     setInputValue(specificLabel);
     if (onChange) {
-      onChange(specificLabel, lat && lng ? { lat, lng } : null);
+      onChange(specificLabel, lat && lng ? { lat, lng } : null, locationDetails);
     }
     setIsOpen(false);
     setHighlightedIndex(-1);
@@ -190,7 +221,13 @@ export default function CityAutocompleteInput({
     const formatted = formatCityLabel(city);
     setInputValue(formatted);
     const coords = (city.lat && city.lng) ? { lat: city.lat, lng: city.lng } : null;
-    if (onChange) onChange(formatted, coords);
+    const cityName = city.name || city.city || (typeof city === "string" ? city.split(",")[0].trim() : "");
+    const staticDetails = {
+      city: cityName.toLowerCase() === "bengaluru" ? "Bangalore" : cityName,
+      state: city.state || "",
+      district: city.district || ""
+    };
+    if (onChange) onChange(formatted, coords, staticDetails);
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -201,7 +238,7 @@ export default function CityAutocompleteInput({
     saveCustomCity(clean);
     const formatted = clean.includes(",") ? clean : `${clean}, India`;
     setInputValue(formatted);
-    if (onChange) onChange(formatted, null);
+    if (onChange) onChange(formatted, null, { city: clean.split(",")[0].trim(), state: "" });
     setIsOpen(false);
   };
 

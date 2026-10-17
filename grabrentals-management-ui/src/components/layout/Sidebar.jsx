@@ -95,6 +95,7 @@ export const ADMIN_NAV = [
       { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
       { label: "Vehicles Models", href: "/admin/vehicle-models", icon: Layers },
       { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
+      { label: "Driver Allowance", href: "/admin/driver-allowance", icon: UserCheck },
       { label: "GST & Add-on Pricing", href: "/admin/settings", icon: Sliders },
       { label: "Coupons & Offers", href: "/admin/coupons", icon: Ticket },
       { label: "Promo Popup", href: "/admin/promo-popup", icon: Sparkles },

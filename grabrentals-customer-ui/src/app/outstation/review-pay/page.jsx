@@ -3,18 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ShieldCheck, 
-  MapPin, 
-  CreditCard, 
-  Wallet, 
-  Clock, 
-  ChevronRight, 
-  CheckCircle2, 
-  Smartphone, 
-  Loader2, 
-  User, 
-  Phone, 
+import {
+  ShieldCheck,
+  MapPin,
+  CreditCard,
+  Wallet,
+  Clock,
+  ChevronRight,
+  CheckCircle2,
+  Smartphone,
+  Loader2,
+  User,
+  Phone,
   FileText,
   Calendar,
   AlertCircle,
@@ -47,7 +47,7 @@ function resolveCarImage(title, category, rawImage) {
 
   const t = (title || "").toLowerCase();
   const c = (category || "").toLowerCase();
-  
+
   if (t.includes("innova") || t.includes("crysta") || t.includes("hycross") || t.includes("fortuner")) {
     return "/images/cars/innova.jpg";
   }
@@ -240,7 +240,7 @@ export default function ReviewPayPage() {
             } else {
               setPickupCityName(parts[0] || "");
             }
-            setPickupAddress(isAirportTrip && rawFrom.toLowerCase().includes("airport") 
+            setPickupAddress(isAirportTrip && rawFrom.toLowerCase().includes("airport")
               ? `${rawFrom} (Arrivals Terminal)`
               : `${rawFrom} (Pickup Point)`);
           }
@@ -281,6 +281,9 @@ export default function ReviewPayPage() {
                       if (!prev) return prev;
                       const freshPet = match.pricing.petCharge != null ? Number(match.pricing.petCharge) : prev.petDetails?.petCharge;
                       const freshVendPet = match.pricing.vendorPetCharge != null ? Number(match.pricing.vendorPetCharge) : prev.petDetails?.vendorPetCharge;
+                      const freshDiscPct = match.pricing.discountPercentage != null ? Number(match.pricing.discountPercentage) : prev.car?.discountPercentage;
+                      const freshPerKm = match.perKmRate != null ? Number(match.perKmRate) : prev.car?.perKmRate;
+                      const freshOrigPrice = match.pricing.originalPrice != null ? Number(match.pricing.originalPrice) : prev.car?.originalPrice;
                       const updated = {
                         ...prev,
                         petDetails: {
@@ -292,6 +295,13 @@ export default function ReviewPayPage() {
                           ...prev.car,
                           petCharge: freshPet,
                           vendorPetCharge: freshVendPet,
+                          discountPercentage: freshDiscPct,
+                          perKmRate: freshPerKm,
+                          originalPrice: freshOrigPrice,
+                          pricing: {
+                            ...(prev.car?.pricing || {}),
+                            ...match.pricing
+                          }
                         },
                       };
                       sessionStorage.setItem("grab_selected_booking", JSON.stringify(updated));
@@ -333,7 +343,7 @@ export default function ReviewPayPage() {
                 profilePhone = digits.length > 10 ? digits.slice(-10) : digits;
               }
             }
-          } catch {}
+          } catch { }
         }
 
         // Restore draft if user previously filled it out
@@ -356,7 +366,7 @@ export default function ReviewPayPage() {
             if (draft.dropAddress) setDropAddress(draft.dropAddress);
             if (draft.specialInstructions) setSpecialInstructions(draft.specialInstructions);
             if (draft.paymentPlan) setPaymentPlan(draft.paymentPlan);
-          } catch {}
+          } catch { }
         } else {
           if (profileName) setPassengerName(profileName);
           if (profilePhone) setPassengerPhone(profilePhone);
@@ -396,33 +406,44 @@ export default function ReviewPayPage() {
   const petCount = Number(bookingConfig?.petDetails?.petCount || bookingConfig?.petCount || 1);
   const petCharge = isPetFriendly
     ? Number(
-        bookingConfig?.petDetails?.petCharge != null
-          ? bookingConfig.petDetails.petCharge
-          : car?.petCharge != null
+      bookingConfig?.petDetails?.petCharge != null
+        ? bookingConfig.petDetails.petCharge
+        : car?.petCharge != null
           ? car.petCharge
           : pricingConfig?.defaultPetCharge != null
-          ? pricingConfig.defaultPetCharge
-          : 0
-      )
+            ? pricingConfig.defaultPetCharge
+            : 0
+    )
     : 0;
   const vendorPetPayout = isPetFriendly
     ? Number(
-        bookingConfig?.petDetails?.vendorPetCharge != null
-          ? bookingConfig.petDetails.vendorPetCharge
-          : car?.vendorPetCharge != null
+      bookingConfig?.petDetails?.vendorPetCharge != null
+        ? bookingConfig.petDetails.vendorPetCharge
+        : car?.vendorPetCharge != null
           ? car.vendorPetCharge
           : pricingConfig?.defaultVendorPetCharge != null
-          ? pricingConfig.defaultVendorPetCharge
-          : 0
-      )
+            ? pricingConfig.defaultVendorPetCharge
+            : 0
+    )
     : 0;
 
-  // Base fare (exclusive of taxes & driver allowance)
-  const baseFare = isLocal 
-    ? (car.baseFare || car.fare || 4047)
-    : (customDistanceKm != null && perKmRate > 0 
-        ? Math.round(perKmRate * distanceKm) 
-        : (car.baseFare || (perKmRate > 0 && distanceKm > 0 ? Math.round(perKmRate * distanceKm) : (car.fare || 4047))));
+  // Dynamic discount & Base fare (exclusive of taxes & driver allowance)
+  const discountPercentage = Number(car.discountPercentage ?? car.pricing?.discountPercentage ?? 0);
+
+  // Standard (undiscounted) Base Fare before route discount
+  const standardBaseFare = isLocal
+    ? (car.pricing?.originalPrice || car.baseFare || car.fare || 4047)
+    : (perKmRate > 0 && distanceKm > 0
+      ? Math.round(perKmRate * distanceKm)
+      : (car.pricing?.originalPrice || car.baseFare || 4047));
+
+  // Route Tariff Discount Amount
+  const tariffDiscountAmount = discountPercentage > 0
+    ? Math.round(standardBaseFare * (discountPercentage / 100))
+    : 0;
+
+  // Final Discounted Base Fare
+  const baseFare = Math.max(0, standardBaseFare - tariffDiscountAmount);
 
   // Dynamic percentages, flat amounts & add-on pricing from Backend / Settings
   const gstType = pricingConfig.gstType || "PERCENTAGE";
@@ -446,23 +467,32 @@ export default function ReviewPayPage() {
   const pickupTimeStr = bookingConfig?.trip?.time || "";
   const isNightTrip = isNightPickup(pickupTimeStr);
 
-  // Driver Allowance (dynamically calculated from live driverAllowancePercentage or flat driverAllowanceAmount)
-  const isDriverAllowanceFlat = driverAllowanceType === "FLAT" && driverAllowanceAmount > 0;
-  const rawDriverAllowance = isDriverAllowanceFlat
-    ? Math.round(driverAllowanceAmount)
-    : (pricingConfigLoaded
+  // Driver Allowance (prioritizing dedicated rule from car.pricing)
+  const carDriverAllowance = car.pricing?.driverAllowance ?? car.driverAllowance;
+  const isCarAllowanceDefined = carDriverAllowance != null && !isNaN(Number(carDriverAllowance));
+  const isDriverAllowanceFlat = isCarAllowanceDefined
+    ? (car.pricing?.driverAllowanceType === "FLAT" || (!car.pricing?.driverAllowancePercentage || Number(car.pricing?.driverAllowancePercentage) === 0))
+    : (driverAllowanceType === "FLAT" && driverAllowanceAmount > 0);
+
+  const rawDriverAllowance = isCarAllowanceDefined
+    ? Math.round(Number(carDriverAllowance))
+    : (isDriverAllowanceFlat
+      ? Math.round(driverAllowanceAmount)
+      : (pricingConfigLoaded
         ? Math.round(baseFare * (driverAllowancePercentage / 100))
-        : (car.driverAllowance || Math.round(baseFare * (driverAllowancePercentage / 100))));
+        : (car.driverAllowance || Math.round(baseFare * (driverAllowancePercentage / 100)))));
 
-  // For 10 PM to 6 AM travel, driver allowance is excluded from prepaid billing
-  const driverAllowance = isNightTrip ? 0 : rawDriverAllowance;
+  const driverAllowance = rawDriverAllowance;
 
-  const driverAllowanceLabel = isDriverAllowanceFlat
-    ? `Driver Allowance (₹${rawDriverAllowance})`
-    : `Driver Allowance (${driverAllowancePercentage}%)`;
+  const driverAllowanceLabel = (
+    car.pricing?.driverAllowanceLabel ||
+    (isDriverAllowanceFlat
+      ? `Driver Allowance (₹${rawDriverAllowance})`
+      : `Driver Allowance (${car.pricing?.driverAllowancePercentage || driverAllowancePercentage}%)`)
+  ).replace(/\s*Included/gi, "").trim();
 
   // Add-ons total
-  const addonsTotal = 
+  const addonsTotal =
     (selectedAddons.expressway ? expresswayFee : 0) +
     (selectedAddons.languageChauffeur ? languageChauffeurFee : 0) +
     (selectedAddons.luggageCarrier ? luggageCarrierFee : 0) +
@@ -486,12 +516,32 @@ export default function ReviewPayPage() {
   useEffect(() => {
     if (!bookingConfig || isLocal || !effectiveFrom || !effectiveTo) return;
 
+    // Clean placeholder decorations like "(Pickup Point)" or "(City Center / Main Landmark)"
+    const cleanFrom = (effectiveFrom || "")
+      .replace(/\s*\((Pickup Point|Arrivals Terminal)[^)]*\)/i, "")
+      .trim();
+    const cleanTo = (effectiveTo || "")
+      .replace(/\s*\((City Center \/ Main Landmark|Departures Terminal)[^)]*\)/i, "")
+      .trim();
+
+    // Check if user has entered custom address or selected coords
+    const originCity = (bookingConfig.trip?.from || "").trim().toLowerCase();
+    const destCity = (bookingConfig.trip?.to || "").trim().toLowerCase();
+    const isFromCustom = cleanFrom.toLowerCase() !== originCity && cleanFrom.length > 0;
+    const isToCustom = cleanTo.toLowerCase() !== destCity && cleanTo.length > 0;
+    const hasCustomCoords = Boolean(pickupCoords || dropCoords);
+
+    // If address hasn't actually been customized by user, maintain the verified distance from select-vehicle
+    if (!isFromCustom && !isToCustom && !hasCustomCoords && bookingConfig.distanceKm > 0) {
+      return;
+    }
+
     let cancelled = false;
     async function recalculateRoute() {
       try {
         const res = await fetchGoogleRouteDistance(
-          effectiveFrom,
-          effectiveTo,
+          cleanFrom,
+          cleanTo,
           bookingConfig.trip?.stops || [],
           tripType,
           {
@@ -543,18 +593,18 @@ export default function ReviewPayPage() {
     dropCoords?.lng
   ]);
 
-  const tollPrice = (isLocal || isRoundTrip) 
-    ? 0 
-    : (liveToll !== null 
-        ? liveToll 
-        : (bookingConfig?.tollPrice > 0 
-            ? Math.round(Number(bookingConfig.tollPrice)) 
-            : (distanceKm > 0 ? Math.round(distanceKm * 1.35) : 0)));
+  const tollPrice = (isLocal || isRoundTrip)
+    ? 0
+    : (liveToll !== null
+      ? liveToll
+      : (bookingConfig?.tollPrice > 0
+        ? Math.round(Number(bookingConfig.tollPrice))
+        : (distanceKm > 0 ? Math.round(distanceKm * 1.35) : 0)));
   const duration = customDuration || (isLocal ? null : (bookingConfig?.duration || null));
 
   const couponDiscount = appliedCouponData?.discountAmount ? Math.round(Number(appliedCouponData.discountAmount)) : 0;
   const totalAmount = Math.max(0, baseFare + driverAllowance + taxes + addonsTotal + tollPrice + petCharge - couponDiscount);
-  
+
   // Advance Part Pay = 25%, Full Pay = 100%, Book at Zero = 0
   const advanceAmount = Math.round(totalAmount * 0.25);
   const driverLaterAmount = totalAmount - (paymentPlan === "zero" ? 0 : (paymentPlan === "advance" ? advanceAmount : totalAmount));
@@ -889,7 +939,7 @@ export default function ReviewPayPage() {
         petCount: isPetFriendly ? petCount : null,
         petCharge: isPetFriendly ? petCharge : 0,
         vendorPetPayout: isPetFriendly ? vendorPetPayout : 0,
-        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${isPetFriendly ? `🐾 Pet Friendly Cab (${petType} × ${petCount}, Pet Fee: ₹${petCharge}) | ` : ""}${isLocal ? "Package: " + packageLabel + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Image: ${bookingConfig?.car?.image || ""} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km | BaseFare: ₹${baseFare} | DriverAllowance: ₹${driverAllowance} (${driverAllowanceLabel}) | Taxes: ₹${taxes} (${gstLabel})${selectedAddons.expressway ? ` | Expressway Fastag Included (₹${expresswayFee})` : ""}${selectedAddons.languageChauffeur ? ` | Language Chauffeur (${chauffeurLanguage}) (₹${languageChauffeurFee})` : ""}${selectedAddons.luggageCarrier ? ` | Luggage Carrier Added (₹${luggageCarrierFee})` : ""}${selectedAddons.lessThan3Years ? ` | Less than 3 years Old Vehicle (₹${lessThan3YearsFee})` : ""}${appliedCouponData ? ` | Coupon Applied: ${appliedCouponData.code} (Saved ₹${couponDiscount})` : ""}`,
+        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${isPetFriendly ? `🐾 Pet Friendly Cab (${petType} × ${petCount}, Pet Fee: ₹${petCharge}) | ` : ""}${isLocal ? "Package: " + packageLabel + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Image: ${bookingConfig?.car?.image || ""} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km${tariffDiscountAmount > 0 ? ` | Standard Rate: ₹${standardBaseFare} | Route Discount: ₹${tariffDiscountAmount} (${discountPercentage}% OFF)` : ""} | BaseFare: ₹${baseFare} | DriverAllowance: ₹${driverAllowance} (${driverAllowanceLabel}) | Taxes: ₹${taxes} (${gstLabel})${selectedAddons.expressway ? ` | Expressway Fastag Included (₹${expresswayFee})` : ""}${selectedAddons.languageChauffeur ? ` | Language Chauffeur (${chauffeurLanguage}) (₹${languageChauffeurFee})` : ""}${selectedAddons.luggageCarrier ? ` | Luggage Carrier Added (₹${luggageCarrierFee})` : ""}${selectedAddons.lessThan3Years ? ` | Less than 3 years Old Vehicle (₹${lessThan3YearsFee})` : ""}${appliedCouponData ? ` | Coupon Applied: ${appliedCouponData.code} (Saved ₹${couponDiscount})` : ""}`,
       };
 
       const res = await customerApi.createBooking(bookingPayload);
@@ -911,6 +961,9 @@ export default function ReviewPayPage() {
           distanceKm,
           duration,
           perKmRate,
+          standardBaseFare,
+          tariffDiscountAmount,
+          discountPercentage,
           baseFare,
           driverAllowance,
           driverAllowanceLabel,
@@ -1043,16 +1096,16 @@ export default function ReviewPayPage() {
 
   return (
     <main className="bg-slate-50 min-h-screen pb-24">
-      <SearchSummaryBar 
-        activeStep={2} 
+      <SearchSummaryBar
+        activeStep={2}
         overrideDistanceKm={distanceKm}
         overrideDuration={duration}
         overrideFrom={pickupCityName || bookingConfig?.trip?.from}
         overrideTo={dropAddress || bookingConfig?.trip?.to}
       />
-      
+
       <div className="max-w-7xl mx-auto px-4 lg:px-8 mt-8">
-        
+
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-6">{t("review_and_pay")}</h1>
 
         {errorMsg && (
@@ -1063,10 +1116,10 @@ export default function ReviewPayPage() {
         )}
 
         <form onSubmit={handlePayAndBook} className="flex flex-col lg:flex-row gap-8">
-          
+
           {/* Left Column: Passenger & Pickup Details + Payment Options */}
           <div className="flex-1 space-y-6">
-            
+
             {/* 1. Passenger Information */}
             <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-xs relative overflow-hidden">
               <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100 flex-wrap">
@@ -1365,7 +1418,7 @@ export default function ReviewPayPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <label 
+                <label
                   onClick={() => setPaymentPlan("zero")}
                   className={`relative border-2 ${paymentPlan === 'zero' ? 'border-[#0082fe] bg-blue-50/40 ring-2 ring-[#0082fe]/10' : 'border-slate-200 bg-white hover:border-slate-300'} p-5 rounded-2xl cursor-pointer flex flex-col items-center text-center transition-all`}
                 >
@@ -1375,7 +1428,7 @@ export default function ReviewPayPage() {
                   <span className="text-[11px] font-bold text-slate-500">Pay ₹{totalAmount.toLocaleString()} later at trip start</span>
                 </label>
 
-                <label 
+                <label
                   onClick={() => setPaymentPlan("advance")}
                   className={`relative border-2 ${paymentPlan === 'advance' ? 'border-[#0082fe] bg-blue-50/40 ring-2 ring-[#0082fe]/10' : 'border-slate-200 bg-white hover:border-slate-300'} p-5 rounded-2xl cursor-pointer flex flex-col items-center text-center transition-all`}
                 >
@@ -1384,8 +1437,8 @@ export default function ReviewPayPage() {
                   <span className="text-2xl font-black text-[#0082fe] mb-1">₹{advanceAmount.toLocaleString()}</span>
                   <span className="text-[11px] font-bold text-slate-500">Pay rest to chauffeur at trip end</span>
                 </label>
-                
-                <label 
+
+                <label
                   onClick={() => setPaymentPlan("full")}
                   className={`relative border-2 ${paymentPlan === 'full' ? 'border-[#0082fe] bg-blue-50/40 ring-2 ring-[#0082fe]/10' : 'border-slate-200 bg-white hover:border-slate-300'} p-5 rounded-2xl cursor-pointer flex flex-col items-center text-center transition-all`}
                 >
@@ -1435,8 +1488,8 @@ export default function ReviewPayPage() {
                 <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${selectedAddons.languageChauffeur ? 'border-[#0082fe] bg-blue-50/20 shadow-2xs' : 'border-slate-200 hover:border-slate-300'}`}>
                   <label className="flex items-center justify-between cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={selectedAddons.languageChauffeur}
                         onChange={(e) => setSelectedAddons(prev => ({ ...prev, languageChauffeur: e.target.checked }))}
                         className="w-4 h-4 accent-[#0082fe] rounded cursor-pointer"
@@ -1459,11 +1512,10 @@ export default function ReviewPayPage() {
                               e.stopPropagation();
                               setChauffeurLanguage(lang);
                             }}
-                            className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                              chauffeurLanguage === lang
+                            className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${chauffeurLanguage === lang
                                 ? "bg-[#0082fe] text-white shadow-2xs"
                                 : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                            }`}
+                              }`}
                           >
                             {lang}
                           </button>
@@ -1476,8 +1528,8 @@ export default function ReviewPayPage() {
                 {/* Add-on 3: Luggage Carrier */}
                 <label className={`flex items-center justify-between p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer ${selectedAddons.luggageCarrier ? 'border-[#0082fe] bg-blue-50/20 shadow-2xs' : 'border-slate-200 hover:border-slate-300'}`}>
                   <div className="flex items-center gap-3">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={selectedAddons.luggageCarrier}
                       onChange={(e) => setSelectedAddons(prev => ({ ...prev, luggageCarrier: e.target.checked }))}
                       className="w-4 h-4 accent-[#0082fe] rounded cursor-pointer"
@@ -1490,8 +1542,8 @@ export default function ReviewPayPage() {
                 {/* Add-on 4: Less than 3 years Old Vehicle */}
                 <label className={`flex items-center justify-between p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer ${selectedAddons.lessThan3Years ? 'border-[#0082fe] bg-blue-50/20 shadow-2xs' : 'border-slate-200 hover:border-slate-300'}`}>
                   <div className="flex items-center gap-3">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={selectedAddons.lessThan3Years}
                       onChange={(e) => setSelectedAddons(prev => ({ ...prev, lessThan3Years: e.target.checked }))}
                       className="w-4 h-4 accent-[#0082fe] rounded cursor-pointer"
@@ -1541,8 +1593,8 @@ export default function ReviewPayPage() {
                     )}
                     <li className="flex items-start gap-2.5 text-rose-600">
                       ✕ <span className="text-slate-700 font-medium">
-                        {isNightTrip 
-                          ? "Driver Allowance (Night travel 10:00 PM – 6:00 AM: excluded from package, payable directly to driver)" 
+                        {isNightTrip
+                          ? "Driver Allowance (Night travel 10:00 PM – 6:00 AM: excluded from package, payable directly to driver)"
                           : "Driver Night Allowance (Between 10:00 PM – 6:00 AM)"}
                       </span>
                     </li>
@@ -1554,8 +1606,8 @@ export default function ReviewPayPage() {
 
               {/* Collapsible Terms and Conditions */}
               <div className="pt-4 border-t border-slate-100">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setTermsOpen(!termsOpen)}
                   className="w-full flex items-center justify-between text-xs font-bold text-slate-800 hover:text-[#0082fe] transition-colors cursor-pointer select-none"
                 >
@@ -1621,7 +1673,7 @@ export default function ReviewPayPage() {
           {/* Right Column: Original GrabRentals Sticky Card with Extra Details */}
           <div className="w-full lg:w-[420px]">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm sticky top-36 overflow-hidden">
-              
+
               {/* Dark Slate Summary Header */}
               <div className="bg-slate-900 text-white p-5">
                 <h3 className="text-base font-black tracking-tight">Final Booking Summary</h3>
@@ -1661,12 +1713,12 @@ export default function ReviewPayPage() {
               <div className="p-5 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex gap-4 items-center">
                   <div className="w-20 h-14 relative bg-white border border-slate-200 rounded-xl overflow-hidden shrink-0">
-                    <Image 
-                      src={resolveCarImage(bookingConfig?.car?.title, bookingConfig?.car?.category, bookingConfig?.car?.image)} 
-                      alt={bookingConfig?.car?.title || "Car"} 
-                      fill 
+                    <Image
+                      src={resolveCarImage(bookingConfig?.car?.title, bookingConfig?.car?.category, bookingConfig?.car?.image)}
+                      alt={bookingConfig?.car?.title || "Car"}
+                      fill
                       unoptimized={true}
-                      className="object-contain p-1" 
+                      className="object-contain p-1"
                     />
                   </div>
                   <div>
@@ -1684,11 +1736,39 @@ export default function ReviewPayPage() {
                 <div className="space-y-2 text-xs font-semibold text-slate-600">
                   <div className="flex justify-between items-center">
                     <span>Base Outstation Fare ({distanceKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
-                    <span className="text-slate-900 font-bold">₹{baseFare.toLocaleString()}</span>
+                    <span className="flex items-center gap-2">
+                      {tariffDiscountAmount > 0 && (
+                        <span className="text-slate-400 line-through text-xs font-semibold">
+                          ₹{standardBaseFare.toLocaleString()}
+                        </span>
+                      )}
+                      <span className="text-slate-900 font-bold">
+                        ₹{(tariffDiscountAmount > 0 ? baseFare : standardBaseFare).toLocaleString()}
+                      </span>
+                    </span>
                   </div>
 
+                  {tariffDiscountAmount > 0 && (
+                    <div className="flex justify-between items-center text-emerald-600 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded border border-emerald-200">
+                          {discountPercentage}% OFF
+                        </span>
+                        <span>Route Special Discount</span>
+                      </span>
+                      <span>- ₹{tariffDiscountAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {tariffDiscountAmount > 0 && (
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-800 bg-slate-50/90 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
+                      <span className="text-slate-700">Net Base Fare (After Discount)</span>
+                      <span className="text-[#0082fe] font-black">₹{baseFare.toLocaleString()}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center">
-                    <span>{driverAllowanceLabel}</span>
+                    <span>{driverAllowanceLabel?.replace(/\s*Included/gi, "").trim()}</span>
                     <span className={isNightTrip ? "text-[#0082fe] font-bold" : "text-slate-900 font-bold"}>
                       {isNightTrip ? "Excluded (Pay to driver)" : `₹${driverAllowance.toLocaleString()}`}
                     </span>
@@ -1758,8 +1838,8 @@ export default function ReviewPayPage() {
               {/* Coupon Code Input */}
               <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-2">
                 <div className="flex gap-2">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={couponCode}
                     disabled={couponApplied || couponLoading}
                     onChange={(e) => {
@@ -1767,20 +1847,20 @@ export default function ReviewPayPage() {
                       setCouponError("");
                       setCouponSuccess("");
                     }}
-                    placeholder="ENTER A COUPON" 
+                    placeholder="ENTER A COUPON"
                     className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 uppercase placeholder:text-slate-400 focus:outline-none focus:border-[#0082fe] disabled:bg-slate-100 disabled:text-slate-500"
                   />
                   {couponApplied ? (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={handleRemoveCoupon}
                       className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       Remove
                     </button>
                   ) : (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       disabled={couponLoading || !couponCode.trim()}
                       onClick={handleApplyCoupon}
                       className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center min-w-[70px]"
@@ -1816,7 +1896,7 @@ export default function ReviewPayPage() {
                     ₹{paymentPlan === "zero" ? "0" : paymentPlan === "advance" ? advanceAmount.toLocaleString() : totalAmount.toLocaleString()}
                   </span>
                 </div>
-                
+
                 <button
                   type="submit"
                   disabled={submitting}
@@ -1828,14 +1908,14 @@ export default function ReviewPayPage() {
                     </>
                   ) : (
                     <>
-                      <ShieldCheck className="w-4 h-4" /> 
+                      <ShieldCheck className="w-4 h-4" />
                       {paymentPlan === "zero"
                         ? `${t("confirm_and_book") || "Confirm & Book"} • ₹0`
                         : `Proceed to Pay • ₹${(paymentPlan === "advance" ? advanceAmount : totalAmount).toLocaleString()}`}
                     </>
                   )}
                 </button>
-                
+
                 <p className="text-[10px] text-slate-500 font-bold text-center flex items-center justify-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> 100% Encrypted & Verified Booking
                 </p>
@@ -2140,11 +2220,10 @@ export default function ReviewPayPage() {
                     ) : (
                       <label
                         htmlFor="proof-upload-modal-input"
-                        className={`w-full border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                          uploadingProof
+                        className={`w-full border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${uploadingProof
                             ? "border-[#0082fe] bg-blue-50/40"
                             : "border-slate-300 hover:border-[#0082fe] hover:bg-blue-50/20 bg-slate-50/50"
-                        }`}
+                          }`}
                       >
                         {uploadingProof ? (
                           <div className="flex flex-col items-center gap-2 text-[#0082fe]">

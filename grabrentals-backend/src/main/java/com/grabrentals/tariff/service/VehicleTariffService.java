@@ -410,14 +410,26 @@ public class VehicleTariffService {
         // Merge: direct tariff for this serviceType takes priority, while other cities/categories inherit base tariffs
         Map<String, VehicleTariff> map = new LinkedHashMap<>();
         for (VehicleTariff t : allTariffs) {
-            String key = (t.getCity() != null ? t.getCity().toLowerCase().trim() : "all") + "_" + (t.getCategory() != null ? t.getCategory().toLowerCase().trim() : "all");
+            String key = buildTariffKey(t);
             map.put(key, t);
         }
         for (VehicleTariff t : direct) {
-            String key = (t.getCity() != null ? t.getCity().toLowerCase().trim() : "all") + "_" + (t.getCategory() != null ? t.getCategory().toLowerCase().trim() : "all");
+            String key = buildTariffKey(t);
             map.put(key, t);
         }
         return new ArrayList<>(map.values());
+    }
+
+    private String buildTariffKey(VehicleTariff t) {
+        if (t == null) return "";
+        String prefix = Boolean.TRUE.equals(t.getSeasonal()) ? ("seasonal_" + (t.getId() != null ? t.getId() : UUID.randomUUID())) : "standard";
+        String city = (t.getCity() != null && !t.getCity().isBlank()) ? t.getCity().trim().toLowerCase() : "all";
+        String state = (t.getState() != null && !t.getState().isBlank()) ? t.getState().trim().toLowerCase() : "all";
+        String category = (t.getCategory() != null && !t.getCategory().isBlank()) ? t.getCategory().trim().toLowerCase() : "all";
+        String model = (t.getModelName() != null && !t.getModelName().isBlank()) ? t.getModelName().trim().toLowerCase() : "all";
+        String fuel = (t.getFuelType() != null && !t.getFuelType().isBlank()) ? t.getFuelType().trim().toLowerCase() : "all";
+        String seats = (t.getSeatingCapacity() != null && !t.getSeatingCapacity().isBlank()) ? t.getSeatingCapacity().trim() : "all";
+        return prefix + "_" + state + "_" + city + "_" + category + "_" + model + "_" + fuel + "_" + seats;
     }
 
     @Transactional(readOnly = true)

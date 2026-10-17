@@ -994,4 +994,30 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  // === DRIVER ALLOWANCE RULES ===
+  async getDriverAllowances() {
+    const response = await axiosClient.get("/api/admin/driver-allowances");
+    return response.data;
+  },
+
+  async createDriverAllowance(data) {
+    const response = await axiosClient.post("/api/admin/driver-allowances", data);
+    return response.data;
+  },
+
+  async updateDriverAllowance(id, data) {
+    const response = await axiosClient.put(`/api/admin/driver-allowances/${id}`, data);
+    return response.data;
+  },
+
+  async deleteDriverAllowance(id) {
+    const response = await axiosClient.delete(`/api/admin/driver-allowances/${id}`);
+    return response.data;
+  },
+
+  async toggleDriverAllowanceStatus(id) {
+    const response = await axiosClient.patch(`/api/admin/driver-allowances/${id}/toggle`);
+    return response.data;
+  },
 };
