@@ -9,7 +9,7 @@ export const VEHICLE_CLASSES = [
     name: "Hatchback",
     seats: "4+DRIVER",
     ac: "AC",
-    image: "/images/cars/spresso.jpg",
+    image: "/images/cars/spresso-clean.jpg",
     link: "/fleet/hatchback",
   },
   {

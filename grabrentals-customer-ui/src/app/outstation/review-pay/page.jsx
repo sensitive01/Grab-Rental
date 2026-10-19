@@ -52,7 +52,7 @@ function resolveCarImage(title, category, rawImage) {
     return "/images/cars/innova.jpg";
   }
   if (t.includes("s-presso") || t.includes("spresso")) {
-    return "/images/cars/spresso.jpg";
+    return "/images/cars/spresso-clean.jpg";
   }
   if (t.includes("wagon") || t.includes("celerio") || t.includes("tiago") || t.includes("alto")) {
     return "/images/cars/wagon_r.jpg";
@@ -1494,7 +1494,7 @@ export default function ReviewPayPage() {
                         onChange={(e) => setSelectedAddons(prev => ({ ...prev, languageChauffeur: e.target.checked }))}
                         className="w-4 h-4 accent-[#0082fe] rounded cursor-pointer"
                       />
-                      <span className="text-xs sm:text-sm font-bold text-slate-900">Chauffeurs who know your language</span>
+                      <span className="text-xs sm:text-sm font-bold text-slate-900">Driver who know your language</span>
                     </div>
                     <span className="font-extrabold text-slate-900 text-sm">₹{languageChauffeurFee}</span>
                   </label>

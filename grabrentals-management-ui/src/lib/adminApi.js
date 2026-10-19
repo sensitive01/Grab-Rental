@@ -975,6 +975,46 @@ export const adminApi = {
     return response.data;
   },
 
+  // === BANNERS & PROMOTIONS MANAGEMENT ===
+  async getBanners() {
+    const response = await axiosClient.get("/api/admin/banners");
+    return response.data;
+  },
+
+  async getBannerById(id) {
+    const response = await axiosClient.get(`/api/admin/banners/${id}`);
+    return response.data;
+  },
+
+  async createBanner(data) {
+    const response = await axiosClient.post("/api/admin/banners", data);
+    return response.data;
+  },
+
+  async updateBanner(id, data) {
+    const response = await axiosClient.put(`/api/admin/banners/${id}`, data);
+    return response.data;
+  },
+
+  async toggleBannerStatus(id) {
+    const response = await axiosClient.patch(`/api/admin/banners/${id}/toggle`);
+    return response.data;
+  },
+
+  async deleteBanner(id) {
+    const response = await axiosClient.delete(`/api/admin/banners/${id}`);
+    return response.data;
+  },
+
+  async uploadBannerMedia(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await axiosClient.post("/api/admin/banners/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
   // === UPI PAYMENT CONFIGURATION ===
   async getUpiConfig() {
     const response = await axiosClient.get("/api/admin/upi/config");
@@ -1018,6 +1058,32 @@ export const adminApi = {
 
   async toggleDriverAllowanceStatus(id) {
     const response = await axiosClient.patch(`/api/admin/driver-allowances/${id}/toggle`);
+    return response.data;
+  },
+
+  // === CUSTOMER ENQUIRIES / LEADS ===
+  async getEnquiries(status) {
+    const response = await axiosClient.get("/api/admin/enquiries", {
+      params: status && status !== "ALL" ? { status } : {},
+    });
+    return response.data;
+  },
+
+  async getEnquiryStats() {
+    const response = await axiosClient.get("/api/admin/enquiries/stats");
+    return response.data;
+  },
+
+  async updateEnquiryStatus(id, { status, adminNotes }) {
+    const response = await axiosClient.put(`/api/admin/enquiries/${id}/status`, {
+      status,
+      adminNotes,
+    });
+    return response.data;
+  },
+
+  async deleteEnquiry(id) {
+    const response = await axiosClient.delete(`/api/admin/enquiries/${id}`);
     return response.data;
   },
 };

@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import BookingWidget from "@/components/home/BookingWidget";
 import VehicleClassSelector from "@/components/home/VehicleClassSelector";
-import WelcomePromoModal from "@/components/home/WelcomePromoModal";
+import InPageBanner from "@/components/banner/InPageBanner";
 import {
   CheckCircle,
   ShieldCheck,
@@ -213,6 +213,9 @@ export default function Home() {
       {/* 4. Popular Outstation Corridors */}
       <section className="py-12 sm:py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Dynamic In-Page Promotional Banners */}
+          <InPageBanner page="HOME" />
+
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
               {t("popular_outstation_corridors") || "Popular Outstation Corridors"}
@@ -529,8 +532,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* First-time Visitor Welcome Promo Popup */}
-      <WelcomePromoModal />
+      {/* First-time Visitor & Targeted Promo Popups are handled dynamically by BannerPopupManager in AppShell */}
     </main>
   );
 }

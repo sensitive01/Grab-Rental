@@ -125,7 +125,7 @@ export function resolveCarModelAndImage(booking, modelsList = adminModelsCache) 
     } else if (titleLower.includes("ertiga") || titleLower.includes("carens") || titleLower.includes("rumion") || catLower.includes("suv_6")) {
       carImage = "/images/cars/ertiga.jpg";
     } else if (titleLower.includes("s-presso") || titleLower.includes("spresso")) {
-      carImage = "/images/cars/spresso.jpg";
+      carImage = "/images/cars/spresso-clean.jpg";
     } else if (titleLower.includes("wagon") || titleLower.includes("celerio") || titleLower.includes("tiago") || titleLower.includes("alto") || catLower.includes("hatchback")) {
       carImage = "/images/cars/wagon_r.jpg";
     } else {

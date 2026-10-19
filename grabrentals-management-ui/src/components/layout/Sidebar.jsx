@@ -49,6 +49,7 @@ export const OPERATIONS_NAV = [
       { label: "Dashboard", href: "/operations/dashboard", icon: LayoutDashboard },
       { label: "All Bookings", href: "/operations/bookings", icon: CalendarCheck },
       { label: "New Requests", href: "/operations/bookings/new", icon: PlusCircle },
+      { label: "Customer Enquiries", href: "/admin/enquiries", icon: MessageSquare },
     ],
   },
   {
@@ -93,12 +94,13 @@ export const ADMIN_NAV = [
     items: [
       { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
+      { label: "Enquiries & Leads", href: "/admin/enquiries", icon: MessageSquare },
       { label: "Vehicles Models", href: "/admin/vehicle-models", icon: Layers },
       { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
       { label: "Driver Allowance", href: "/admin/driver-allowance", icon: UserCheck },
       { label: "GST & Add-on Pricing", href: "/admin/settings", icon: Sliders },
       { label: "Coupons & Offers", href: "/admin/coupons", icon: Ticket },
-      { label: "Promo Popup", href: "/admin/promo-popup", icon: Sparkles },
+      { label: "Banners & Promos", href: "/admin/banners", icon: Sparkles },
       { label: "UPI & Payment QR", href: "/admin/upi-settings", icon: QrCode },
       { label: "Vendors", href: "/admin/vendors", icon: Building2 },
       { label: "Customers", href: "/admin/customers", icon: Users },

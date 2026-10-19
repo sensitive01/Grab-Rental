@@ -71,15 +71,17 @@ public class SecurityConfig {
                     "/api/vendor/profile/upload",
                     "/api/vendor/compliance/upload",
                     "/api/admin/models/upload",
-                    "/api/admin/promo-popup/upload"
+                    "/api/admin/promo-popup/upload",
+                    "/api/admin/banners/upload"
                 ).permitAll()
                 // Public vehicle search & catalog
                 .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
-                // Public promo popup, coupon validation, and UPI checkout
-                .requestMatchers("/api/coupons/**", "/api/promo-popup/**", "/api/upi/**").permitAll()
+                // Public banners, promo popup, coupon validation, UPI checkout, and customer enquiries
+                .requestMatchers("/api/coupons/**", "/api/promo-popup/**", "/api/banners/**", "/api/upi/**", "/api/enquiries/**").permitAll()
                 // Role-based endpoints
                 .requestMatchers("/api/customer/**").authenticated()
                 .requestMatchers("/api/vendor/**", "/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")
+                .requestMatchers("/api/admin/enquiries/**").hasAnyRole("ADMIN", "OPERATIONS")
                 .requestMatchers("/api/operations/**").hasAnyRole("OPERATIONS", "ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Currently authenticated user info

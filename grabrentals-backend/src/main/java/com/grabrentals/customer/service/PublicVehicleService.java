@@ -1003,7 +1003,7 @@ public class PublicVehicleService {
             return "/images/cars/innova.jpg";
         }
         if (m.contains("s-presso") || m.contains("spresso")) {
-            return "/images/cars/spresso.jpg";
+            return "/images/cars/spresso-clean.jpg";
         }
         if (m.contains("wagon") || m.contains("celerio") || m.contains("tiago") || m.contains("alto") || m.contains("kwid")) {
             return "/images/cars/wagon_r.jpg";

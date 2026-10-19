@@ -28,6 +28,8 @@ import {
   Globe
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import BannerPopupManager from "@/components/banner/BannerPopupManager";
+import QuickEnquirySection from "@/components/common/QuickEnquirySection";
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
@@ -735,6 +737,12 @@ export default function AppShell({ children }) {
       <div className="flex-1">
         {children}
       </div>
+
+      {/* Dynamic Targeted Popup Banners */}
+      <BannerPopupManager />
+
+      {/* Quick Enquiry Section across all pages */}
+      <QuickEnquirySection />
 
       {/* C. Enterprise Multi-Column Footer */}
       <footer className="bg-brand-navy-dark text-slate-400 pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-slate-900">

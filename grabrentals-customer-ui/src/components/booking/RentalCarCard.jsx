@@ -22,7 +22,7 @@ function resolveCarImage(car) {
     return "/images/cars/innova.jpg";
   }
   if (title.includes("s-presso") || title.includes("spresso")) {
-    return "/images/cars/spresso.jpg";
+    return "/images/cars/spresso-clean.jpg";
   }
   if (title.includes("wagon") || title.includes("celerio") || title.includes("tiago") || title.includes("alto")) {
     return "/images/cars/wagon_r.jpg";

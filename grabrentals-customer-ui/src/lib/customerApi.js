@@ -125,6 +125,15 @@ export const customerApi = {
     const res = await axiosClient.post(`/api/customer/bookings/${id}/cancel`);
     return res.data;
   },
+
+  /**
+   * Submit custom customer enquiry (Name, Phone, Requirements)
+   * @param {Object} data - { name, phone, requirements, sourcePage }
+   */
+  async submitEnquiry(data) {
+    const res = await axiosClient.post("/api/enquiries", data);
+    return res.data;
+  },
 };
 
 export default customerApi;
