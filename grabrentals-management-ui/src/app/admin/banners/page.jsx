@@ -645,7 +645,7 @@ export default function BannersAdminPage() {
                     className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/30 text-slate-700 text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Upload className={`w-4 h-4 ${uploading ? "animate-bounce" : ""}`} />
-                    {uploading ? "Uploading to Cloudinary..." : "Upload Image / GIF / Video"}
+                    {uploading ? "Uploading..." : "Upload Image / GIF / Video"}
                   </button>
 
                   <span className="text-xs text-slate-400 font-bold">OR</span>
@@ -983,7 +983,7 @@ export default function BannersAdminPage() {
       {/* LIVE TEST PREVIEW MODAL */}
       {previewBanner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-          <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col">
+          <div className={`relative ${previewBanner.mediaType === "VIDEO" ? 'max-w-3xl lg:max-w-4xl' : 'max-w-2xl'} w-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col transition-all`}>
             {/* Close Button */}
             <button
               onClick={() => setPreviewBanner(null)}
@@ -992,11 +992,11 @@ export default function BannersAdminPage() {
               <X className="w-4 h-4" />
             </button>
 
-            {/* 2-Column Content Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* Left Side: Uploaded Poster Image */}
-              <div className="relative bg-white flex items-center justify-center p-4 sm:p-6">
-                <div className="relative w-full aspect-square max-w-[280px] md:max-w-full rounded-2xl overflow-hidden flex items-center justify-center">
+            {/* Dynamic Content Layout */}
+            <div className={`grid grid-cols-1 ${previewBanner.mediaType === "VIDEO" ? 'md:grid-cols-12 items-center' : 'md:grid-cols-2'}`}>
+              {/* Left Side: Uploaded Media without cropping */}
+              <div className={`relative flex items-center justify-center p-3 sm:p-5 ${previewBanner.mediaType === "VIDEO" ? 'md:col-span-7 bg-slate-900/5' : 'bg-white'}`}>
+                <div className="relative w-full rounded-2xl overflow-hidden flex items-center justify-center">
                   {previewBanner.mediaType === "VIDEO" ? (
                     <video
                       src={previewBanner.mediaUrl}
@@ -1005,13 +1005,13 @@ export default function BannersAdminPage() {
                       loop
                       muted
                       playsInline
-                      className="w-full h-full object-cover rounded-2xl"
+                      className="w-full h-auto max-h-[65vh] object-contain rounded-2xl shadow-xs"
                     />
                   ) : (
                     <img
                       src={previewBanner.mediaUrl}
                       alt={previewBanner.title}
-                      className="w-full h-full object-contain rounded-2xl"
+                      className="w-full h-auto max-h-[65vh] object-contain rounded-2xl"
                       onError={(e) => {
                         e.target.src = "/images/promo/grab-welcome-poster-blue.jpg";
                       }}
@@ -1021,7 +1021,7 @@ export default function BannersAdminPage() {
               </div>
 
               {/* Right Side: Text & Actions */}
-              <div className="p-6 sm:p-8 flex flex-col justify-center text-center md:text-left bg-white">
+              <div className={`${previewBanner.mediaType === "VIDEO" ? 'md:col-span-5' : ''} p-5 sm:p-7 flex flex-col justify-center text-center md:text-left bg-white`}>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   {previewBanner.title || "Grab Rentals"}
                 </h2>

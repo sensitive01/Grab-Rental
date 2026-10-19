@@ -123,7 +123,7 @@ export default function BannerPopupManager() {
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col animate-in zoom-in-95 duration-200"
+        className={`relative w-full ${isVideo ? 'max-w-3xl lg:max-w-4xl' : 'max-w-2xl'} bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col animate-in zoom-in-95 duration-200 transition-all`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -136,11 +136,11 @@ export default function BannerPopupManager() {
           <X className="w-4 h-4" />
         </button>
 
-        {/* 2-Column Content Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Left Side: Uploaded Poster Image from Admin */}
-          <div className="relative bg-white flex items-center justify-center p-4 sm:p-6">
-            <div className="relative w-full aspect-square max-w-[280px] md:max-w-full rounded-2xl overflow-hidden flex items-center justify-center">
+        {/* Dynamic Column Content Layout */}
+        <div className={`grid grid-cols-1 ${isVideo ? 'md:grid-cols-12 items-center' : 'md:grid-cols-2'}`}>
+          {/* Left Side: Uploaded Media (Video / Image) without cropping */}
+          <div className={`relative flex items-center justify-center p-3 sm:p-5 ${isVideo ? 'md:col-span-7 bg-slate-900/5' : 'bg-white'}`}>
+            <div className="relative w-full rounded-2xl overflow-hidden flex items-center justify-center">
               {isVideo ? (
                 <video
                   src={activeBanner.mediaUrl}
@@ -149,13 +149,13 @@ export default function BannerPopupManager() {
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-cover rounded-2xl"
+                  className="w-full h-auto max-h-[65vh] object-contain rounded-2xl shadow-xs"
                 />
               ) : (
                 <img
                   src={activeBanner.mediaUrl}
                   alt={activeBanner.title || "Grab Rentals"}
-                  className="w-full h-full object-contain rounded-2xl"
+                  className="w-full h-auto max-h-[65vh] object-contain rounded-2xl"
                   onError={(e) => {
                     e.target.src = "/images/promo/grab-welcome-poster-blue.jpg";
                   }}
@@ -165,7 +165,7 @@ export default function BannerPopupManager() {
           </div>
 
           {/* Right Side: Text & Contact Actions */}
-          <div className="p-6 sm:p-8 flex flex-col justify-center text-center md:text-left bg-white">
+          <div className={`${isVideo ? 'md:col-span-5' : ''} p-5 sm:p-7 flex flex-col justify-center text-center md:text-left bg-white`}>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {activeBanner.title || "Grab Rentals"}
             </h2>

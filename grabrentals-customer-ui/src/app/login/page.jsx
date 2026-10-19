@@ -401,7 +401,8 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                {/* Already have an Account? Login Here */}
+                {/* Already have an Account? Login Here (commented out for now) */}
+                {/* 
                 <div className="pt-2 text-center text-xs text-slate-500">
                   <span>{t("already_have_account") || "Already have an Account?"} </span>
                   <button
@@ -417,6 +418,7 @@ export default function LoginPage() {
                     {t("login_here") || "Login Here"}
                   </button>
                 </div>
+                */}
 
                 {/* Divider */}
                 <div className="relative my-4">
