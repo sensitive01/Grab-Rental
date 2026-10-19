@@ -146,6 +146,51 @@ export default function AppShell({ children }) {
 
   const isBookNowActive = pathname === "/" || pathname === "/local" || pathname?.startsWith("/local") || pathname === "/airport" || pathname?.startsWith("/airport");
 
+  // Determine if enquiry section should appear (hide on 404/unknown routes, auth, account, support, checkout funnels)
+  const shouldShowEnquiry = () => {
+    if (!pathname) return false;
+
+    if (
+      pathname === "/404" ||
+      pathname === "/not-found" ||
+      pathname.startsWith("/account") ||
+      pathname.startsWith("/support") ||
+      pathname.includes("notifications") ||
+      pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/login") ||
+      pathname.includes("/review-pay") ||
+      pathname.includes("/select-vehicle") ||
+      pathname.includes("/trip-details") ||
+      pathname.includes("/booking/")
+    ) {
+      return false;
+    }
+
+    const publicEnquiryRoots = [
+      "/",
+      "/outstation",
+      "/local",
+      "/airport",
+      "/vans",
+      "/buses",
+      "/packages",
+      "/fleet",
+      "/fleets",
+      "/pet-friendly-cabs",
+      "/corporate",
+      "/cancellation-policy",
+      "/privacy-policy",
+      "/refund-policy",
+      "/terms",
+      "/reviews",
+      "/book"
+    ];
+
+    return publicEnquiryRoots.some((root) =>
+      root === "/" ? pathname === "/" : pathname === root || pathname.startsWith(root + "/")
+    );
+  };
+
   // Auth pages like /login use a dedicated focused layout
   if (pathname === "/login") {
     return <>{children}</>;
@@ -741,16 +786,8 @@ export default function AppShell({ children }) {
       {/* Dynamic Targeted Popup Banners */}
       <BannerPopupManager />
 
-      {/* Quick Enquiry Section across public pages (hidden on account, support, notifications, dashboard, and booking checkout pages) */}
-      {!pathname?.startsWith("/account") &&
-       !pathname?.startsWith("/support") &&
-       !pathname?.includes("notifications") &&
-       !pathname?.startsWith("/dashboard") &&
-       !pathname?.startsWith("/login") &&
-       !pathname?.includes("/review-pay") &&
-       !pathname?.includes("/select-vehicle") &&
-       !pathname?.includes("/trip-details") &&
-       !pathname?.includes("/booking/") && <QuickEnquirySection />}
+      {/* Quick Enquiry Section across public pages (hidden on 404, account, support, notifications, dashboard, and booking checkout pages) */}
+      {shouldShowEnquiry() && <QuickEnquirySection />}
 
       {/* C. Enterprise Multi-Column Footer */}
       <footer className="bg-brand-navy-dark text-slate-400 pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-slate-900">

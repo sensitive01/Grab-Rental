@@ -18,8 +18,35 @@ import { customerApi } from "@/lib/customerApi";
 export default function QuickEnquirySection() {
   const pathname = usePathname();
 
-  // Exclude enquiry section on account management, support, notifications, auth, and active booking checkout pages
+  const VALID_PUBLIC_ENQUIRY_ROUTES = [
+    "/",
+    "/outstation",
+    "/local",
+    "/airport",
+    "/vans",
+    "/buses",
+    "/packages",
+    "/fleet",
+    "/fleets",
+    "/pet-friendly-cabs",
+    "/corporate",
+    "/cancellation-policy",
+    "/privacy-policy",
+    "/refund-policy",
+    "/terms",
+    "/reviews",
+    "/book"
+  ];
+
+  const isPublicEnquiryRoute = VALID_PUBLIC_ENQUIRY_ROUTES.some((root) =>
+    root === "/" ? pathname === "/" : pathname === root || pathname?.startsWith(root + "/")
+  );
+
+  // Exclude enquiry section on 404/unknown routes, account management, support, notifications, auth, and active booking checkout pages
   if (
+    !isPublicEnquiryRoute ||
+    pathname === "/404" ||
+    pathname === "/not-found" ||
     pathname?.startsWith("/account") ||
     pathname?.startsWith("/support") ||
     pathname?.includes("notifications") ||
@@ -94,7 +121,7 @@ export default function QuickEnquirySection() {
   };
 
   return (
-    <section className="bg-white border-t border-slate-200/70 py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <section id="quick-enquiry-section" className="bg-white border-t border-slate-200/70 py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           

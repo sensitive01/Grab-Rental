@@ -77,3 +77,9 @@ input[type="date"]::-webkit-date-and-time-value {
   margin: 0;
   padding: 0;
 }
+
+/* Hide Quick Enquiry Section on 404 / Not Found page */
+body:has(#not-found-page) #quick-enquiry-section,
+body:has([data-page="404"]) #quick-enquiry-section {
+  display: none !important;
+}
