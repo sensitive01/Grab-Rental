@@ -543,9 +543,13 @@ function SelectVehicleContent() {
       const reg = car.regNumber || car.vehicleNumber || "Commercial Fleet";
       const perKmRate = car.perKmRate || (type === "SUV" ? 19.5 : type === "Hatchback" ? 11.5 : 13.0);
 
-      const effectiveTripKm = isRoundTripBooking
-        ? Math.max(activeDistance || 0, effectiveTripDistance, car.includedKms || 0)
-        : (activeDistance || car.includedKms || 0);
+      const minKmThreshold = isRoundTripBooking
+        ? Math.max(effectiveTripDistance, car.includedKms || 250)
+        : (!isLocalBooking ? (car.includedKms || 250) : 0);
+
+      const effectiveTripKm = isLocalBooking
+        ? (activeDistance || car.includedKms || 0)
+        : Math.max(activeDistance || 0, minKmThreshold);
 
       const standardRateFare = isLocalBooking
         ? (car.pricing?.originalPrice || car.dailyPrice || 2000)
@@ -818,8 +822,11 @@ function SelectVehicleContent() {
 
   const handleCarSelect = (vehicle) => {
     const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
-    const chosenDistance = isRoundTripBooking
-      ? (vehicle.distanceKm || effectiveTripDistance || activeDistance)
+    const minKmFloor = isRoundTripBooking
+      ? (tripDays * 250)
+      : (!isLocalBooking ? (vehicle.includedKms || 250) : 0);
+    const chosenDistance = !isLocalBooking
+      ? Math.max(activeDistance || 0, minKmFloor)
       : activeDistance;
     if (typeof window !== "undefined") {
       const selectedData = {
@@ -827,7 +834,7 @@ function SelectVehicleContent() {
         distanceKm: chosenDistance,
         actualDistanceKm: activeDistance,
         routeDistanceKm: activeDistance,
-        minPackageKm: isRoundTripBooking ? (tripDays * 250) : null,
+        minPackageKm: minKmFloor > 0 ? minKmFloor : null,
         tollPrice: (isRoundTripBooking || isLocalBooking)
           ? 0
           : (vehicle.pricing?.tollPrice ?? (googleRouteDetails?.tollPrice || (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0))),
@@ -842,6 +849,8 @@ function SelectVehicleContent() {
         car: {
           id: vehicle.id,
           title: vehicle.title,
+          model: vehicle.model || vehicle.modelName || (vehicle.title ? vehicle.title.split(" ")[0] : "Swift"),
+          modelName: vehicle.modelName || vehicle.model || (vehicle.title ? vehicle.title.split(" ")[0] : "Swift"),
           category: vehicle.category,
           fuel: vehicle.fuelType,
           withLuggageCarrier: false,
@@ -869,6 +878,7 @@ function SelectVehicleContent() {
         }
       };
       sessionStorage.setItem("grab_selected_booking", JSON.stringify(selectedData));
+      sessionStorage.removeItem("grab_review_pay_draft");
     }
 
     router.push("/outstation/review-pay");

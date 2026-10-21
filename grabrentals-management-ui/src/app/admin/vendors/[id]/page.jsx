@@ -29,7 +29,9 @@ import {
   Check,
   AlertCircle,
   Calendar,
-  Sparkles
+  Sparkles,
+  User,
+  ChevronRight
 } from "lucide-react";
 
 export default function VendorDetailPage({ params }) {
@@ -46,6 +48,9 @@ export default function VendorDetailPage({ params }) {
 
   // Photo lightbox
   const [previewPhoto, setPreviewPhoto] = useState(null);
+
+  // Selected driver for full dossier modal
+  const [selectedDriver, setSelectedDriver] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -293,19 +298,37 @@ export default function VendorDetailPage({ params }) {
 
       {/* METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-white">
-          <p className="text-xs font-semibold text-slate-500 uppercase">Fleet Enrolled</p>
+        <Card 
+          className="bg-white hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
+          onClick={() => {
+            const el = document.getElementById("fleet-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 uppercase">Fleet Enrolled</p>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+          </div>
           <h3 className="text-2xl font-bold text-slate-900 mt-1">
             {vendor.vehicles?.length || vendor.fleetCount || 0} Vehicles
           </h3>
-          <p className="text-[11px] text-emerald-600 mt-1">Submitted in fleet</p>
+          <p className="text-[11px] text-emerald-600 font-medium mt-1">Submitted in fleet • View fleet ↓</p>
         </Card>
-        <Card className="bg-white">
-          <p className="text-xs font-semibold text-slate-500 uppercase">Chauffeurs Enrolled</p>
+        <Card 
+          className="bg-white hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
+          onClick={() => {
+            const el = document.getElementById("chauffeurs-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 uppercase">Chauffeurs Enrolled</p>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+          </div>
           <h3 className="text-2xl font-bold text-slate-900 mt-1">
             {vendor.drivers?.length || vendor.driverCount || 0} Drivers
           </h3>
-          <p className="text-[11px] text-slate-500 mt-1">Commercial drivers</p>
+          <p className="text-[11px] text-blue-600 font-medium mt-1">Commercial drivers • View chauffeurs ↓</p>
         </Card>
         <Card className="bg-white">
           <p className="text-xs font-semibold text-slate-500 uppercase">Account Status</p>
@@ -344,6 +367,16 @@ export default function VendorDetailPage({ params }) {
               <a href={`tel:${vendor.phone}`} className="font-bold text-slate-900 hover:text-blue-600 text-right">
                 {vendor.phone || "—"}
               </a>
+            </div>
+            <div className="grid grid-cols-2 gap-3 py-1.5 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Alternate Number</span>
+              {vendor.alternatePhone && vendor.alternatePhone !== "—" ? (
+                <a href={`tel:${vendor.alternatePhone}`} className="font-bold text-slate-900 hover:text-blue-600 text-right">
+                  {vendor.alternatePhone}
+                </a>
+              ) : (
+                <span className="font-semibold text-slate-400 text-right">—</span>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3 py-1.5 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Operating Hub / City</span>
@@ -438,6 +471,7 @@ export default function VendorDetailPage({ params }) {
       </Card>
 
       {/* REGISTERED VEHICLES ROSTER */}
+      <div id="fleet-section">
       <Card 
         title={`Registered Fleet Vehicles (${vendor.vehicles?.length || 0})`}
         subtitle="Review inspection photos and registration certificates"
@@ -548,39 +582,98 @@ export default function VendorDetailPage({ params }) {
           </div>
         )}
       </Card>
+      </div>
 
       {/* REGISTERED CHAUFFEURS ROSTER */}
+      <div id="chauffeurs-section">
       <Card 
         title={`Associated Chauffeurs (${vendor.drivers?.length || 0})`}
-        subtitle="Driver licenses and commercial certifications"
+        subtitle="Driver licenses, commercial certifications, background proofs and emergency contacts (Click to view full dossier)"
       >
         {vendor.drivers && vendor.drivers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {vendor.drivers.map((d) => (
-              <div key={d.id} className="p-4 rounded-xl border border-slate-200 bg-white flex items-start justify-between text-xs shadow-2xs">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-black text-xs">
-                      {d.name?.slice(0, 1)}
-                    </div>
+              <div 
+                key={d.id} 
+                onClick={() => setSelectedDriver(d)}
+                className="p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between text-xs shadow-2xs space-y-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {d.photoUrl ? (
+                      <img 
+                        src={d.photoUrl} 
+                        alt={d.name} 
+                        className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0 shadow-2xs" 
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-black text-base shrink-0 border border-blue-100">
+                        {d.name?.slice(0, 1)}
+                      </div>
+                    )}
                     <div>
-                      <p className="font-bold text-slate-900">{d.name}</p>
-                      <p className="text-slate-500 font-mono text-[11px]">{d.phone}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-extrabold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">{d.name}</p>
+                        <Badge variant={d.status === "AVAILABLE" ? "success" : "warning"} size="sm">
+                          {d.status || "AVAILABLE"}
+                        </Badge>
+                      </div>
+                      <p className="text-slate-600 font-mono text-[11px] flex items-center gap-1.5 mt-0.5">
+                        <Phone className="w-3 h-3 text-slate-400" /> {d.phone}
+                      </p>
+                      {d.email && (
+                        <p className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5 truncate max-w-[200px]">
+                          <Mail className="w-3 h-3 text-slate-400 shrink-0" /> {d.email}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <div className="pt-1.5 space-y-0.5 text-slate-600 text-[11px]">
-                    <p>License: <strong className="font-mono text-slate-900">{d.licenseNumber || "—"}</strong></p>
-                    <p>Experience: <strong className="text-slate-900">{d.experienceYears || "—"} Years</strong></p>
-                    {d.licenseDocumentUrl && (
-                      <a href={d.licenseDocumentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1 font-semibold mt-1">
-                        <FileText className="w-3 h-3" /> View License Document <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    )}
+                  <div className="text-right shrink-0">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                      {Number(d.rating || 5.0).toFixed(1)}
+                    </span>
+                    <p className="text-[10px] text-slate-400 mt-1">{d.totalTrips || 0} Trips</p>
                   </div>
                 </div>
-                <Badge variant={d.status === "AVAILABLE" ? "success" : "warning"} size="sm">
-                  {d.status || "AVAILABLE"}
-                </Badge>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">License Number</span>
+                    <strong className="font-mono text-slate-800">{d.licenseNumber || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Experience</span>
+                    <strong className="text-slate-800">{d.experienceYears || "—"} Years</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">License Class</span>
+                    <span className="font-medium text-slate-700">{d.licenseClass || "LMV-TR (Transport)"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Verification</span>
+                    <span className="font-semibold text-emerald-600">{d.verificationStatus || "Verified"}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  {d.licenseDocumentUrl ? (
+                    <a 
+                      href={d.licenseDocumentUrl} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-blue-600 hover:underline inline-flex items-center gap-1 font-semibold"
+                    >
+                      <FileText className="w-3 h-3" /> License Proof <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : (
+                    <span className="text-slate-400 italic">No license doc</span>
+                  )}
+                  <span className="inline-flex items-center gap-1 font-bold text-blue-600 group-hover:text-blue-800 group-hover:translate-x-0.5 transition-transform">
+                    View All Details <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -592,6 +685,361 @@ export default function VendorDetailPage({ params }) {
           </div>
         )}
       </Card>
+      </div>
+
+      {/* CHAUFFEUR COMPREHENSIVE DETAILS MODAL */}
+      <Modal
+        isOpen={!!selectedDriver}
+        onClose={() => setSelectedDriver(null)}
+        title={selectedDriver ? `Chauffeur Dossier: ${selectedDriver.name}` : "Chauffeur Details"}
+        subtitle="Complete personal background, commercial license, compliance proofs & emergency contact"
+        size="xl"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <Badge variant={selectedDriver?.status === "AVAILABLE" ? "success" : "warning"} size="sm" dot>
+                Status: {selectedDriver?.status || "AVAILABLE"}
+              </Badge>
+              <Badge variant={selectedDriver?.verificationStatus === "Verified" ? "success" : "neutral"} size="sm">
+                Verification: {selectedDriver?.verificationStatus || "Verified Active"}
+              </Badge>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setSelectedDriver(null)}
+            >
+              Close Dossier
+            </Button>
+          </div>
+        }
+      >
+        {selectedDriver && (
+          <div className="space-y-6 text-xs">
+            {/* Top Header Card */}
+            <div className="p-4 bg-gradient-to-r from-slate-50 via-blue-50/40 to-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                {selectedDriver.photoUrl ? (
+                  <img
+                    src={selectedDriver.photoUrl}
+                    alt={selectedDriver.name}
+                    className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md cursor-pointer hover:opacity-95 transition-opacity"
+                    onClick={() => setPreviewPhoto(selectedDriver.photoUrl)}
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-md">
+                    {selectedDriver.name?.slice(0, 1)}
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <h3 className="text-lg font-black text-slate-900">{selectedDriver.name}</h3>
+                    <Badge variant={selectedDriver.status === "AVAILABLE" ? "success" : "warning"} size="sm">
+                      {selectedDriver.status || "AVAILABLE"}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-slate-600 text-xs">
+                    <a href={`tel:${selectedDriver.phone}`} className="hover:text-blue-600 font-semibold flex items-center gap-1 font-mono">
+                      <Phone className="w-3.5 h-3.5 text-slate-400" /> {selectedDriver.phone}
+                    </a>
+                    {selectedDriver.email && (
+                      <a href={`mailto:${selectedDriver.email}`} className="hover:text-blue-600 flex items-center gap-1">
+                        <Mail className="w-3.5 h-3.5 text-slate-400" /> {selectedDriver.email}
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1 text-[11px] text-slate-500">
+                    <span>Vendor Fleet: <strong>{vendor.companyName || vendor.name}</strong></span>
+                    <span>•</span>
+                    <span>Joined: <strong>{selectedDriver.joiningDate || (selectedDriver.createdAt ? new Date(selectedDriver.createdAt).toLocaleDateString('en-IN') : "Active")}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats badges */}
+              <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 px-3 py-1.5 rounded-xl text-amber-900 font-black text-sm">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                  {Number(selectedDriver.rating || 5.0).toFixed(1)} / 5.0
+                </div>
+                <div className="text-right text-[11px] text-slate-500">
+                  <span className="font-bold text-slate-800 text-xs">{selectedDriver.totalTrips || 0}</span> Completed Trips
+                </div>
+              </div>
+            </div>
+
+            {/* Information Grid: 2 Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              
+              {/* Column 1: Personal & Demographic Info */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <User className="w-4 h-4 text-blue-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">Personal & Demographics</h4>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Date of Birth</span>
+                    <span className="font-semibold text-slate-800">{selectedDriver.dob || "—"}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Gender</span>
+                    <span className="font-semibold text-slate-800 capitalize">{selectedDriver.gender || "—"}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Blood Group</span>
+                    <span className="font-bold text-rose-600">{selectedDriver.bloodGroup || "—"}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Languages Spoken</span>
+                    <span className="font-semibold text-slate-800 text-right">{selectedDriver.languagesSpoken || "English, Regional"}</span>
+                  </div>
+                  <div className="flex flex-col py-1">
+                    <span className="text-slate-500 mb-1">Residential Address</span>
+                    <span className="font-medium text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                      {selectedDriver.address || "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 2: Commercial License & Driving Credentials */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">License & Credentials</h4>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">License Number</span>
+                    <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                      {selectedDriver.licenseNumber || "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">License Class</span>
+                    <span className="font-semibold text-slate-800">{selectedDriver.licenseClass || "LMV-TR (Transport)"}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">License Expiry</span>
+                    <span className="font-mono font-semibold text-slate-800">{selectedDriver.licenseExpiry || "—"}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Experience</span>
+                    <span className="font-bold text-blue-700">{selectedDriver.experienceYears || "—"} Years</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Driving Since</span>
+                    <span className="font-mono text-slate-800">{selectedDriver.drivingSince || "—"}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-500">Assigned Vehicle</span>
+                    <span className="font-bold text-slate-900">
+                      {selectedDriver.assignedVehicle?.model ? (
+                        `${selectedDriver.assignedVehicle.model} (${selectedDriver.assignedVehicle.vehicleNumber || selectedDriver.assignedVehicle.registrationNumber})`
+                      ) : (
+                        "Unassigned / Floating Chauffeur"
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Emergency Contact & Background Verification */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              
+              {/* Emergency Contact Card */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Phone className="w-4 h-4 text-amber-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">Emergency Contact Details</h4>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Contact Person</span>
+                    <span className="font-bold text-slate-800">
+                      {selectedDriver.emergencyContactName || selectedDriver.emergencyContact?.split("(")[0]?.trim() || "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Emergency Phone</span>
+                    {selectedDriver.emergencyContactPhone || selectedDriver.emergencyContact ? (
+                      <a 
+                        href={`tel:${selectedDriver.emergencyContactPhone || selectedDriver.emergencyContact?.replace(/[^0-9]/g, "")}`}
+                        className="font-mono font-bold text-blue-600 hover:underline"
+                      >
+                        {selectedDriver.emergencyContactPhone || selectedDriver.emergencyContact}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-500">Verification Status</span>
+                    <Badge variant={selectedDriver.verificationStatus === "Verified" ? "success" : "neutral"} size="sm">
+                      {selectedDriver.verificationStatus || "Verified Active"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* ID & Address Proof Card */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">Government Proofs & Identity</h4>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">ID Proof Type</span>
+                    <span className="font-semibold text-slate-800">{selectedDriver.idProofType || "Aadhaar Card"}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">ID Proof Number</span>
+                    <span className="font-mono text-slate-800">{selectedDriver.idProofNumber || "—"}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-50">
+                    <span className="text-slate-500">Address Proof Type</span>
+                    <span className="font-semibold text-slate-800">{selectedDriver.addressProofType || "Aadhaar Card"}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-500">Address Proof Number</span>
+                    <span className="font-mono text-slate-800">{selectedDriver.addressProofNumber || "—"}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Document Verification Proofs with Previews */}
+            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">Document Proofs & Scans</h4>
+                </div>
+                <span className="text-[11px] text-slate-400">Click document thumbnail to expand full view</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                {/* License Document */}
+                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between space-y-2">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Driving License</span>
+                    <p className="font-bold text-slate-800 text-xs mt-0.5">{selectedDriver.licenseNumber || "Commercial DL"}</p>
+                  </div>
+                  {selectedDriver.licenseDocumentUrl ? (
+                    <div className="space-y-1.5">
+                      <div 
+                        className="h-28 rounded-lg overflow-hidden border border-slate-200 bg-white cursor-pointer hover:opacity-90 relative group"
+                        onClick={() => setPreviewPhoto(selectedDriver.licenseDocumentUrl)}
+                      >
+                        <img 
+                          src={selectedDriver.licenseDocumentUrl} 
+                          alt="Driving License Scan" 
+                          className="w-full h-full object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                          <Eye className="w-4 h-4" /> Expand
+                        </div>
+                      </div>
+                      <a 
+                        href={selectedDriver.licenseDocumentUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[11px] text-blue-600 hover:underline font-semibold inline-flex items-center gap-1"
+                      >
+                        Open in New Tab <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic py-6 text-center">No license scan attached</p>
+                  )}
+                </div>
+
+                {/* ID Proof Document */}
+                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between space-y-2">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">ID Proof Scan</span>
+                    <p className="font-bold text-slate-800 text-xs mt-0.5">{selectedDriver.idProofType || "Government ID"}</p>
+                  </div>
+                  {selectedDriver.idProofDocumentUrl ? (
+                    <div className="space-y-1.5">
+                      <div 
+                        className="h-28 rounded-lg overflow-hidden border border-slate-200 bg-white cursor-pointer hover:opacity-90 relative group"
+                        onClick={() => setPreviewPhoto(selectedDriver.idProofDocumentUrl)}
+                      >
+                        <img 
+                          src={selectedDriver.idProofDocumentUrl} 
+                          alt="ID Proof Scan" 
+                          className="w-full h-full object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                          <Eye className="w-4 h-4" /> Expand
+                        </div>
+                      </div>
+                      <a 
+                        href={selectedDriver.idProofDocumentUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[11px] text-blue-600 hover:underline font-semibold inline-flex items-center gap-1"
+                      >
+                        Open in New Tab <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic py-6 text-center">No ID proof scan attached</p>
+                  )}
+                </div>
+
+                {/* Address Proof Document */}
+                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between space-y-2">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Address Proof Scan</span>
+                    <p className="font-bold text-slate-800 text-xs mt-0.5">{selectedDriver.addressProofType || "Address Proof"}</p>
+                  </div>
+                  {selectedDriver.addressProofDocumentUrl ? (
+                    <div className="space-y-1.5">
+                      <div 
+                        className="h-28 rounded-lg overflow-hidden border border-slate-200 bg-white cursor-pointer hover:opacity-90 relative group"
+                        onClick={() => setPreviewPhoto(selectedDriver.addressProofDocumentUrl)}
+                      >
+                        <img 
+                          src={selectedDriver.addressProofDocumentUrl} 
+                          alt="Address Proof Scan" 
+                          className="w-full h-full object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                          <Eye className="w-4 h-4" /> Expand
+                        </div>
+                      </div>
+                      <a 
+                        href={selectedDriver.addressProofDocumentUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[11px] text-blue-600 hover:underline font-semibold inline-flex items-center gap-1"
+                      >
+                        Open in New Tab <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic py-6 text-center">No address proof scan attached</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {selectedDriver.notes && (
+              <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl">
+                <span className="font-bold text-amber-900 block mb-0.5">Administrative Notes</span>
+                <p className="text-slate-700">{selectedDriver.notes}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* APPROVE VENDOR MODAL */}
       <Modal

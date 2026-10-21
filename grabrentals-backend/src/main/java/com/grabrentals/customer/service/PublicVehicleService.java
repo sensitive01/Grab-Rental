@@ -122,10 +122,15 @@ public class PublicVehicleService {
 
         boolean isRoundTrip = "ROUND_TRIP".equalsIgnoreCase(resolvedServiceType)
                 || (tripType != null && tripType.toLowerCase().contains("round"));
+        boolean isOneWay = "ONE_WAY".equalsIgnoreCase(resolvedServiceType)
+                || (!isRoundTrip && !"LOCAL".equalsIgnoreCase(resolvedServiceType) && !"AIRPORT".equalsIgnoreCase(resolvedServiceType));
         int effectiveDistance = distanceKm;
         if (isRoundTrip) {
             int minDailyKm = effectiveDays * 250;
             effectiveDistance = Math.max(distanceKm, minDailyKm);
+        } else if (isOneWay) {
+            int minOneWayKm = 250;
+            effectiveDistance = Math.max(distanceKm, minOneWayKm);
         }
 
         long tDist = System.currentTimeMillis();
@@ -313,6 +318,9 @@ public class PublicVehicleService {
                 card.setChauffeur("Verified Commercial Chauffeur");
                 card.setChauffeurRating(4.9);
                 card.setDescription(config.getDescription());
+                if (!"LOCAL".equalsIgnoreCase(resolvedServiceType) && !"AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+                    card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : baseKm);
+                }
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                     BigDecimal discPctLocal = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
@@ -504,6 +512,10 @@ public class PublicVehicleService {
                     card.setStatus(v.getStatus() != null ? v.getStatus().name() : "AVAILABLE");
                     card.setChauffeur(chauffeurName);
                     card.setChauffeurRating(4.9);
+                    if (!"LOCAL".equalsIgnoreCase(resolvedServiceType) && !"AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+                        Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : 250;
+                        card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : baseKm);
+                    }
 
                     if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                         BigDecimal discPctLocal = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;

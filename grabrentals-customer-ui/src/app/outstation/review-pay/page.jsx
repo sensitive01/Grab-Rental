@@ -297,7 +297,13 @@ export default function ReviewPayPage() {
               .then((r) => r.json())
               .then((res) => {
                 if (res?.data?.vehicles && Array.isArray(res.data.vehicles)) {
-                  const match = res.data.vehicles.find((v) => v.id === parsed.car?.id || v.title?.toLowerCase() === parsed.car?.title?.toLowerCase() || v.category?.toLowerCase() === parsed.car?.category?.toLowerCase());
+                  const carModel = (parsed.car?.model || parsed.car?.modelName || (parsed.car?.title ? parsed.car.title.split(" ")[0] : "")).toLowerCase();
+                  const match = res.data.vehicles.find((v) => {
+                    if (v.id && parsed.car?.id && v.id === parsed.car.id) return true;
+                    if (v.title && parsed.car?.title && v.title.toLowerCase() === parsed.car.title.toLowerCase()) return true;
+                    const vModel = (v.modelName || (v.title ? v.title.split(" ")[0] : "")).toLowerCase();
+                    return carModel && vModel && carModel === vModel;
+                  });
                   if (match?.pricing) {
                     setBookingConfig((prev) => {
                       if (!prev) return prev;
@@ -375,6 +381,9 @@ export default function ReviewPayPage() {
             const draft = JSON.parse(savedDraft);
             setPassengerName(draft.passengerName || profileName);
             setPassengerPhone(draft.passengerPhone || profilePhone);
+            const matchesTripTo = draft.forTo && draft.forTo.toLowerCase().trim() === (parsed.trip?.to || "").toLowerCase().trim();
+            const matchesTripFrom = draft.forFrom && draft.forFrom.toLowerCase().trim() === (parsed.trip?.from || "").toLowerCase().trim();
+
             if (draft.pickupDoorNo) setPickupDoorNo(draft.pickupDoorNo);
             if (draft.pickupStreet) setPickupStreet(draft.pickupStreet);
             if (draft.pickupLandmark) setPickupLandmark(draft.pickupLandmark);
@@ -382,10 +391,10 @@ export default function ReviewPayPage() {
             if (draft.pickupCityName) setPickupCityName(draft.pickupCityName);
             if (draft.pickupStateName) setPickupStateName(draft.pickupStateName);
             if (draft.pickupPincode) setPickupPincode(draft.pickupPincode);
-            if (draft.pickupCoords) setPickupCoords(draft.pickupCoords);
-            if (draft.dropCoords) setDropCoords(draft.dropCoords);
-            if (draft.pickupAddress) setPickupAddress(draft.pickupAddress);
-            if (draft.dropAddress) setDropAddress(draft.dropAddress);
+            if (draft.pickupCoords && matchesTripFrom) setPickupCoords(draft.pickupCoords);
+            if (draft.dropCoords && matchesTripTo) setDropCoords(draft.dropCoords);
+            if (draft.pickupAddress && matchesTripFrom) setPickupAddress(draft.pickupAddress);
+            if (draft.dropAddress && matchesTripTo) setDropAddress(draft.dropAddress);
             if (draft.specialInstructions) setSpecialInstructions(draft.specialInstructions);
             if (draft.paymentPlan) setPaymentPlan(draft.paymentPlan);
           } catch { }
@@ -434,7 +443,9 @@ export default function ReviewPayPage() {
     return 1;
   }, [isRoundTripBooking, bookingConfig?.trip?.date, bookingConfig?.trip?.dropDate, bookingConfig?.trip?.returnDate]);
 
-  const minPackageKm = isRoundTripBooking ? (tripDays * 250) : 0;
+  const minPackageKm = !isLocal && !isAirport
+    ? (isRoundTripBooking ? (tripDays * 250) : (car.includedKms || bookingConfig?.minPackageKm || 250))
+    : 0;
 
   const actualRouteKm = useMemo(() => {
     if (customDistanceKm != null && customDistanceKm > 0) return customDistanceKm;
@@ -455,15 +466,15 @@ export default function ReviewPayPage() {
   }, [customDistanceKm, bookingConfig, isRoundTripBooking]);
 
   const distanceKm = useMemo(() => {
-    if (isRoundTripBooking) {
+    if (!isLocal && !isAirport && minPackageKm > 0) {
       return Math.max(actualRouteKm, minPackageKm);
     }
     return actualRouteKm;
-  }, [isRoundTripBooking, actualRouteKm, minPackageKm]);
+  }, [isLocal, isAirport, actualRouteKm, minPackageKm]);
 
   const perKmRate = Number(car.perKmRate) || 0;
 
-  const isMinPackageApplied = isRoundTripBooking && actualRouteKm > 0 && actualRouteKm < minPackageKm;
+  const isMinPackageApplied = !isLocal && !isAirport && actualRouteKm > 0 && actualRouteKm < minPackageKm;
   const packageRemainingKm = isMinPackageApplied ? (minPackageKm - actualRouteKm) : 0;
 
   // Pet Friendly Booking configuration
@@ -753,6 +764,8 @@ export default function ReviewPayPage() {
         sessionStorage.setItem(
           "grab_review_pay_draft",
           JSON.stringify({
+            forFrom: bookingConfig?.trip?.from,
+            forTo: bookingConfig?.trip?.to,
             passengerName,
             passengerPhone,
             pickupAddress,
@@ -2548,8 +2561,8 @@ export default function ReviewPayPage() {
           onClose={() => setIsMapModalOpen(false)}
           activeTarget={mapTarget}
           tripType={tripType}
-          pickupValue={pickupAddress || bookingConfig?.trip?.from || "Bangalore, Karnataka"}
-          dropValue={dropAddress || bookingConfig?.trip?.to || "Coimbatore, Tamil Nadu"}
+          pickupValue={pickupAddress || bookingConfig?.trip?.from || ""}
+          dropValue={dropAddress || bookingConfig?.trip?.to || ""}
           initialPickupCoords={pickupCoords}
           initialDropCoords={dropCoords}
           onSelect={(selectedLocation, coords, target, allValues, details) => {
@@ -2566,7 +2579,7 @@ export default function ReviewPayPage() {
                 if (details.pincode) setPickupPincode(details.pincode);
               }
             }
-            if (allValues?.route?.distanceKm > 0 && !isLocal) {
+            if (target === "drop" && allValues?.route?.distanceKm > 0 && !isLocal) {
               setCustomDistanceKm(allValues.route.distanceKm);
               if (allValues.route.tollPrice !== undefined && allValues.route.tollPrice > 0) {
                 setLiveToll(allValues.route.tollPrice);

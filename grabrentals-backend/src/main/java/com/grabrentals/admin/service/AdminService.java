@@ -57,6 +57,19 @@ public class AdminService {
         result.put("name", user.getName());
         result.put("email", user.getEmail());
         result.put("phone", user.getPhone());
+        String altPhone = (user.getAlternatePhone() != null && !user.getAlternatePhone().isBlank())
+                ? user.getAlternatePhone()
+                : null;
+        if (altPhone == null && drivers != null) {
+            for (com.grabrentals.vendor.entity.Driver d : drivers) {
+                if (d.getEmergencyContactPhone() != null && !d.getEmergencyContactPhone().isBlank()) {
+                    altPhone = d.getEmergencyContactPhone();
+                    break;
+                }
+            }
+        }
+        result.put("alternatePhone", altPhone);
+        result.put("city", user.getCity());
         result.put("role", user.getRole());
         result.put("status", user.getStatus());
         result.put("businessName", user.getBusinessName());
@@ -150,6 +163,7 @@ public class AdminService {
             map.put("ownerName", u.getName());
             map.put("email", u.getEmail());
             map.put("phone", u.getPhone());
+            map.put("alternatePhone", (u.getAlternatePhone() != null && !u.getAlternatePhone().isBlank()) ? u.getAlternatePhone() : null);
             map.put("city", u.getCity() != null ? u.getCity() : (profile != null && profile.getAddress() != null ? profile.getAddress() : "Primary Hub"));
             map.put("fleetCount", fleetCount);
             map.put("driverCount", driverCount);

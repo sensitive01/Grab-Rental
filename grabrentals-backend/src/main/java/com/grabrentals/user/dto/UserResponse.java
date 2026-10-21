@@ -23,6 +23,8 @@ public class UserResponse {
     private String name;
     private String email;
     private String phone;
+    private String alternatePhone;
+    private String city;
     private Role role;
     private UserStatus status;
     private String businessName;
@@ -38,6 +40,8 @@ public class UserResponse {
                 .name(user.getName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
+                .alternatePhone(user.getAlternatePhone())
+                .city(user.getCity())
                 .role(user.getRole())
                 .status(user.getStatus())
                 .businessName(user.getBusinessName())

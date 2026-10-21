@@ -989,11 +989,16 @@ export default function LocationPickerModal({
       if (s && s.trim()) saveCustomCity(s.trim());
     });
 
-    if (onSelectPickup) onSelectPickup(pickupCityState, pickupCoords, pickupAddressDetails);
-    if (onSelectDrop) onSelectDrop(dropCityState, dropCoords, dropAddressDetails);
-    if (onSelectAirport) onSelectAirport(airportCityState, airportCoords);
-    const validStops = stopsState.filter((s) => s && s.trim());
-    if (onSelectStops) onSelectStops(validStops);
+    if (currentTarget === "pickup" && onSelectPickup) {
+      onSelectPickup(pickupCityState, pickupCoords, pickupAddressDetails);
+    } else if (currentTarget === "drop" && onSelectDrop) {
+      onSelectDrop(dropCityState, dropCoords, dropAddressDetails);
+    } else if (currentTarget === "airport" && onSelectAirport) {
+      onSelectAirport(airportCityState, airportCoords);
+    } else if (typeof currentTarget === "string" && currentTarget.startsWith("stop-") && onSelectStops) {
+      const validStops = stopsState.filter((s) => s && s.trim());
+      onSelectStops(validStops);
+    }
 
     if (onSelect) {
       let activeVal = pickupCityState;
