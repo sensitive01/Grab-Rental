@@ -428,6 +428,8 @@ export const adminApi = {
             gstStatus: isApproved ? "Verified Active" : (v.status === "INACTIVE" ? "Deactivated" : "Pending Verification"),
             status: isPending ? "PENDING_APPROVAL" : (v.status === "INACTIVE" ? "INACTIVE" : "ACTIVE"),
             rawStatus: v.status,
+            createdAt: v.createdAt || null,
+            joinedDate: v.joinedDate || (v.createdAt ? new Date(v.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : "Recently"),
           };
         });
         return createApiResponse(mapped);

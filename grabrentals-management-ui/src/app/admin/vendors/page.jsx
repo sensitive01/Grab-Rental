@@ -729,9 +729,20 @@ function AdminVendorsContent() {
 
                       {/* Applied Date */}
                       <TableCell>
-                        <span className="text-xs font-mono text-slate-600">
-                          {v.joinedDate}
-                        </span>
+                        <div className="text-xs font-medium text-slate-700 whitespace-nowrap">
+                          {v.createdAt
+                            ? new Date(v.createdAt).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : (v.joinedDate || "—")}
+                        </div>
+                        {v.createdAt && (
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {new Date(v.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        )}
                       </TableCell>
 
                       {/* GSTIN */}
