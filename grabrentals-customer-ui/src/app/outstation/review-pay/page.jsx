@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -38,7 +38,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import MapView from "@/components/booking/MapView";
 import { padZero, formatLocalDateTime, isNightPickup } from "@/lib/dateTimeUtils";
-import { fetchGoogleRouteDistance, findCityCoordinates } from "@/lib/cities";
+import { fetchGoogleRouteDistance, findCityCoordinates, detectRouteDistance } from "@/lib/cities";
 
 function resolveCarImage(title, category, rawImage) {
   if (rawImage && typeof rawImage === "string" && !rawImage.includes("blob:")) {
@@ -68,6 +68,26 @@ function resolveCarImage(title, category, rawImage) {
   if (c.includes("suv_6")) return "/images/cars/ertiga.jpg";
   if (c.includes("suv_7")) return "/images/cars/innova.jpg";
   return "/images/cars/dzire.jpg";
+}
+
+function parseDateToMidnight(rawDate) {
+  if (!rawDate) return null;
+  if (rawDate instanceof Date) return rawDate;
+  try {
+    const s = String(rawDate).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const [y, m, d] = s.substring(0, 10).split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(s)) {
+      const [d, m, y] = s.substring(0, 10).split(/[-/]/).map(Number);
+      return new Date(y, m - 1, d);
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
 }
 
 export default function ReviewPayPage() {
@@ -118,6 +138,8 @@ export default function ReviewPayPage() {
   const [proofFileName, setProofFileName] = useState("");
   const [showUpiModal, setShowUpiModal] = useState(false);
   const [upiModalError, setUpiModalError] = useState("");
+  const [mobileUpiLaunched, setMobileUpiLaunched] = useState(false);
+  const [showMobileQr, setShowMobileQr] = useState(false);
 
   const [bookingConfig, setBookingConfig] = useState(null);
   const [passengerName, setPassengerName] = useState("");
@@ -393,8 +415,56 @@ export default function ReviewPayPage() {
 
   // Dynamic pricing from backend tariff engine
   const car = bookingConfig?.car || {};
-  const distanceKm = customDistanceKm != null ? customDistanceKm : (bookingConfig?.distanceKm || 0);
+  const isRoundTripBooking = !isLocal && (bookingConfig?.trip?.tripType || "").toLowerCase().includes("round");
+
+  const tripDays = useMemo(() => {
+    if (!isRoundTripBooking) return 1;
+    const rawDropDate = bookingConfig?.trip?.dropDate || bookingConfig?.trip?.returnDate;
+    const pickupDateStr = bookingConfig?.trip?.date;
+    if (pickupDateStr && rawDropDate) {
+      try {
+        const d1 = parseDateToMidnight(pickupDateStr);
+        const d2 = parseDateToMidnight(rawDropDate);
+        if (d1 && d2) {
+          const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
+          return Math.max(1, diffDays + 1);
+        }
+      } catch {}
+    }
+    return 1;
+  }, [isRoundTripBooking, bookingConfig?.trip?.date, bookingConfig?.trip?.dropDate, bookingConfig?.trip?.returnDate]);
+
+  const minPackageKm = isRoundTripBooking ? (tripDays * 250) : 0;
+
+  const actualRouteKm = useMemo(() => {
+    if (customDistanceKm != null && customDistanceKm > 0) return customDistanceKm;
+    if (bookingConfig?.actualDistanceKm && bookingConfig.actualDistanceKm > 0) {
+      return bookingConfig.actualDistanceKm;
+    }
+    if (bookingConfig?.routeDistanceKm && bookingConfig.routeDistanceKm > 0) {
+      return bookingConfig.routeDistanceKm;
+    }
+    // Fallback: detect route road distance if only package floor was saved
+    const cleanFrom = bookingConfig?.trip?.from || "";
+    const cleanTo = bookingConfig?.trip?.to || "";
+    if (isRoundTripBooking && cleanFrom && cleanTo) {
+      const detected = detectRouteDistance(cleanFrom, cleanTo, bookingConfig?.trip?.stops || [], "Round trip");
+      if (detected > 0) return detected;
+    }
+    return bookingConfig?.distanceKm || 0;
+  }, [customDistanceKm, bookingConfig, isRoundTripBooking]);
+
+  const distanceKm = useMemo(() => {
+    if (isRoundTripBooking) {
+      return Math.max(actualRouteKm, minPackageKm);
+    }
+    return actualRouteKm;
+  }, [isRoundTripBooking, actualRouteKm, minPackageKm]);
+
   const perKmRate = Number(car.perKmRate) || 0;
+
+  const isMinPackageApplied = isRoundTripBooking && actualRouteKm > 0 && actualRouteKm < minPackageKm;
+  const packageRemainingKm = isMinPackageApplied ? (minPackageKm - actualRouteKm) : 0;
 
   // Pet Friendly Booking configuration
   const isPetFriendly = Boolean(
@@ -437,6 +507,16 @@ export default function ReviewPayPage() {
       ? Math.round(perKmRate * distanceKm)
       : (car.pricing?.originalPrice || car.baseFare || 4047));
 
+  // Undiscounted Route base fare (for actual km)
+  const routeBaseFare = isMinPackageApplied && perKmRate > 0
+    ? Math.round(actualRouteKm * perKmRate)
+    : standardBaseFare;
+
+  // Package adjustment amount (for the remaining km)
+  const packageAdjustmentAmount = isMinPackageApplied && perKmRate > 0
+    ? Math.max(0, standardBaseFare - routeBaseFare)
+    : 0;
+
   // Route Tariff Discount Amount
   const tariffDiscountAmount = discountPercentage > 0
     ? Math.round(standardBaseFare * (discountPercentage / 100))
@@ -474,7 +554,8 @@ export default function ReviewPayPage() {
     ? (car.pricing?.driverAllowanceType === "FLAT" || (!car.pricing?.driverAllowancePercentage || Number(car.pricing?.driverAllowancePercentage) === 0))
     : (driverAllowanceType === "FLAT" && driverAllowanceAmount > 0);
 
-  const rawDriverAllowance = isCarAllowanceDefined
+  const isAllowanceAlreadyMultiplied = car.pricing?.driverAllowanceLabel && car.pricing.driverAllowanceLabel.includes("×");
+  const baseAllowance = isCarAllowanceDefined
     ? Math.round(Number(carDriverAllowance))
     : (isDriverAllowanceFlat
       ? Math.round(driverAllowanceAmount)
@@ -482,12 +563,16 @@ export default function ReviewPayPage() {
         ? Math.round(baseFare * (driverAllowancePercentage / 100))
         : (car.driverAllowance || Math.round(baseFare * (driverAllowancePercentage / 100)))));
 
+  const rawDriverAllowance = isRoundTripBooking
+    ? (isAllowanceAlreadyMultiplied ? baseAllowance : baseAllowance * tripDays)
+    : baseAllowance;
+
   const driverAllowance = rawDriverAllowance;
 
   const driverAllowanceLabel = (
     car.pricing?.driverAllowanceLabel ||
     (isDriverAllowanceFlat
-      ? `Driver Allowance (₹${rawDriverAllowance})`
+      ? (tripDays > 1 ? `Driver Allowance (₹${Math.round(rawDriverAllowance / tripDays)} × ${tripDays} Days)` : `Driver Allowance (₹${rawDriverAllowance})`)
       : `Driver Allowance (${car.pricing?.driverAllowancePercentage || driverAllowancePercentage}%)`)
   ).replace(/\s*Included/gi, "").trim();
 
@@ -771,12 +856,11 @@ export default function ReviewPayPage() {
         }
       }
 
-      // If zero advance, create booking immediately; otherwise open UPI payment modal
+      // If zero advance, create booking immediately; otherwise open UPI payment flow
       if (paymentPlan === "zero") {
         await executeBooking();
       } else {
-        setUpiModalError("");
-        setShowUpiModal(true);
+        openUpiPaymentFlow();
       }
     } catch (err) {
       setAuthError(err.message || "Invalid OTP code");
@@ -784,6 +868,69 @@ export default function ReviewPayPage() {
       setAuthLoading(false);
     }
   };
+
+  const isMobileDevice = () => {
+    if (typeof window === "undefined") return false;
+    return (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      window.innerWidth < 768
+    );
+  };
+
+  const getUpiDeepLink = () => {
+    const payable = paymentPlan === "advance" ? advanceAmount : totalAmount;
+    const upiId = upiConfig?.upiId || "ajaynailbox97-1@oksbi";
+    const payee = upiConfig?.payeeName || "Grab Rentals India Pvt Ltd";
+    const note = "GrabRentals " + (passengerPhone || "Booking");
+    return `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payee)}&am=${payable}&cu=INR&tn=${encodeURIComponent(note)}`;
+  };
+
+  const openUpiPaymentFlow = () => {
+    setUpiModalError("");
+    if (isMobileDevice()) {
+      try {
+        sessionStorage.setItem("grab_mobile_upi_active", "true");
+      } catch {}
+      setMobileUpiLaunched(true);
+      const deepLink = getUpiDeepLink();
+      window.location.href = deepLink;
+    } else {
+      setShowUpiModal(true);
+    }
+  };
+
+  const handleCloseUpiModal = () => {
+    setShowUpiModal(false);
+    try {
+      sessionStorage.removeItem("grab_mobile_upi_active");
+    } catch {}
+  };
+
+  useEffect(() => {
+    const handleReturnFromUpi = () => {
+      try {
+        const wasActive = sessionStorage.getItem("grab_mobile_upi_active");
+        if (wasActive === "true") {
+          setMobileUpiLaunched(true);
+          setUpiModalError("");
+          setShowUpiModal(true);
+        }
+      } catch {}
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        handleReturnFromUpi();
+      }
+    };
+
+    window.addEventListener("focus", handleReturnFromUpi);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", handleReturnFromUpi);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
 
   const handleCopyUpi = (text) => {
     if (!text) return;
@@ -995,6 +1142,10 @@ export default function ReviewPayPage() {
           vendorPetPayout: isPetFriendly ? vendorPetPayout : 0,
         };
         sessionStorage.setItem("grab_confirmed_booking", JSON.stringify(confirmedData));
+        try {
+          sessionStorage.removeItem("grab_mobile_upi_active");
+        } catch {}
+        setMobileUpiLaunched(false);
         const bookingRef = res.data.bookingReference || res.data.id;
         router.push(`/booking/confirmation?id=${encodeURIComponent(bookingRef)}`);
       } else {
@@ -1053,8 +1204,7 @@ export default function ReviewPayPage() {
       return;
     }
 
-    setUpiModalError("");
-    setShowUpiModal(true);
+    openUpiPaymentFlow();
   };
 
   if (!bookingConfig) {
@@ -1681,7 +1831,7 @@ export default function ReviewPayPage() {
                   {isLocal ? (
                     `${bookingConfig?.trip?.from} • Local Package: ${packageLabel}`
                   ) : (
-                    `${bookingConfig?.trip?.from} ${bookingConfig?.trip?.stops ? `→ Via ${String(bookingConfig.trip.stops).replace(/\|/g, ", ")} ` : ""}→ ${bookingConfig?.trip?.to} • ${bookingConfig?.trip?.tripType || "One way"}`
+                    `${bookingConfig?.trip?.from} ${bookingConfig?.trip?.stops ? `→ Via ${String(bookingConfig.trip.stops).replace(/\|/g, ", ")} ` : ""}→ ${bookingConfig?.trip?.to}${isRoundTrip ? ` → ${bookingConfig?.trip?.from}` : ""} • ${bookingConfig?.trip?.tripType || "One way"}`
                   )}
                 </p>
                 {isLocal ? (
@@ -1734,19 +1884,46 @@ export default function ReviewPayPage() {
               <div className="p-5 border-b border-slate-100 space-y-3">
                 <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider">{t("fare_summary") || "Fare Summary"}</h4>
                 <div className="space-y-2 text-xs font-semibold text-slate-600">
-                  <div className="flex justify-between items-center">
-                    <span>Base Outstation Fare ({distanceKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
-                    <span className="flex items-center gap-2">
-                      {tariffDiscountAmount > 0 && (
-                        <span className="text-slate-400 line-through text-xs font-semibold">
-                          ₹{standardBaseFare.toLocaleString()}
+                  {isMinPackageApplied ? (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span>Route Base Fare ({actualRouteKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
+                        <span className="text-slate-900 font-bold">
+                          ₹{routeBaseFare.toLocaleString()}
                         </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-slate-700">
+                        <span>Package Min. Adjustment ({minPackageKm} km - {actualRouteKm} km = {packageRemainingKm} km)</span>
+                        <span className="text-slate-900 font-bold">
+                          + ₹{packageAdjustmentAmount.toLocaleString()}
+                        </span>
+                      </div>
+
+                      {tariffDiscountAmount > 0 && (
+                        <div className="flex justify-between items-center text-slate-500 font-medium pt-0.5 border-t border-dashed border-slate-200">
+                          <span>Total Included Distance Fare ({minPackageKm} km)</span>
+                          <span className="text-slate-400 line-through text-xs font-semibold">
+                            ₹{standardBaseFare.toLocaleString()}
+                          </span>
+                        </div>
                       )}
-                      <span className="text-slate-900 font-bold">
-                        ₹{(tariffDiscountAmount > 0 ? baseFare : standardBaseFare).toLocaleString()}
+                    </>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <span>Base Outstation Fare ({distanceKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
+                      <span className="flex items-center gap-2">
+                        {tariffDiscountAmount > 0 && (
+                          <span className="text-slate-400 line-through text-xs font-semibold">
+                            ₹{standardBaseFare.toLocaleString()}
+                          </span>
+                        )}
+                        <span className="text-slate-900 font-bold">
+                          ₹{(tariffDiscountAmount > 0 ? baseFare : standardBaseFare).toLocaleString()}
+                        </span>
                       </span>
-                    </span>
-                  </div>
+                    </div>
+                  )}
 
                   {tariffDiscountAmount > 0 && (
                     <div className="flex justify-between items-center text-emerald-600 font-bold">
@@ -1916,6 +2093,20 @@ export default function ReviewPayPage() {
                   )}
                 </button>
 
+                {mobileUpiLaunched && paymentPlan !== "zero" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUpiModalError("");
+                      setShowUpiModal(true);
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Paid on UPI? Enter UTR & Confirm ➔</span>
+                  </button>
+                )}
+
                 <p className="text-[10px] text-slate-500 font-bold text-center flex items-center justify-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> 100% Encrypted & Verified Booking
                 </p>
@@ -2081,10 +2272,12 @@ export default function ReviewPayPage() {
             <div className="p-5 sm:p-6 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#0082fe] text-white flex items-center justify-center font-bold">
-                  <QrCode className="w-5 h-5" />
+                  {mobileUpiLaunched ? <CheckCircle2 className="w-5 h-5 text-white" /> : <QrCode className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black tracking-tight">Scan & Pay via UPI</h3>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight">
+                    {mobileUpiLaunched ? "Confirm Your UPI Payment" : "Scan & Pay via UPI"}
+                  </h3>
                   <p className="text-xs text-slate-400 font-medium">
                     {paymentPlan === "advance" ? "Part Pay Advance" : "Full Payment"}: <span className="font-extrabold text-sky-300">₹{(paymentPlan === "advance" ? advanceAmount : totalAmount).toLocaleString()}</span>
                   </p>
@@ -2092,7 +2285,7 @@ export default function ReviewPayPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowUpiModal(false)}
+                onClick={handleCloseUpiModal}
                 className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -2108,13 +2301,34 @@ export default function ReviewPayPage() {
                 </div>
               )}
 
+              {mobileUpiLaunched && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm text-emerald-950">Payment Initiated in UPI App</div>
+                      <p className="text-[11px] text-emerald-700">Please attach your payment receipt & enter the 12-digit UTR below.</p>
+                    </div>
+                  </div>
+                  <a
+                    href={getUpiDeepLink()}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shrink-0 shadow-xs"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Reopen UPI App</span>
+                  </a>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
                 {/* Left: Dynamic QR Code Box */}
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col items-center text-center space-y-3">
+                <div className={`${mobileUpiLaunched && !showMobileQr ? "hidden sm:flex" : "flex"} order-2 sm:order-1 bg-slate-50 p-5 rounded-2xl border border-slate-200 flex-col items-center text-center space-y-3`}>
                   <div className="bg-white p-3 rounded-2xl shadow-xs border border-slate-200 inline-block">
                     {upiConfig?.upiId ? (
                       <QRCodeSVG
-                        value={`upi://pay?pa=${encodeURIComponent(upiConfig.upiId)}&pn=${encodeURIComponent(upiConfig.payeeName || "Grab Rentals")}&am=${paymentPlan === "advance" ? advanceAmount : totalAmount}&cu=INR&tn=${encodeURIComponent("GrabRentals " + (passengerPhone || "Booking"))}`}
+                        value={getUpiDeepLink()}
                         size={170}
                         level="M"
                         includeMargin
@@ -2149,7 +2363,7 @@ export default function ReviewPayPage() {
                   {/* Deep link button for mobile devices */}
                   {upiConfig?.upiId && (
                     <a
-                      href={`upi://pay?pa=${encodeURIComponent(upiConfig.upiId)}&pn=${encodeURIComponent(upiConfig.payeeName || "Grab Rentals")}&am=${paymentPlan === "advance" ? advanceAmount : totalAmount}&cu=INR&tn=${encodeURIComponent("GrabRentals " + (passengerPhone || "Booking"))}`}
+                      href={getUpiDeepLink()}
                       className="w-full inline-flex sm:hidden items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0082fe] text-white font-extrabold text-xs uppercase tracking-wider shadow-sm hover:bg-[#006ed6] transition-all"
                     >
                       <Smartphone className="w-4 h-4" />
@@ -2177,8 +2391,21 @@ export default function ReviewPayPage() {
                   )}
                 </div>
 
+                {mobileUpiLaunched && !showMobileQr && (
+                  <div className="sm:hidden order-3 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileQr(true)}
+                      className="w-full py-2.5 px-4 rounded-xl border border-dashed border-slate-300 text-slate-600 hover:text-slate-900 text-xs font-bold flex items-center justify-center gap-2 bg-slate-50"
+                    >
+                      <QrCode className="w-4 h-4 text-slate-500" />
+                      <span>Need to scan from another device? Show QR Code</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Right: Upload Proof & Enter UTR */}
-                <div className="space-y-4">
+                <div className="order-1 sm:order-2 space-y-4">
                   <div className="bg-blue-50/60 p-3 rounded-xl border border-blue-200/80 text-[11px] text-blue-900 leading-relaxed font-medium">
                     <p className="font-bold mb-0.5 text-blue-950">Instructions:</p>
                     <p>{upiConfig?.instructions || "1. Scan the QR code or use the UPI ID in your payment app. 2. Make the payment and capture a screenshot. 3. Upload the receipt below and enter your 12-digit UTR reference."}</p>
@@ -2286,7 +2513,7 @@ export default function ReviewPayPage() {
               <div className="flex items-center gap-2.5 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setShowUpiModal(false)}
+                  onClick={handleCloseUpiModal}
                   disabled={submitting}
                   className="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors cursor-pointer"
                 >

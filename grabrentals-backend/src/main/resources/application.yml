@@ -15,7 +15,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/rental_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
@@ -36,19 +36,26 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    secret: ${JWT_SECRET:}
     expiration-ms: ${JWT_EXPIRATION:86400000} # 24 hours
   cors:
-    allowed-origins: ${FRONTEND_URL:http://localhost:3000,http://localhost:3001,http://localhost:3002,https://grab-rental.vercel.app}
+    allowed-origins: ${FRONTEND_URL:http://localhost:3000,http://localhost:3001,http://localhost:3002}
+  otp:
+    expose-dev-otp: ${EXPOSE_DEV_OTP:false}
   seed:
     admin:
-      enabled: ${SEED_ADMIN_ENABLED:true}
+      enabled: ${SEED_ADMIN_ENABLED:false}
       name: ${DEFAULT_ADMIN_NAME:System Administrator}
       email: ${DEFAULT_ADMIN_EMAIL:admin@grabrentals.com}
-      password: ${DEFAULT_ADMIN_PASSWORD:admin123}
-      phone: ${DEFAULT_ADMIN_PHONE:+919876543211}
+      password: ${DEFAULT_ADMIN_PASSWORD:}
+      phone: ${DEFAULT_ADMIN_PHONE:}
   cloudinary:
-    cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
-    api-key: ${CLOUDINARY_API_KEY:demo}
-    api-secret: ${CLOUDINARY_API_SECRET:demo}
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+    api-key: ${CLOUDINARY_API_KEY:}
+    api-secret: ${CLOUDINARY_API_SECRET:}
+  whatsapp:
+    enabled: ${WHATSAPP_ENABLED:false}
+    api-url: ${WHATSAPP_API_URL:}
+    api-key: ${WHATSAPP_API_KEY:}
+    support-phone: ${WHATSAPP_SUPPORT_PHONE:9876543210}
 

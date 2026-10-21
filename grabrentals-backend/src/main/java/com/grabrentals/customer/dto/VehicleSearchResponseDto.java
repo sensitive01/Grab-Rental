@@ -19,6 +19,8 @@ public class VehicleSearchResponseDto {
     private Integer distanceKm;
     private String pickupDate;
     private String pickupTime;
+    private String returnDate;
+    private Integer tripDays;
     private List<PublicVehicleCardDto> vehicles;
     private Boolean serviceAvailable;
     private String serviceCity;

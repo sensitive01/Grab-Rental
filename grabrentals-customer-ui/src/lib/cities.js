@@ -16,6 +16,7 @@ export const INDIAN_CITIES = [
   { name: "Jaipur", state: "Rajasthan", aliases: ["JAI", "Pink City"], lat: 26.9124, lng: 75.7873, popular: true },
 
   // Tamil Nadu
+  { name: "Theni", state: "Tamil Nadu", aliases: ["Theni Allinagaram", "Theni Bus Stand", "Theni Old Bus Stand", "Theni New Bus Stand"], lat: 10.0104, lng: 77.4768, popular: true },
   { name: "Madurai", state: "Tamil Nadu", aliases: ["IXM"], lat: 9.9252, lng: 78.1198, popular: true },
   { name: "Salem", state: "Tamil Nadu", aliases: ["SXV"], lat: 11.6643, lng: 78.1460, popular: true },
   { name: "Tiruchirappalli", state: "Tamil Nadu", aliases: ["Trichy", "TRZ"], lat: 10.7905, lng: 78.7047 },
@@ -35,6 +36,18 @@ export const INDIAN_CITIES = [
   { name: "Yercaud", state: "Tamil Nadu", lat: 11.7753, lng: 78.2093 },
   { name: "Coonoor", state: "Tamil Nadu", lat: 11.3530, lng: 76.7959 },
   { name: "Pollachi", state: "Tamil Nadu", lat: 10.6609, lng: 77.0048 },
+  { name: "Tiruvannamalai", state: "Tamil Nadu", aliases: ["Thiruvannamalai"], lat: 12.2253, lng: 79.0747 },
+  { name: "Kumbakonam", state: "Tamil Nadu", lat: 10.9602, lng: 79.3845 },
+  { name: "Palani", state: "Tamil Nadu", aliases: ["Palani Murugan"], lat: 10.4500, lng: 77.5200 },
+  { name: "Chidambaram", state: "Tamil Nadu", lat: 11.3992, lng: 79.6936 },
+  { name: "Velankanni", state: "Tamil Nadu", aliases: ["Vailankanni"], lat: 10.6800, lng: 79.8398 },
+  { name: "Karaikudi", state: "Tamil Nadu", lat: 10.0735, lng: 78.7732 },
+  { name: "Ramanathapuram", state: "Tamil Nadu", aliases: ["Ramnad"], lat: 9.3639, lng: 78.8395 },
+  { name: "Dharmapuri", state: "Tamil Nadu", lat: 12.1211, lng: 78.1582 },
+  { name: "Krishnagiri", state: "Tamil Nadu", lat: 12.5186, lng: 78.2137 },
+  { name: "Namakkal", state: "Tamil Nadu", lat: 11.2189, lng: 78.1674 },
+  { name: "Tenkasi", state: "Tamil Nadu", lat: 8.9594, lng: 77.3150 },
+  { name: "Courtallam", state: "Tamil Nadu", aliases: ["Kutralam"], lat: 8.9287, lng: 77.2731 },
 
   // Karnataka
   { name: "Mangalore", state: "Karnataka", aliases: ["Mangaluru", "IXE"], lat: 12.9141, lng: 74.8560 },
@@ -284,8 +297,8 @@ export function getSegmentDistance(fromCity, toCity) {
 
   if (coords1 && coords2) {
     const directKm = haversineDistanceKm(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
-    // Indian highway road winding factor is typically 1.25x - 1.30x of air distance
-    const roadKm = Math.round(directKm * 1.28);
+    // Indian highway road winding factor is typically 1.28x - 1.30x of air distance
+    const roadKm = Math.round(directKm * 1.297);
     return Math.max(roadKm, 25);
   }
 
@@ -300,6 +313,7 @@ export function detectRouteDistance(from, to, stops = [], tripType = "one-way") 
     return { distanceKm: 0, durationHours: 0, isDetected: false };
   }
 
+  const isRound = (tripType || "").toLowerCase().includes("round");
   const points = [from];
   if (stops) {
     const list = Array.isArray(stops) ? stops : (typeof stops === "string" ? stops.split("|") : []);
@@ -308,15 +322,16 @@ export function detectRouteDistance(from, to, stops = [], tripType = "one-way") 
     });
   }
   points.push(to);
-
-  let oneWayKm = 0;
-  for (let i = 0; i < points.length - 1; i++) {
-    oneWayKm += getSegmentDistance(points[i], points[i + 1]);
+  if (isRound) {
+    points.push(from);
   }
 
-  const isRound = (tripType || "").toLowerCase().includes("round");
-  const totalKm = isRound ? oneWayKm * 2 : oneWayKm;
-  // Estimate driving duration assuming ~55 km/h average outstation highway speed
+  let totalKm = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    totalKm += getSegmentDistance(points[i], points[i + 1]);
+  }
+
+  const oneWayKm = isRound ? Math.round(totalKm / 2) : totalKm;
   const hours = Math.round((totalKm / 55) * 10) / 10;
 
   return {
@@ -356,13 +371,17 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
   }
 
   try {
+    const isRound = (tripType || "").toLowerCase().includes("round");
+
     const origin = (options.originCoords?.lat != null && options.originCoords?.lng != null)
       ? { location: { latLng: { latitude: Number(options.originCoords.lat), longitude: Number(options.originCoords.lng) } } }
       : { address: cleanFrom.includes(",") ? cleanFrom : `${cleanFrom}, India` };
 
-    const destination = (options.destinationCoords?.lat != null && options.destinationCoords?.lng != null)
+    const destPoint = (options.destinationCoords?.lat != null && options.destinationCoords?.lng != null)
       ? { location: { latLng: { latitude: Number(options.destinationCoords.lat), longitude: Number(options.destinationCoords.lng) } } }
       : { address: cleanTo.includes(",") ? cleanTo : `${cleanTo}, India` };
+
+    const destination = isRound ? origin : destPoint;
 
     const intermediates = cleanStops.map((s, idx) => {
       const sc = options.stopsCoords?.[idx] || (Array.isArray(options.stopsCoords) ? options.stopsCoords[idx] : null);
@@ -371,6 +390,10 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
       }
       return { address: s.includes(",") ? s : `${s}, India` };
     });
+
+    if (isRound) {
+      intermediates.push(destPoint);
+    }
 
     const body = {
       origin,
@@ -400,28 +423,27 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
       if (data?.routes?.[0]) {
         const route = data.routes[0];
         const meters = route.distanceMeters || 0;
-        const oneWayKm = Math.round(meters / 1000);
-        const isRound = (tripType || "").toLowerCase().includes("round");
-        const totalKm = isRound ? oneWayKm * 2 : oneWayKm;
+        const totalKm = Math.round(meters / 1000);
+        const oneWayKm = isRound ? Math.round(totalKm / 2) : totalKm;
 
-        let oneWayToll = 0;
+        let dynamicToll = 0;
         const tollEst = route.travelAdvisory?.tollInfo?.estimatedPrice?.[0];
         if (tollEst?.units) {
-          oneWayToll = parseInt(tollEst.units, 10) || 0;
+          dynamicToll = parseInt(tollEst.units, 10) || 0;
         }
-        const totalToll = isRound ? oneWayToll * 2 : oneWayToll;
+        if (dynamicToll === 0 && totalKm > 20) {
+          dynamicToll = Math.round(totalKm * 1.35);
+        }
 
         const seconds = parseInt((route.duration || "0s").replace("s", ""), 10) || 0;
-        const totalSecs = isRound ? seconds * 2 : seconds;
-        const hrs = Math.floor(totalSecs / 3600);
-        const mins = Math.round((totalSecs % 3600) / 60);
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.round((seconds % 3600) / 60);
         const durationText = hrs > 0 ? (mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`) : `${mins} min`;
-        const dynamicToll = totalToll > 0 ? totalToll : (totalKm > 20 ? Math.round(totalKm * 1.35) : 0);
 
         const result = {
           distanceKm: totalKm,
           oneWayKm,
-          durationHours: Math.round((totalSecs / 3600) * 10) / 10,
+          durationHours: Math.round((seconds / 3600) * 10) / 10,
           durationText,
           tollPrice: dynamicToll,
           actualToll: dynamicToll,

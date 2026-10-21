@@ -13,6 +13,7 @@ import {
   getDefaultPickupDateTime,
   isDateTimeInPast
 } from "@/lib/dateTimeUtils";
+import { findCityCoordinates } from "@/lib/cities";
 
 export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSave }) {
   const isLocal = currentTrip?.serviceType === "LOCAL" || (currentTrip?.to && currentTrip.to.toLowerCase().includes("hr"));
@@ -21,6 +22,9 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const [to, setTo] = useState(currentTrip?.to || (isLocal ? "8hr-80km" : "Coimbatore, Tamil Nadu"));
   const [pickupDetails, setPickupDetails] = useState(currentTrip?.pickupDetails || null);
   const [dropDetails, setDropDetails] = useState(currentTrip?.dropDetails || null);
+  const [pickupCoords, setPickupCoords] = useState(currentTrip?.pickupCoords || null);
+  const [dropCoords, setDropCoords] = useState(currentTrip?.dropCoords || null);
+  const [stopsCoords, setStopsCoords] = useState(currentTrip?.stopsCoords || []);
   const [stops, setStops] = useState(() => {
     if (Array.isArray(currentTrip?.stops)) return currentTrip.stops;
     if (typeof currentTrip?.stops === "string" && currentTrip.stops.trim()) {
@@ -34,6 +38,30 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const [time, setTime] = useState(currentTrip?.time || defaultDT.time);
   const [dropDate, setDropDate] = useState(currentTrip?.dropDate || currentTrip?.returnDate || "");
   const [localPackages, setLocalPackages] = useState(() => getCachedLocalPackages() || []);
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (isOpen && currentTrip) {
+      setFrom(currentTrip.from || "Bangalore, Karnataka");
+      setTo(currentTrip.to || (isLocal ? "8hr-80km" : "Coimbatore, Tamil Nadu"));
+      setPickupDetails(currentTrip.pickupDetails || null);
+      setDropDetails(currentTrip.dropDetails || null);
+      setPickupCoords(currentTrip.pickupCoords || null);
+      setDropCoords(currentTrip.dropCoords || null);
+      setStopsCoords(currentTrip.stopsCoords || []);
+      if (Array.isArray(currentTrip.stops)) {
+        setStops(currentTrip.stops);
+      } else if (typeof currentTrip.stops === "string" && currentTrip.stops.trim()) {
+        setStops(currentTrip.stops.split("|").map((s) => s.trim()).filter(Boolean));
+      } else {
+        setStops([]);
+      }
+      setTripType(currentTrip.tripType || (isLocal ? "Hourly Package" : "One way"));
+      setDate(currentTrip.date || defaultDT.date);
+      setTime(currentTrip.time || defaultDT.time);
+      setDropDate(currentTrip.dropDate || currentTrip.returnDate || "");
+    }
+  }, [isOpen, currentTrip]);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,21 +123,28 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const handleSubmit = (e) => {
     e.preventDefault();
     const validStops = stops.filter((s) => s && s.trim());
+    const resolvedPickupCoords = pickupCoords || (pickupDetails?.lat && pickupDetails?.lng ? { lat: pickupDetails.lat, lng: pickupDetails.lng } : null) || findCityCoordinates(from);
+    const resolvedDropCoords = dropCoords || (dropDetails?.lat && dropDetails?.lng ? { lat: dropDetails.lat, lng: dropDetails.lng } : null) || findCityCoordinates(to);
+
     onSave({
       ...currentTrip,
       from,
       to,
-      fromCity: pickupDetails?.city || currentTrip?.fromCity,
+      fromCity: pickupDetails?.city || (from ? from.split(",")[0].trim() : currentTrip?.fromCity),
       fromState: pickupDetails?.state || currentTrip?.fromState,
-      toCity: dropDetails?.city || currentTrip?.toCity,
+      toCity: dropDetails?.city || (to ? to.split(",")[0].trim() : currentTrip?.toCity),
       pickupDetails: pickupDetails || currentTrip?.pickupDetails,
       dropDetails: dropDetails || currentTrip?.dropDetails,
+      pickupCoords: resolvedPickupCoords,
+      dropCoords: resolvedDropCoords,
+      stopsCoords: stopsCoords,
       stops: (isLocal || isAirport) ? "" : validStops.join("|"),
       tripType: isLocal ? "Hourly Package" : (currentTrip?.tripType || tripType),
       serviceType: isLocal ? "LOCAL" : isAirport ? "AIRPORT" : (currentTrip?.serviceType || "OUTSTATION"),
       date,
       time,
-      dropDate: tripType.toLowerCase().includes("round") ? dropDate : undefined
+      dropDate: tripType.toLowerCase().includes("round") ? dropDate : undefined,
+      returnDate: tripType.toLowerCase().includes("round") ? dropDate : undefined
     });
     onClose();
   };
@@ -180,6 +215,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
               value={from}
               onChange={(val, coords, details) => {
                 setFrom(val);
+                setPickupCoords(coords || (details?.lat && details?.lng ? { lat: details.lat, lng: details.lng } : null) || findCityCoordinates(val));
                 if (details) setPickupDetails(details);
               }}
               placeholder="Enter pickup city..."
@@ -219,7 +255,14 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
                   </div>
                   <CityAutocompleteInput
                     value={stop}
-                    onChange={(val) => handleStopChange(index, val)}
+                    onChange={(val, coords) => {
+                      handleStopChange(index, val);
+                      if (coords || val) {
+                        const updatedCoords = [...stopsCoords];
+                        updatedCoords[index] = coords || findCityCoordinates(val);
+                        setStopsCoords(updatedCoords);
+                      }
+                    }}
                     placeholder="Enter stop city (e.g. Salem)..."
                     iconColor="text-purple-600"
                     inputClassName="py-2.5 rounded-xl bg-purple-50/30 border-purple-200"
@@ -234,6 +277,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
                   value={to}
                   onChange={(val, coords, details) => {
                     setTo(val);
+                    setDropCoords(coords || (details?.lat && details?.lng ? { lat: details.lat, lng: details.lng } : null) || findCityCoordinates(val));
                     if (details) setDropDetails(details);
                   }}
                   placeholder="Enter destination city..."

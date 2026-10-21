@@ -56,6 +56,26 @@ function formatDateDisplay(rawDate) {
   }
 }
 
+function parseDateToMidnight(rawDate) {
+  if (!rawDate) return null;
+  if (rawDate instanceof Date) return rawDate;
+  try {
+    const s = String(rawDate).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const [y, m, d] = s.substring(0, 10).split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(s)) {
+      const [d, m, y] = s.substring(0, 10).split(/[-/]/).map(Number);
+      return new Date(y, m - 1, d);
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+}
+
 function formatTimeDisplay(rawTime) {
   if (!rawTime) return "7:00 AM";
   try {
@@ -128,27 +148,18 @@ function SelectVehicleContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
 
-  // Dynamic Query parameters from BookingWidget or pending session
+  // Dynamic Query parameters from BookingWidget (SSR & Hydration safe)
   const [trip, setTrip] = useState(() => {
-    let pendingTrip = null;
-    if (typeof window !== "undefined") {
-      try {
-        const stored = sessionStorage.getItem("grab_pending_trip");
-        if (stored) pendingTrip = JSON.parse(stored);
-      } catch (e) {
-        console.warn("Could not read pending trip", e);
-      }
-    }
-    const fromVal = searchParams.get("from") || pendingTrip?.from || "Bangalore, Karnataka";
-    const toVal = searchParams.get("to") || pendingTrip?.to || "Coimbatore, Tamil Nadu";
-    const stopsVal = searchParams.get("stops") || pendingTrip?.stops || "";
-    const rawTripType = searchParams.get("tripType") || pendingTrip?.tripType || "Round trip";
+    const fromVal = searchParams.get("from") || "Bangalore, Karnataka";
+    const toVal = searchParams.get("to") || "Coimbatore, Tamil Nadu";
+    const stopsVal = searchParams.get("stops") || "";
+    const rawTripType = searchParams.get("tripType") || "Round trip";
     const defaultDT = getDefaultPickupDateTime();
-    const dateVal = searchParams.get("pickupDate") || pendingTrip?.date || defaultDT.date;
-    const timeVal = searchParams.get("pickupTime") || pendingTrip?.time || defaultDT.time;
-    const serviceTypeVal = (searchParams.get("serviceType") || pendingTrip?.serviceType || "OUTSTATION").toUpperCase();
+    const dateVal = searchParams.get("pickupDate") || searchParams.get("date") || defaultDT.date;
+    const timeVal = searchParams.get("pickupTime") || searchParams.get("time") || defaultDT.time;
+    const serviceTypeVal = (searchParams.get("serviceType") || "OUTSTATION").toUpperCase();
     const isLocal = serviceTypeVal === "LOCAL" || (toVal && toVal.toLowerCase().includes("hr"));
-    const dropDateVal = isLocal ? "" : (searchParams.get("dropDate") || searchParams.get("returnDate") || pendingTrip?.dropDate || pendingTrip?.returnDate || "");
+    const dropDateVal = isLocal ? "" : (searchParams.get("dropDate") || searchParams.get("returnDate") || "");
 
     return {
       from: fromVal,
@@ -159,17 +170,17 @@ function SelectVehicleContent() {
       time: timeVal,
       dropDate: dropDateVal,
       serviceType: serviceTypeVal,
-      pickupCoords: pendingTrip?.pickupCoords || null,
-      dropCoords: pendingTrip?.dropCoords || null,
-      stopsCoords: pendingTrip?.stopsCoords || null,
-      pickupDetails: pendingTrip?.pickupDetails || null,
-      dropDetails: pendingTrip?.dropDetails || null,
-      fromCity: searchParams.get("fromCity") || pendingTrip?.fromCity || pendingTrip?.pickupDetails?.city || "",
-      fromState: searchParams.get("fromState") || pendingTrip?.fromState || pendingTrip?.pickupDetails?.state || "",
-      toCity: searchParams.get("toCity") || pendingTrip?.toCity || pendingTrip?.dropDetails?.city || "",
-      isPetFriendly: searchParams.get("isPetFriendly") === "true" || pendingTrip?.isPetFriendly || false,
-      petType: searchParams.get("petType") || pendingTrip?.petType || "",
-      petCount: searchParams.get("petCount") || pendingTrip?.petCount || 1,
+      pickupCoords: null,
+      dropCoords: null,
+      stopsCoords: null,
+      pickupDetails: null,
+      dropDetails: null,
+      fromCity: searchParams.get("fromCity") || "",
+      fromState: searchParams.get("fromState") || "",
+      toCity: searchParams.get("toCity") || "",
+      isPetFriendly: searchParams.get("isPetFriendly") === "true",
+      petType: searchParams.get("petType") || "",
+      petCount: Number(searchParams.get("petCount")) || 1,
     };
   });
 
@@ -184,17 +195,7 @@ function SelectVehicleContent() {
   const [backendVehicles, setBackendVehicles] = useState([]);
   const [backendDistance, setBackendDistance] = useState(() => {
     const urlDist = Number(searchParams?.get("distanceKm"));
-    if (urlDist > 0) return urlDist;
-    if (typeof window !== "undefined") {
-      try {
-        const stored = sessionStorage.getItem("grab_pending_trip");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.distanceKm > 0) return parsed.distanceKm;
-        }
-      } catch {}
-    }
-    return null;
+    return urlDist > 0 ? urlDist : null;
   });
   const [googleRouteDetails, setGoogleRouteDetails] = useState(() => {
     const urlDist = Number(searchParams?.get("distanceKm"));
@@ -208,24 +209,50 @@ function SelectVehicleContent() {
         tollPrice: urlToll || Math.round(urlDist * 1.35),
       };
     }
-    if (typeof window !== "undefined") {
-      try {
-        const stored = sessionStorage.getItem("grab_pending_trip");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.distanceKm > 0) {
-            return {
-              isDetected: true,
-              distanceKm: parsed.distanceKm,
-              durationText: parsed.durationText || null,
-              tollPrice: parsed.tollPrice || Math.round(parsed.distanceKm * 1.35),
-            };
-          }
-        }
-      } catch {}
-    }
     return null;
   });
+
+  // Client-only mount effect: Hydrate from sessionStorage safely without hydration mismatch
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    try {
+      const stored = sessionStorage.getItem("grab_pending_trip");
+      if (stored) {
+        const pendingTrip = JSON.parse(stored);
+        setTrip((prev) => ({
+          ...prev,
+          from: searchParams.get("from") || pendingTrip.from || prev.from,
+          to: searchParams.get("to") || pendingTrip.to || prev.to,
+          stops: searchParams.get("stops") || pendingTrip.stops || prev.stops,
+          tripType: searchParams.get("tripType") || pendingTrip.tripType || prev.tripType,
+          date: searchParams.get("pickupDate") || searchParams.get("date") || pendingTrip.date || prev.date,
+          time: searchParams.get("pickupTime") || searchParams.get("time") || pendingTrip.time || prev.time,
+          dropDate: searchParams.get("dropDate") || searchParams.get("returnDate") || pendingTrip.dropDate || pendingTrip.returnDate || prev.dropDate,
+          serviceType: searchParams.get("serviceType") || pendingTrip.serviceType || prev.serviceType,
+          pickupCoords: pendingTrip.pickupCoords || prev.pickupCoords,
+          dropCoords: pendingTrip.dropCoords || prev.dropCoords,
+          stopsCoords: pendingTrip.stopsCoords || prev.stopsCoords,
+          pickupDetails: pendingTrip.pickupDetails || prev.pickupDetails,
+          dropDetails: pendingTrip.dropDetails || prev.dropDetails,
+          fromCity: searchParams.get("fromCity") || pendingTrip.fromCity || prev.fromCity,
+          fromState: searchParams.get("fromState") || pendingTrip.fromState || prev.fromState,
+          toCity: searchParams.get("toCity") || pendingTrip.toCity || prev.toCity,
+        }));
+        if (pendingTrip.distanceKm > 0 && !searchParams.get("distanceKm")) {
+          setBackendDistance(pendingTrip.distanceKm);
+          setGoogleRouteDetails((prev) => prev || {
+            isDetected: true,
+            distanceKm: pendingTrip.distanceKm,
+            durationText: pendingTrip.durationText || null,
+            tollPrice: pendingTrip.tollPrice || Math.round(pendingTrip.distanceKm * 1.35),
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load sessionStorage pending trip:", e);
+    }
+  }, [searchParams]);
+
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
   const [serviceStatus, setServiceStatus] = useState({
     available: true,
@@ -305,8 +332,9 @@ function SelectVehicleContent() {
     const rawUrlTripType = searchParams.get("tripType") || "Round trip";
     const urlTripType = rawUrlTripType.toLowerCase().includes("round") ? "Round trip" : "One way";
     const defaultDT = getDefaultPickupDateTime();
-    const urlDate = searchParams.get("pickupDate") || defaultDT.date;
-    const urlTime = searchParams.get("pickupTime") || defaultDT.time;
+    const urlDate = searchParams.get("pickupDate") || searchParams.get("date") || defaultDT.date;
+    const urlTime = searchParams.get("pickupTime") || searchParams.get("time") || defaultDT.time;
+    const urlDropDate = searchParams.get("dropDate") || searchParams.get("returnDate") || "";
     const urlServiceType = (searchParams.get("serviceType") || "OUTSTATION").toUpperCase();
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -318,6 +346,7 @@ function SelectVehicleContent() {
         prev.tripType === urlTripType &&
         prev.date === urlDate &&
         prev.time === urlTime &&
+        prev.dropDate === urlDropDate &&
         prev.serviceType === urlServiceType
       ) {
         return prev;
@@ -330,6 +359,7 @@ function SelectVehicleContent() {
         tripType: urlTripType,
         date: urlDate,
         time: urlTime,
+        dropDate: urlDropDate,
         serviceType: urlServiceType
       };
     });
@@ -387,6 +417,34 @@ function SelectVehicleContent() {
     ? parsePackageKm(trip.to) 
     : (googleRouteDetails?.distanceKm || backendDistance || fallbackDistance || 0);
 
+  const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
+
+  const tripDays = useMemo(() => {
+    if (!isRoundTripBooking) return 1;
+    const dropDateVal = trip.dropDate || trip.returnDate;
+    if (trip.date && dropDateVal) {
+      try {
+        const d1 = parseDateToMidnight(trip.date);
+        const d2 = parseDateToMidnight(dropDateVal);
+        if (d1 && d2) {
+          const diffTime = d2.getTime() - d1.getTime();
+          const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+          return Math.max(1, diffDays + 1);
+        }
+      } catch {}
+    }
+    return 1;
+  }, [isRoundTripBooking, trip.date, trip.dropDate, trip.returnDate]);
+
+  const effectiveTripDistance = useMemo(() => {
+    if (isLocalBooking) return activeDistance;
+    if (isRoundTripBooking) {
+      const minDailyKm = tripDays * 250;
+      return Math.max(activeDistance || 0, minDailyKm);
+    }
+    return activeDistance;
+  }, [isLocalBooking, isRoundTripBooking, activeDistance, tripDays]);
+
   // Fetch live vehicles from backend API
   useEffect(() => {
     let isCancelled = false;
@@ -407,6 +465,7 @@ function SelectVehicleContent() {
           tripType: trip.tripType.toLowerCase().includes("round") ? "ROUND_TRIP" : "ONE_WAY",
           pickupDate: trip.date,
           pickupTime: trip.time,
+          returnDate: trip.dropDate || trip.returnDate || undefined,
           serviceType: trip.serviceType || "OUTSTATION",
           distanceKm: dynamicDistance
         });
@@ -450,7 +509,7 @@ function SelectVehicleContent() {
     return () => {
       isCancelled = true;
     };
-  }, [trip.from, trip.to, trip.stops, trip.tripType, trip.date, trip.time, trip.serviceType]);
+  }, [trip.from, trip.to, trip.stops, trip.tripType, trip.date, trip.time, trip.serviceType, trip.dropDate, trip.returnDate]);
 
   // Format and calculate live pricing for real backend vehicles
   const fleetWithPricing = useMemo(() => {
@@ -484,10 +543,14 @@ function SelectVehicleContent() {
       const reg = car.regNumber || car.vehicleNumber || "Commercial Fleet";
       const perKmRate = car.perKmRate || (type === "SUV" ? 19.5 : type === "Hatchback" ? 11.5 : 13.0);
 
+      const effectiveTripKm = isRoundTripBooking
+        ? Math.max(activeDistance || 0, effectiveTripDistance, car.includedKms || 0)
+        : (activeDistance || car.includedKms || 0);
+
       const standardRateFare = isLocalBooking
         ? (car.pricing?.originalPrice || car.dailyPrice || 2000)
-        : (activeDistance > 0 && perKmRate > 0
-            ? Math.round(activeDistance * perKmRate)
+        : (effectiveTripKm > 0 && perKmRate > 0
+            ? Math.round(effectiveTripKm * perKmRate)
             : (car.pricing?.originalPrice || car.baseFare || car.fare || 0));
 
       const discountPercentage = parseFloat(car.pricing?.discountPercentage || car.discountPercentage || 0);
@@ -509,13 +572,22 @@ function SelectVehicleContent() {
 
       // Driver Allowance: prioritize backend vehicle's resolved driver allowance from dedicated rules
       const backendAllowance = car.pricing?.driverAllowance;
-      const rawDriverAllowance = (backendAllowance != null && backendAllowance >= 0)
+      const isAllowanceAlreadyMultiplied = car.pricing?.driverAllowanceLabel && car.pricing.driverAllowanceLabel.includes("×");
+      const baseAllowance = (backendAllowance != null && backendAllowance >= 0)
         ? Math.round(backendAllowance)
         : ((pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0)
           ? Math.round(pricingConfig.driverAllowanceAmount)
-          : Math.round(displayFare * (pricingConfig.driverAllowancePercentage / 100)));
+          : 500);
+
+      const rawDriverAllowance = isRoundTripBooking
+        ? (isAllowanceAlreadyMultiplied ? baseAllowance : baseAllowance * tripDays)
+        : baseAllowance;
 
       const driverAllowance = (isLocalBooking) ? 0 : rawDriverAllowance;
+
+      const driverAllowanceLabel = isRoundTripBooking && tripDays > 1
+        ? `Driver Allowance (₹${isAllowanceAlreadyMultiplied ? Math.round(baseAllowance / tripDays) : baseAllowance} × ${tripDays} Days)`
+        : `Driver Allowance (₹${driverAllowance})`;
 
       // GST / Taxes
       const taxes = (pricingConfig.gstType === "FLAT" && pricingConfig.gstAmount > 0)
@@ -523,7 +595,6 @@ function SelectVehicleContent() {
         : Math.round((displayFare + driverAllowance) * (pricingConfig.gstPercentage / 100));
 
       // Toll price (0 for local, 0 for round trips, dynamic FASTag toll for outstation one-way)
-      const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
       const tollPrice = (isLocalBooking || isRoundTripBooking)
         ? 0
         : (googleRouteDetails?.tollPrice > 0
@@ -533,7 +604,8 @@ function SelectVehicleContent() {
       // Total Charges & Taxes (GST + driver allowance + toll)
       const chargesAndTaxesTotal = Math.round(driverAllowance + taxes + tollPrice);
 
-      const advance = car.pricing?.advanceAmount || Math.round((tripDiscountedFare) * 0.25);
+      const tripTotalFare = Math.round(baseFare + chargesAndTaxesTotal);
+      const advance = Math.round(tripTotalFare * 0.25);
       const dailyPrice = car.dailyPrice || Math.round(displayFare / 1.15);
 
       let resolvedInclusions = car.inclusions || [];
@@ -578,15 +650,16 @@ function SelectVehicleContent() {
         image: car.image || "/images/cars/dzire.jpg",
         rating: car.rating || 4.85,
         badge: car.badge || "Verified Fleet",
-        distanceKm: activeDistance,
+        distanceKm: effectiveTripKm,
         pricing: {
           originalPrice: originalFare,
-          discountedPrice: tripDiscountedFare,
+          discountedPrice: tripTotalFare,
           baseFare: baseFare,
           displayFare: displayFare,
           discountPercentage: discountPercentage,
           chargesAndTaxes: taxes,
           driverAllowance: driverAllowance,
+          driverAllowanceLabel: driverAllowanceLabel,
           tollPrice: tollPrice,
           chargesAndTaxesTotal: chargesAndTaxesTotal,
           gstPercentage: pricingConfig.gstPercentage,
@@ -598,7 +671,7 @@ function SelectVehicleContent() {
         exclusions: resolvedExclusions
       };
     });
-  }, [backendVehicles, activeDistance, trip.from, trip.tripType, isLocalBooking, pricingConfig, googleRouteDetails]);
+  }, [backendVehicles, activeDistance, effectiveTripDistance, isRoundTripBooking, tripDays, trip.from, trip.tripType, isLocalBooking, pricingConfig, googleRouteDetails]);
 
   // Dynamic Filter Counts based on live vehicles
   const counts = useMemo(() => {
@@ -745,10 +818,16 @@ function SelectVehicleContent() {
 
   const handleCarSelect = (vehicle) => {
     const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
+    const chosenDistance = isRoundTripBooking
+      ? (vehicle.distanceKm || effectiveTripDistance || activeDistance)
+      : activeDistance;
     if (typeof window !== "undefined") {
       const selectedData = {
         trip,
-        distanceKm: activeDistance,
+        distanceKm: chosenDistance,
+        actualDistanceKm: activeDistance,
+        routeDistanceKm: activeDistance,
+        minPackageKm: isRoundTripBooking ? (tripDays * 250) : null,
         tollPrice: (isRoundTripBooking || isLocalBooking)
           ? 0
           : (vehicle.pricing?.tollPrice ?? (googleRouteDetails?.tollPrice || (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0))),
@@ -769,17 +848,18 @@ function SelectVehicleContent() {
           seating: vehicle.seatingCapacity,
           perKmRate: vehicle.perKmRate ?? 0,
           discountPercentage: vehicle.pricing?.discountPercentage ?? vehicle.discountPercentage ?? 0,
-          originalPrice: vehicle.pricing?.originalPrice ?? (activeDistance > 0 ? Math.round(activeDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
+          originalPrice: vehicle.pricing?.originalPrice ?? (chosenDistance > 0 ? Math.round(chosenDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
           fare: vehicle.pricing?.displayFare ?? vehicle.pricing?.baseFare ?? vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
-          baseFare: vehicle.pricing?.baseFare ?? vehicle.pricing?.displayFare ?? (activeDistance > 0 ? Math.round(activeDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
+          baseFare: vehicle.pricing?.baseFare ?? vehicle.pricing?.displayFare ?? (chosenDistance > 0 ? Math.round(chosenDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
           petCharge: vehicle.pricing?.petCharge != null ? Number(vehicle.pricing.petCharge) : 0,
           vendorPetCharge: vehicle.pricing?.vendorPetCharge != null ? Number(vehicle.pricing.vendorPetCharge) : 0,
           driverAllowance: (isNightPickup(trip.time) || isLocalBooking) ? 0 : (vehicle.pricing?.driverAllowance ?? 0),
+          driverAllowanceLabel: vehicle.pricing?.driverAllowanceLabel,
           taxes: vehicle.pricing?.chargesAndTaxes ?? 0,
           gstPercentage: vehicle.pricing?.gstPercentage ?? 5,
           driverAllowancePercentage: vehicle.pricing?.driverAllowancePercentage ?? 10,
-          totalFare: vehicle.pricing?.discountedPrice ?? (vehicle.pricing?.baseFare ? vehicle.pricing.baseFare * 1.15 : (vehicle.dailyPrice * 1.2)),
-          advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2)) * 0.25),
+          totalFare: vehicle.pricing?.discountedPrice ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0)),
+          advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.discountedPrice ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0))) * 0.25),
           inclusions: vehicle.inclusions || [],
           exclusions: vehicle.exclusions || [],
           image: vehicle.image,
@@ -795,9 +875,27 @@ function SelectVehicleContent() {
   };
 
   const handleSaveTrip = (newTrip) => {
+    setBackendDistance(null);
+    setGoogleRouteDetails(null);
     setTrip(newTrip);
     if (typeof window !== "undefined") {
       sessionStorage.setItem("grab_pending_trip", JSON.stringify(newTrip));
+    }
+    try {
+      const params = new URLSearchParams();
+      if (newTrip.serviceType) params.set("serviceType", newTrip.serviceType);
+      if (newTrip.from) params.set("from", newTrip.from);
+      if (newTrip.to) params.set("to", newTrip.to);
+      if (newTrip.tripType) params.set("tripType", newTrip.tripType);
+      if (newTrip.fromCity) params.set("fromCity", newTrip.fromCity);
+      if (newTrip.toCity) params.set("toCity", newTrip.toCity);
+      if (newTrip.date) params.set("date", newTrip.date);
+      if (newTrip.time) params.set("time", newTrip.time);
+      if (newTrip.dropDate) params.set("dropDate", newTrip.dropDate);
+      if (newTrip.stops) params.set("stops", newTrip.stops);
+      router.replace(`/outstation/select-vehicle?${params.toString()}`, { scroll: false });
+    } catch (e) {
+      console.warn("Could not sync URL in handleSaveTrip:", e);
     }
   };
 
@@ -996,7 +1094,7 @@ function SelectVehicleContent() {
           date={formatDateDisplay(trip.date)}
           time={formatTimeDisplay(trip.time)}
           returnDate={!isLocalBooking && trip.tripType.toLowerCase().includes("round") && trip.dropDate ? formatDateDisplay(trip.dropDate) : null}
-          distanceKm={activeDistance}
+          distanceKm={isRoundTripBooking ? effectiveTripDistance : activeDistance}
           tollPrice={isLocalBooking ? 0 : googleRouteDetails?.tollPrice}
           duration={isLocalBooking ? null : googleRouteDetails?.durationText}
           serviceType={trip.serviceType}
@@ -1230,7 +1328,7 @@ function SelectVehicleContent() {
                 </p>
                 {backendVehicles.length === 0 ? (
                   <button
-                    onClick={() => setIsModifyOpen(true)}
+                      onClick={() => setIsModifyOpen(true)}
                     className="px-4 py-2 bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
                   >
                     Modify Route
@@ -1313,7 +1411,7 @@ function SelectVehicleContent() {
                             </div>
                           )}
                           <div className="text-lg sm:text-2xl font-black text-[#0082fe] leading-tight">
-                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
+                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance) || 250) * car.perKmRate)).toLocaleString()}
                           </div>
                           <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
                             + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
@@ -1322,9 +1420,9 @@ function SelectVehicleContent() {
                             <p className="text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight mt-0.5">
                               Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
                             </p>
-                          ) : activeDistance > 0 ? (
+                          ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                             <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight mt-0.5">
-                              Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
+                              Estimated for <strong className="text-slate-800">{car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} km</strong> trip
                             </p>
                           ) : null}
                         </div>
@@ -1412,7 +1510,7 @@ function SelectVehicleContent() {
                           </div>
                         )}
                         <div className="text-2xl sm:text-3xl font-black text-[#0082fe] leading-tight">
-                          ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((activeDistance || 250) * car.perKmRate)).toLocaleString()}
+                          ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance) || 250) * car.perKmRate)).toLocaleString()}
                         </div>
                         <div className="text-[11px] font-bold text-slate-500 md:text-right mt-0.5">
                           + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
@@ -1421,9 +1519,9 @@ function SelectVehicleContent() {
                           <p className="text-[11px] font-bold text-slate-700">
                             Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
                           </p>
-                        ) : activeDistance > 0 ? (
+                        ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                           <p className="text-[11px] font-medium text-slate-500">
-                            Estimated for <strong className="text-slate-800">{activeDistance} km</strong> trip
+                            Estimated for <strong className="text-slate-800">{car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} km</strong> trip
                           </p>
                         ) : null}
                       </div>
@@ -1577,7 +1675,7 @@ function SelectVehicleContent() {
         isOpen={Boolean(selectedVehicleForDetail)}
         vehicle={selectedVehicleForDetail}
         trip={trip}
-        distanceKm={activeDistance}
+        distanceKm={isRoundTripBooking ? effectiveTripDistance : activeDistance}
         onClose={() => setSelectedVehicleForDetail(null)}
         onBook={handleCarSelect}
       />

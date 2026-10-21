@@ -16,6 +16,8 @@ export const customerApi = {
         tripType: params.tripType,
         pickupDate: params.pickupDate,
         pickupTime: params.pickupTime,
+        returnDate: params.returnDate,
+        tripDays: params.tripDays,
         serviceType: params.serviceType,
         distanceKm: params.distanceKm,
       },

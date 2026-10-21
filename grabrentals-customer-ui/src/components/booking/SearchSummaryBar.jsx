@@ -136,6 +136,12 @@ function SearchSummaryContent({
                 )}
                 <span className="text-slate-400 font-bold">→</span>
                 <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(displayTo)}</span>
+                {isRoundTrip && (
+                  <>
+                    <span className="text-slate-400 font-bold">→</span>
+                    <span className="font-black text-slate-900 text-base sm:text-lg">{cleanCity(displayFrom)}</span>
+                  </>
+                )}
                 <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md ml-1 capitalize flex items-center gap-1.5 flex-wrap">
                   <span>{tripInfo.tripType}{displayDistanceKm > 0 ? ` • ${displayDistanceKm} km` : ""}</span>
                   {displayDuration && (

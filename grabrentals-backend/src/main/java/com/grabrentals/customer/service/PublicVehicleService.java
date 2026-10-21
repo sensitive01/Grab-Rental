@@ -49,14 +49,22 @@ public class PublicVehicleService {
      * Search available vehicles for an outstation or local route with real pricing calculations.
      */
     public VehicleSearchResponseDto searchVehicles(String from, String to, String stops, String tripType, String pickupDate, String pickupTime, String serviceType) {
-        return searchVehicles(from, null, to, stops, tripType, pickupDate, pickupTime, serviceType, null);
+        return searchVehicles(from, null, to, null, stops, tripType, pickupDate, pickupTime, null, null, serviceType, null);
     }
 
     public VehicleSearchResponseDto searchVehicles(String from, String to, String stops, String tripType, String pickupDate, String pickupTime, String serviceType, Integer overrideDistanceKm) {
-        return searchVehicles(from, null, to, stops, tripType, pickupDate, pickupTime, serviceType, overrideDistanceKm);
+        return searchVehicles(from, null, to, null, stops, tripType, pickupDate, pickupTime, null, null, serviceType, overrideDistanceKm);
     }
 
     public VehicleSearchResponseDto searchVehicles(String from, String fromCity, String to, String stops, String tripType, String pickupDate, String pickupTime, String serviceType, Integer overrideDistanceKm) {
+        return searchVehicles(from, fromCity, to, null, stops, tripType, pickupDate, pickupTime, null, null, serviceType, overrideDistanceKm);
+    }
+
+    public VehicleSearchResponseDto searchVehicles(
+            String from, String fromCity, String to, String toCity, String stops, String tripType,
+            String pickupDate, String pickupTime, String returnDate, Integer tripDays,
+            String serviceType, Integer overrideDistanceKm
+    ) {
         String cleanFrom = (from != null && !from.isBlank()) ? from.trim() : "Bangalore";
         String cleanTo = (to != null && !to.isBlank()) ? to.trim() : "Coimbatore";
         String normalizedTripType = (tripType != null && tripType.toLowerCase().contains("round")) ? "Round trip" : "One way";
@@ -99,6 +107,27 @@ public class PublicVehicleService {
         } else {
             distanceKm = calculateDistanceWithStops(cleanFrom, cleanTo, parsedStops, normalizedTripType);
         }
+
+        int effectiveDays = 1;
+        if (tripDays != null && tripDays > 0) {
+            effectiveDays = tripDays;
+        } else if (pickupDate != null && returnDate != null) {
+            try {
+                java.time.LocalDate d1 = java.time.LocalDate.parse(pickupDate.trim().substring(0, 10));
+                java.time.LocalDate d2 = java.time.LocalDate.parse(returnDate.trim().substring(0, 10));
+                long between = java.time.temporal.ChronoUnit.DAYS.between(d1, d2);
+                effectiveDays = Math.max(1, (int) between + 1);
+            } catch (Exception ignored) {}
+        }
+
+        boolean isRoundTrip = "ROUND_TRIP".equalsIgnoreCase(resolvedServiceType)
+                || (tripType != null && tripType.toLowerCase().contains("round"));
+        int effectiveDistance = distanceKm;
+        if (isRoundTrip) {
+            int minDailyKm = effectiveDays * 250;
+            effectiveDistance = Math.max(distanceKm, minDailyKm);
+        }
+
         long tDist = System.currentTimeMillis();
 
         String lookupString = (fromCity != null && !fromCity.isBlank()) ? fromCity.trim() : cleanFrom;
@@ -119,9 +148,11 @@ public class PublicVehicleService {
                     .to(cleanTo)
                     .stops(parsedStops.isEmpty() ? null : parsedStops)
                     .tripType(normalizedTripType)
-                    .distanceKm(distanceKm)
+                    .distanceKm(effectiveDistance)
                     .pickupDate(pickupDate)
                     .pickupTime(pickupTime)
+                    .returnDate(returnDate)
+                    .tripDays(effectiveDays)
                     .vehicles(Collections.emptyList())
                     .serviceAvailable(false)
                     .serviceCity(pickupCity)
@@ -257,18 +288,19 @@ public class PublicVehicleService {
                         ratingCount,
                         seats,
                         image,
-                        distanceKm,
+                        effectiveDistance,
                         rate,
                         postRate,
                         List.of(fuel),
                         5,
                         badge,
                         discPct,
-                        "ROUND_TRIP".equalsIgnoreCase(normalizedTripType),
+                        isRoundTrip,
                         model,
                         pickupCity,
                         pickupState,
-                        pickupTime
+                        pickupTime,
+                        effectiveDays
                 );
                 card.setVehicleType(typeTitle);
                 card.setFuelType(fuel);
@@ -446,18 +478,19 @@ public class PublicVehicleService {
                             ratingCount,
                             seats,
                             image,
-                            distanceKm,
+                            effectiveDistance,
                             rate,
                             postRate,
                             List.of(fuel),
                             1,
                             badge,
                             discPct,
-                            "ROUND_TRIP".equalsIgnoreCase(normalizedTripType),
+                            isRoundTrip,
                             model,
                             pickupCity,
                             pickupState,
-                            pickupTime
+                            pickupTime,
+                            effectiveDays
                     );
                     card.setVehicleNumber(v.getVehicleNumber());
                     card.setRegNumber(v.getRegistrationNumber() != null && !v.getRegistrationNumber().isBlank() ? v.getRegistrationNumber() : v.getVehicleNumber());
@@ -563,9 +596,11 @@ public class PublicVehicleService {
                 .to(cleanTo)
                 .stops(parsedStops.isEmpty() ? null : parsedStops)
                 .tripType(normalizedTripType)
-                .distanceKm(distanceKm)
+                .distanceKm(effectiveDistance)
                 .pickupDate(pickupDate)
                 .pickupTime(pickupTime)
+                .returnDate(returnDate)
+                .tripDays(effectiveDays)
                 .vehicles(cards)
                 .serviceAvailable(serviceAvailable)
                 .serviceCity(pickupCity)
@@ -666,7 +701,8 @@ public class PublicVehicleService {
             String modelName,
             String city,
             String state,
-            String pickupTime
+            String pickupTime,
+            int tripDays
     ) {
         com.grabrentals.tariff.entity.PricingTaxConfig taxConfig = pricingTaxConfigService.getConfig();
         String gstType = (taxConfig.getGstType() != null && !taxConfig.getGstType().isBlank())
@@ -694,15 +730,21 @@ public class PublicVehicleService {
         BigDecimal driverAllowance;
         String driverInclusionLabel;
 
+        int days = isRoundTrip ? Math.max(1, tripDays) : 1;
+        BigDecimal daysBd = BigDecimal.valueOf(days);
+
         if (customAllowance != null) {
             driverType = (customAllowance.getAllowanceType() != null && !customAllowance.getAllowanceType().isBlank())
                     ? customAllowance.getAllowanceType().trim().toUpperCase() : "FLAT";
             if ("FLAT".equalsIgnoreCase(driverType)) {
-                driverAllowance = (customAllowance.getAllowanceValue() != null)
+                BigDecimal perDayAllowance = (customAllowance.getAllowanceValue() != null)
                         ? customAllowance.getAllowanceValue().setScale(0, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO;
+                driverAllowance = perDayAllowance.multiply(daysBd);
                 driverPercent = BigDecimal.ZERO;
-                driverInclusionLabel = "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
+                driverInclusionLabel = days > 1
+                        ? "Driver Allowance (₹" + perDayAllowance.toPlainString() + " × " + days + " Days)"
+                        : "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
             } else {
                 BigDecimal safePercent = customAllowance.getAllowanceValue() != null
                         ? customAllowance.getAllowanceValue()
@@ -722,8 +764,11 @@ public class PublicVehicleService {
                 BigDecimal flatAmt = (driverAmount != null && driverAmount.compareTo(BigDecimal.ZERO) > 0)
                         ? driverAmount
                         : (driverPercent.compareTo(new BigDecimal("100")) > 0 ? driverPercent : new BigDecimal("400.00"));
-                driverAllowance = flatAmt.setScale(0, RoundingMode.HALF_UP);
-                driverInclusionLabel = "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
+                BigDecimal perDayAllowance = flatAmt.setScale(0, RoundingMode.HALF_UP);
+                driverAllowance = perDayAllowance.multiply(daysBd);
+                driverInclusionLabel = days > 1
+                        ? "Driver Allowance (₹" + perDayAllowance.toPlainString() + " × " + days + " Days)"
+                        : "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
             } else {
                 BigDecimal safePercent = driverPercent.compareTo(new BigDecimal("100")) > 0 ? new BigDecimal("10.00") : driverPercent;
                 BigDecimal driverRate = safePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
@@ -820,23 +865,24 @@ public class PublicVehicleService {
     }
 
     public int calculateDistanceWithStops(String from, String to, List<String> stops, String tripType) {
-        int oneWay;
-        if (stops == null || stops.isEmpty()) {
-            oneWay = getSegmentDistance(from, to);
-        } else {
-            List<String> points = new ArrayList<>();
-            points.add(from);
-            points.addAll(stops);
-            points.add(to);
-
-            oneWay = 0;
-            for (int i = 0; i < points.size() - 1; i++) {
-                oneWay += getSegmentDistance(points.get(i), points.get(i + 1));
+        boolean isRound = tripType != null && tripType.toLowerCase().contains("round");
+        List<String> points = new ArrayList<>();
+        points.add(from);
+        if (stops != null) {
+            for (String s : stops) {
+                if (s != null && !s.isBlank()) points.add(s.trim());
             }
         }
+        points.add(to);
+        if (isRound) {
+            points.add(from);
+        }
 
-        boolean isRound = tripType != null && tripType.toLowerCase().contains("round");
-        return isRound ? oneWay * 2 : oneWay;
+        int totalKm = 0;
+        for (int i = 0; i < points.size() - 1; i++) {
+            totalKm += getSegmentDistance(points.get(i), points.get(i + 1));
+        }
+        return totalKm;
     }
 
     private static final Map<String, double[]> CITY_COORDS = new HashMap<>();
@@ -879,7 +925,26 @@ public class PublicVehicleService {
         CITY_COORDS.put("tirunelveli", new double[]{8.7139, 77.7567});
         CITY_COORDS.put("rameswaram", new double[]{9.2876, 79.3129});
         CITY_COORDS.put("kanyakumari", new double[]{8.0883, 77.5385});
-        CITY_COORDS.put("hosur", new double[]{12.7409, 77.8253});
+        CITY_COORDS.put("theni", new double[]{10.0104, 77.4768});
+        CITY_COORDS.put("dindigul", new double[]{10.3673, 77.9803});
+        CITY_COORDS.put("tiruvannamalai", new double[]{12.2253, 79.0747});
+        CITY_COORDS.put("thiruvannamalai", new double[]{12.2253, 79.0747});
+        CITY_COORDS.put("kumbakonam", new double[]{10.9602, 79.3845});
+        CITY_COORDS.put("palani", new double[]{10.4500, 77.5200});
+        CITY_COORDS.put("chidambaram", new double[]{11.3992, 79.6936});
+        CITY_COORDS.put("velankanni", new double[]{10.6800, 79.8398});
+        CITY_COORDS.put("karaikudi", new double[]{10.0735, 78.7732});
+        CITY_COORDS.put("dharmapuri", new double[]{12.1211, 78.1582});
+        CITY_COORDS.put("krishnagiri", new double[]{12.5186, 78.2137});
+        CITY_COORDS.put("namakkal", new double[]{11.2189, 78.1674});
+        CITY_COORDS.put("karur", new double[]{10.9601, 78.0766});
+        CITY_COORDS.put("tenkasi", new double[]{8.9594, 77.3150});
+        CITY_COORDS.put("kollur", new double[]{13.8653, 74.8115});
+        CITY_COORDS.put("sringeri", new double[]{13.4189, 75.2570});
+        CITY_COORDS.put("murudeshwar", new double[]{14.0940, 74.4899});
+        CITY_COORDS.put("dharmasthala", new double[]{12.9567, 75.3789});
+        CITY_COORDS.put("kukke", new double[]{12.6644, 75.6178});
+        CITY_COORDS.put("subramanya", new double[]{12.6644, 75.6178});
 
         // Kerala
         CITY_COORDS.put("kochi", new double[]{9.9312, 76.2673});
@@ -941,7 +1006,7 @@ public class PublicVehicleService {
         double[] c2 = lookupCoordinates(t);
         if (c1 != null && c2 != null) {
             double airKm = haversineKm(c1[0], c1[1], c2[0], c2[1]);
-            int roadKm = (int) Math.round(airKm * 1.28);
+            int roadKm = (int) Math.round(airKm * 1.297);
             return Math.max(roadKm, 25);
         }
 

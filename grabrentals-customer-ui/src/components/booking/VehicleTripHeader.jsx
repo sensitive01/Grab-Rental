@@ -74,6 +74,12 @@ export default function VehicleTripHeader({
                   <ArrowRight className="w-5 h-5 text-white/80 shrink-0" />
                 )}
                 <span>{to}</span>
+                {!isAirport && (tripType || "").toLowerCase().includes("round") && (
+                  <>
+                    <ArrowRight className="w-5 h-5 text-white/80 shrink-0" />
+                    <span>{from}</span>
+                  </>
+                )}
               </>
             )}
           </h1>
@@ -93,14 +99,14 @@ export default function VehicleTripHeader({
 
           <div>
             <span className="text-[10px] uppercase font-bold text-white/80 block">{t("pickup_date")}</span>
-            <span className="font-extrabold text-white">{date}</span>
+            <span className="font-extrabold text-white" suppressHydrationWarning>{date}</span>
           </div>
 
           <div className="h-7 w-px bg-white/25 hidden sm:block"></div>
 
           <div>
             <span className="text-[10px] uppercase font-bold text-white/80 block">{t("pickup_time")}</span>
-            <span className="font-extrabold text-white">{time}</span>
+            <span className="font-extrabold text-white" suppressHydrationWarning>{time}</span>
           </div>
 
           {!isLocal && tripType.toLowerCase().includes("round") && returnDate ? (
@@ -108,7 +114,7 @@ export default function VehicleTripHeader({
               <div className="h-7 w-px bg-white/25 hidden sm:block"></div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-white/80 block">{t("return_date") || "Return Date"}</span>
-                <span className="font-extrabold text-white">
+                <span className="font-extrabold text-white" suppressHydrationWarning>
                   {returnDate}
                 </span>
               </div>

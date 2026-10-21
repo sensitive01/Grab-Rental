@@ -397,8 +397,16 @@ public class VehicleTariffService {
         String sType = (serviceType != null && !serviceType.isBlank()) ? serviceType.trim().toUpperCase() : "OUTSTATION";
         if ("PACKAGE".equalsIgnoreCase(sType)) sType = "LOCAL";
         List<VehicleTariff> direct = tariffRepository.findByServiceTypeIgnoreCase(sType);
-        if (("ONE_WAY".equalsIgnoreCase(sType) || "ROUND_TRIP".equalsIgnoreCase(sType)) && (direct == null || direct.isEmpty())) {
-            direct = tariffRepository.findByServiceTypeIgnoreCase("OUTSTATION");
+        if ("ONE_WAY".equalsIgnoreCase(sType) || "ROUND_TRIP".equalsIgnoreCase(sType)) {
+            List<VehicleTariff> outstationDirect = tariffRepository.findByServiceTypeIgnoreCase("OUTSTATION");
+            List<VehicleTariff> oneWayDirect = tariffRepository.findByServiceTypeIgnoreCase("ONE_WAY");
+            List<VehicleTariff> roundTripDirect = tariffRepository.findByServiceTypeIgnoreCase("ROUND_TRIP");
+            Set<VehicleTariff> mergedDirect = new LinkedHashSet<>();
+            if (direct != null) mergedDirect.addAll(direct);
+            if (roundTripDirect != null) mergedDirect.addAll(roundTripDirect);
+            if (oneWayDirect != null) mergedDirect.addAll(oneWayDirect);
+            if (outstationDirect != null) mergedDirect.addAll(outstationDirect);
+            direct = new ArrayList<>(mergedDirect);
         }
         List<VehicleTariff> allTariffs = tariffRepository.findAll();
         if (allTariffs == null || allTariffs.isEmpty()) {
@@ -643,18 +651,29 @@ public class VehicleTariffService {
             ).findFirst().orElse(null);
         }
 
-        // 5. Fallback for ONE_WAY / ROUND_TRIP: If no explicit ONE_WAY/ROUND_TRIP tariff exists, fallback to OUTSTATION
+        // 5. Fallback for ONE_WAY / ROUND_TRIP: If no explicit ONE_WAY/ROUND_TRIP tariff exists, fallback to compatible outstation tariffs
         if (activeTariff == null && ("ONE_WAY".equalsIgnoreCase(sType) || "ROUND_TRIP".equalsIgnoreCase(sType))) {
-            activeTariff = safeTariffs.stream().filter(t ->
-                    !Boolean.TRUE.equals(t.getSeasonal())
-                    && "OUTSTATION".equalsIgnoreCase(t.getServiceType())
-                    && (category == null || category.trim().equalsIgnoreCase(t.getCategory()))
-                    && (modelName == null || modelName.trim().equalsIgnoreCase(t.getModelName()))
-            ).findFirst().orElse(null);
+            if (city != null && !city.isBlank()) {
+                activeTariff = safeTariffs.stream().filter(t ->
+                        !Boolean.TRUE.equals(t.getSeasonal())
+                        && isCompatibleServiceType(sType, t.getServiceType())
+                        && (category == null || category.trim().equalsIgnoreCase(t.getCategory()))
+                        && (modelName == null || modelName.trim().equalsIgnoreCase(t.getModelName()))
+                        && t.getCity() != null && areCitiesEqual(city, t.getCity())
+                ).findFirst().orElse(null);
+            }
+            if (activeTariff == null) {
+                activeTariff = safeTariffs.stream().filter(t ->
+                        !Boolean.TRUE.equals(t.getSeasonal())
+                        && isCompatibleServiceType(sType, t.getServiceType())
+                        && (category == null || category.trim().equalsIgnoreCase(t.getCategory()))
+                        && (modelName == null || modelName.trim().equalsIgnoreCase(t.getModelName()))
+                ).findFirst().orElse(null);
+            }
             if (activeTariff == null && category != null) {
                 activeTariff = safeTariffs.stream().filter(t ->
                         !Boolean.TRUE.equals(t.getSeasonal())
-                        && "OUTSTATION".equalsIgnoreCase(t.getServiceType())
+                        && isCompatibleServiceType(sType, t.getServiceType())
                         && category.trim().equalsIgnoreCase(t.getCategory())
                 ).findFirst().orElse(null);
             }
@@ -977,5 +996,17 @@ public class VehicleTariffService {
         if (s.equals("baroda") || s.equals("vadodara")) return "vadodara";
         if (s.equals("poona") || s.equals("pune")) return "pune";
         return s;
+    }
+
+    public static boolean isCompatibleServiceType(String targetType, String tariffType) {
+        if (targetType == null || tariffType == null) return false;
+        if (targetType.equalsIgnoreCase(tariffType)) return true;
+        boolean targetIsOutstation = "ROUND_TRIP".equalsIgnoreCase(targetType)
+                || "ONE_WAY".equalsIgnoreCase(targetType)
+                || "OUTSTATION".equalsIgnoreCase(targetType);
+        boolean tariffIsOutstation = "ROUND_TRIP".equalsIgnoreCase(tariffType)
+                || "ONE_WAY".equalsIgnoreCase(tariffType)
+                || "OUTSTATION".equalsIgnoreCase(tariffType);
+        return targetIsOutstation && tariffIsOutstation;
     }
 }
