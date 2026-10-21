@@ -79,25 +79,81 @@ export default function LocationPickerModal({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
   const hasGoogleMapsKey = Boolean(apiKey && apiKey.trim().length > 5);
 
+  // Initialize state helper functions
+  const resolveInitialPickup = () => {
+    return pickupValue || (activeTarget === "pickup" ? initialValue : "") || "Bangalore, Karnataka";
+  };
+  const resolveInitialDrop = () => {
+    return dropValue || (activeTarget === "drop" ? initialValue : "") || "Coimbatore, Tamil Nadu";
+  };
+  const resolveInitialAirport = () => {
+    return airportValue || (activeTarget === "airport" ? initialValue : "") || "Kempegowda International Airport (BLR), Bengaluru";
+  };
+
+  const resolveInitialPickupCoords = () => {
+    if (initialPickupCoords?.lat && initialPickupCoords?.lng) return initialPickupCoords;
+    const pc = findCityCoordinates(pickupValue || (activeTarget === "pickup" ? initialValue : ""));
+    return pc ? { lat: pc.lat, lng: pc.lng } : DEFAULT_BLR_COORDS;
+  };
+
+  const resolveInitialDropCoords = () => {
+    if (initialDropCoords?.lat && initialDropCoords?.lng) return initialDropCoords;
+    const dc = findCityCoordinates(dropValue || (activeTarget === "drop" ? initialValue : ""));
+    return dc ? { lat: dc.lat, lng: dc.lng } : DEFAULT_CBE_COORDS;
+  };
+
+  const resolveInitialAirportCoords = () => {
+    if (initialAirportCoords?.lat && initialAirportCoords?.lng) return initialAirportCoords;
+    const ac = findCityCoordinates(airportValue || (activeTarget === "airport" ? initialValue : ""));
+    return ac ? { lat: ac.lat, lng: ac.lng } : DEFAULT_AIRPORT_COORDS;
+  };
+
+  const resolveInitialActiveCoords = () => {
+    const target = activeTarget || "pickup";
+    if (target === "airport") return resolveInitialAirportCoords();
+    if (target === "drop") return resolveInitialDropCoords();
+    if (typeof target === "string" && target.startsWith("stop-")) {
+      const sIdx = parseInt(target.replace("stop-", ""), 10);
+      const initStops = Array.isArray(stops) ? stops : [];
+      const stopVal = initStops[sIdx] || "";
+      const sc = (initialStopsCoords && initialStopsCoords[sIdx]) || findCityCoordinates(stopVal);
+      return sc ? { lat: sc.lat, lng: sc.lng } : resolveInitialPickupCoords();
+    }
+    return resolveInitialPickupCoords();
+  };
+
+  const resolveInitialActiveAddress = () => {
+    const target = activeTarget || "pickup";
+    if (target === "airport") return resolveInitialAirport();
+    if (target === "drop") return resolveInitialDrop();
+    if (typeof target === "string" && target.startsWith("stop-")) {
+      const sIdx = parseInt(target.replace("stop-", ""), 10);
+      const initStops = Array.isArray(stops) ? stops : [];
+      return initStops[sIdx] || "";
+    }
+    return resolveInitialPickup();
+  };
+
   // Active target & multi-stop route states
   const [currentTarget, setCurrentTarget] = useState(activeTarget || "pickup");
-  const [pickupCityState, setPickupCityState] = useState(pickupValue || (activeTarget === "pickup" ? initialValue : "") || "Bangalore, Karnataka");
-  const [dropCityState, setDropCityState] = useState(dropValue || (activeTarget === "drop" ? initialValue : "") || "Coimbatore, Tamil Nadu");
-  const [airportCityState, setAirportCityState] = useState(airportValue || (activeTarget === "airport" ? initialValue : "") || "Kempegowda International Airport (BLR), Bengaluru");
-  const [stopsState, setStopsState] = useState(Array.isArray(stops) ? [...stops] : EMPTY_STOPS);
+  const [pickupCityState, setPickupCityState] = useState(resolveInitialPickup);
+  const [dropCityState, setDropCityState] = useState(resolveInitialDrop);
+  const [airportCityState, setAirportCityState] = useState(resolveInitialAirport);
+  const [stopsState, setStopsState] = useState(() => (Array.isArray(stops) ? [...stops] : EMPTY_STOPS));
 
-  const [pickupCoords, setPickupCoords] = useState(initialPickupCoords || DEFAULT_BLR_COORDS);
-  const [dropCoords, setDropCoords] = useState(initialDropCoords || DEFAULT_CBE_COORDS);
-  const [airportCoords, setAirportCoords] = useState(initialAirportCoords || DEFAULT_AIRPORT_COORDS);
-  const [stopsCoords, setStopsCoords] = useState(initialStopsCoords || {});
+  const [pickupCoords, setPickupCoords] = useState(resolveInitialPickupCoords);
+  const [dropCoords, setDropCoords] = useState(resolveInitialDropCoords);
+  const [airportCoords, setAirportCoords] = useState(resolveInitialAirportCoords);
+  const [stopsCoords, setStopsCoords] = useState(() => initialStopsCoords || {});
 
   // Live modal route calculation
   const [modalRoute, setModalRoute] = useState(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
   // Map & location states
-  const [coordinates, setCoordinates] = useState(DEFAULT_BLR_COORDS);
-  const [selectedAddress, setSelectedAddress] = useState(initialValue || "Bangalore, Karnataka");
-  const [cityLabel, setCityLabel] = useState(initialValue || "Bangalore, Karnataka");
+  const [coordinates, setCoordinates] = useState(resolveInitialActiveCoords);
+  const [selectedAddress, setSelectedAddress] = useState(resolveInitialActiveAddress);
+  const [cityLabel, setCityLabel] = useState(resolveInitialActiveAddress);
   const [pickupAddressDetails, setPickupAddressDetails] = useState(null);
   const [dropAddressDetails, setDropAddressDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -140,6 +196,26 @@ export default function LocationPickerModal({
     stopsRef.current = stopsState;
   }, [stopsState]);
 
+  // Helper to re-center both Google Maps and Leaflet map instances
+  const panToLocation = useCallback((lat, lng, zoom = 15) => {
+    if (lat == null || lng == null) return;
+    const newPos = { lat: Number(lat), lng: Number(lng) };
+    setCoordinates(newPos);
+
+    if (hasGoogleMapsKey && !googleMapsError && mapInstanceRef.current) {
+      mapInstanceRef.current.panTo(newPos);
+      if (zoom) mapInstanceRef.current.setZoom(zoom);
+      if (markerInstanceRef.current) {
+        markerInstanceRef.current.setPosition(newPos);
+      }
+    } else if (leafletInstanceRef.current) {
+      leafletInstanceRef.current.setView([newPos.lat, newPos.lng], zoom || 15);
+      if (leafletMarkerRef.current) {
+        leafletMarkerRef.current.setLatLng([newPos.lat, newPos.lng]);
+      }
+    }
+  }, [hasGoogleMapsKey, googleMapsError]);
+
   // Sync state only when modal transitions from closed to open
   useEffect(() => {
     if (!isOpen) {
@@ -152,6 +228,7 @@ export default function LocationPickerModal({
 
     if (justOpened) {
       const target = activeTarget || "pickup";
+      currentTargetRef.current = target;
       setCurrentTarget(target);
 
       const activePick = pickupValue || (target === "pickup" && initialValue ? initialValue : "") || "Bangalore, Karnataka";
@@ -210,14 +287,18 @@ export default function LocationPickerModal({
       } else if (typeof target === "string" && target.startsWith("stop-")) {
         const sIdx = parseInt(target.replace("stop-", ""), 10);
         currentCityVal = initStops[sIdx] || "";
-        newCoords = findCityCoordinates(currentCityVal) || pCoords;
+        newCoords = (initialStopsCoords && initialStopsCoords[sIdx]) || findCityCoordinates(currentCityVal) || pCoords;
       }
 
       setSelectedAddress(currentCityVal || "");
       setCityLabel(currentCityVal || "");
       setCoordinates(newCoords);
+
+      if (newCoords?.lat && newCoords?.lng) {
+        panToLocation(newCoords.lat, newCoords.lng, 14);
+      }
     }
-  }, [isOpen, activeTarget, pickupValue, dropValue, airportValue, stops, initialValue, initialPickupCoords, initialDropCoords, initialAirportCoords, initialStopsCoords]);
+  }, [isOpen, activeTarget, pickupValue, dropValue, airportValue, stops, initialValue, initialPickupCoords, initialDropCoords, initialAirportCoords, initialStopsCoords, panToLocation]);
 
   // Compute live driving distance dynamically inside modal using primitive dependencies
   const pickupLat = pickupCoords?.lat;
@@ -231,8 +312,10 @@ export default function LocationPickerModal({
     async function calcRoute() {
       if (!isOpen || !pickupCityState || !dropCityState) {
         setModalRoute(null);
+        setIsCalculatingRoute(false);
         return;
       }
+      setIsCalculatingRoute(true);
       try {
         const res = await fetchGoogleRouteDistance(
           pickupCityState,
@@ -245,21 +328,27 @@ export default function LocationPickerModal({
             stopsCoords
           }
         );
-        if (!cancelled && res?.isDetected) {
-          setModalRoute((prev) => {
-            if (
-              prev &&
-              prev.distanceKm === res.distanceKm &&
-              prev.tollPrice === res.tollPrice &&
-              prev.durationHours === res.durationHours
-            ) {
-              return prev;
-            }
-            return res;
-          });
+        if (!cancelled) {
+          if (res?.isDetected) {
+            setModalRoute((prev) => {
+              if (
+                prev &&
+                prev.distanceKm === res.distanceKm &&
+                prev.tollPrice === res.tollPrice &&
+                prev.durationHours === res.durationHours
+              ) {
+                return prev;
+              }
+              return res;
+            });
+          }
+          setIsCalculatingRoute(false);
         }
       } catch (err) {
-        console.warn("Modal route distance fetch failed:", err);
+        if (!cancelled) {
+          console.warn("Modal route distance fetch failed:", err);
+          setIsCalculatingRoute(false);
+        }
       }
     }
     calcRoute();
@@ -267,7 +356,7 @@ export default function LocationPickerModal({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, pickupCityState, dropCityState, stopsSerialized, pickupLat, pickupLng, dropLat, dropLng]);
+  }, [isOpen, pickupCityState, dropCityState, stopsSerialized, pickupLat, pickupLng, dropLat, dropLng, tripType]);
 
   // Load Google Maps Script if API key is provided
   useEffect(() => {
@@ -352,39 +441,23 @@ export default function LocationPickerModal({
     }
   }, [isOpen, hasGoogleMapsKey, googleMapsError]);
 
-  // Helper to re-center both Google Maps and Leaflet map instances
-  const panToLocation = useCallback((lat, lng, zoom = 15) => {
-    setCoordinates({ lat, lng });
-
-    if (hasGoogleMapsKey && !googleMapsError && mapInstanceRef.current) {
-      mapInstanceRef.current.setCenter({ lat, lng });
-      if (zoom) mapInstanceRef.current.setZoom(zoom);
-      if (markerInstanceRef.current) {
-        markerInstanceRef.current.setPosition({ lat, lng });
-      }
-    } else if (leafletInstanceRef.current) {
-      leafletInstanceRef.current.setView([lat, lng], zoom || 15);
-      if (leafletMarkerRef.current) {
-        leafletMarkerRef.current.setLatLng([lat, lng]);
-      }
+  // Central handler to apply chosen address and coordinates to whichever target is specified
+  const applyLocationToTarget = useCallback((label, coords, details = null, target = null) => {
+    const activeTgt = target || currentTargetRef.current;
+    if (activeTgt === currentTargetRef.current) {
+      setSelectedAddress(label);
+      setCityLabel(label);
     }
-  }, [hasGoogleMapsKey, googleMapsError]);
 
-  // Central handler to apply chosen address and coordinates to whichever target is active
-  const applyLocationToActiveTarget = useCallback((label, coords, details = null) => {
-    const target = currentTargetRef.current;
-    setSelectedAddress(label);
-    setCityLabel(label);
-
-    if (target === "airport") {
+    if (activeTgt === "airport") {
       setAirportCityState(label);
       if (coords) setAirportCoords(coords);
-    } else if (target === "drop") {
+    } else if (activeTgt === "drop") {
       setDropCityState(label);
       if (coords) setDropCoords(coords);
       if (details) setDropAddressDetails(details);
-    } else if (typeof target === "string" && target.startsWith("stop-")) {
-      const sIdx = parseInt(target.replace("stop-", ""), 10);
+    } else if (typeof activeTgt === "string" && activeTgt.startsWith("stop-")) {
+      const sIdx = parseInt(activeTgt.replace("stop-", ""), 10);
       if (sIdx >= 0) {
         setStopsState((prev) => {
           const next = [...(prev || [])];
@@ -402,9 +475,15 @@ export default function LocationPickerModal({
     }
   }, []);
 
-  // Reverse Geocode using Google Maps Geocoder
-  const reverseGeocodeGoogle = useCallback((lat, lng) => {
+  // Backwards compatibility alias
+  const applyLocationToActiveTarget = useCallback((label, coords, details = null) => {
+    applyLocationToTarget(label, coords, details, currentTargetRef.current);
+  }, [applyLocationToTarget]);
+
+  // Reverse Geocode using Google Maps Geocoder with target preservation
+  const reverseGeocodeGoogle = useCallback((lat, lng, forTarget = null) => {
     if (!window.google?.maps?.Geocoder) return;
+    const target = forTarget || currentTargetRef.current;
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
       if (status === "OK" && results?.[0]) {
@@ -466,13 +545,14 @@ export default function LocationPickerModal({
           lng
         };
 
-        applyLocationToActiveTarget(specificLabel || fullAddr, { lat, lng }, details);
+        applyLocationToTarget(specificLabel || fullAddr, { lat, lng }, details, target);
       }
     });
-  }, [applyLocationToActiveTarget]);
+  }, [applyLocationToTarget]);
 
-  // Reverse Geocode using OpenStreetMap Nominatim
-  const reverseGeocodeOsm = useCallback(async (lat, lng) => {
+  // Reverse Geocode using OpenStreetMap Nominatim with target preservation
+  const reverseGeocodeOsm = useCallback(async (lat, lng, forTarget = null) => {
+    const target = forTarget || currentTargetRef.current;
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
@@ -505,7 +585,7 @@ export default function LocationPickerModal({
             lng
           };
 
-          applyLocationToActiveTarget(formatted, { lat, lng }, details);
+          applyLocationToTarget(formatted, { lat, lng }, details, target);
           return;
         }
       }
@@ -514,7 +594,7 @@ export default function LocationPickerModal({
     }
 
     const fallback = `Location at ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
-    applyLocationToActiveTarget(fallback, { lat, lng }, {
+    applyLocationToTarget(fallback, { lat, lng }, {
       area: "",
       city: "",
       state: "India",
@@ -522,8 +602,8 @@ export default function LocationPickerModal({
       fullAddress: fallback,
       lat,
       lng
-    });
-  }, [applyLocationToActiveTarget]);
+    }, target);
+  }, [applyLocationToTarget]);
 
   // Clean up and reset map instances when modal closes so reopening creates a fresh map
   useEffect(() => {
@@ -552,8 +632,7 @@ export default function LocationPickerModal({
     if (!isOpen || !googleMapsLoaded || !hasGoogleMapsKey || !googleMapRef.current) return;
 
     try {
-      const needsInit = !mapInstanceRef.current || (googleMapRef.current && !googleMapRef.current.hasChildNodes());
-      if (needsInit) {
+      if (!mapInstanceRef.current) {
         const map = new window.google.maps.Map(googleMapRef.current, {
           center: coordinates,
           zoom: 14,
@@ -581,9 +660,10 @@ export default function LocationPickerModal({
         map.addListener("click", (e) => {
           const lat = e.latLng.lat();
           const lng = e.latLng.lng();
+          const activeTgt = currentTargetRef.current;
           marker.setPosition({ lat, lng });
           setCoordinates({ lat, lng });
-          reverseGeocodeGoogle(lat, lng);
+          reverseGeocodeGoogle(lat, lng, activeTgt);
         });
 
         // Drag marker
@@ -591,8 +671,9 @@ export default function LocationPickerModal({
           const pos = marker.getPosition();
           const lat = pos.lat();
           const lng = pos.lng();
+          const activeTgt = currentTargetRef.current;
           setCoordinates({ lat, lng });
-          reverseGeocodeGoogle(lat, lng);
+          reverseGeocodeGoogle(lat, lng, activeTgt);
         });
 
         // Marker instance
@@ -600,34 +681,17 @@ export default function LocationPickerModal({
         markerInstanceRef.current = marker;
 
         setTimeout(() => {
-          if (window.google?.maps?.event && map) {
-            window.google.maps.event.trigger(map, "resize");
-            map.setCenter(coordinates);
+          if (window.google?.maps?.event && mapInstanceRef.current) {
+            window.google.maps.event.trigger(mapInstanceRef.current, "resize");
           }
         }, 150);
-      } else {
-        mapInstanceRef.current.setCenter(coordinates);
-        if (markerInstanceRef.current) {
-          markerInstanceRef.current.setPosition(coordinates);
-        }
-        if (window.google?.maps?.event) {
-          window.google.maps.event.trigger(mapInstanceRef.current, "resize");
-        }
       }
     } catch (err) {
       console.warn("Google Maps initialization warning:", err);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGoogleMapsError(true);
     }
-
-    return () => {
-      // Clean up on unmount or closing
-      if (mapInstanceRef.current && !isOpen) {
-        mapInstanceRef.current = null;
-        markerInstanceRef.current = null;
-      }
-    };
-  }, [isOpen, googleMapsLoaded, hasGoogleMapsKey, coordinates?.lat, coordinates?.lng, reverseGeocodeGoogle]);
+  }, [isOpen, googleMapsLoaded, hasGoogleMapsKey, reverseGeocodeGoogle]);
 
   // Initialize or update Leaflet Map (Free interactive OpenStreetMap with draggable pin)
   useEffect(() => {
@@ -679,16 +743,18 @@ export default function LocationPickerModal({
         // Click anywhere on map to move the pin and reverse geocode
         map.on("click", (e) => {
           const { lat, lng } = e.latlng;
+          const activeTgt = currentTargetRef.current;
           marker.setLatLng([lat, lng]);
           setCoordinates({ lat, lng });
-          reverseGeocodeOsm(lat, lng);
+          reverseGeocodeOsm(lat, lng, activeTgt);
         });
 
         // Drag marker to exact spot
         marker.on("dragend", (e) => {
           const pos = e.target.getLatLng();
+          const activeTgt = currentTargetRef.current;
           setCoordinates({ lat: pos.lat, lng: pos.lng });
-          reverseGeocodeOsm(pos.lat, pos.lng);
+          reverseGeocodeOsm(pos.lat, pos.lng, activeTgt);
         });
 
         leafletInstanceRef.current = map;
@@ -700,23 +766,7 @@ export default function LocationPickerModal({
       } catch (err) {
         console.warn("Leaflet initialization error:", err);
       }
-    } else {
-      leafletInstanceRef.current.setView([coordinates.lat, coordinates.lng]);
-      if (leafletMarkerRef.current) {
-        leafletMarkerRef.current.setLatLng([coordinates.lat, coordinates.lng]);
-      }
-      setTimeout(() => {
-        leafletInstanceRef.current?.invalidateSize();
-      }, 100);
     }
-
-    return () => {
-      if (leafletInstanceRef.current) {
-        leafletInstanceRef.current.remove();
-        leafletInstanceRef.current = null;
-        leafletMarkerRef.current = null;
-      }
-    };
   }, [isOpen, leafletLoaded, hasGoogleMapsKey, googleMapsError, reverseGeocodeOsm]);
 
   // Handle GPS Locate Me
@@ -727,6 +777,7 @@ export default function LocationPickerModal({
     }
 
     setIsLocating(true);
+    const activeTgt = currentTargetRef.current;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
@@ -734,9 +785,9 @@ export default function LocationPickerModal({
         panToLocation(lat, lng, 16);
 
         if (hasGoogleMapsKey && !googleMapsError && mapInstanceRef.current) {
-          reverseGeocodeGoogle(lat, lng);
+          reverseGeocodeGoogle(lat, lng, activeTgt);
         } else {
-          reverseGeocodeOsm(lat, lng);
+          reverseGeocodeOsm(lat, lng, activeTgt);
         }
         setIsLocating(false);
       },
@@ -752,13 +803,15 @@ export default function LocationPickerModal({
   // Select Quick Hub
   const handleSelectHub = (hub) => {
     const formatted = `${hub.name}, ${hub.state}`;
-    applyLocationToActiveTarget(formatted, { lat: hub.lat, lng: hub.lng });
+    const activeTgt = currentTargetRef.current;
+    applyLocationToTarget(formatted, { lat: hub.lat, lng: hub.lng }, null, activeTgt);
     panToLocation(hub.lat, hub.lng, 14);
   };
 
   // Switch between From (Pickup), Stops, and To (Drop) targets
   const handleSwitchTarget = (target) => {
     if (target === currentTarget) return;
+    currentTargetRef.current = target;
     setCurrentTarget(target);
     setSearchQuery("");
     setShowSearchResults(false);
@@ -775,7 +828,7 @@ export default function LocationPickerModal({
     } else if (typeof target === "string" && target.startsWith("stop-")) {
       const sIdx = parseInt(target.replace("stop-", ""), 10);
       targetVal = stopsState[sIdx] || "";
-      targetCoords = stopsCoords[sIdx] || findCityCoordinates(targetVal) || pickupCoords;
+      targetCoords = (stopsCoords && stopsCoords[sIdx]) || findCityCoordinates(targetVal) || pickupCoords;
     } else {
       targetVal = pickupCityState;
       targetCoords = pickupCoords;
@@ -975,7 +1028,8 @@ export default function LocationPickerModal({
     }
 
     setSearchQuery(specificLabel);
-    applyLocationToActiveTarget(specificLabel, lat && lng ? { lat, lng } : null);
+    const activeTgt = currentTargetRef.current;
+    applyLocationToTarget(specificLabel, lat && lng ? { lat, lng } : null, null, activeTgt);
     if (lat && lng) {
       panToLocation(lat, lng, 16);
     }
@@ -989,6 +1043,8 @@ export default function LocationPickerModal({
       if (s && s.trim()) saveCustomCity(s.trim());
     });
 
+    const validStops = (stopsState || []).filter((s) => s && s.trim());
+
     if (currentTarget === "pickup" && onSelectPickup) {
       onSelectPickup(pickupCityState, pickupCoords, pickupAddressDetails);
     } else if (currentTarget === "drop" && onSelectDrop) {
@@ -996,7 +1052,6 @@ export default function LocationPickerModal({
     } else if (currentTarget === "airport" && onSelectAirport) {
       onSelectAirport(airportCityState, airportCoords);
     } else if (typeof currentTarget === "string" && currentTarget.startsWith("stop-") && onSelectStops) {
-      const validStops = stopsState.filter((s) => s && s.trim());
       onSelectStops(validStops);
     }
 
@@ -1013,7 +1068,7 @@ export default function LocationPickerModal({
       } else if (typeof currentTarget === "string" && currentTarget.startsWith("stop-")) {
         const sIdx = parseInt(currentTarget.replace("stop-", ""), 10);
         activeVal = stopsState[sIdx] || "";
-        activeCoords = stopsCoords[sIdx] || pickupCoords;
+        activeCoords = (stopsCoords && stopsCoords[sIdx]) || pickupCoords;
       }
 
       onSelect(activeVal, activeCoords, currentTarget, {
@@ -1472,7 +1527,12 @@ export default function LocationPickerModal({
             </div>
 
             {/* Live Route Distance Display */}
-            {modalRoute?.isDetected && modalRoute.distanceKm > 0 && (
+            {isCalculatingRoute ? (
+              <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3.5 py-2.5 text-xs text-slate-700">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                <span className="font-semibold text-slate-700">Calculating driving route...</span>
+              </div>
+            ) : modalRoute?.isDetected && modalRoute.distanceKm > 0 ? (
               <div className="flex flex-wrap items-center justify-between gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3.5 py-2.5 text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -1485,7 +1545,7 @@ export default function LocationPickerModal({
                   </span>
                 )}
               </div>
-            )}
+            ) : null}
 
             {/* Action Buttons: Switch target & Confirm */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-1 border-t border-slate-200/80">
