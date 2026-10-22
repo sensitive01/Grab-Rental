@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Clock, ChevronDown, Check, ShieldCheck, Sparkles } from "lucide-react";
+import { DEFAULT_LOCAL_PACKAGES } from "@/lib/packageUtils";
 
 export default function PackageSelectDropdown({
   value,
@@ -13,6 +14,11 @@ export default function PackageSelectDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const listRef = useRef(null);
+
+  const displayPackages = useMemo(() => {
+    if (Array.isArray(packages) && packages.length > 0) return packages;
+    return DEFAULT_LOCAL_PACKAGES;
+  }, [packages]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -38,9 +44,9 @@ export default function PackageSelectDropdown({
 
   // Current selected package lookup
   const selectedPkg = useMemo(() => {
-    if (!value && packages.length > 0) return packages[0];
-    return packages.find((p) => p.value === value) || packages[0];
-  }, [packages, value]);
+    if (!value && displayPackages.length > 0) return displayPackages[0];
+    return displayPackages.find((p) => p.value === value) || displayPackages[0];
+  }, [displayPackages, value]);
 
   const handleSelect = (pkgValue) => {
     onChange(pkgValue);
@@ -99,13 +105,13 @@ export default function PackageSelectDropdown({
             </span>
           </div>
 
-          {packages.length === 0 ? (
+          {displayPackages.length === 0 ? (
             <div className="py-6 text-center text-xs text-slate-400 font-medium">
               Loading local packages...
             </div>
           ) : (
             <div className="space-y-1">
-              {packages.map((pkg) => {
+              {displayPackages.map((pkg) => {
                 const isSelected = selectedPkg && pkg.value === selectedPkg.value;
                 const pHours = pkg.hours || 4;
                 const pKm = pkg.km || 40;

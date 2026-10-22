@@ -33,7 +33,7 @@ import {
   sanitizePickupDateTime,
   generateTimeSlots,
 } from "@/lib/dateTimeUtils";
-import { getCachedLocalPackages } from "@/lib/packageUtils";
+import { fetchLocalPackages, getCachedLocalPackages, DEFAULT_LOCAL_PACKAGES } from "@/lib/packageUtils";
 
 export default function PetBookingWidget() {
   const router = useRouter();
@@ -67,10 +67,23 @@ export default function PetBookingWidget() {
     return formatLocalDate(d);
   });
   const [pickupTime, setPickupTime] = useState(() => getDefaultPickupDateTime().time);
+  const [localPackages, setLocalPackages] = useState(() => getCachedLocalPackages() || DEFAULT_LOCAL_PACKAGES);
   const [selectedPackage, setSelectedPackage] = useState(() => {
     const cached = getCachedLocalPackages();
-    return cached && cached.length > 0 ? cached[0].value : "8hr-80km";
+    return cached && cached.length > 0 ? cached[0].value : (DEFAULT_LOCAL_PACKAGES[0]?.value || "4hr-40km");
   });
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLocalPackages().then((pkgs) => {
+      if (isMounted && Array.isArray(pkgs) && pkgs.length > 0) {
+        setLocalPackages(pkgs);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Pet Selection States
   const [petType, setPetType] = useState("Dog"); // "Dog" | "Cat" | "Birds" | "Others"
@@ -601,6 +614,7 @@ export default function PetBookingWidget() {
                 <PackageSelectDropdown
                   value={selectedPackage}
                   onChange={setSelectedPackage}
+                  packages={localPackages}
                 />
               </div>
 
