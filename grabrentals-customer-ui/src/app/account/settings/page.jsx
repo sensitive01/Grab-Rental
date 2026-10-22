@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
@@ -23,8 +23,14 @@ import {
   Trash2,
   Edit2,
   Star,
-  X
+  X,
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2
 } from "lucide-react";
+import { getCurrentUser, setAuthSession } from "@/lib/auth";
 
 function SettingsContent() {
   const router = useRouter();
@@ -62,26 +68,20 @@ function SettingsContent() {
     isDefault: false,
   });
 
+  // Security & Reset PIN Modal State
+  const [isPinConfigured, setIsPinConfigured] = useState(false);
+  const [isResetPinOpen, setIsResetPinOpen] = useState(false);
+  const [isResettingPin, setIsResettingPin] = useState(false);
+  const [newPin, setNewPin] = useState(["", "", "", "", "", ""]);
+  const [confirmPin, setConfirmPin] = useState(["", "", "", "", "", ""]);
+  const [showPinDigits, setShowPinDigits] = useState(false);
+  const [pinModalError, setPinModalError] = useState("");
+  const newPinRefs = useRef([]);
+  const confirmPinRefs = useRef([]);
+
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-  useEffect(() => {
-    let timer;
-    const token = typeof window !== "undefined" ? localStorage.getItem("rental_access_token") : null;
-    if (!token) {
-      timer = setTimeout(() => {
-        router.push("/login");
-      }, 0);
-      return () => {
-        if (timer) clearTimeout(timer);
-      };
-    }
-
-    fetchProfile(token);
-    fetchAddresses(token);
-  }, [router]);
-
   const fetchProfile = async (token) => {
-    setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/customer/profile`, {
         headers: {
@@ -113,6 +113,12 @@ function SettingsContent() {
       if (user.addresses && Array.isArray(user.addresses)) {
         setSavedAddresses(user.addresses);
       }
+      if (typeof user.passwordSet === "boolean") {
+        setIsPinConfigured(user.passwordSet);
+      } else {
+        const localUser = getCurrentUser();
+        setIsPinConfigured(Boolean(localUser?.passwordSet));
+      }
       if (user.createdAt) {
         const date = new Date(user.createdAt);
         setMemberSince(date.toLocaleDateString("en-US", { month: "short", year: "numeric" }));
@@ -139,6 +145,28 @@ function SettingsContent() {
       console.error("Unable to load saved addresses:", err);
     }
   };
+
+  useEffect(() => {
+    let timer;
+    const token = typeof window !== "undefined" ? localStorage.getItem("rental_access_token") : null;
+    if (!token) {
+      timer = setTimeout(() => {
+        router.push("/login");
+      }, 0);
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
+    }
+
+    timer = setTimeout(() => {
+      fetchProfile(token);
+      fetchAddresses(token);
+    }, 0);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [router]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -344,6 +372,144 @@ function SettingsContent() {
     }
   };
 
+  // PIN Reset Handlers
+  const handleOpenResetPin = () => {
+    setNewPin(["", "", "", "", "", ""]);
+    setConfirmPin(["", "", "", "", "", ""]);
+    setShowPinDigits(false);
+    setPinModalError("");
+    setIsResetPinOpen(true);
+    setTimeout(() => {
+      newPinRefs.current[0]?.focus();
+    }, 150);
+  };
+
+  const handleCloseResetPin = () => {
+    setIsResetPinOpen(false);
+    setPinModalError("");
+  };
+
+  const handlePinDigitChange = (index, value, isConfirm = false) => {
+    const cleanDigit = value.replace(/[^0-9]/g, "").slice(-1);
+    const targetState = isConfirm ? [...confirmPin] : [...newPin];
+    const targetRefs = isConfirm ? confirmPinRefs : newPinRefs;
+
+    targetState[index] = cleanDigit;
+
+    if (isConfirm) {
+      setConfirmPin(targetState);
+    } else {
+      setNewPin(targetState);
+    }
+
+    if (cleanDigit && index < 5) {
+      targetRefs.current[index + 1]?.focus();
+    } else if (cleanDigit && index === 5 && !isConfirm) {
+      confirmPinRefs.current[0]?.focus();
+    }
+  };
+
+  const handlePinKeyDown = (index, e, isConfirm = false) => {
+    const targetState = isConfirm ? confirmPin : newPin;
+    const targetRefs = isConfirm ? confirmPinRefs : newPinRefs;
+
+    if (e.key === "Backspace") {
+      if (!targetState[index] && index > 0) {
+        targetRefs.current[index - 1]?.focus();
+      }
+    }
+  };
+
+  const handlePinPaste = (e, isConfirm = false) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    if (!pasteData) return;
+
+    const digits = pasteData.split("");
+    const targetState = isConfirm ? [...confirmPin] : [...newPin];
+    const targetRefs = isConfirm ? confirmPinRefs : newPinRefs;
+
+    digits.forEach((d, i) => {
+      if (i < 6) targetState[i] = d;
+    });
+
+    if (isConfirm) {
+      setConfirmPin(targetState);
+    } else {
+      setNewPin(targetState);
+    }
+
+    const focusIdx = Math.min(digits.length, 5);
+    targetRefs.current[focusIdx]?.focus();
+  };
+
+  const handleResetPinSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setPinModalError("");
+
+    const pinStr = newPin.join("");
+    const confirmPinStr = confirmPin.join("");
+
+    if (pinStr.length !== 6) {
+      setPinModalError("Please enter all 6 numeric digits for your new PIN.");
+      return;
+    }
+
+    if (confirmPinStr.length !== 6) {
+      setPinModalError("Please confirm your new 6-digit PIN.");
+      return;
+    }
+
+    if (pinStr !== confirmPinStr) {
+      setPinModalError("The confirmation PIN does not match. Please verify and re-enter.");
+      return;
+    }
+
+    setIsResettingPin(true);
+
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("rental_access_token") : null;
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/customer/pin/set`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ pin: pinStr })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to update login PIN. Please try again.");
+      }
+
+      // Update session local storage
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        currentUser.passwordSet = true;
+        setAuthSession(token, currentUser);
+      }
+      setIsPinConfigured(true);
+
+      setIsResetPinOpen(false);
+      setSuccessMessage("Your 6-digit login PIN has been updated successfully! You can use it on your next sign in.");
+      
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } catch (err) {
+      setPinModalError(err.message || "An unexpected error occurred while saving your PIN.");
+    } finally {
+      setIsResettingPin(false);
+    }
+  };
+
   const getTagIcon = (tag = "") => {
     const lower = tag.toLowerCase();
     if (lower.includes("home")) return <Home className="w-4 h-4 text-emerald-600" />;
@@ -428,12 +594,21 @@ function SettingsContent() {
             </div>
           </div>
 
-          <Link
-            href="/"
-            className="px-4 py-2.5 rounded-xl bg-[#0082fe] hover:bg-[#0072de] text-white text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5"
-          >
-            <Car className="w-4 h-4" /> Book a Cab
-          </Link>
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleOpenResetPin}
+              className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-xs font-bold uppercase tracking-wider transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer flex-1 sm:flex-none"
+            >
+              <KeyRound className="w-4 h-4 text-[#0082fe]" /> Reset Login PIN
+            </button>
+            <Link
+              href="/"
+              className="px-4 py-2.5 rounded-xl bg-[#0082fe] hover:bg-[#0072de] text-white text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
+            >
+              <Car className="w-4 h-4" /> Book a Cab
+            </Link>
+          </div>
         </div>
 
         {/* Feedback Alerts */}
@@ -581,6 +756,83 @@ function SettingsContent() {
             </div>
           </div>
         </form>
+
+        {/* SECTION 2: Security & Login PIN */}
+        <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight">Security & Login PIN</h2>
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+                  isPinConfigured
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-amber-50 text-amber-700 border-amber-200"
+                }`}>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {isPinConfigured ? "6-Digit PIN Active" : "PIN Setup Recommended"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Use your 6-digit login PIN to quickly sign in from any browser without waiting for an SMS verification OTP.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenResetPin}
+              className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer self-start sm:self-auto shrink-0"
+            >
+              <KeyRound className="w-4 h-4 text-[#0082fe]" />
+              <span>{isPinConfigured ? "Reset Login PIN" : "Set Up Login PIN"}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0082fe] flex items-center justify-center shrink-0 border border-blue-100">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Login PIN Status</h3>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                    Secured
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Sign in with mobile number + PIN anytime. Never share your PIN with anyone.
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <span className="font-mono text-sm tracking-widest text-slate-700 font-bold bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                    ••••••
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleOpenResetPin}
+                    className="text-xs font-bold text-[#0082fe] hover:underline cursor-pointer"
+                  >
+                    Reset PIN →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">SMS OTP Backup</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  If you ever forget your login PIN, you can securely sign in using a one-time SMS verification code sent to your registered number.
+                </p>
+                <div className="mt-3 text-xs font-mono font-medium text-slate-600 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-[#0082fe]" /> {phone || "Registered phone"}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* SECTION 2: Multiple Saved Addresses (Home, Office, Other) */}
         <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
@@ -935,6 +1187,143 @@ function SettingsContent() {
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isSavingAddress ? "Saving..." : "Save Address"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: RESET LOGIN PIN */}
+      {isResetPinOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#0082fe] flex items-center justify-center border border-blue-100">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Reset Login PIN
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Set a new 6-digit PIN for your account
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseResetPin}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Error in Modal */}
+            {pinModalError && (
+              <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span className="font-semibold">{pinModalError}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleResetPinSubmit} className="space-y-5 pt-4">
+              
+              {/* Row 1: New PIN */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-[#0082fe]" />
+                    <span>Enter New 6-Digit PIN</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPinDigits(!showPinDigits)}
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    {showPinDigits ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-[#0082fe]" />}
+                    <span>{showPinDigits ? "Hide" : "Show"}</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-1.5 sm:gap-2" onPaste={(e) => handlePinPaste(e, false)}>
+                  {newPin.map((digit, index) => (
+                    <input
+                      key={`new-pin-${index}`}
+                      ref={(el) => (newPinRefs.current[index] = el)}
+                      type={showPinDigits ? "text" : "password"}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handlePinDigitChange(index, e.target.value, false)}
+                      onKeyDown={(e) => handlePinKeyDown(index, e, false)}
+                      className="w-10 h-12 sm:w-12 sm:h-13 text-center text-xl sm:text-2xl font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0082fe] focus:ring-2 focus:ring-blue-100 transition-all text-slate-900"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Row 2: Confirm New PIN */}
+              <div className="space-y-2 pt-1">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Confirm New 6-Digit PIN</span>
+                </label>
+
+                <div className="flex items-center justify-between gap-1.5 sm:gap-2" onPaste={(e) => handlePinPaste(e, true)}>
+                  {confirmPin.map((digit, index) => (
+                    <input
+                      key={`confirm-pin-${index}`}
+                      ref={(el) => (confirmPinRefs.current[index] = el)}
+                      type={showPinDigits ? "text" : "password"}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handlePinDigitChange(index, e.target.value, true)}
+                      onKeyDown={(e) => handlePinKeyDown(index, e, true)}
+                      className="w-10 h-12 sm:w-12 sm:h-13 text-center text-xl sm:text-2xl font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all text-slate-900"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Your new PIN will take effect immediately for all future logins.</span>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={handleCloseResetPin}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResettingPin || newPin.join("").length !== 6 || confirmPin.join("").length !== 6}
+                  className="px-5 py-2.5 rounded-xl bg-[#0082fe] hover:bg-[#0072de] active:scale-[0.99] text-white text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isResettingPin ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Updating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>Save New PIN</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

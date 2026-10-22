@@ -26,6 +26,7 @@ public class CustomerProfileResponse {
     private String city;
     private String address;
     private java.util.List<CustomerAddressResponse> addresses;
+    private Boolean passwordSet;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -51,6 +52,7 @@ public class CustomerProfileResponse {
                 .city(profile != null ? profile.getCity() : null)
                 .address(profile != null ? profile.getAddress() : null)
                 .addresses(addresses)
+                .passwordSet(Boolean.TRUE.equals(user.getPasswordSet()))
                 .createdAt(user.getCreatedAt())
                 .updatedAt(profile != null ? profile.getUpdatedAt() : user.getUpdatedAt())
                 .build();
