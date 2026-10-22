@@ -409,22 +409,13 @@ public class VehicleTariffService {
                 map.put(buildTariffVehicleKey(t), t);
             }
         }
-        // 2. Direct tariffs for this specific serviceType (e.g. ONE_WAY or ROUND_TRIP) overwrite fallbacks
+        // 2. Direct tariffs for this specific serviceType (e.g. ONE_WAY or ROUND_TRIP or LOCAL or AIRPORT) overwrite fallbacks
         if (direct != null) {
             for (VehicleTariff t : direct) {
                 map.put(buildTariffVehicleKey(t), t);
             }
         }
         
-        // 3. If completely empty, fallback to all tariffs
-        if (map.isEmpty()) {
-            List<VehicleTariff> allTariffs = tariffRepository.findAll();
-            if (allTariffs != null) {
-                for (VehicleTariff t : allTariffs) {
-                    map.put(buildTariffVehicleKey(t), t);
-                }
-            }
-        }
         return new ArrayList<>(map.values());
     }
 
@@ -639,14 +630,6 @@ public class VehicleTariffService {
             activeTariff = safeTariffs.stream().filter(t ->
                     !Boolean.TRUE.equals(t.getSeasonal())
                     && sType.equalsIgnoreCase(t.getServiceType())
-                    && category.trim().equalsIgnoreCase(t.getCategory())
-            ).findFirst().orElse(null);
-        }
-
-        // 4. Fallback for LOCAL: If no explicit LOCAL tariff exists, fallback to available category tariff
-        if (activeTariff == null && "LOCAL".equalsIgnoreCase(sType) && category != null) {
-            activeTariff = safeTariffs.stream().filter(t ->
-                    !Boolean.TRUE.equals(t.getSeasonal())
                     && category.trim().equalsIgnoreCase(t.getCategory())
             ).findFirst().orElse(null);
         }

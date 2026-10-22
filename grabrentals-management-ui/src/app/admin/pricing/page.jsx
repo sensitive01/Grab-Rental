@@ -2360,8 +2360,8 @@ export default function AdminPricingPage() {
                           <input
                             type="number" step="1" min="0"
                             placeholder="e.g. 210"
-                            value={formData.vendorWeekendNightRate}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, vendorWeekendNightRate: e.target.value }))}
+                            value={formData.hourlyVendorWeekendNightRate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, hourlyVendorWeekendNightRate: e.target.value }))}
                             className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
                             required
                           />
