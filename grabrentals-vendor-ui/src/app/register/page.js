@@ -532,15 +532,12 @@ function VendorOnboardingFlow() {
       return;
     }
 
-    if (!email.trim()) {
-      setError("Please enter your email address.");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email address (e.g. name@example.com).");
-      return;
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+      if (!emailRegex.test(email.trim())) {
+        setError("Please enter a valid email address (e.g. name@example.com).");
+        return;
+      }
     }
 
     if (!userCity.trim()) {
@@ -1789,7 +1786,7 @@ function VendorOnboardingFlow() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Email Address <span className="text-rose-500">*</span>
+                      Email Address <span className="text-slate-400 font-normal lowercase">(optional)</span>
                     </label>
                     {email.trim() && (
                       <span
@@ -1816,14 +1813,13 @@ function VendorOnboardingFlow() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="ramesh.kumar@gmail.com"
+                      placeholder="ramesh.kumar@gmail.com (optional)"
                       className={cn(
                         "w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs focus:outline-none transition-all",
                         email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())
                           ? "border-rose-300 focus:ring-2 focus:ring-rose-500 bg-rose-50/20"
                           : "border-slate-200 focus:ring-2 focus:ring-amber-500 bg-white"
                       )}
-                      required
                     />
                   </div>
                   {email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()) ? (
@@ -2113,8 +2109,7 @@ function VendorOnboardingFlow() {
                     loading ||
                     !partnerName.trim() ||
                     !userCity.trim() ||
-                    !email.trim() ||
-                    !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()) ||
+                    (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) ||
                     !idProofDocument
                   }
                   className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all"

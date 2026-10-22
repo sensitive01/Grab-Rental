@@ -224,6 +224,7 @@ public class AuthService {
                         .id(user.getId())
                         .name(user.getName())
                         .email(user.getEmail())
+                        .phone(user.getPhone())
                         .role(user.getRole())
                         .status(user.getStatus())
                         .build())
@@ -275,18 +276,29 @@ public class AuthService {
 
     @Transactional
     public UserResponse registerVendor(com.grabrentals.auth.dto.VendorRegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
-            throw new EmailAlreadyExistsException("Email already in use: " + request.getEmail());
+        String cleanPhone = request.getPhone() != null ? request.getPhone().trim() : "";
+        if (cleanPhone.isBlank()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+        if (userRepository.existsByPhone(cleanPhone)) {
+            throw new IllegalArgumentException("Phone number already in use: " + cleanPhone);
         }
 
-        if (userRepository.existsByPhone(request.getPhone().trim())) {
-            throw new IllegalArgumentException("Phone number already in use: " + request.getPhone());
+        String reqEmail = null;
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            reqEmail = request.getEmail().toLowerCase().trim();
+            if (userRepository.existsByEmail(reqEmail)) {
+                throw new EmailAlreadyExistsException("Email already in use: " + reqEmail);
+            }
+        } else {
+            String digitsOnly = cleanPhone.replaceAll("[^0-9]", "");
+            reqEmail = digitsOnly + "@vendor.grabrentals.in";
         }
 
         User user = User.builder()
                 .name(request.getName().trim())
-                .email(request.getEmail().toLowerCase().trim())
-                .phone(request.getPhone().trim())
+                .email(reqEmail)
+                .phone(cleanPhone)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .businessName(request.getBusinessName().trim())
                 .role(Role.FLEET)
@@ -324,8 +336,9 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        String normalizedEmail = request.getEmail().toLowerCase().trim();
-        LoginAttemptRecord attempt = loginAttempts.computeIfAbsent(normalizedEmail, k -> new LoginAttemptRecord());
+        String rawIdentifier = request.getEmail() != null ? request.getEmail().trim() : "";
+        String normalizedId = rawIdentifier.toLowerCase();
+        LoginAttemptRecord attempt = loginAttempts.computeIfAbsent(normalizedId, k -> new LoginAttemptRecord());
 
         if (attempt.isLocked()) {
             throw new RateLimitExceededException(
@@ -333,7 +346,9 @@ public class AuthService {
             );
         }
 
-        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+        User user = userRepository.findByEmail(normalizedId)
+                .or(() -> findUserByPhoneFlexible(rawIdentifier))
+                .orElse(null);
 
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             attempt.recordFailure();
@@ -343,7 +358,7 @@ public class AuthService {
                 auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
                         .category("SECURITY")
                         .event(attempt.isLocked() ? "ACCOUNT_LOCKED" : "LOGIN_FAILED")
-                        .userId(normalizedEmail)
+                        .userId(normalizedId)
                         .userName(user != null ? user.getName() : "Unknown Identity")
                         .userRole(user != null && user.getRole() != null ? user.getRole().name() : "UNKNOWN")
                         .status("FAILED")
@@ -391,7 +406,7 @@ public class AuthService {
             auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
                     .category("SECURITY")
                     .event("LOGIN_SUCCESS")
-                    .userId(user.getEmail())
+                    .userId(user.getEmail() != null ? user.getEmail() : user.getPhone())
                     .userName(user.getName())
                     .userRole(user.getRole() != null ? user.getRole().name() : "USER")
                     .status("SUCCESS")
@@ -406,6 +421,7 @@ public class AuthService {
                         .id(user.getId())
                         .name(user.getName())
                         .email(user.getEmail())
+                        .phone(user.getPhone())
                         .role(user.getRole())
                         .status(user.getStatus())
                         .build())

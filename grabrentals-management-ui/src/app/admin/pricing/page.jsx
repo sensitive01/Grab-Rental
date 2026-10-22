@@ -663,6 +663,7 @@ export default function AdminPricingPage() {
       airportExtraKmRate: "",
       airportVendorExtraKmRate: "",
       tollIncluded: false,
+      discountPercentage: "",
       petCharge: "",
       vendorPetCharge: "",
     });
@@ -1892,7 +1893,7 @@ export default function AdminPricingPage() {
                     <input
                       type="number"
                       placeholder="e.g. 9"
-                      value={formData.discountPercentage}
+                      value={formData.discountPercentage ?? ""}
                       onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
                       className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-md bg-amber-50/60 font-bold text-amber-900"
                     />
@@ -2006,7 +2007,7 @@ export default function AdminPricingPage() {
                   <input
                     type="number"
                     placeholder="e.g. 9"
-                    value={formData.discountPercentage}
+                    value={formData.discountPercentage ?? ""}
                     onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
                     className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-md bg-amber-50/60 font-bold text-amber-900"
                   />

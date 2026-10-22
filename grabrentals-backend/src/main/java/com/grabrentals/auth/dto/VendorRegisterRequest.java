@@ -18,8 +18,7 @@ public class VendorRegisterRequest {
     @NotBlank(message = "Name is required")
     private String name;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email must be valid")
+    // Email is optional during vendor onboarding
     private String email;
 
     @NotBlank(message = "Phone number is required")

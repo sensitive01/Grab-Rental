@@ -100,7 +100,7 @@ export default function MultipleVehiclePhotoUploader({
       }
     } catch (err) {
       console.error(`Failed to upload ${slotId} vehicle photo:`, err);
-      alert("Failed to upload photo. Please check your network and try again.");
+      alert(err.message || "Failed to upload photo. Please check your network and try again.");
     } finally {
       setUploadingSlot(null);
       if (fileInputRefs.current[slotId]) {

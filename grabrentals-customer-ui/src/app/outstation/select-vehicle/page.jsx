@@ -576,22 +576,22 @@ function SelectVehicleContent() {
 
       // Driver Allowance: prioritize backend vehicle's resolved driver allowance from dedicated rules
       const backendAllowance = car.pricing?.driverAllowance;
-      const isAllowanceAlreadyMultiplied = car.pricing?.driverAllowanceLabel && car.pricing.driverAllowanceLabel.includes("×");
-      const baseAllowance = (backendAllowance != null && backendAllowance >= 0)
-        ? Math.round(backendAllowance)
-        : ((pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0)
-          ? Math.round(pricingConfig.driverAllowanceAmount)
-          : 500);
+      const isDriverFlat = car.pricing?.driverAllowanceType === "FLAT" || (pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0);
 
-      const rawDriverAllowance = isRoundTripBooking
-        ? (isAllowanceAlreadyMultiplied ? baseAllowance : baseAllowance * tripDays)
-        : baseAllowance;
+      let driverAllowance = 0;
+      if (!isLocalBooking) {
+        if (backendAllowance != null && !isNaN(Number(backendAllowance))) {
+          driverAllowance = Math.round(Number(backendAllowance));
+        } else if (isDriverFlat) {
+          const perDay = pricingConfig.driverAllowanceAmount > 0 ? Math.round(pricingConfig.driverAllowanceAmount) : 450;
+          driverAllowance = isRoundTripBooking ? perDay * tripDays : perDay;
+        } else {
+          const pct = Number(car.pricing?.driverAllowancePercentage || pricingConfig.driverAllowancePercentage || 10);
+          driverAllowance = Math.round(displayFare * (pct / 100));
+        }
+      }
 
-      const driverAllowance = (isLocalBooking) ? 0 : rawDriverAllowance;
-
-      const driverAllowanceLabel = isRoundTripBooking && tripDays > 1
-        ? `Driver Allowance (₹${isAllowanceAlreadyMultiplied ? Math.round(baseAllowance / tripDays) : baseAllowance} × ${tripDays} Days)`
-        : `Driver Allowance (₹${driverAllowance})`;
+      const driverAllowanceLabel = "Driver Allowance";
 
       // GST / Taxes
       const taxes = (pricingConfig.gstType === "FLAT" && pricingConfig.gstAmount > 0)

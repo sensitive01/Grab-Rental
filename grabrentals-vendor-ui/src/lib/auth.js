@@ -223,18 +223,18 @@ export async function verifyVendorOtp({ phone, otp, name, businessName, purpose 
   }
 }
 
-export async function login(email, password) {
-  const cleanEmail = String(email || "").trim().toLowerCase();
+export async function login(identifier, password) {
+  const cleanId = String(identifier || "").trim();
   const cleanPass = String(password || "").trim();
 
-  if (!cleanEmail || !cleanPass) {
-    return { success: false, error: "Please enter both email and password." };
+  if (!cleanId || !cleanPass) {
+    return { success: false, error: "Please enter your mobile number or email and password." };
   }
 
   try {
     const res = await axios.post(
       `${API_BASE_URL}/api/auth/login`,
-      { email: cleanEmail, password: cleanPass },
+      { email: cleanId, password: cleanPass },
       { headers: { "Content-Type": "application/json" }, timeout: 15000 }
     );
 
@@ -247,6 +247,7 @@ export async function login(email, password) {
       const userObj = {
         id: beUser.id,
         email: beUser.email,
+        phone: beUser.phone,
         name: beUser.name || "Vendor Partner",
         businessName: beUser.businessName || "Vendor Operations",
         role: role,
@@ -259,7 +260,7 @@ export async function login(email, password) {
         localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
         localStorage.setItem(TOKEN_KEY, token);
         localStorage.setItem("grab_portal_role", role.toLowerCase());
-        localStorage.setItem("grab_portal_email", beUser.email);
+        localStorage.setItem("grab_portal_email", beUser.email || beUser.phone || cleanId);
       }
 
       return {

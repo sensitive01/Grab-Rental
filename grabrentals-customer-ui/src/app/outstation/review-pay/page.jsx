@@ -226,6 +226,47 @@ export default function ReviewPayPage() {
     loadUpi();
   }, []);
 
+  // Auto-fetch logged-in customer profile (name and phone) and prefill editable fields
+  useEffect(() => {
+    async function syncLoggedInUserProfile() {
+      if (typeof window === "undefined") return;
+      try {
+        const user = getCurrentUser();
+        if (user) {
+          if (user.name && user.name.trim().toLowerCase() !== "customer") {
+            setPassengerName((prev) => (prev && prev !== "Customer" ? prev : user.name.trim()));
+          }
+          const rawPhone = user.phone || user.mobile || user.phoneNumber || "";
+          if (rawPhone) {
+            const digits = rawPhone.replace(/[^0-9]/g, "");
+            const formatted = digits.length > 10 ? digits.slice(-10) : digits;
+            setPassengerPhone((prev) => (prev ? prev : formatted));
+          }
+        }
+
+        // Fetch fresh profile from API if authenticated
+        if (isAuthenticated()) {
+          const res = await customerApi.getProfile();
+          if (res?.data) {
+            const prof = res.data;
+            if (prof.name && prof.name.trim().toLowerCase() !== "customer") {
+              setPassengerName((prev) => (prev && prev !== "Customer" ? prev : prof.name.trim()));
+            }
+            const phoneVal = prof.phone || prof.mobile || "";
+            if (phoneVal) {
+              const digits = phoneVal.replace(/[^0-9]/g, "");
+              const formatted = digits.length > 10 ? digits.slice(-10) : digits;
+              setPassengerPhone((prev) => (prev ? prev : formatted));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not sync customer profile for autofill:", err);
+      }
+    }
+    syncLoggedInUserProfile();
+  }, []);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
@@ -281,18 +322,26 @@ export default function ReviewPayPage() {
             if (dc) setDropCoords(dc);
           }
           if (parsed.trip?.to) {
+            const cleanToName = parsed.trip.to.replace(/\s*\((City Center \/ Main Landmark|Departures Terminal|Local City Limits[^)]*)\)/gi, "").trim();
             if (isLocalTrip) {
               setDropAddress(`Within ${parsed.trip.from.split(",")[0].trim()} (Local City Limits / As Directed)`);
-            } else if (isAirportTrip && parsed.trip.to.toLowerCase().includes("airport")) {
-              setDropAddress(`${parsed.trip.to} (Departures Terminal)`);
+            } else if (isAirportTrip && cleanToName.toLowerCase().includes("airport")) {
+              setDropAddress(`${cleanToName} (Departures Terminal)`);
             } else {
-              setDropAddress(`${parsed.trip.to} (City Center / Main Landmark)`);
+              setDropAddress(`${cleanToName} (City Center / Main Landmark)`);
             }
           }
 
           // Background sync: Fetch fresh vehicle tariff pricing & pet charges from backend
           if (parsed?.car && parsed?.trip?.from && parsed?.trip?.to) {
-            const searchUrl = `${API_BASE_URL}/api/vehicles/search?from=${encodeURIComponent(parsed.trip.from)}&to=${encodeURIComponent(parsed.trip.to)}&tripType=${encodeURIComponent(parsed.trip.tripType || "ONE_WAY")}&serviceType=${encodeURIComponent(parsed.trip.serviceType || "OUTSTATION")}&distanceKm=${parsed.distanceKm || 0}`;
+            const pDate = parsed.trip?.date || "";
+            const pTime = parsed.trip?.time || "";
+            const rDate = parsed.trip?.dropDate || parsed.trip?.returnDate || "";
+            const rawType = (parsed.trip?.tripType || "ONE_WAY").toLowerCase();
+            const normalizedType = rawType.includes("round") ? "ROUND_TRIP" : "ONE_WAY";
+            const sType = parsed.trip?.serviceType || "OUTSTATION";
+            const dist = parsed.distanceKm || 0;
+            const searchUrl = `${API_BASE_URL}/api/vehicles/search?from=${encodeURIComponent(parsed.trip.from)}&to=${encodeURIComponent(parsed.trip.to)}&tripType=${encodeURIComponent(normalizedType)}&serviceType=${encodeURIComponent(sType)}&distanceKm=${dist}${pDate ? `&pickupDate=${encodeURIComponent(pDate)}` : ""}${pTime ? `&pickupTime=${encodeURIComponent(pTime)}` : ""}${rDate ? `&returnDate=${encodeURIComponent(rDate)}` : ""}`;
             fetch(searchUrl)
               .then((r) => r.json())
               .then((res) => {
@@ -474,8 +523,10 @@ export default function ReviewPayPage() {
 
   const perKmRate = Number(car.perKmRate) || 0;
 
-  const isMinPackageApplied = !isLocal && !isAirport && actualRouteKm > 0 && actualRouteKm < minPackageKm;
-  const packageRemainingKm = isMinPackageApplied ? (minPackageKm - actualRouteKm) : 0;
+  // Additional KMs logic: Only apply for round trip packages where actual route distance exceeds the multi-day package allowance
+  const hasAdditionalKm = isRoundTripBooking && minPackageKm > 0 && actualRouteKm > minPackageKm;
+  const additionalKm = hasAdditionalKm ? (actualRouteKm - minPackageKm) : 0;
+  const basePackageKm = hasAdditionalKm ? minPackageKm : distanceKm;
 
   // Pet Friendly Booking configuration
   const isPetFriendly = Boolean(
@@ -518,14 +569,10 @@ export default function ReviewPayPage() {
       ? Math.round(perKmRate * distanceKm)
       : (car.pricing?.originalPrice || car.baseFare || 4047));
 
-  // Undiscounted Route base fare (for actual km)
-  const routeBaseFare = isMinPackageApplied && perKmRate > 0
-    ? Math.round(actualRouteKm * perKmRate)
-    : standardBaseFare;
-
-  // Package adjustment amount (for the remaining km)
-  const packageAdjustmentAmount = isMinPackageApplied && perKmRate > 0
-    ? Math.max(0, standardBaseFare - routeBaseFare)
+  // Base package fare & Additional KMs amount
+  const basePackageFare = Math.round(basePackageKm * perKmRate);
+  const additionalKmAmount = hasAdditionalKm && perKmRate > 0
+    ? Math.round(additionalKm * perKmRate)
     : 0;
 
   // Route Tariff Discount Amount
@@ -565,27 +612,35 @@ export default function ReviewPayPage() {
     ? (car.pricing?.driverAllowanceType === "FLAT" || (!car.pricing?.driverAllowancePercentage || Number(car.pricing?.driverAllowancePercentage) === 0))
     : (driverAllowanceType === "FLAT" && driverAllowanceAmount > 0);
 
-  const isAllowanceAlreadyMultiplied = car.pricing?.driverAllowanceLabel && car.pricing.driverAllowanceLabel.includes("×");
-  const baseAllowance = isCarAllowanceDefined
-    ? Math.round(Number(carDriverAllowance))
-    : (isDriverAllowanceFlat
-      ? Math.round(driverAllowanceAmount)
-      : (pricingConfigLoaded
-        ? Math.round(baseFare * (driverAllowancePercentage / 100))
-        : (car.driverAllowance || Math.round(baseFare * (driverAllowancePercentage / 100)))));
+  const driverAllowance = useMemo(() => {
+    if (isDriverAllowanceFlat) {
+      // Determine per-day flat allowance rate
+      let perDay = 0;
+      if (car.pricing?.driverAllowance != null && !isNaN(Number(car.pricing.driverAllowance))) {
+        const raw = Number(car.pricing.driverAllowance);
+        if (tripDays > 1 && raw % tripDays === 0 && raw / tripDays >= 200 && raw / tripDays <= 2000) {
+          perDay = raw / tripDays;
+        } else {
+          perDay = raw;
+        }
+      } else if (driverAllowanceAmount > 0) {
+        perDay = Number(driverAllowanceAmount);
+      } else if (car.driverAllowance) {
+        perDay = Number(car.driverAllowance);
+      } else {
+        perDay = 450;
+      }
+      return Math.round(perDay * (isRoundTripBooking ? tripDays : 1));
+    }
 
-  const rawDriverAllowance = isRoundTripBooking
-    ? (isAllowanceAlreadyMultiplied ? baseAllowance : baseAllowance * tripDays)
-    : baseAllowance;
+    // Percentage of base fare (never multiplied by tripDays as baseFare already covers the full trip)
+    const pct = pricingConfigLoaded
+      ? Number(driverAllowancePercentage || 10)
+      : (Number(car.pricing?.driverAllowancePercentage) || Number(car.driverAllowancePercentage) || 10);
+    return Math.round(baseFare * (pct / 100));
+  }, [car.pricing?.driverAllowance, isDriverAllowanceFlat, driverAllowanceAmount, car.driverAllowance, isRoundTripBooking, tripDays, pricingConfigLoaded, driverAllowancePercentage, car.pricing?.driverAllowancePercentage, car.driverAllowancePercentage, baseFare]);
 
-  const driverAllowance = rawDriverAllowance;
-
-  const driverAllowanceLabel = (
-    car.pricing?.driverAllowanceLabel ||
-    (isDriverAllowanceFlat
-      ? (tripDays > 1 ? `Driver Allowance (₹${Math.round(rawDriverAllowance / tripDays)} × ${tripDays} Days)` : `Driver Allowance (₹${rawDriverAllowance})`)
-      : `Driver Allowance (${car.pricing?.driverAllowancePercentage || driverAllowancePercentage}%)`)
-  ).replace(/\s*Included/gi, "").trim();
+  const driverAllowanceLabel = "Driver Allowance";
 
   // Add-ons total
   const addonsTotal =
@@ -856,15 +911,19 @@ export default function ReviewPayPage() {
         throw new Error(result.message || "Invalid OTP entered");
       }
 
-      setAuthSession(result.data.accessToken, result.data.user);
+      const sessionUser = {
+        ...(result.data?.user || {}),
+        phone: result.data?.user?.phone || cleaned,
+      };
+      setAuthSession(result.data.accessToken, sessionUser);
       setShowAuthModal(false);
 
-      if (result.data.user) {
-        if (!passengerName && result.data.user.name && result.data.user.name.toLowerCase() !== "customer") {
-          setPassengerName(result.data.user.name);
+      if (sessionUser) {
+        if (sessionUser.name && sessionUser.name.toLowerCase() !== "customer") {
+          setPassengerName(sessionUser.name);
         }
-        if (!passengerPhone && result.data.user.phone) {
-          const digits = result.data.user.phone.replace(/[^0-9]/g, "");
+        if (sessionUser.phone) {
+          const digits = sessionUser.phone.replace(/[^0-9]/g, "");
           setPassengerPhone(digits.slice(-10));
         }
       }
@@ -1336,10 +1395,6 @@ export default function ReviewPayPage() {
                       />
                     </div>
                   </div>
-
-                  <p className="col-span-1 md:col-span-2 text-[11px] text-slate-400 font-medium">
-                    Autofilled from your profile. You can edit the name or mobile number anytime for this specific trip.
-                  </p>
                 </div>
 
                 {/* STRUCTURED PICKUP ADDRESS SECTION */}
@@ -1362,35 +1417,19 @@ export default function ReviewPayPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {/* ROW 1: Manually entered: Address line & Street name */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Address Line (Flat / House / Door / Building No.) *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={pickupDoorNo}
-                          onChange={(e) => setPickupDoorNo(e.target.value)}
-                          placeholder="e.g. Flat 402, Green Heights / House #24"
-                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Street Name (Road / Cross / Main) *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={pickupStreet}
-                          onChange={(e) => setPickupStreet(e.target.value)}
-                          placeholder="e.g. 10th Main Road, 4th Cross"
-                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
-                        />
-                      </div>
+                    {/* ROW 1: Manually entered: Building number / street name */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Building number / street name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={pickupDoorNo}
+                        onChange={(e) => setPickupDoorNo(e.target.value)}
+                        placeholder="e.g. Flat 402, Green Heights / House #24, 10th Main Road"
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
+                      />
                     </div>
 
                     {/* ROW 2: Area, City, State, Pincode */}
@@ -1897,43 +1936,27 @@ export default function ReviewPayPage() {
               <div className="p-5 border-b border-slate-100 space-y-3">
                 <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider">{t("fare_summary") || "Fare Summary"}</h4>
                 <div className="space-y-2 text-xs font-semibold text-slate-600">
-                  {isMinPackageApplied ? (
+                  {hasAdditionalKm ? (
                     <>
                       <div className="flex justify-between items-center">
-                        <span>Route Base Fare ({actualRouteKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
+                        <span>Base Outstation Fare ({basePackageKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
                         <span className="text-slate-900 font-bold">
-                          ₹{routeBaseFare.toLocaleString()}
+                          ₹{basePackageFare.toLocaleString()}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center text-slate-700">
-                        <span>Package Min. Adjustment ({minPackageKm} km - {actualRouteKm} km = {packageRemainingKm} km)</span>
+                        <span>Additional KMs ({additionalKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
                         <span className="text-slate-900 font-bold">
-                          + ₹{packageAdjustmentAmount.toLocaleString()}
+                          + ₹{additionalKmAmount.toLocaleString()}
                         </span>
                       </div>
-
-                      {tariffDiscountAmount > 0 && (
-                        <div className="flex justify-between items-center text-slate-500 font-medium pt-0.5 border-t border-dashed border-slate-200">
-                          <span>Total Included Distance Fare ({minPackageKm} km)</span>
-                          <span className="text-slate-400 line-through text-xs font-semibold">
-                            ₹{standardBaseFare.toLocaleString()}
-                          </span>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <div className="flex justify-between items-center">
                       <span>Base Outstation Fare ({distanceKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
-                      <span className="flex items-center gap-2">
-                        {tariffDiscountAmount > 0 && (
-                          <span className="text-slate-400 line-through text-xs font-semibold">
-                            ₹{standardBaseFare.toLocaleString()}
-                          </span>
-                        )}
-                        <span className="text-slate-900 font-bold">
-                          ₹{(tariffDiscountAmount > 0 ? baseFare : standardBaseFare).toLocaleString()}
-                        </span>
+                      <span className="text-slate-900 font-bold">
+                        ₹{standardBaseFare.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -1958,7 +1981,7 @@ export default function ReviewPayPage() {
                   )}
 
                   <div className="flex justify-between items-center">
-                    <span>{driverAllowanceLabel?.replace(/\s*Included/gi, "").trim()}</span>
+                    <span>Driver Allowance</span>
                     <span className={isNightTrip ? "text-[#0082fe] font-bold" : "text-slate-900 font-bold"}>
                       {isNightTrip ? "Excluded (Pay to driver)" : `₹${driverAllowance.toLocaleString()}`}
                     </span>

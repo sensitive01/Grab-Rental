@@ -70,8 +70,8 @@ export const translations = {
     use_phone: "Sign In with Mobile OTP",
     become_partner: "Become a Partner",
     customer_app: "Customer App",
-    mobile_tab: "Mobile Phone",
-    email_tab: "Email & Password",
+    mobile_tab: "Mobile Phone (OTP)",
+    email_tab: "Mobile & Password",
     enter_otp: "6-Digit Verification Code",
     resend: "Resend",
     didnt_get_code: "Didn't get the code?",
@@ -80,7 +80,7 @@ export const translations = {
     password_label: "Password",
     forgot_password: "Forgot Password?",
     remember_session: "Remember my session",
-    vendor_email: "Vendor Email Address",
+    vendor_email: "Mobile Number or Email",
   },
   ta: {
     // Top Navbar
@@ -145,8 +145,8 @@ export const translations = {
     use_phone: "மொபைல் OTP மூலம் உள்நுழையவும்",
     become_partner: "பங்காளராக இணையுங்கள்",
     customer_app: "வாடிக்கையாளர் செயலி",
-    mobile_tab: "கைபேசி எண்",
-    email_tab: "மின்னஞ்சல் & கடவுச்சொல்",
+    mobile_tab: "கைபேசி எண் (OTP)",
+    email_tab: "கைபேசி & கடவுச்சொல்",
     enter_otp: "6-இலக்க சரிபார்ப்புக் குறியீடு",
     resend: "மீண்டும் அனுப்பவும்",
     didnt_get_code: "குறியீடு கிடைக்கவில்லையா?",
@@ -155,7 +155,7 @@ export const translations = {
     password_label: "கடவுச்சொல்",
     forgot_password: "கடவுச்சொல் மறந்துவிட்டதா?",
     remember_session: "என் கணக்கை நினைவில் கொள்க",
-    vendor_email: "மின்னஞ்சல் முகவரி",
+    vendor_email: "கைபேசி எண் அல்லது மின்னஞ்சல்",
   },
   kn: {
     // Top Navbar
@@ -220,8 +220,8 @@ export const translations = {
     use_phone: "ಮೊಬೈಲ್ OTP ಮೂಲಕ ಲಾಗಿನ್ ಮಾಡಿ",
     become_partner: "ಪಾಲುದಾರರಾಗಿ",
     customer_app: "ಗ್ರಾಹಕ ಆ್ಯಪ್",
-    mobile_tab: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",
-    email_tab: "ಇಮೇಲ್ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್",
+    mobile_tab: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ (OTP)",
+    email_tab: "ಮೊಬೈಲ್ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್",
     enter_otp: "6-ಅಂಕಿಯ ಪರಿಶೀಲನಾ ಕೋಡ್",
     resend: "ಮತ್ತೆ ಕಳುಹಿಸಿ",
     didnt_get_code: "ಕೋಡ್ ಬರಲಿಲ್ಲವೇ?",
@@ -230,7 +230,7 @@ export const translations = {
     password_label: "ಪಾಸ್‌ವರ್ಡ್",
     forgot_password: "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?",
     remember_session: "ನನ್ನ ಸೆಷನ್ ನೆನಪಿಡಿ",
-    vendor_email: "ಇಮೇಲ್ ವಿಳಾಸ",
+    vendor_email: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಅಥವಾ ಇಮೇಲ್",
   },
   te: {
     // Top Navbar
@@ -295,8 +295,8 @@ export const translations = {
     use_phone: "మొబైల్ OTP తో సైన్ ఇన్ చేయండి",
     become_partner: "భాగస్వామిగా చేరండి",
     customer_app: "కస్టమర్ యాప్",
-    mobile_tab: "మొబైల్ ఫోన్",
-    email_tab: "ఇమెయిల్ & పాస్‌వర్డ్",
+    mobile_tab: "మొబైల్ ఫోన్ (OTP)",
+    email_tab: "మొబైల్ & పాస్‌వర్డ్",
     enter_otp: "6-అంకెల ధృవీకరణ కోడ్",
     resend: "మళ్లీ పంపండి",
     didnt_get_code: "కోడ్ రాలేదా?",
@@ -305,7 +305,7 @@ export const translations = {
     password_label: "పాస్‌వర్డ్",
     forgot_password: "పాస్‌వర్డ్ మర్చిపోయారా?",
     remember_session: "నా సెషన్ గుర్తుంచుకో",
-    vendor_email: "ఇమెయిల్ చిరునామా",
+    vendor_email: "మొబైల్ నంబర్ లేదా ఇమెయిల్",
   },
   hi: {
     // Top Navbar
@@ -370,8 +370,8 @@ export const translations = {
     use_phone: "मोबाइल OTP से साइन इन करें",
     become_partner: "पार्टनर बनें",
     customer_app: "ग्राहक ऐप",
-    mobile_tab: "मोबाइल फोन",
-    email_tab: "ईमेल और पासवर्ड",
+    mobile_tab: "मोबाइल फोन (OTP)",
+    email_tab: "मोबाइल और पासवर्ड",
     enter_otp: "6-अंकीय सत्यापन कोड",
     resend: "पुनः भेजें",
     didnt_get_code: "कोड नहीं मिला?",
@@ -380,6 +380,6 @@ export const translations = {
     password_label: "पासवर्ड",
     forgot_password: "पासवर्ड भूल गए?",
     remember_session: "मेरा सत्र याद रखें",
-    vendor_email: "ईमेल पता",
+    vendor_email: "मोबाइल नंबर या ईमेल",
   },
 };

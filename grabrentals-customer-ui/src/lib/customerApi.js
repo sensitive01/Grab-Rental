@@ -26,6 +26,14 @@ export const customerApi = {
   },
 
   /**
+   * Get authenticated customer profile (name, phone, email)
+   */
+  async getProfile() {
+    const res = await axiosClient.get("/api/customer/profile");
+    return res.data;
+  },
+
+  /**
    * Get active vehicle models configured in admin
    */
   async getVehicleModels() {

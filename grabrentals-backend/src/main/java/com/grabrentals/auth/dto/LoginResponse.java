@@ -28,6 +28,7 @@ public class LoginResponse {
         private UUID id;
         private String name;
         private String email;
+        private String phone;
         private Role role;
         private com.grabrentals.user.entity.UserStatus status;
     }

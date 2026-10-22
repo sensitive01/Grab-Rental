@@ -396,39 +396,39 @@ public class VehicleTariffService {
     public List<VehicleTariff> getTariffsForService(String serviceType) {
         String sType = (serviceType != null && !serviceType.isBlank()) ? serviceType.trim().toUpperCase() : "OUTSTATION";
         if ("PACKAGE".equalsIgnoreCase(sType)) sType = "LOCAL";
+        
         List<VehicleTariff> direct = tariffRepository.findByServiceTypeIgnoreCase(sType);
-        if ("ONE_WAY".equalsIgnoreCase(sType) || "ROUND_TRIP".equalsIgnoreCase(sType)) {
-            List<VehicleTariff> outstationDirect = tariffRepository.findByServiceTypeIgnoreCase("OUTSTATION");
-            List<VehicleTariff> oneWayDirect = tariffRepository.findByServiceTypeIgnoreCase("ONE_WAY");
-            List<VehicleTariff> roundTripDirect = tariffRepository.findByServiceTypeIgnoreCase("ROUND_TRIP");
-            Set<VehicleTariff> mergedDirect = new LinkedHashSet<>();
-            if (direct != null) mergedDirect.addAll(direct);
-            if (roundTripDirect != null) mergedDirect.addAll(roundTripDirect);
-            if (oneWayDirect != null) mergedDirect.addAll(oneWayDirect);
-            if (outstationDirect != null) mergedDirect.addAll(outstationDirect);
-            direct = new ArrayList<>(mergedDirect);
-        }
-        List<VehicleTariff> allTariffs = tariffRepository.findAll();
-        if (allTariffs == null || allTariffs.isEmpty()) {
-            return Collections.emptyList();
-        }
-        if (direct == null || direct.isEmpty()) {
-            return allTariffs;
-        }
-        // Merge: direct tariff for this serviceType takes priority, while other cities/categories inherit base tariffs
+        List<VehicleTariff> fallbackTariffs = ("ONE_WAY".equalsIgnoreCase(sType) || "ROUND_TRIP".equalsIgnoreCase(sType))
+                ? tariffRepository.findByServiceTypeIgnoreCase("OUTSTATION")
+                : Collections.emptyList();
+
         Map<String, VehicleTariff> map = new LinkedHashMap<>();
-        for (VehicleTariff t : allTariffs) {
-            String key = buildTariffKey(t);
-            map.put(key, t);
+        // 1. Fallback tariffs (OUTSTATION)
+        if (fallbackTariffs != null) {
+            for (VehicleTariff t : fallbackTariffs) {
+                map.put(buildTariffVehicleKey(t), t);
+            }
         }
-        for (VehicleTariff t : direct) {
-            String key = buildTariffKey(t);
-            map.put(key, t);
+        // 2. Direct tariffs for this specific serviceType (e.g. ONE_WAY or ROUND_TRIP) overwrite fallbacks
+        if (direct != null) {
+            for (VehicleTariff t : direct) {
+                map.put(buildTariffVehicleKey(t), t);
+            }
+        }
+        
+        // 3. If completely empty, fallback to all tariffs
+        if (map.isEmpty()) {
+            List<VehicleTariff> allTariffs = tariffRepository.findAll();
+            if (allTariffs != null) {
+                for (VehicleTariff t : allTariffs) {
+                    map.put(buildTariffVehicleKey(t), t);
+                }
+            }
         }
         return new ArrayList<>(map.values());
     }
 
-    private String buildTariffKey(VehicleTariff t) {
+    private String buildTariffVehicleKey(VehicleTariff t) {
         if (t == null) return "";
         String prefix = Boolean.TRUE.equals(t.getSeasonal()) ? ("seasonal_" + (t.getId() != null ? t.getId() : UUID.randomUUID())) : "standard";
         String city = (t.getCity() != null && !t.getCity().isBlank()) ? t.getCity().trim().toLowerCase() : "all";

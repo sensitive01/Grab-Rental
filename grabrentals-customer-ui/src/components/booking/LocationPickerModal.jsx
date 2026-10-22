@@ -1351,11 +1351,11 @@ export default function LocationPickerModal({
               type="button"
               onClick={handleLocateMe}
               disabled={isLocating}
-              title="Pin Current GPS Location"
+              title="Current Location"
               className="px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 hover:border-amber-400 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer shrink-0"
             >
               <Crosshair className={`w-4 h-4 ${isLocating ? "animate-spin text-amber-600" : "text-amber-500"}`} />
-              <span className="hidden sm:inline">Use My GPS</span>
+              <span className="hidden sm:inline">Current Location</span>
             </button>
           </div>
 

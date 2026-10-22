@@ -21,10 +21,82 @@ export const CLOUDINARY_CONFIG = {
  * @returns {Promise<string>} The secure Cloudinary HTTPS URL
  */
 
+/**
+ * Compresses an image client-side if it exceeds 800KB.
+ * Uses native HTML5 canvas — zero external dependencies.
+ */
+async function compressImageIfNeeded(file, maxDimension = 1920, quality = 0.8) {
+  if (typeof window === "undefined" || !file || !file.type?.startsWith("image/") || file.type === "image/svg+xml") {
+    return file;
+  }
+
+  // Already small enough, no compression needed
+  if (file.size <= 800 * 1024) {
+    return file;
+  }
+
+  try {
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+
+          // Scale down if larger than maxDimension while keeping aspect ratio
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob && blob.size < file.size) {
+                const newName = file.name.replace(/\.[^/.]+$/, ".jpg");
+                const compressedFile = new File([blob], newName, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  } catch (err) {
+    console.warn("Client-side image compression skipped:", err);
+    return file;
+  }
+}
+
 export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehicles", endpoint = null, customPreset = null) {
   if (!file) return null;
 
   try {
+    // Automatically compress large image files before sending to server/CDN
+    const processedFile = await compressImageIfNeeded(file);
+
     const isDriver = folder.includes("drivers");
     const isBusiness = folder.includes("business") || folder.includes("compliance") || folder.includes("profile");
 
@@ -36,7 +108,7 @@ export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehic
     const targetUrl = endpoint || (isBusiness ? "/api/vendor/profile/upload" : (isDriver ? "/api/vendor/drivers/upload" : "/api/vendor/vehicles/upload"));
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", processedFile);
     formData.append("folder", folder);
     if (preset) {
       formData.append("preset", preset);
@@ -84,7 +156,10 @@ export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehic
     throw new Error("Failed to upload file");
   } catch (error) {
     console.error("Cloudinary upload error:", error);
+    if (error.response?.status === 413) {
+      throw new Error("File size exceeds server limit (1MB). Please select a file smaller than 1MB.");
+    }
     const serverMessage = error.response?.data?.message || error.message;
-    throw new Error(serverMessage);
+    throw new Error(serverMessage || "Failed to upload file");
   }
 }

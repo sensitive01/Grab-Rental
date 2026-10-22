@@ -144,7 +144,11 @@ export default function LoginPage() {
       }
 
       // Save token and user details using auth utility
-      setAuthSession(result.data.accessToken, result.data.user);
+      const sessionUser = {
+        ...(result.data?.user || {}),
+        phone: result.data?.user?.phone || cleaned,
+      };
+      setAuthSession(result.data.accessToken, sessionUser);
 
       setSuccessMessage("Verification successful! Redirecting...");
 

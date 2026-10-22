@@ -117,15 +117,24 @@ function LoginContent() {
     }
   };
 
-  // Handle Email Password Login
-  const handleEmailSubmit = async (e) => {
+  // Handle Mobile Number / Email Password Login
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedInput = email.trim();
+    const cleanDigits = trimmedInput.replace(/[^0-9]/g, "");
 
-    if (!trimmedEmail || !trimmedEmail.includes("@")) {
-      setError("Please enter a valid business email address.");
+    const isPhone = !trimmedInput.includes("@") && cleanDigits.length >= 10;
+    const isEmail = trimmedInput.includes("@") && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedInput);
+
+    if (!trimmedInput) {
+      setError("Please enter your registered mobile number or email address.");
+      return;
+    }
+
+    if (!isPhone && !isEmail) {
+      setError("Please enter a valid 10-digit mobile number or business email address.");
       return;
     }
 
@@ -137,7 +146,8 @@ function LoginContent() {
     setLoading(true);
 
     try {
-      const result = await login(trimmedEmail, password);
+      const identifier = isPhone ? cleanDigits.slice(-10) : trimmedInput.toLowerCase();
+      const result = await login(identifier, password);
 
       if (result.success) {
         const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
@@ -244,7 +254,7 @@ function LoginContent() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <Mail className="w-3.5 h-3.5" />
+              <Lock className="w-3.5 h-3.5" />
               <span>{t("email_tab")}</span>
             </button>
           </div>
@@ -377,21 +387,21 @@ function LoginContent() {
             </div>
           )}
 
-          {/* METHOD 2: EMAIL AND PASSWORD */}
+          {/* METHOD 2: MOBILE NUMBER / EMAIL AND PASSWORD */}
           {authMethod === "EMAIL" && (
-            <form onSubmit={handleEmailSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
               <div className="space-y-1.5">
                 <label className="block font-bold text-slate-300">
                   {t("vendor_email")}
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type="email"
+                    type="text"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="operations@company.com"
+                    placeholder="e.g. 98765 43210 or email"
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs"
                   />
                 </div>

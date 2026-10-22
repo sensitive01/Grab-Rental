@@ -754,9 +754,7 @@ public class PublicVehicleService {
                         : BigDecimal.ZERO;
                 driverAllowance = perDayAllowance.multiply(daysBd);
                 driverPercent = BigDecimal.ZERO;
-                driverInclusionLabel = days > 1
-                        ? "Driver Allowance (₹" + perDayAllowance.toPlainString() + " × " + days + " Days)"
-                        : "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
+                driverInclusionLabel = "Driver Allowance";
             } else {
                 BigDecimal safePercent = customAllowance.getAllowanceValue() != null
                         ? customAllowance.getAllowanceValue()
@@ -764,7 +762,7 @@ public class PublicVehicleService {
                 BigDecimal driverRate = safePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
                 driverAllowance = baseFare.multiply(driverRate).setScale(0, RoundingMode.HALF_UP);
                 driverPercent = safePercent;
-                driverInclusionLabel = "Driver Allowance (" + safePercent.stripTrailingZeros().toPlainString() + "%)";
+                driverInclusionLabel = "Driver Allowance";
             }
         } else {
             driverType = (taxConfig.getDriverAllowanceType() != null && !taxConfig.getDriverAllowanceType().isBlank())
@@ -778,14 +776,12 @@ public class PublicVehicleService {
                         : (driverPercent.compareTo(new BigDecimal("100")) > 0 ? driverPercent : new BigDecimal("400.00"));
                 BigDecimal perDayAllowance = flatAmt.setScale(0, RoundingMode.HALF_UP);
                 driverAllowance = perDayAllowance.multiply(daysBd);
-                driverInclusionLabel = days > 1
-                        ? "Driver Allowance (₹" + perDayAllowance.toPlainString() + " × " + days + " Days)"
-                        : "Driver Allowance (₹" + driverAllowance.toPlainString() + ")";
+                driverInclusionLabel = "Driver Allowance";
             } else {
                 BigDecimal safePercent = driverPercent.compareTo(new BigDecimal("100")) > 0 ? new BigDecimal("10.00") : driverPercent;
                 BigDecimal driverRate = safePercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
                 driverAllowance = baseFare.multiply(driverRate).setScale(0, RoundingMode.HALF_UP);
-                driverInclusionLabel = "Driver Allowance (" + safePercent.stripTrailingZeros().toPlainString() + "%)";
+                driverInclusionLabel = "Driver Allowance";
             }
         }
 
