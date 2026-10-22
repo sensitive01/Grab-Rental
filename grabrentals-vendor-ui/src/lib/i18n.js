@@ -80,7 +80,7 @@ export const translations = {
     password_label: "Password",
     forgot_password: "Forgot Password?",
     remember_session: "Remember my session",
-    vendor_email: "Mobile Number or Email",
+    vendor_email: "Registered Mobile Number",
   },
   ta: {
     // Top Navbar
@@ -155,7 +155,7 @@ export const translations = {
     password_label: "கடவுச்சொல்",
     forgot_password: "கடவுச்சொல் மறந்துவிட்டதா?",
     remember_session: "என் கணக்கை நினைவில் கொள்க",
-    vendor_email: "கைபேசி எண் அல்லது மின்னஞ்சல்",
+    vendor_email: "பதிவு செய்யப்பட்ட கைபேசி எண்",
   },
   kn: {
     // Top Navbar
@@ -230,7 +230,7 @@ export const translations = {
     password_label: "ಪಾಸ್‌ವರ್ಡ್",
     forgot_password: "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?",
     remember_session: "ನನ್ನ ಸೆಷನ್ ನೆನಪಿಡಿ",
-    vendor_email: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಅಥವಾ ಇಮೇಲ್",
+    vendor_email: "ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",
   },
   te: {
     // Top Navbar
@@ -305,7 +305,7 @@ export const translations = {
     password_label: "పాస్‌వర్డ్",
     forgot_password: "పాస్‌వర్డ్ మర్చిపోయారా?",
     remember_session: "నా సెషన్ గుర్తుంచుకో",
-    vendor_email: "మొబైల్ నంబర్ లేదా ఇమెయిల్",
+    vendor_email: "నమోదిత మొబైల్ నంబర్",
   },
   hi: {
     // Top Navbar
@@ -380,6 +380,6 @@ export const translations = {
     password_label: "पासवर्ड",
     forgot_password: "पासवर्ड भूल गए?",
     remember_session: "मेरा सत्र याद रखें",
-    vendor_email: "मोबाइल नंबर या ईमेल",
+    vendor_email: "पंजीकृत मोबाइल नंबर",
   },
 };

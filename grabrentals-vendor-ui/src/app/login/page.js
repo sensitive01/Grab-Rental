@@ -32,8 +32,8 @@ function LoginContent() {
   const [devOtp, setDevOtp] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
 
-  // Email password state
-  const [email, setEmail] = useState("");
+  // Mobile & Password state
+  const [loginPhone, setLoginPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -117,24 +117,20 @@ function LoginContent() {
     }
   };
 
-  // Handle Mobile Number / Email Password Login
+  // Handle Mobile Number & Password Login
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    const trimmedInput = email.trim();
-    const cleanDigits = trimmedInput.replace(/[^0-9]/g, "");
+    const cleanDigits = loginPhone.replace(/[^0-9]/g, "");
 
-    const isPhone = !trimmedInput.includes("@") && cleanDigits.length >= 10;
-    const isEmail = trimmedInput.includes("@") && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedInput);
-
-    if (!trimmedInput) {
-      setError("Please enter your registered mobile number or email address.");
+    if (!cleanDigits) {
+      setError("Please enter your registered 10-digit mobile number.");
       return;
     }
 
-    if (!isPhone && !isEmail) {
-      setError("Please enter a valid 10-digit mobile number or business email address.");
+    if (cleanDigits.length < 10) {
+      setError("Please enter a valid 10-digit mobile number.");
       return;
     }
 
@@ -146,7 +142,7 @@ function LoginContent() {
     setLoading(true);
 
     try {
-      const identifier = isPhone ? cleanDigits.slice(-10) : trimmedInput.toLowerCase();
+      const identifier = cleanDigits.slice(-10);
       const result = await login(identifier, password);
 
       if (result.success) {
@@ -387,7 +383,7 @@ function LoginContent() {
             </div>
           )}
 
-          {/* METHOD 2: MOBILE NUMBER / EMAIL AND PASSWORD */}
+          {/* METHOD 2: MOBILE NUMBER & PASSWORD */}
           {authMethod === "EMAIL" && (
             <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
               <div className="space-y-1.5">
@@ -395,14 +391,17 @@ function LoginContent() {
                   {t("vendor_email")}
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                    +91
+                  </span>
                   <input
-                    type="text"
+                    type="tel"
+                    maxLength={10}
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. 98765 43210 or email"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs"
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+                    placeholder="98765 43210"
+                    className="w-full pl-14 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs font-bold tracking-wider"
                   />
                 </div>
               </div>
@@ -453,8 +452,8 @@ function LoginContent() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] disabled:opacity-75 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
+                disabled={loading || loginPhone.length < 10}
+                className="w-full h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin text-slate-950" />

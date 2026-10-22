@@ -16,7 +16,10 @@ import {
   KeyRound,
   RotateCcw,
   Edit3,
-  Truck
+  Truck,
+  Lock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { setAuthSession, isAuthenticated } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
@@ -26,6 +29,9 @@ export default function LoginPage() {
   const router = useRouter();
   const { t } = useLanguage();
 
+  // Auth Mode: 'otp' | 'pin'
+  const [authMode, setAuthMode] = useState("otp");
+
   // Step 1: 'phone' | Step 2: 'otp'
   const [step, setStep] = useState("phone");
 
@@ -33,6 +39,8 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [devOtp, setDevOtp] = useState(""); // Received OTP for easy on-screen testing
+  const [pin, setPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
 
   // UI / Timer State
   const [isLoading, setIsLoading] = useState(false);
@@ -157,6 +165,80 @@ export default function LoginPage() {
         const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
         const redirectParam = params?.get("redirect");
 
+        const user = result.data.user;
+        const isNewUser = Boolean(result.data.isNewUser || !user.name || user.name === "Customer" || !user.passwordSet);
+
+        if (user.role === "ADMIN") {
+          router.push("/admin");
+        } else if (isNewUser) {
+          // Direct new customer to set their 6-digit PIN before proceeding to profile
+          const targetUrl = redirectParam 
+            ? `/account/set-pin?redirect=${encodeURIComponent(redirectParam)}&welcome=true`
+            : "/account/set-pin?welcome=true";
+          router.push(targetUrl);
+        } else if (redirectParam && redirectParam.startsWith("/")) {
+          router.push(redirectParam);
+        } else {
+          router.push("/dashboard");
+        }
+      }, 700);
+
+    } catch (err) {
+      const rawMsg = err.message || "";
+      const formattedMsg = (rawMsg.toLowerCase().includes("credential") || rawMsg.toLowerCase().includes("incorrect"))
+        ? "Invalid OTP"
+        : (rawMsg || "Invalid OTP");
+      setErrorMessage(formattedMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 3: Sign In with 6-Digit PIN
+  const handlePinLogin = async (e) => {
+    if (e) e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    const cleaned = phone.replace(/[^0-9]/g, "");
+    if (cleaned.length < 10) {
+      setErrorMessage("Please enter a valid 10-digit mobile number");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!pin || pin.length !== 6) {
+      setErrorMessage("Please enter your 6-digit login PIN");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleaned.slice(-10), password: pin }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Invalid mobile number or 6-digit PIN. Please try again or use OTP.");
+      }
+
+      const sessionUser = {
+        ...(result.data?.user || {}),
+        phone: result.data?.user?.phone || cleaned,
+      };
+      setAuthSession(result.data.accessToken, sessionUser);
+
+      setSuccessMessage("Sign in successful! Redirecting...");
+
+      setTimeout(() => {
+        const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const redirectParam = params?.get("redirect");
+
         if (redirectParam && redirectParam.startsWith("/")) {
           router.push(redirectParam);
           return;
@@ -173,11 +255,7 @@ export default function LoginPage() {
       }, 700);
 
     } catch (err) {
-      const rawMsg = err.message || "";
-      const formattedMsg = (rawMsg.toLowerCase().includes("credential") || rawMsg.toLowerCase().includes("incorrect"))
-        ? "Invalid OTP"
-        : (rawMsg || "Invalid OTP");
-      setErrorMessage(formattedMsg);
+      setErrorMessage(err.message || "Invalid mobile number or 6-digit PIN.");
     } finally {
       setIsLoading(false);
     }
@@ -300,12 +378,12 @@ export default function LoginPage() {
         <section className="w-full lg:w-[50%] xl:w-[46%] flex flex-col justify-center items-center p-5 sm:p-10 lg:p-16 bg-white relative flex-grow min-h-[calc(100vh-140px)]">
           
           <div className="w-full max-w-md mx-auto relative z-10">
-            
+
             {/* Header / Titles */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-3">
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0082fe] bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
-                  {step === "phone" ? "Step 1 of 2" : "Step 2 of 2"}
+                  {authMode === "pin" ? "PIN Sign In" : (step === "phone" ? "Quick Sign In" : "Verify OTP")}
                 </span>
                 <span className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
@@ -314,28 +392,32 @@ export default function LoginPage() {
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {step === "phone" ? (t("customer_login") || "Customer Login") : t("enter_otp")}
+                {authMode === "pin" 
+                  ? "Sign In with PIN" 
+                  : (step === "phone" ? (t("customer_login") || "Customer Login") : t("enter_otp"))}
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1.5">
-                {step === "phone" 
-                  ? (t("login_subtitle") || "Enter 10-digit mobile number")
-                  : (
-                    <span className="flex items-center gap-2 flex-wrap">
-                      <span>Code sent to <strong className="text-slate-800 font-semibold">+91 {phone.replace(/[^0-9]/g, "").slice(-10)}</strong></span>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          setStep("phone");
-                          setOtp("");
-                          setErrorMessage("");
-                          setSuccessMessage("");
-                        }}
-                        className="text-[#0082fe] hover:text-blue-700 font-bold inline-flex items-center gap-1 ml-1 cursor-pointer"
-                      >
-                        <Edit3 className="w-3 h-3" /> Change
-                      </button>
-                    </span>
-                  )}
+                {authMode === "pin"
+                  ? "Enter your 10-digit mobile number and 6-digit PIN"
+                  : (step === "phone" 
+                    ? (t("login_subtitle") || "Enter 10-digit mobile number")
+                    : (
+                      <span className="flex items-center gap-2 flex-wrap">
+                        <span>Code sent to <strong className="text-slate-800 font-semibold">+91 {phone.replace(/[^0-9]/g, "").slice(-10)}</strong></span>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setStep("phone");
+                            setOtp("");
+                            setErrorMessage("");
+                            setSuccessMessage("");
+                          }}
+                          className="text-[#0082fe] hover:text-blue-700 font-bold inline-flex items-center gap-1 ml-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" /> Change
+                        </button>
+                      </span>
+                    ))}
               </p>
             </div>
 
@@ -354,8 +436,138 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* STEP 1: Phone Number Form */}
-            {step === "phone" ? (
+            {/* MODE 1: 6-DIGIT PIN LOGIN FORM */}
+            {authMode === "pin" ? (
+              <form onSubmit={handlePinLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    {t("mobile_number")}
+                  </label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3.5 flex items-center gap-1.5 text-xs font-bold text-[#0082fe] pr-3 border-r border-slate-200 select-none">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>+91</span>
+                    </div>
+
+                    <input
+                      type="tel"
+                      required
+                      autoFocus
+                      maxLength={10}
+                      value={phone}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+                        setPhone(digits);
+                      }}
+                      placeholder="98765 43210"
+                      className="w-full pl-24 pr-4 py-3.5 bg-slate-50/80 border border-slate-300 rounded-xl text-base font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] focus:bg-white transition-all tracking-wide shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                      6-Digit Security PIN
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode("otp");
+                        setStep("phone");
+                        setErrorMessage("");
+                      }}
+                      className="text-xs font-bold text-[#0082fe] hover:underline cursor-pointer"
+                    >
+                      Forgot PIN? Use OTP
+                    </button>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3.5 flex items-center text-slate-400">
+                      <Lock className="w-4 h-4 text-[#0082fe]" />
+                    </div>
+                    <input
+                      type={showPin ? "text" : "password"}
+                      required
+                      maxLength={6}
+                      value={pin}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+                        setPin(digits);
+                      }}
+                      placeholder="• • • • • •"
+                      className="w-full pl-11 pr-11 py-3.5 bg-slate-50/80 border border-slate-300 rounded-xl text-center text-xl font-mono font-bold tracking-[0.5em] text-[#0082fe] placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] focus:bg-white transition-all shadow-2xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPin(!showPin)}
+                      className="absolute right-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4 text-[#0082fe]" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit CTA */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading || phone.length < 10 || pin.length !== 6}
+                    className="w-full py-3.5 px-6 rounded-xl bg-[#0082fe] hover:bg-[#0072de] active:scale-[0.99] text-white font-extrabold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-blue-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {isLoading ? (
+                      <span>Signing in...</span>
+                    ) : (
+                      <>
+                        <span>Sign In with PIN</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Quick Switch to OTP */}
+                <div className="pt-1 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("otp");
+                      setStep("phone");
+                      setErrorMessage("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-xs font-bold text-[#0082fe] hover:underline cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Sign in with Mobile OTP instead</span>
+                  </button>
+                </div>
+
+                {/* Divider */}
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                    <span className="bg-white px-3">
+                      {t("or_divider") || "Or"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Login as Fleet Owner Button */}
+                <a
+                  href={process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL || "https://vendor.grabrentals.in/login"}
+                  className="w-full py-3 px-5 rounded-xl border border-slate-200 hover:border-[#0082fe]/40 bg-slate-50/80 hover:bg-slate-100 text-slate-700 hover:text-[#0082fe] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-2xs group cursor-pointer"
+                >
+                  <Truck className="w-4 h-4 text-[#0082fe] group-hover:scale-110 transition-transform" />
+                  <span>{t("login_as_fleet_owner") || "Login as Fleet Owner"}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0082fe] group-hover:translate-x-1 transition-all" />
+                </a>
+              </form>
+            ) : step === "phone" ? (
+              /* MODE 2: STEP 1 - PHONE FOR OTP */
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -405,24 +617,21 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                {/* Already have an Account? Login Here (commented out for now) */}
-                {/* 
-                <div className="pt-2 text-center text-xs text-slate-500">
-                  <span>{t("already_have_account") || "Already have an Account?"} </span>
+                {/* Quick Switch to PIN */}
+                <div className="pt-1 text-center">
                   <button
                     type="button"
                     onClick={() => {
-                      setStep("phone");
-                      setOtp("");
+                      setAuthMode("pin");
                       setErrorMessage("");
                       setSuccessMessage("");
                     }}
-                    className="text-[#0082fe] hover:text-blue-700 font-bold hover:underline transition-colors cursor-pointer ml-1"
+                    className="text-xs font-bold text-[#0082fe] hover:underline cursor-pointer inline-flex items-center gap-1.5"
                   >
-                    {t("login_here") || "Login Here"}
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Sign in with 6-Digit PIN instead</span>
                   </button>
                 </div>
-                */}
 
                 {/* Divider */}
                 <div className="relative my-4">

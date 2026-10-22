@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { login, getCurrentUser, getAuthToken, DEMO_ACCOUNTS } from "@/lib/auth";
+import { login, getCurrentUser, getAuthToken } from "@/lib/auth";
 import {
   Car,
   Lock,
@@ -10,8 +10,6 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Shield,
-  Clock,
   Sparkles,
   CheckCircle2,
   AlertCircle,
@@ -64,15 +62,6 @@ export default function LoginPage() {
     } catch (err) {
       setIsLoading(false);
       setErrorMessage(err?.message || "An error occurred during authentication.");
-    }
-  }
-
-  function handleQuickFill(role) {
-    const creds = DEMO_ACCOUNTS[role];
-    if (creds) {
-      setEmail(creds.email);
-      setPassword(creds.password);
-      setErrorMessage("");
     }
   }
 
@@ -195,44 +184,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* Role-Based One-Click Demo Credential Chips */}
-          <div className="mt-6 pt-5 border-t border-slate-800">
-            <p className="text-[11px] uppercase font-bold tracking-wider text-slate-500 text-center mb-3">
-              One-Click Evaluation Credentials
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleQuickFill("admin")}
-                className="group p-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-left transition-all"
-              >
-                <div className="flex items-center gap-1.5 text-blue-400 font-semibold text-xs mb-0.5">
-                  <Shield className="w-3.5 h-3.5 shrink-0" />
-                  <span>Admin Role</span>
-                </div>
-                <div className="text-[11px] text-slate-400 font-mono">admin@grabrentals.com</div>
-                <div className="text-[10px] text-blue-400/80 mt-1 font-sans">
-                  Platform Governance & Controls
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill("operations")}
-                className="group p-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-left transition-all"
-              >
-                <div className="flex items-center gap-1.5 text-amber-400 font-semibold text-xs mb-0.5">
-                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                  <span>Operations Role</span>
-                </div>
-                <div className="text-[11px] text-slate-400 font-mono">ops@grabrentals.com</div>
-                <div className="text-[10px] text-amber-400/80 mt-1 font-sans">
-                  Fleet Dispatch & Trip Tracking
-                </div>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

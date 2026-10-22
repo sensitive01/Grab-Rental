@@ -28,6 +28,7 @@ public class AdminService {
     private final com.grabrentals.vendor.repository.VehicleRepository vehicleRepository;
     private final com.grabrentals.vendor.repository.DriverRepository driverRepository;
     private final com.grabrentals.customer.repository.CustomerProfileRepository customerProfileRepository;
+    private final com.grabrentals.customer.repository.CustomerAddressRepository customerAddressRepository;
     private final com.grabrentals.notification.repository.NotificationRepository notificationRepository;
     private final com.grabrentals.customer.repository.BookingRepository bookingRepository;
     private final UserService userService;
@@ -313,6 +314,16 @@ public class AdminService {
 
         // 4. Delete customer profile if any (fixes foreign key constraint fk69orkdj1un5rh845ngvvmd1xs)
         customerProfileRepository.findByUserId(id).ifPresent(customerProfileRepository::delete);
+
+        // 4b. Delete customer addresses if any (fixes foreign key constraint fkhckr7cewpe4l4jfvnt1mdadn2)
+        try {
+            List<com.grabrentals.customer.entity.CustomerAddress> addresses = customerAddressRepository.findByUserOrderByIsDefaultDescCreatedAtDesc(user);
+            if (addresses != null && !addresses.isEmpty()) {
+                customerAddressRepository.deleteAll(addresses);
+            }
+        } catch (Exception ex) {
+            log.warn("Could not delete customer addresses for user {}: {}", id, ex.getMessage());
+        }
 
         // 5. Delete notifications for this user if any
         try {

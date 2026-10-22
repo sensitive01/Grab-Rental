@@ -77,15 +77,16 @@ function ResetPasswordContent() {
     setError("");
     setSuccessInfo("");
 
-    if (!email.trim()) {
-      setError("Please enter your registered email address or mobile number.");
+    const cleanPhone = email.replace(/[^0-9]/g, "");
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setError("Please enter your registered 10-digit mobile number.");
       return;
     }
 
     setOtpLoading(true);
     try {
       const res = await axiosClient.post("/api/auth/reset-password/send-otp", {
-        email: email.trim(),
+        email: cleanPhone.slice(-10),
       });
       const data = res.data?.data;
       setOtpCountdown(60);
@@ -100,7 +101,7 @@ function ResetPasswordContent() {
       setError(
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        "No account found with this identifier. Please verify your email or phone."
+        "No account found with this mobile number. Please verify and try again."
       );
     } finally {
       setOtpLoading(false);
@@ -334,35 +335,38 @@ function ResetPasswordContent() {
                 <form onSubmit={handleRequestOtp} className="space-y-5 animate-in fade-in duration-150">
                   <div className="space-y-1 text-center sm:text-left">
                     <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                      <Mail className="w-5 h-5 text-amber-400" />
-                      <span>Step 1: Account Identifier</span>
+                      <Smartphone className="w-5 h-5 text-amber-400" />
+                      <span>Step 1: Registered Mobile Number</span>
                     </h2>
                     <p className="text-xs text-slate-400">
-                      Enter the registered email or mobile number linked to your fleet partner account.
+                      Enter the registered 10-digit mobile number linked to your fleet partner account.
                     </p>
                   </div>
 
                   <div className="space-y-1.5 text-xs">
                     <label className="block font-bold text-slate-300">
-                      Email Address or Mobile Number *
+                      Registered Mobile Number *
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                        +91
+                      </span>
                       <input
-                        type="text"
+                        type="tel"
+                        maxLength={10}
                         required
                         autoFocus
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="e.g. partner@company.com or 98765..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs"
+                        onChange={(e) => setEmail(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+                        placeholder="98765 43210"
+                        className="w-full pl-14 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs font-bold tracking-wider"
                       />
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={otpLoading || !email.trim()}
+                    disabled={otpLoading || email.replace(/[^0-9]/g, "").length < 10}
                     className="w-full h-11 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
                   >
                     {otpLoading ? (

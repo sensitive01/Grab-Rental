@@ -28,6 +28,7 @@ public class UserResponse {
     private Role role;
     private UserStatus status;
     private String businessName;
+    private Boolean passwordSet;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -45,6 +46,7 @@ public class UserResponse {
                 .role(user.getRole())
                 .status(user.getStatus())
                 .businessName(user.getBusinessName())
+                .passwordSet(Boolean.TRUE.equals(user.getPasswordSet()))
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

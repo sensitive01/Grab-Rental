@@ -227,6 +227,7 @@ public class AuthService {
                         .phone(user.getPhone())
                         .role(user.getRole())
                         .status(user.getStatus())
+                        .passwordSet(Boolean.TRUE.equals(user.getPasswordSet()))
                         .build())
                 .isNewUser(isNew.get())
                 .build();
@@ -346,9 +347,16 @@ public class AuthService {
             );
         }
 
-        User user = userRepository.findByEmail(normalizedId)
-                .or(() -> findUserByPhoneFlexible(rawIdentifier))
-                .orElse(null);
+        User user = null;
+        if (!rawIdentifier.contains("@")) {
+            user = findUserByPhoneFlexible(rawIdentifier).orElse(null);
+        } else {
+            user = userRepository.findByEmail(normalizedId).orElse(null);
+            // Multiple vendors can share the same email or have optional emails; vendors must sign in by mobile number
+            if (user != null && user.getRole() == Role.VENDOR) {
+                throw new InvalidCredentialsException("Vendor accounts must sign in using their registered 10-digit mobile number.");
+            }
+        }
 
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             attempt.recordFailure();
@@ -385,7 +393,7 @@ public class AuthService {
                 auditLogService.logEvent(com.grabrentals.audit.dto.CreateAuditLogRequest.builder()
                         .category("SECURITY")
                         .event("LOGIN_FAILED")
-                        .userId(user.getEmail())
+                        .userId(user.getEmail() != null ? user.getEmail() : user.getPhone())
                         .userName(user.getName())
                         .userRole(user.getRole() != null ? user.getRole().name() : "USER")
                         .status("FAILED")
@@ -424,6 +432,7 @@ public class AuthService {
                         .phone(user.getPhone())
                         .role(user.getRole())
                         .status(user.getStatus())
+                        .passwordSet(Boolean.TRUE.equals(user.getPasswordSet()))
                         .build())
                 .build();
     }

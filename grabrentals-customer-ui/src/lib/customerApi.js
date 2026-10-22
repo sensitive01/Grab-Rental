@@ -34,6 +34,51 @@ export const customerApi = {
   },
 
   /**
+   * Get customer saved addresses (Home, Office, Other)
+   */
+  async getAddresses() {
+    const res = await axiosClient.get("/api/customer/addresses");
+    return res.data;
+  },
+
+  /**
+   * Add a new saved address
+   * @param {Object} data - { tag, addressLine, city, pincode, landmark, isDefault }
+   */
+  async addAddress(data) {
+    const res = await axiosClient.post("/api/customer/addresses", data);
+    return res.data;
+  },
+
+  /**
+   * Update an existing address
+   * @param {string} id 
+   * @param {Object} data 
+   */
+  async updateAddress(id, data) {
+    const res = await axiosClient.put(`/api/customer/addresses/${id}`, data);
+    return res.data;
+  },
+
+  /**
+   * Delete an existing address
+   * @param {string} id 
+   */
+  async deleteAddress(id) {
+    const res = await axiosClient.delete(`/api/customer/addresses/${id}`);
+    return res.data;
+  },
+
+  /**
+   * Set address as primary default
+   * @param {string} id 
+   */
+  async setDefaultAddress(id) {
+    const res = await axiosClient.put(`/api/customer/addresses/${id}/default`);
+    return res.data;
+  },
+
+  /**
    * Get active vehicle models configured in admin
    */
   async getVehicleModels() {

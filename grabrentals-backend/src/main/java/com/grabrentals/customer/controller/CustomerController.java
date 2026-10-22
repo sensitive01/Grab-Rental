@@ -34,4 +34,43 @@ public class CustomerController {
         com.grabrentals.customer.dto.CustomerProfileResponse response = customerService.updateProfile(request);
         return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", response));
     }
+
+    @PostMapping("/pin/set")
+    public ResponseEntity<ApiResponse<Void>> setPin(@Valid @RequestBody com.grabrentals.customer.dto.SetPinRequest request) {
+        customerService.setPin(request);
+        return ResponseEntity.ok(ApiResponse.success("6-digit PIN set successfully", null));
+    }
+
+    @GetMapping("/addresses")
+    public ResponseEntity<ApiResponse<java.util.List<com.grabrentals.customer.dto.CustomerAddressResponse>>> getAddresses() {
+        java.util.List<com.grabrentals.customer.dto.CustomerAddressResponse> responses = customerService.getAddresses();
+        return ResponseEntity.ok(ApiResponse.success("Customer saved addresses retrieved successfully", responses));
+    }
+
+    @PostMapping("/addresses")
+    public ResponseEntity<ApiResponse<com.grabrentals.customer.dto.CustomerAddressResponse>> addAddress(
+            @Valid @RequestBody com.grabrentals.customer.dto.CustomerAddressRequest request) {
+        com.grabrentals.customer.dto.CustomerAddressResponse response = customerService.addAddress(request);
+        return ResponseEntity.ok(ApiResponse.success("Address added successfully", response));
+    }
+
+    @PutMapping("/addresses/{id}")
+    public ResponseEntity<ApiResponse<com.grabrentals.customer.dto.CustomerAddressResponse>> updateAddress(
+            @PathVariable java.util.UUID id,
+            @Valid @RequestBody com.grabrentals.customer.dto.CustomerAddressRequest request) {
+        com.grabrentals.customer.dto.CustomerAddressResponse response = customerService.updateAddress(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Address updated successfully", response));
+    }
+
+    @DeleteMapping("/addresses/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteAddress(@PathVariable java.util.UUID id) {
+        customerService.deleteAddress(id);
+        return ResponseEntity.ok(ApiResponse.success("Address deleted successfully", null));
+    }
+
+    @PutMapping("/addresses/{id}/default")
+    public ResponseEntity<ApiResponse<com.grabrentals.customer.dto.CustomerAddressResponse>> setDefaultAddress(@PathVariable java.util.UUID id) {
+        com.grabrentals.customer.dto.CustomerAddressResponse response = customerService.setDefaultAddress(id);
+        return ResponseEntity.ok(ApiResponse.success("Default address updated successfully", response));
+    }
 }

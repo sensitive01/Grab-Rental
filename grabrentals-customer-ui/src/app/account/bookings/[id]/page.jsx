@@ -399,15 +399,28 @@ export default function TripDetailsTrackingPage({ params }) {
   const isCancelledState = booking.status === "CANCELLED";
   const { modelName, carImage, categoryLabel } = resolveCarModelAndImage(booking);
 
+  const isRoundTripBooking = booking?.tripType === "ROUND_TRIP" || (booking?.tripType || "").toLowerCase().includes("round");
+  let tripDurationDays = 1;
+  if (isRoundTripBooking && booking.pickupDateTime && (booking.returnDateTime || parsed.dropDate)) {
+    try {
+      const d1 = new Date(booking.pickupDateTime);
+      const d2 = new Date(booking.returnDateTime || parsed.dropDate);
+      if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+        const diff = Math.round((new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime() - new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime()) / (1000 * 3600 * 24));
+        tripDurationDays = Math.max(1, diff + 1);
+      }
+    } catch {}
+  }
+
   const statusStepMap = {
-    PENDING_PAYMENT_VERIFICATION: 2,
-    PENDING_ALLOCATION: 3,
-    REASSIGN_REQUIRED: 3,
-    ASSIGNED_TO_VENDOR: 4,
-    CONFIRMED: 5,
-    ON_THE_WAY: 5,
-    IN_TRANSIT: 5,
-    COMPLETED: 6,
+    PENDING_PAYMENT_VERIFICATION: 1,
+    PENDING_ALLOCATION: 1,
+    REASSIGN_REQUIRED: 1,
+    ASSIGNED_TO_VENDOR: 2,
+    CONFIRMED: 2,
+    ON_THE_WAY: 2,
+    IN_TRANSIT: 2,
+    COMPLETED: 3,
     CANCELLED: 0
   };
   const currentStep = statusStepMap[booking.status] || 1;
@@ -558,22 +571,19 @@ export default function TripDetailsTrackingPage({ params }) {
               Live Trip Progression
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 relative">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
               {[
                 { stepNum: 1, label: "Booking Placed", desc: "Order recorded" },
-                { stepNum: 2, label: "Verifying Payment", desc: "Payment proof review" },
-                { stepNum: 3, label: "Vendor Dispatched", desc: "Assigned to vendor" },
-                { stepNum: 4, label: "Ride Confirmed", desc: "Driver & OTP issued" },
-                { stepNum: 5, label: "In Transit", desc: "On-road telemetry" },
-                { stepNum: 6, label: "Completed", desc: "Drop-off & invoice" },
+                { stepNum: 2, label: "Ride Confirmed", desc: "Driver & OTP issued" },
+                { stepNum: 3, label: "Completed", desc: "Drop-off & invoice" },
               ].map((s) => {
-                const totalSteps = 6;
+                const totalSteps = 3;
                 const isDone = currentStep > s.stepNum || (currentStep === totalSteps && s.stepNum === totalSteps);
                 const isCurrent = currentStep === s.stepNum && currentStep !== totalSteps;
 
                 return (
                   <div key={s.stepNum} className="flex sm:flex-col items-center sm:text-center gap-3 sm:gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
                       isCurrent
                         ? "bg-[#0082fe] text-white ring-4 ring-blue-100 shadow-sm animate-pulse"
                         : isDone
@@ -583,7 +593,7 @@ export default function TripDetailsTrackingPage({ params }) {
                       {isDone ? "✓" : s.stepNum}
                     </div>
                     <div>
-                      <h4 className={`text-xs font-extrabold ${isCurrent ? "text-[#0082fe]" : "text-slate-900"}`}>
+                      <h4 className={`text-xs sm:text-sm font-extrabold ${isCurrent ? "text-[#0082fe]" : "text-slate-900"}`}>
                         {s.label}
                       </h4>
                       <p className="text-[10px] text-slate-400">{s.desc}</p>
@@ -634,8 +644,10 @@ export default function TripDetailsTrackingPage({ params }) {
                     <span className="font-extrabold text-emerald-800 text-[10px] uppercase tracking-wider">
                       Pickup Point • {booking.pickupCity}
                     </span>
-                    <p className="font-bold text-slate-900 text-sm leading-snug">{booking.pickupAddress}</p>
-                    <p className="text-[11px] text-slate-500 font-medium">Pickup Date & Time: {dateStr} at {timeStr}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Pickup Date & Time: {dateStr} at {timeStr}
+                      {returnDateTimeObj?.dateStr ? ` • Scheduled Return: ${returnDateTimeObj.dateStr}` : ""}
+                    </p>
                   </div>
                 </div>
 
@@ -669,26 +681,6 @@ export default function TripDetailsTrackingPage({ params }) {
                     <p className="text-[11px] text-slate-500 font-medium">Direct destination delivery</p>
                   </div>
                 </div>
-
-                {/* Return Trip Leg if Round Trip */}
-                {booking.tripType === "ROUND_TRIP" && (
-                  <div className="flex items-start gap-3 pt-2">
-                    <div className="w-6 h-6 rounded-full bg-teal-50 border border-teal-300 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <span className="font-extrabold text-teal-800 text-[10px] uppercase tracking-wider">
-                        Round Trip Return • {booking.pickupCity}
-                      </span>
-                      <p className="font-bold text-slate-900 text-sm leading-snug">{booking.pickupAddress}</p>
-                      {returnDateTimeObj?.dateStr && (
-                        <p className="text-[11px] text-teal-700 font-bold">
-                          Scheduled Return: {returnDateTimeObj.dateStr}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Route specifications strip */}
@@ -928,7 +920,7 @@ export default function TripDetailsTrackingPage({ params }) {
               <div className="space-y-3 text-xs text-slate-600">
                 {/* Base fare */}
                 <div className="flex justify-between items-center">
-                  <span>Base Outstation Fare {parsed.distanceKm > 0 ? `(${parsed.distanceKm} km)` : ""}</span>
+                  <span>Base Outstation Fare{isRoundTripBooking ? ` (${tripDurationDays} ${tripDurationDays === 1 ? "Day" : "Days"})` : ""}</span>
                   <span className="font-bold text-slate-900">₹{parsed.baseFare.toLocaleString()}</span>
                 </div>
 

@@ -31,5 +31,6 @@ public class LoginResponse {
         private String phone;
         private Role role;
         private com.grabrentals.user.entity.UserStatus status;
+        private Boolean passwordSet;
     }
 }

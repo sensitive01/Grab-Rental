@@ -25,10 +25,15 @@ public class CustomerProfileResponse {
     private String alternatePhone;
     private String city;
     private String address;
+    private java.util.List<CustomerAddressResponse> addresses;
     private Instant createdAt;
     private Instant updatedAt;
 
     public static CustomerProfileResponse of(User user, CustomerProfile profile) {
+        return of(user, profile, null);
+    }
+
+    public static CustomerProfileResponse of(User user, CustomerProfile profile, java.util.List<CustomerAddressResponse> addresses) {
         String displayName = (profile != null && profile.getFullName() != null && !profile.getFullName().isBlank())
                 ? profile.getFullName()
                 : (user.getName() != null && !user.getName().equals("Customer") ? user.getName() : "Customer");
@@ -45,6 +50,7 @@ public class CustomerProfileResponse {
                 .alternatePhone(profile != null ? profile.getAlternatePhone() : null)
                 .city(profile != null ? profile.getCity() : null)
                 .address(profile != null ? profile.getAddress() : null)
+                .addresses(addresses)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(profile != null ? profile.getUpdatedAt() : user.getUpdatedAt())
                 .build();

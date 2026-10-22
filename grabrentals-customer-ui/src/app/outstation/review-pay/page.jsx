@@ -10,6 +10,7 @@ import {
   Wallet,
   Clock,
   ChevronRight,
+  ChevronDown,
   CheckCircle2,
   Smartphone,
   Loader2,
@@ -161,6 +162,9 @@ export default function ReviewPayPage() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapTarget, setMapTarget] = useState("pickup");
   const [liveToll, setLiveToll] = useState(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedSavedAddressId, setSelectedSavedAddressId] = useState("");
+  const [autofilledBadge, setAutofilledBadge] = useState("");
 
   // Inline OTP Auth Modal states
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -258,6 +262,18 @@ export default function ReviewPayPage() {
               const formatted = digits.length > 10 ? digits.slice(-10) : digits;
               setPassengerPhone((prev) => (prev ? prev : formatted));
             }
+            if (prof.addresses && Array.isArray(prof.addresses) && prof.addresses.length > 0) {
+              setSavedAddresses(prof.addresses);
+            }
+          }
+
+          try {
+            const addrRes = await customerApi.getAddresses();
+            if (addrRes?.data && Array.isArray(addrRes.data)) {
+              setSavedAddresses(addrRes.data);
+            }
+          } catch (addrErr) {
+            console.warn("Could not fetch customer addresses:", addrErr);
           }
         }
       } catch (err) {
@@ -457,6 +473,42 @@ export default function ReviewPayPage() {
     }
   }, []);
 
+  const handleSelectSavedAddress = (addressId) => {
+    if (!addressId) {
+      setSelectedSavedAddressId("");
+      return;
+    }
+    setSelectedSavedAddressId(addressId);
+    const addr = savedAddresses.find((a) => String(a.id) === String(addressId));
+    if (!addr) return;
+
+    if (addr.addressLine) {
+      setPickupDoorNo(addr.addressLine);
+    }
+    if (addr.area) {
+      setPickupArea(addr.area);
+    }
+    if (addr.city) {
+      setPickupCityName(addr.city);
+      const coords = findCityCoordinates(addr.city);
+      if (coords) setPickupCoords(coords);
+    }
+    if (addr.state) {
+      setPickupStateName(addr.state);
+    }
+    if (addr.pincode) {
+      setPickupPincode(addr.pincode);
+    }
+    if (addr.landmark) {
+      setPickupLandmark(addr.landmark);
+    }
+
+    const full = [addr.addressLine, addr.area, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ");
+    setPickupAddress(full);
+    setAutofilledBadge(addr.tag || "Saved Address");
+    setTimeout(() => setAutofilledBadge(""), 4000);
+  };
+
   const isLocal = bookingConfig?.trip?.serviceType === "LOCAL" || (bookingConfig?.trip?.to && bookingConfig.trip.to.toLowerCase().includes("hr"));
   const isAirport = bookingConfig?.trip?.serviceType === "AIRPORT" || (bookingConfig?.trip?.tripType && bookingConfig.trip.tripType.toLowerCase().includes("airport"));
   const isRoundTrip = !isLocal && !isAirport && (bookingConfig?.trip?.tripType || "").toLowerCase().includes("round");
@@ -582,6 +634,17 @@ export default function ReviewPayPage() {
 
   // Final Discounted Base Fare
   const baseFare = Math.max(0, standardBaseFare - tariffDiscountAmount);
+
+  // Dynamic Base Fare label & duration
+  const baseFareTitle = isLocal
+    ? "Base Local Fare"
+    : isAirport
+    ? "Base Airport Fare"
+    : "Base Outstation Fare";
+
+  const durationBracket = isRoundTripBooking && tripDays > 0
+    ? ` (${tripDays} ${tripDays === 1 ? "Day" : "Days"})`
+    : "";
 
   // Dynamic percentages, flat amounts & add-on pricing from Backend / Settings
   const gstType = pricingConfig.gstType || "PERCENTAGE";
@@ -1403,18 +1466,51 @@ export default function ReviewPayPage() {
                     <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
                       {t("pickup_address") || "Pickup Address & Doorstep Details"} *
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMapTarget("pickup");
-                        setIsMapModalOpen(true);
-                      }}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#0082fe] hover:text-[#006ed6] hover:underline cursor-pointer group"
-                    >
-                      <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
-                      <span>{t("choose_from_location") || "Choose on Map"}</span>
-                    </button>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                      {/* CHOOSE ON MAP BUTTON */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMapTarget("pickup");
+                          setIsMapModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#0082fe] hover:text-[#006ed6] hover:underline cursor-pointer group whitespace-nowrap"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
+                        <span>{t("choose_from_location") || "Choose on Map"}</span>
+                      </button>
+
+                      {/* SAVED ADDRESS DROPDOWN (Right side of Choose on Map) */}
+                      {savedAddresses && savedAddresses.length > 0 && (
+                        <div className="relative inline-flex items-center">
+                          <select
+                            id="saved-pickup-address-dropdown"
+                            value={selectedSavedAddressId}
+                            onChange={(e) => handleSelectSavedAddress(e.target.value)}
+                            className="pl-2.5 pr-7 py-1.5 bg-blue-50/90 hover:bg-blue-100/80 border border-blue-200 hover:border-[#0082fe]/60 text-[#0082fe] text-xs font-bold rounded-lg cursor-pointer outline-none focus:ring-2 focus:ring-[#0082fe]/30 transition-all appearance-none shadow-2xs max-w-[190px] sm:max-w-[250px] truncate"
+                            title="Select saved address to autofill pickup details"
+                          >
+                            <option value="" className="text-slate-500 font-medium bg-white">
+                              📍 Saved Addresses ({savedAddresses.length})
+                            </option>
+                            {savedAddresses.map((addr) => (
+                              <option key={addr.id} value={addr.id} className="text-slate-800 font-medium bg-white">
+                                {addr.tag === "Home" ? "🏠 Home" : addr.tag === "Office" ? "🏢 Office" : `📍 ${addr.tag}`}: {addr.addressLine}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-2 w-3.5 h-3.5 text-[#0082fe] pointer-events-none" />
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {autofilledBadge && (
+                    <div className="mb-3 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200 shadow-2xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Autofilled from {autofilledBadge} address!</span>
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     {/* ROW 1: Manually entered: Building number / street name */}
@@ -1908,7 +2004,7 @@ export default function ReviewPayPage() {
               {/* Free Cancellation Banner */}
               <div className="px-5 py-2.5 bg-blue-50/90 border-b border-blue-100 text-blue-900 text-xs font-bold flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-[#0082fe] shrink-0" />
-                <span>Free cancellation till <strong className="text-blue-950 font-black">1 hr</strong> of departure</span>
+                <span>Cancel for <strong className="text-blue-950 font-black">FREE</strong> 1 hour before ride starts</span>
               </div>
 
               {/* Selected Vehicle Overview */}
@@ -1939,14 +2035,14 @@ export default function ReviewPayPage() {
                   {hasAdditionalKm ? (
                     <>
                       <div className="flex justify-between items-center">
-                        <span>Base Outstation Fare ({basePackageKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
+                        <span>{baseFareTitle}{durationBracket}</span>
                         <span className="text-slate-900 font-bold">
                           ₹{basePackageFare.toLocaleString()}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center text-slate-700">
-                        <span>Additional KMs ({additionalKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
+                        <span>Additional KMs ({additionalKm} km)</span>
                         <span className="text-slate-900 font-bold">
                           + ₹{additionalKmAmount.toLocaleString()}
                         </span>
@@ -1954,7 +2050,7 @@ export default function ReviewPayPage() {
                     </>
                   ) : (
                     <div className="flex justify-between items-center">
-                      <span>Base Outstation Fare ({distanceKm} km × ₹{Number(perKmRate).toFixed(1)}/km)</span>
+                      <span>{baseFareTitle}{durationBracket}</span>
                       <span className="text-slate-900 font-bold">
                         ₹{standardBaseFare.toLocaleString()}
                       </span>
