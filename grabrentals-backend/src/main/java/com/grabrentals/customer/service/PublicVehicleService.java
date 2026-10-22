@@ -286,7 +286,7 @@ public class PublicVehicleService {
                 BigDecimal discPct = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
                 PublicVehicleCardDto card = buildCategoryCard(
                         cardId,
-                        model + " or Equivalent",
+                        model,
                         typeTitle + " • AC • " + seats + " Seats",
                         category,
                         rating,

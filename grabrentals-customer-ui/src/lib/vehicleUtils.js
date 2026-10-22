@@ -139,13 +139,17 @@ export function resolveCarModelAndImage(booking, modelsList = adminModelsCache) 
 }
 
 /**
- * Formats a vehicle format:
- * - WagonR, Swift or Similar
- * - Dzire, Etios, or Similar
- * - Crysta, Hycross or Similar
- * - Ertiga, Xylo or Similar
+ * Formats vehicle title: displays the exact model name configured in Admin.
+ * If rawTitle is provided, it returns it directly as configured.
  */
 export function formatVehicleSavaariTitle(rawTitle = "", category = "", vehicleType = "") {
+  // Return exact name configured in Admin if present:
+  if (rawTitle && typeof rawTitle === "string" && rawTitle.trim()) {
+    return rawTitle.replace(/\s+or\s+Equivalent$/i, "").trim();
+  }
+
+  /*
+  // --- PREVIOUS HARDCODED LOGIC (Preserved as comment) ---
   let cleaned = (rawTitle || "").replace(/\s+or\s+(Equivalent|Similar)/i, "").trim();
   const lower = cleaned.toLowerCase();
 
@@ -213,8 +217,9 @@ export function formatVehicleSavaariTitle(rawTitle = "", category = "", vehicleT
   if (cleaned && !genericTerms.includes(lower)) {
     return `${cleaned} or Similar`;
   }
+  */
 
-  // Fallback to Category-level bundled titles
+  // Fallback to Category-level bundled titles if no title provided
   const combined = `${rawTitle || ""} ${category || ""} ${vehicleType || ""}`.toLowerCase();
   if (combined.includes("hycross") || combined.includes("crysta") || combined.includes("innova")) {
     return "Crysta, Hycross or Similar";
@@ -235,5 +240,5 @@ export function formatVehicleSavaariTitle(rawTitle = "", category = "", vehicleT
     return "Mini Bus, Coach or Similar";
   }
 
-  return rawTitle ? `${rawTitle} or Similar` : "WagonR, Swift or Similar";
+  return category || vehicleType || "Fleet Vehicle";
 }
