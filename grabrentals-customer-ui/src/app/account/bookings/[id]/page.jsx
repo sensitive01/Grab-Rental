@@ -418,9 +418,9 @@ export default function TripDetailsTrackingPage({ params }) {
     REASSIGN_REQUIRED: 1,
     ASSIGNED_TO_VENDOR: 2,
     CONFIRMED: 2,
-    ON_THE_WAY: 2,
-    IN_TRANSIT: 2,
-    COMPLETED: 3,
+    ON_THE_WAY: 3,
+    IN_TRANSIT: 3,
+    COMPLETED: 4,
     CANCELLED: 0
   };
   const currentStep = statusStepMap[booking.status] || 1;
@@ -571,13 +571,14 @@ export default function TripDetailsTrackingPage({ params }) {
               Live Trip Progression
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 relative">
               {[
                 { stepNum: 1, label: "Booking Placed", desc: "Order recorded" },
-                { stepNum: 2, label: "Ride Confirmed", desc: "Driver & OTP issued" },
-                { stepNum: 3, label: "Completed", desc: "Drop-off & invoice" },
+                { stepNum: 2, label: "Vehicle Confirmed", desc: "Cab & driver assigned" },
+                { stepNum: 3, label: "Ride Started", desc: "In transit with OTP" },
+                { stepNum: 4, label: "Journey Completed", desc: "Drop-off & invoice" },
               ].map((s) => {
-                const totalSteps = 3;
+                const totalSteps = 4;
                 const isDone = currentStep > s.stepNum || (currentStep === totalSteps && s.stepNum === totalSteps);
                 const isCurrent = currentStep === s.stepNum && currentStep !== totalSteps;
 

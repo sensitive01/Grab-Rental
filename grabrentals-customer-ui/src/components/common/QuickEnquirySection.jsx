@@ -206,36 +206,36 @@ export default function QuickEnquirySection() {
 
           {/* 3. Right Section: Enquiry Form */}
           <div className="md:col-span-2 lg:col-span-4">
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-lg shadow-slate-100 p-5 sm:p-6">
+            <div className="bg-[#0082fe] rounded-2xl border border-blue-400/50 shadow-xl shadow-blue-500/20 p-5 sm:p-6 text-white">
               
               {submitted ? (
                 <div className="py-8 text-center space-y-4">
-                  <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
-                    <CheckCircle2 className="w-9 h-9" />
+                  <div className="w-16 h-16 bg-white/20 text-white rounded-full flex items-center justify-center mx-auto shadow-sm">
+                    <CheckCircle2 className="w-9 h-9 text-emerald-300" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-slate-900">Enquiry Received!</h3>
-                    <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
+                    <h3 className="text-xl font-bold text-white">Enquiry Received!</h3>
+                    <p className="text-xs sm:text-sm text-blue-100 max-w-md mx-auto">
                       Thank you! Our travel consultant is reviewing your requirements and will call you on your phone number shortly.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSubmitted(false)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md cursor-pointer mt-2"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-blue-50 text-[#0082fe] text-xs font-extrabold transition-all shadow-md cursor-pointer mt-2"
                   >
                     Send Another Enquiry
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-3.5">
-                  <div className="border-b border-slate-100 pb-2.5">
-                    <h3 className="text-base font-bold text-slate-900">Send an Enquiry</h3>
-                    <p className="text-xs text-slate-500">Fill in your basic details and trip requirement.</p>
+                  <div className="border-b border-blue-400/40 pb-2.5">
+                    <h3 className="text-base font-extrabold text-white">Send an Enquiry</h3>
+                    <p className="text-xs text-blue-100">Fill in your basic details and trip requirement.</p>
                   </div>
 
                   {errorMessage && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-600/90 text-white text-xs font-semibold">
                       <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{errorMessage}</span>
                     </div>
@@ -245,8 +245,8 @@ export default function QuickEnquirySection() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Name Field */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Your Name <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-white mb-1">
+                        Your Name <span className="text-yellow-300 font-extrabold">*</span>
                       </label>
                       <input
                         type="text"
@@ -255,17 +255,17 @@ export default function QuickEnquirySection() {
                         onChange={handleChange}
                         placeholder="e.g. Rahul Sharma"
                         required
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-brand-primary focus:ring-2 focus:ring-blue-100 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all outline-none"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-transparent focus:border-white focus:ring-2 focus:ring-white/50 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all outline-none shadow-xs"
                       />
                     </div>
 
                     {/* Phone Field */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Phone Number <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-white mb-1">
+                        Phone Number <span className="text-yellow-300 font-extrabold">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 select-none">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-600 select-none">
                           +91
                         </span>
                         <input
@@ -275,7 +275,7 @@ export default function QuickEnquirySection() {
                           onChange={handleChange}
                           placeholder="10-digit mobile"
                           required
-                          className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-300 focus:border-brand-primary focus:ring-2 focus:ring-blue-100 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all outline-none"
+                          className="w-full pl-10 pr-3 py-2 rounded-xl bg-white border border-transparent focus:border-white focus:ring-2 focus:ring-white/50 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all outline-none shadow-xs"
                         />
                       </div>
                     </div>
@@ -283,8 +283,8 @@ export default function QuickEnquirySection() {
 
                   {/* Requirements (Text Area) */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Requirements <span className="text-red-500">*</span>
+                    <label className="block text-xs font-bold text-white mb-1">
+                      Requirements <span className="text-yellow-300 font-extrabold">*</span>
                     </label>
                     <textarea
                       name="requirements"
@@ -293,7 +293,7 @@ export default function QuickEnquirySection() {
                       onChange={handleChange}
                       placeholder="Pickup city, destination, dates, preferred vehicle (Innova Crysta, Sedan, Tempo Traveller), etc."
                       required
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-brand-primary focus:ring-2 focus:ring-blue-100 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all outline-none resize-none"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-transparent focus:border-white focus:ring-2 focus:ring-white/50 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all outline-none resize-none shadow-xs"
                     />
                   </div>
 
@@ -301,22 +301,22 @@ export default function QuickEnquirySection() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-brand-primary to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-500/25 transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-900 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
                         <span>Submitting Enquiry...</span>
                       </>
                     ) : (
                       <>
                         <span>Submit Enquiry</span>
-                        <Send className="w-3.5 h-3.5" />
+                        <Send className="w-3.5 h-3.5 text-sky-400 group-hover:translate-x-0.5 transition-transform" />
                       </>
                     )}
                   </button>
 
-                  <p className="text-[10px] text-center text-slate-400 pt-0.5">
+                  <p className="text-[10px] text-center text-blue-100 pt-0.5">
                     🔒 Your details are safe with us. No spam, only direct travel assistance.
                   </p>
                 </form>

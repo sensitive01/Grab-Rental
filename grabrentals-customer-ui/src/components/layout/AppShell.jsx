@@ -200,44 +200,44 @@ export default function AppShell({ children }) {
     <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-slate-50">
       
       {/* A. Top Trust & Guarantee Ticker with Language Options */}
-      <div className="bg-brand-navy-dark text-slate-300 text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-slate-800/80">
+      <div className="bg-[#0082fe] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-blue-600/70 shadow-xs">
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
           
           {/* Trust Guarantees on Desktop, Helpline on Mobile */}
-          <div className="flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none">
+          <div className="flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none text-white/95">
             {/* Mobile Quick Helpline */}
             <a 
               href="tel:+919071100200" 
-              className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors"
+              className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-white hover:text-white/80 transition-colors"
             >
-              <Phone className="w-3 h-3 text-sky-400" />
+              <Phone className="w-3 h-3 text-white" />
               <span>+91 90711 00200</span>
             </a>
 
             <div className="hidden md:flex items-center gap-1.5 shrink-0">
-              <ShieldCheck className="w-3.5 h-3.5 text-brand-emerald shrink-0" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
               <span>{t("zero_cancellation")}</span>
             </div>
             <div className="hidden md:flex items-center gap-1.5 shrink-0">
-              <Star className="w-3.5 h-3.5 text-brand-amber shrink-0" />
+              <Star className="w-3.5 h-3.5 text-yellow-300 shrink-0 fill-yellow-300" />
               <span>{t("expert_chauffeurs")}</span>
             </div>
             <div className="hidden lg:flex items-center gap-1.5 shrink-0">
-              <BadgeCheck className="w-3.5 h-3.5 text-brand-sky shrink-0" />
+              <BadgeCheck className="w-3.5 h-3.5 text-sky-200 shrink-0" />
               <span>{t("all_inclusive")}</span>
             </div>
             <div className="hidden xl:flex items-center gap-1.5 shrink-0">
-              <CheckCircle className="w-3.5 h-3.5 text-brand-emerald shrink-0" />
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
               <span>{t("sanitized_fleet")}</span>
             </div>
             <div className="hidden 2xl:flex items-center gap-1.5 shrink-0">
-              <Shield className="w-3.5 h-3.5 text-brand-amber shrink-0" />
+              <Shield className="w-3.5 h-3.5 text-yellow-300 shrink-0" />
               <span>{t("executive_standards")}</span>
             </div>
           </div>
 
           {/* Top Bar Language Selector */}
-          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold shrink-0 ml-auto pl-2 sm:pl-4 border-l border-slate-700/60 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold shrink-0 ml-auto pl-2 sm:pl-4 border-l border-white/30 whitespace-nowrap">
             {TOP_LANGUAGES.map((lang, idx) => {
               const isActive = language === lang.code;
               return (
@@ -247,15 +247,15 @@ export default function AppShell({ children }) {
                     onClick={() => setLanguage(lang.code)}
                     className={`transition-all cursor-pointer ${
                       isActive
-                        ? "text-brand-amber font-extrabold underline underline-offset-4 decoration-2"
-                        : "text-white/90 hover:text-sky-300 font-semibold"
+                        ? "text-yellow-300 font-black underline underline-offset-4 decoration-2"
+                        : "text-white/90 hover:text-white font-semibold"
                     }`}
                     title={lang.name}
                   >
                     {lang.label}
                   </button>
                   {idx < TOP_LANGUAGES.length - 1 && (
-                    <span className="text-slate-500 font-bold select-none text-[10px]">|</span>
+                    <span className="text-white/40 font-bold select-none text-[10px]">|</span>
                   )}
                 </span>
               );
@@ -395,15 +395,15 @@ export default function AppShell({ children }) {
               <div className="relative">
                 <button 
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-1 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  className="flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] hover:bg-[#006ed6] text-white p-1 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
-                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-[#0082fe] text-white font-black flex items-center justify-center text-[11px] sm:text-[10px]">
+                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-white/20 text-white font-black flex items-center justify-center text-[11px] sm:text-[10px]">
                     {(currentUser.name && currentUser.name !== "Customer" ? currentUser.name : t("customer_badge") || "Customer").charAt(0).toUpperCase()}
                   </div>
                   <span className="hidden sm:inline max-w-[110px] truncate">
                     {currentUser.name && currentUser.name !== "Customer" ? currentUser.name : currentUser.phone || t("customer_badge") || "Customer"}
                   </span>
-                  <ChevronDown className={`hidden sm:block w-3 h-3 text-slate-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`hidden sm:block w-3 h-3 text-white/80 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {userMenuOpen && (
@@ -467,9 +467,9 @@ export default function AppShell({ children }) {
           ) : (
             <Link 
               href="/login"
-              className="flex items-center gap-1.5 sm:gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white p-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold tracking-wide transition-all shadow-sm group"
+              className="flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] hover:bg-[#006ed6] text-white p-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold tracking-wide transition-all shadow-sm hover:shadow-md group"
             >
-              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#0082fe]/20 flex items-center justify-center text-[#0082fe]">
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/20 flex items-center justify-center text-white">
                 <User className="w-3.5 h-3.5" />
               </div>
               <span className="hidden sm:inline">{t("sign_in_register") || "SignIn"}</span>
@@ -578,7 +578,7 @@ export default function AppShell({ children }) {
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="px-3.5 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-sky-300 text-xs font-black shadow-xs shrink-0"
+                    className="px-3.5 py-1.5 rounded-full bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-black shadow-xs shrink-0"
                   >
                     Sign In
                   </Link>
@@ -790,7 +790,7 @@ export default function AppShell({ children }) {
       {shouldShowEnquiry() && <QuickEnquirySection />}
 
       {/* C. Enterprise Multi-Column Footer */}
-      <footer className="bg-brand-navy-dark text-slate-400 pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-slate-900">
+      <footer className="bg-[#0082fe] text-white pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-blue-500">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           
           {/* Column 1 */}
@@ -799,11 +799,11 @@ export default function AppShell({ children }) {
               <img
                 src="/images/brand-logo.png"
                 alt="Grab Rentals"
-                className="h-10 w-auto object-contain drop-shadow-sm"
+                className="h-10 w-auto object-contain drop-shadow-sm bg-white/10 p-1 rounded-lg"
               />
               <div className="flex flex-col w-fit">
                 <span className="font-black text-lg text-white leading-tight whitespace-nowrap">GRAB RENTALS</span>
-                <span className="flex justify-between w-full text-[8px] font-bold text-sky-400 tracking-wider uppercase select-none">
+                <span className="flex justify-between w-full text-[8px] font-bold text-yellow-300 tracking-wider uppercase select-none">
                   <span>GRAB</span>
                   <span>COMFORT</span>
                   <span>IN</span>
@@ -812,62 +812,71 @@ export default function AppShell({ children }) {
                 </span>
               </div>
             </div>
-            <p className="text-sm leading-relaxed mt-2 text-slate-400">
+            <p className="text-sm leading-relaxed mt-2 text-white/90">
               {t("footer_tagline") || "Grab Rentals — India's dedicated premier outstation, local, and group mobility chauffeur network with guaranteed fixed rates and sanitized fleet."}
             </p>
-            <div className="inline-flex items-center gap-2 mt-2 border border-slate-800 bg-slate-900 px-3 py-1.5 rounded w-max text-brand-emerald">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="inline-flex items-center gap-2 mt-2 border border-white/30 bg-white/15 px-3 py-1.5 rounded w-max text-white">
+              <ShieldCheck className="w-4 h-4 text-emerald-300" />
               <span className="text-xs font-bold uppercase tracking-wider">ISO 9001:2015 Certified Fleet</span>
             </div>
           </div>
 
           {/* Column 2 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("top_routes") || "Intercity Routes"}</h3>
-            <ul className="space-y-2.5 text-sm">
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Delhi to Agra</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Bangalore to Ooty</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Mumbai to Pune</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Chennai to Pondicherry</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Chandigarh to Manali</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Hyderabad to Vijayawada</Link></li>
+            <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("top_routes") || "Intercity Routes"}</h3>
+            <ul className="space-y-2.5 text-sm text-white/90">
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Delhi to Agra</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Bangalore to Ooty</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Mumbai to Pune</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chennai to Pondicherry</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chandigarh to Manali</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Hyderabad to Vijayawada</Link></li>
             </ul>
           </div>
 
           {/* Column 3 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("our_fleet") || "Fleet Portfolio"}</h3>
-            <ul className="space-y-2.5 text-sm">
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Executive Sedan (Dzire, Etios)</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Maruti Ertiga 6-Seater</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Innova Crysta Premium</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">12-Seater Luxury Tempo</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">26-Seater Mini Bus</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">45-Seater Volvo</Link></li>
+            <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("our_fleet") || "Fleet Portfolio"}</h3>
+            <ul className="space-y-2.5 text-sm text-white/90">
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Executive Sedan (Dzire, Etios)</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Maruti Ertiga 6-Seater</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Innova Crysta Premium</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">12-Seater Luxury Tempo</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">26-Seater Mini Bus</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">45-Seater Volvo</Link></li>
             </ul>
           </div>
 
           {/* Column 4 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("corporate_events") || "For Partners & B2B"}</h3>
-            <ul className="space-y-2.5 text-sm">
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Attach Taxi & Fleet</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Travel Agent Partner Login</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Corporate Travel Desk</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Hotel Concierge</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Driver Safety Protocol</Link></li>
-              <li><Link href="/" className="hover:text-brand-amber transition-colors">Automated GST Invoicing</Link></li>
+            <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("corporate_events") || "For Partners & B2B"}</h3>
+            <ul className="space-y-2.5 text-sm text-white/90">
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Attach Taxi & Fleet</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Travel Agent Partner Login</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Corporate Travel Desk</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Hotel Concierge</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Driver Safety Protocol</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Automated GST Invoicing</Link></li>
             </ul>
           </div>
 
           {/* Column 5 */}
           <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide">{t("helpline_support") || "Contact & Trust"}</h3>
-            <ul className="space-y-3 text-sm">
-              <li><a href="tel:+919071100200" className="flex items-center gap-2 text-white font-medium hover:text-brand-amber transition-colors"><Phone className="w-4 h-4 text-brand-orange" /> +91 90711 00200</a><span className="block text-xs text-slate-500 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span></li>
-              <li><a href="mailto:info@grabrentals.in" className="hover:text-brand-amber transition-colors ml-6">info@grabrentals.in</a></li>
-              <li className="flex items-start gap-2 mt-4 text-slate-400">
-                <Navigation className="w-4 h-4 text-brand-sky mt-1 shrink-0" />
+            <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("helpline_support") || "Contact & Trust"}</h3>
+            <ul className="space-y-3 text-sm text-white/90">
+              <li>
+                <a href="tel:+919071100200" className="flex items-center gap-2 text-white font-bold hover:text-yellow-300 transition-colors">
+                  <Phone className="w-4 h-4 text-yellow-300" /> +91 90711 00200
+                </a>
+                <span className="block text-xs text-blue-100 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span>
+              </li>
+              <li>
+                <a href="mailto:info@grabrentals.in" className="hover:text-yellow-300 hover:underline transition-colors ml-6">
+                  info@grabrentals.in
+                </a>
+              </li>
+              <li className="flex items-start gap-2 mt-4 text-white/90">
+                <Navigation className="w-4 h-4 text-yellow-300 mt-1 shrink-0" />
                 <span>Anjananagar, Bangalore, Karnataka</span>
               </li>
             </ul>
@@ -875,26 +884,26 @@ export default function AppShell({ children }) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="max-w-7xl mx-auto pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3">
+        <div className="max-w-7xl mx-auto pt-6 border-t border-blue-400/40 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-white/85 flex flex-wrap items-center gap-3">
             <span>Copyright @ {new Date().getFullYear()} Grab Rentals. All rights reserved.</span>
             <span className="hidden md:inline">|</span>
-            <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/privacy-policy" className="hover:text-yellow-300 hover:underline transition-colors">Privacy Policy</Link>
             <span className="hidden md:inline">|</span>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="/terms" className="hover:text-yellow-300 hover:underline transition-colors">Terms of Service</Link>
             <span className="hidden md:inline">|</span>
-            <Link href="/refund-policy" className="hover:text-white transition-colors">Cancellation & Refund Policy</Link>
+            <Link href="/refund-policy" className="hover:text-yellow-300 hover:underline transition-colors">Cancellation & Refund Policy</Link>
             <span className="hidden md:inline">|</span>
-            <Link href="/support" className="hover:text-white transition-colors">Customer Support</Link>
+            <Link href="/support" className="hover:text-yellow-300 hover:underline transition-colors">Customer Support</Link>
           </div>
           
-          <div className="text-xs text-slate-400 flex items-center">
+          <div className="text-xs text-white/90 flex items-center">
             <span>Powered by</span>
             <a 
               href="https://sensitive.co.in/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-sky-400 hover:text-sky-300 hover:underline font-bold ml-1 transition-colors"
+              className="text-yellow-300 hover:text-white hover:underline font-extrabold ml-1 transition-colors"
             >
               Sensitive Technologies
             </a>

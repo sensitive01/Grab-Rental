@@ -134,8 +134,8 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
 
         <div className="max-w-7xl w-full relative z-10 flex flex-col items-center text-center mt-1 sm:mt-2 md:mt-4">
-          <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-brand-navy-dark/80 backdrop-blur-md border border-slate-700/50 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-brand-amber mb-3 sm:mb-5 shadow-xl">
-            <Star className="w-3 h-3 text-brand-amber" /> {t("hero_badge") || "Grab Rentals"}
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] border border-blue-400/40 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-white mb-3 sm:mb-5 shadow-lg shadow-blue-900/30">
+            <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" /> {t("hero_badge") || "Grab Rentals"}
           </div>
 
           <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">

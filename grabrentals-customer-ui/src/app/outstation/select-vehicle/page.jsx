@@ -1384,7 +1384,7 @@ function SelectVehicleContent() {
                         <div>
                           <h4 
                             onClick={() => setSelectedVehicleForDetail(car)}
-                            className="font-bold text-slate-900 text-sm sm:text-base leading-tight line-clamp-2 hover:text-[#0082fe] cursor-pointer"
+                            className="font-bold text-[#0082fe] text-sm sm:text-base leading-tight line-clamp-2 hover:underline cursor-pointer"
                           >
                             {car.title}
                           </h4>
@@ -1404,7 +1404,7 @@ function SelectVehicleContent() {
                           <span className="text-slate-300">•</span>
                           <span className="flex items-center gap-1">
                             <Users className="w-3.5 h-3.5 text-slate-400" />
-                            {car.seatingCapacity} Seats
+                            {car.seatingCapacity} Seater AC Cab
                           </span>
                         </div>
 
@@ -1431,8 +1431,8 @@ function SelectVehicleContent() {
                               Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
                             </p>
                           ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
-                            <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 leading-tight mt-0.5">
-                              Estimated for <strong className="text-slate-800">{car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} km</strong> trip
+                            <p className="text-[10px] sm:text-[11px] font-medium text-slate-600 leading-tight mt-0.5">
+                              {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.perKmRate || 10)} / KM
                             </p>
                           ) : null}
                         </div>
@@ -1447,7 +1447,7 @@ function SelectVehicleContent() {
                         onClick={() => handleCarSelect(car)}
                         className="w-full sm:w-auto px-5 py-2 text-xs sm:text-sm font-bold text-white bg-[#0082fe] hover:bg-[#006ed6] rounded-xl shadow-2xs transition flex items-center justify-center gap-1 cursor-pointer"
                       >
-                        {t("select_car_button")}
+                        {t("book_now") || "Book Now"}
                       </button>
                     </div>
 
@@ -1481,7 +1481,7 @@ function SelectVehicleContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 
                             onClick={() => setSelectedVehicleForDetail(car)}
-                            className="font-bold text-slate-900 text-base hover:text-[#0082fe] cursor-pointer"
+                            className="font-bold text-[#0082fe] text-base hover:underline cursor-pointer"
                           >
                             {car.title}
                           </h4>
@@ -1493,7 +1493,7 @@ function SelectVehicleContent() {
                         <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600">
                           <span className="flex items-center gap-1"><Fuel className="w-3.5 h-3.5 text-slate-400" /> {car.fuelType}</span>
                           <span>•</span>
-                          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-slate-400" /> {car.seatingCapacity} Seats</span>
+                          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-slate-400" /> {car.seatingCapacity} Seater AC Cab</span>
                         </div>
 
                         {/* Location and Chauffeur
@@ -1530,8 +1530,8 @@ function SelectVehicleContent() {
                             Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
                           </p>
                         ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
-                          <p className="text-[11px] font-medium text-slate-500">
-                            Estimated for <strong className="text-slate-800">{car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} km</strong> trip
+                          <p className="text-[11px] font-medium text-slate-600">
+                            {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.perKmRate || 10)} / KM
                           </p>
                         ) : null}
                       </div>
@@ -1541,7 +1541,7 @@ function SelectVehicleContent() {
                           onClick={() => handleCarSelect(car)}
                           className="px-5 py-2 text-xs font-bold text-white bg-[#0082fe] hover:bg-[#006ed6] rounded-lg shadow-2xs transition cursor-pointer"
                         >
-                          {t("select_car_button")}
+                          {t("book_now") || "Book Now"}
                         </button>
                       </div>
                     </div>

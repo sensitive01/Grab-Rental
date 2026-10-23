@@ -43,7 +43,7 @@ export const adminApi = {
         if (typeof window !== "undefined") {
           try {
             localStorage.setItem(DB_USERS_CACHE_KEY, JSON.stringify(json.data));
-          } catch {}
+          } catch { }
         }
         return {
           success: true,
@@ -137,7 +137,7 @@ export const adminApi = {
             status: "SUCCESS",
             details: `Updated details for ${updated.name} (${updated.email})`,
           });
-        } catch {}
+        } catch { }
       }
 
       return {
@@ -170,7 +170,7 @@ export const adminApi = {
             status: "WARNING",
             details: `Admin deleted user account (${id})`,
           });
-        } catch {}
+        } catch { }
       }
 
       return {
@@ -316,7 +316,7 @@ export const adminApi = {
             status: "SUCCESS",
             details: `Provisioned new ${created.role || role} account for ${created.name || name} (${created.email || email})`,
           });
-        } catch {}
+        } catch { }
       }
 
       return {

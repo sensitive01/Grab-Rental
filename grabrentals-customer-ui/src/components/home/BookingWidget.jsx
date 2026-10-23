@@ -480,7 +480,7 @@ export default function BookingWidget() {
   const isRoundTrip = tripType === "round-trip";
 
   return (
-    <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-4 sm:p-6 max-w-6xl mx-auto border border-slate-200/50">
+    <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-4 sm:p-6 max-w-6xl mx-auto border border-black">
       
       {/* Top Segmented Tabs */}
       <div className="relative mb-4 sm:mb-6">

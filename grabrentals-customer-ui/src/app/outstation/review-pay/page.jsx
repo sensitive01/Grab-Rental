@@ -539,7 +539,7 @@ export default function ReviewPayPage() {
           const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
           return Math.max(1, diffDays + 1);
         }
-      } catch {}
+      } catch { }
     }
     return 1;
   }, [isRoundTripBooking, bookingConfig?.trip?.date, bookingConfig?.trip?.dropDate, bookingConfig?.trip?.returnDate]);
@@ -639,8 +639,8 @@ export default function ReviewPayPage() {
   const baseFareTitle = isLocal
     ? "Base Local Fare"
     : isAirport
-    ? "Base Airport Fare"
-    : "Base Outstation Fare";
+      ? "Base Airport Fare"
+      : "Base Outstation Fare";
 
   const durationBracket = isRoundTripBooking && tripDays > 0
     ? ` (${tripDays} ${tripDays === 1 ? "Day" : "Days"})`
@@ -1025,7 +1025,7 @@ export default function ReviewPayPage() {
     if (isMobileDevice()) {
       try {
         sessionStorage.setItem("grab_mobile_upi_active", "true");
-      } catch {}
+      } catch { }
       setMobileUpiLaunched(true);
       const deepLink = getUpiDeepLink();
       window.location.href = deepLink;
@@ -1038,7 +1038,7 @@ export default function ReviewPayPage() {
     setShowUpiModal(false);
     try {
       sessionStorage.removeItem("grab_mobile_upi_active");
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -1050,7 +1050,7 @@ export default function ReviewPayPage() {
           setUpiModalError("");
           setShowUpiModal(true);
         }
-      } catch {}
+      } catch { }
     };
 
     const handleVisibility = () => {
@@ -1279,7 +1279,7 @@ export default function ReviewPayPage() {
         sessionStorage.setItem("grab_confirmed_booking", JSON.stringify(confirmedData));
         try {
           sessionStorage.removeItem("grab_mobile_upi_active");
-        } catch {}
+        } catch { }
         setMobileUpiLaunched(false);
         const bookingRef = res.data.bookingReference || res.data.id;
         router.push(`/booking/confirmation?id=${encodeURIComponent(bookingRef)}`);
@@ -1811,8 +1811,8 @@ export default function ReviewPayPage() {
                               setChauffeurLanguage(lang);
                             }}
                             className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${chauffeurLanguage === lang
-                                ? "bg-[#0082fe] text-white shadow-2xs"
-                                : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                              ? "bg-[#0082fe] text-white shadow-2xs"
+                              : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                               }`}
                           >
                             {lang}
@@ -1995,16 +1995,22 @@ export default function ReviewPayPage() {
                     {isRoundTrip && (bookingConfig?.trip?.dropDate || bookingConfig?.trip?.returnDate) && (
                       <span className="text-sky-400">🔄 Return: {bookingConfig?.trip?.dropDate || bookingConfig?.trip?.returnDate}</span>
                     )}
-                    {distanceKm > 0 && <span className="text-sky-400">📏 {distanceKm} km</span>}
-                    {duration && <span className="text-slate-300">⏱️ ~{duration}</span>}
+                    {distanceKm > 0 && (
+                      <span className="text-sky-400">📏 {distanceKm} km {isRoundTripBooking ? "included" : ""}</span>
+                    )}
+                    {isRoundTripBooking && tripDays > 0 ? (
+                      <span className="text-slate-300">⏱️ {tripDays} {tripDays === 1 ? "Day" : "Days"}</span>
+                    ) : (
+                      duration && <span className="text-slate-300">⏱️ ~{duration}</span>
+                    )}
                   </div>
                 )}
               </div>
 
               {/* Free Cancellation Banner */}
-              <div className="px-5 py-2.5 bg-blue-50/90 border-b border-blue-100 text-blue-900 text-xs font-bold flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-[#0082fe] shrink-0" />
-                <span>Cancel for <strong className="text-blue-950 font-black">FREE</strong> 1 hour before ride starts</span>
+              <div className="px-5 py-2.5 bg-[#0082fe] text-white text-xs font-bold flex items-center justify-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-white shrink-0" />
+                <span>Cancel for <strong className="font-black text-white">FREE</strong> 1 hour before ride starts</span>
               </div>
 
               {/* Selected Vehicle Overview */}
@@ -2022,7 +2028,7 @@ export default function ReviewPayPage() {
                   <div>
                     <h4 className="font-black text-slate-900 text-sm">{bookingConfig?.car?.title || "Fleet Vehicle"}</h4>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                      {bookingConfig?.car?.seating || 4} Seats • {bookingConfig?.car?.fuel || "AC"}
+                      {bookingConfig?.car?.seating || 4} Seater AC Cab • {bookingConfig?.car?.fuel || "Petrol / Diesel"}
                     </p>
                   </div>
                 </div>
@@ -2580,8 +2586,8 @@ export default function ReviewPayPage() {
                       <label
                         htmlFor="proof-upload-modal-input"
                         className={`w-full border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${uploadingProof
-                            ? "border-[#0082fe] bg-blue-50/40"
-                            : "border-slate-300 hover:border-[#0082fe] hover:bg-blue-50/20 bg-slate-50/50"
+                          ? "border-[#0082fe] bg-blue-50/40"
+                          : "border-slate-300 hover:border-[#0082fe] hover:bg-blue-50/20 bg-slate-50/50"
                           }`}
                       >
                         {uploadingProof ? (

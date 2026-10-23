@@ -17,8 +17,8 @@ export default function LocalRentalsPage() {
         ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
         <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
-          <div className="inline-flex items-center gap-2 bg-brand-navy-dark/80 backdrop-blur-md border border-slate-700/50 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-brand-amber mb-3 sm:mb-5 shadow-xl">
-            <Clock className="w-3 h-3 text-brand-amber" /> {t("local_hero_badge") || "Flexible Hourly Packages"}
+          <div className="inline-flex items-center gap-2 bg-[#0082fe] border border-blue-400/40 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white mb-3 sm:mb-5 shadow-lg shadow-blue-900/30">
+            <Clock className="w-3 h-3 text-white" /> {t("local_hero_badge") || "Flexible Hourly Packages"}
           </div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
             {t("local_hero_title") || "Local Hourly Premium Car Rentals"}
