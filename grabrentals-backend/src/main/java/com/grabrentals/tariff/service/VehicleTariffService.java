@@ -587,9 +587,11 @@ public class VehicleTariffService {
         boolean isSeasonalApplied = seasonalOpt.isPresent();
         VehicleTariff activeTariff = seasonalOpt.orElse(null);
 
+        final boolean isLocal = "LOCAL".equalsIgnoreCase(sType);
+
         // 2a. Priority 1: City-specific standard tariff
         if (activeTariff == null && category != null && modelName != null && seatingCapacity != null && city != null && !city.isBlank()) {
-            if (packageHours != null && "LOCAL".equalsIgnoreCase(sType)) {
+            if (packageHours != null && isLocal) {
                 activeTariff = safeTariffs.stream().filter(t ->
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && sType.equalsIgnoreCase(t.getServiceType())
@@ -610,6 +612,7 @@ public class VehicleTariffService {
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
                         && t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())
                         && t.getCity() != null && areCitiesEqual(city, t.getCity())
+                        && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
             if (activeTariff == null) {
@@ -620,13 +623,14 @@ public class VehicleTariffService {
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
                         && t.getCity() != null && areCitiesEqual(city, t.getCity())
+                        && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
         }
 
         // 2b. Priority 2: State-level standard tariff (where city = 'ALL' or null)
         if (activeTariff == null && category != null && modelName != null && seatingCapacity != null && state != null && !state.isBlank()) {
-            if (packageHours != null && "LOCAL".equalsIgnoreCase(sType)) {
+            if (packageHours != null && isLocal) {
                 activeTariff = safeTariffs.stream().filter(t ->
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && sType.equalsIgnoreCase(t.getServiceType())
@@ -649,6 +653,7 @@ public class VehicleTariffService {
                         && t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())
                         && (t.getCity() == null || t.getCity().isBlank() || "all".equalsIgnoreCase(t.getCity().trim()))
                         && t.getState() != null && state.trim().equalsIgnoreCase(t.getState().trim())
+                        && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
             if (activeTariff == null) {
@@ -660,13 +665,14 @@ public class VehicleTariffService {
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
                         && (t.getCity() == null || t.getCity().isBlank() || "all".equalsIgnoreCase(t.getCity().trim()))
                         && t.getState() != null && state.trim().equalsIgnoreCase(t.getState().trim())
+                        && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
         }
 
         // 2c. Fallback: If no city/state filter specified, look up tariff for this EXACT serviceType
         if (activeTariff == null && category != null && modelName != null && seatingCapacity != null && (city == null || city.isBlank())) {
-            if (packageHours != null && "LOCAL".equalsIgnoreCase(sType)) {
+            if (packageHours != null && isLocal) {
                 activeTariff = safeTariffs.stream().filter(t ->
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && sType.equalsIgnoreCase(t.getServiceType())
@@ -685,6 +691,7 @@ public class VehicleTariffService {
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
                         && t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())
+                        && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
             if (activeTariff == null) {
@@ -694,12 +701,13 @@ public class VehicleTariffService {
                         && category.trim().equalsIgnoreCase(t.getCategory())
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
+                        && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
         }
 
-        // 3. Fallback: Lookup by category for this EXACT serviceType
-        if (activeTariff == null && category != null) {
+        // 3. Fallback: Lookup by category for this EXACT serviceType (OUTSTATION ONLY - never cross cities for LOCAL)
+        if (activeTariff == null && category != null && !isLocal) {
             activeTariff = safeTariffs.stream().filter(t ->
                     !Boolean.TRUE.equals(t.getSeasonal())
                     && sType.equalsIgnoreCase(t.getServiceType())
