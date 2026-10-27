@@ -3,23 +3,23 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  ShieldCheck, 
-  Star, 
-  BadgeCheck, 
-  CheckCircle, 
-  Navigation, 
-  Phone, 
-  Briefcase, 
-  ChevronDown, 
-  User, 
-  Shield, 
-  CreditCard, 
-  Lock, 
-  LogOut, 
-  Settings, 
-  Menu, 
-  X, 
+import {
+  ShieldCheck,
+  Star,
+  BadgeCheck,
+  CheckCircle,
+  Navigation,
+  Phone,
+  Briefcase,
+  ChevronDown,
+  User,
+  Shield,
+  CreditCard,
+  Lock,
+  LogOut,
+  Settings,
+  Menu,
+  X,
   Bell,
   Car,
   Clock,
@@ -111,23 +111,23 @@ export default function AppShell({ children }) {
   ];
 
   const bookNowItems = [
-    { 
-      name: t("outstation_cabs") || "Outstation Cabs", 
-      href: "/", 
-      icon: Car, 
-      desc: "One-way & round-trip car rentals" 
+    {
+      name: t("outstation_cabs") || "Outstation Cabs",
+      href: "/",
+      icon: Car,
+      desc: "One-way & round-trip car rentals"
     },
-    { 
-      name: t("hourly_local") || "Hourly Rental", 
-      href: "/local", 
-      icon: Clock, 
-      desc: "Flexible local city rental packages" 
+    {
+      name: t("hourly_local") || "Hourly Rental",
+      href: "/local",
+      icon: Clock,
+      desc: "Flexible local city rental packages"
     },
-    { 
-      name: t("airport_transfers") || "Airport Transfers", 
-      href: "/airport", 
-      icon: Plane, 
-      desc: "Guaranteed on-time airport pickup & drop" 
+    {
+      name: t("airport_transfers") || "Airport Transfers",
+      href: "/airport",
+      icon: Plane,
+      desc: "Guaranteed on-time airport pickup & drop"
     },
   ];
 
@@ -198,16 +198,16 @@ export default function AppShell({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-slate-50">
-      
+
       {/* A. Top Trust & Guarantee Ticker with Language Options */}
       <div className="bg-[#0082fe] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-blue-600/70 shadow-xs">
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
-          
+
           {/* Trust Guarantees on Desktop, Helpline on Mobile */}
           <div className="flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none text-white/95">
             {/* Mobile Quick Helpline */}
-            <a 
-              href="tel:+919071100200" 
+            <a
+              href="tel:+919071100200"
               className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-white hover:text-white/80 transition-colors"
             >
               <Phone className="w-3 h-3 text-white" />
@@ -245,11 +245,10 @@ export default function AppShell({ children }) {
                   <button
                     type="button"
                     onClick={() => setLanguage(lang.code)}
-                    className={`transition-all cursor-pointer ${
-                      isActive
+                    className={`transition-all cursor-pointer ${isActive
                         ? "text-yellow-300 font-black underline underline-offset-4 decoration-2"
                         : "text-white/90 hover:text-white font-semibold"
-                    }`}
+                      }`}
                     title={lang.name}
                   >
                     {lang.label}
@@ -267,7 +266,7 @@ export default function AppShell({ children }) {
 
       {/* B. Sticky Main Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-50 h-16 sm:h-20 px-3 sm:px-6 lg:px-8 flex items-center justify-between shadow-sm">
-        
+
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
           <img
@@ -291,81 +290,77 @@ export default function AppShell({ children }) {
 
         {/* Service Tabs - Centered */}
         <nav className="hidden lg:flex items-center justify-center h-full space-x-1 lg:space-x-1.5 whitespace-nowrap overflow-visible flex-1 px-4">
-            
-            {/* 1. Book Now Dropdown */}
-            <div 
-              ref={bookNowRef} 
-              className="relative h-full flex items-center"
-              onMouseEnter={() => setBookNowOpen(true)}
-              onMouseLeave={() => setBookNowOpen(false)}
+
+          {/* 1. Book Now Dropdown */}
+          <div
+            ref={bookNowRef}
+            className="relative h-full flex items-center"
+            onMouseEnter={() => setBookNowOpen(true)}
+            onMouseLeave={() => setBookNowOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setBookNowOpen(!bookNowOpen)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs lg:text-sm font-bold rounded-full transition-all cursor-pointer ${isBookNowActive
+                  ? "bg-brand-amber text-white shadow-sm"
+                  : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
+                }`}
             >
-              <button
-                type="button"
-                onClick={() => setBookNowOpen(!bookNowOpen)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs lg:text-sm font-bold rounded-full transition-all cursor-pointer ${
-                  isBookNowActive 
-                    ? "bg-brand-amber text-white shadow-sm"
-                    : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
-                }`}
-              >
-                <span>{t("book_now") || "Book Now"}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${bookNowOpen ? "rotate-180" : ""}`} />
-              </button>
+              <span>{t("book_now") || "Book Now"}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${bookNowOpen ? "rotate-180" : ""}`} />
+            </button>
 
-              {/* Dropdown Menu */}
-              {bookNowOpen && (
-                <div className="absolute top-[80%] left-0 pt-2 z-50 w-72 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-2 space-y-1">
-                    {bookNowItems.map((item) => {
-                      const Icon = item.icon;
-                      const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
-                      return (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          onClick={() => setBookNowOpen(false)}
-                          className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${
-                            active
-                              ? "bg-blue-50 text-blue-950 font-bold"
-                              : "text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+            {/* Dropdown Menu */}
+            {bookNowOpen && (
+              <div className="absolute top-[80%] left-0 pt-2 z-50 w-72 animate-in fade-in zoom-in-95 duration-150">
+                <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-2 space-y-1">
+                  {bookNowItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setBookNowOpen(false)}
+                        className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${active
+                            ? "bg-blue-50 text-blue-950 font-bold"
+                            : "text-slate-700 hover:bg-slate-50 hover:text-slate-950"
                           }`}
-                        >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                            active ? "bg-[#0082fe] text-white shadow-xs" : "bg-slate-100 text-slate-600"
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${active ? "bg-[#0082fe] text-white shadow-xs" : "bg-slate-100 text-slate-600"
                           }`}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold leading-tight">{item.name}</div>
-                            <div className="text-[11px] text-slate-500 font-normal leading-tight mt-0.5">{item.desc}</div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold leading-tight">{item.name}</div>
+                          <div className="text-[11px] text-slate-500 font-normal leading-tight mt-0.5">{item.desc}</div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
-            {/* 2. Main Navigation Links */}
-            {mainNavLinks.map((link) => (
-              <Link 
-                key={link.name}
-                href={link.href} 
-                className={`px-2.5 lg:px-3.5 py-2 text-xs lg:text-sm font-semibold transition-colors rounded-full ${
-                  isNavActive(link.href) 
-                    ? "bg-brand-amber text-white font-bold shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+          {/* 2. Main Navigation Links */}
+          {mainNavLinks.map((link) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`px-2.5 lg:px-3.5 py-2 text-xs lg:text-sm font-semibold transition-colors rounded-full ${isNavActive(link.href)
+                  ? "bg-brand-amber text-white font-bold shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                 }`}
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
+            >
+              {link.name}
+            </Link>
+          ))}
+        </nav>
 
         {/* Header Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto whitespace-nowrap flex-shrink-0">
-          
+
           {/* Call 24/7 Helpline Icon (Visible sm and up) */}
           <a
             href="tel:+919071100200"
@@ -393,7 +388,7 @@ export default function AppShell({ children }) {
           {currentUser ? (
             <div className="flex items-center gap-2">
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] hover:bg-[#006ed6] text-white p-1 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
@@ -408,8 +403,8 @@ export default function AppShell({ children }) {
 
                 {userMenuOpen && (
                   <>
-                    <div 
-                      className="fixed inset-0 z-40" 
+                    <div
+                      className="fixed inset-0 z-40"
                       onClick={() => setUserMenuOpen(false)}
                     />
                     <div className="absolute right-0 mt-2 w-56 bg-[#0B0F17] border border-slate-800 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-200 divide-y divide-slate-800/80">
@@ -417,32 +412,32 @@ export default function AppShell({ children }) {
                         Signed in as <strong className="text-white block text-xs truncate mt-0.5">{currentUser.phone || currentUser.name}</strong>
                       </div>
                       <div className="py-1">
-                        <Link 
-                          href="/account/settings" 
+                        <Link
+                          href="/account/settings"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
                           <Settings className="w-4 h-4 text-sky-400" />
                           <span>{t("my_account") || "Account Settings"}</span>
                         </Link>
-                        <Link 
-                          href="/dashboard" 
+                        <Link
+                          href="/dashboard"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
                           <User className="w-4 h-4 text-sky-400" />
                           <span>{t("my_bookings") || "My Trips"}</span>
                         </Link>
-                        <Link 
-                          href="/account/notifications" 
+                        <Link
+                          href="/account/notifications"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
                           <Bell className="w-4 h-4 text-sky-400" />
                           <span>Notifications</span>
                         </Link>
-                        <Link 
-                          href="/account/reviews" 
+                        <Link
+                          href="/account/reviews"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
@@ -451,7 +446,7 @@ export default function AppShell({ children }) {
                         </Link>
                       </div>
                       <div className="pt-1">
-                        <button 
+                        <button
                           onClick={handleLogout}
                           className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-red-950/40 text-red-400 transition-colors cursor-pointer font-semibold"
                         >
@@ -465,7 +460,7 @@ export default function AppShell({ children }) {
               </div>
             </div>
           ) : (
-            <Link 
+            <Link
               href="/login"
               className="flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] hover:bg-[#006ed6] text-white p-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold tracking-wide transition-all shadow-sm hover:shadow-md group"
             >
@@ -493,22 +488,22 @@ export default function AppShell({ children }) {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden flex justify-end animate-in fade-in duration-200">
           {/* Backdrop Overlay */}
-          <div 
+          <div
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
 
           {/* Slide-in Drawer Container */}
-          <div 
+          <div
             className="relative w-full max-w-[360px] xs:max-w-[380px] sm:max-w-md bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-250 ease-out"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drawer Header */}
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-              <Link 
-                href="/" 
-                onClick={() => setMobileMenuOpen(false)} 
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2.5"
               >
                 <img
@@ -600,11 +595,10 @@ export default function AppShell({ children }) {
                         setLanguage(lang.code);
                         setMobileMenuOpen(false);
                       }}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        language === lang.code
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${language === lang.code
                           ? "bg-[#0082fe] text-white font-black shadow-xs ring-2 ring-[#0082fe]/30"
                           : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-                      }`}
+                        }`}
                       title={lang.name}
                     >
                       {lang.label}
@@ -627,16 +621,14 @@ export default function AppShell({ children }) {
                         key={item.name}
                         href={item.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${
-                          active
+                        className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${active
                             ? "bg-blue-50 border border-blue-200/90 text-blue-950 font-black"
                             : "bg-white hover:bg-slate-50 border border-slate-100 text-slate-800"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                            active ? "bg-[#0082fe] text-white shadow-xs" : "bg-blue-50 text-[#0082fe]"
-                          }`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-[#0082fe] text-white shadow-xs" : "bg-blue-50 text-[#0082fe]"
+                            }`}>
                             <Icon className="w-4 h-4" />
                           </div>
                           <div>
@@ -664,11 +656,10 @@ export default function AppShell({ children }) {
                         key={link.name}
                         href={link.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${
-                          active
+                        className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${active
                             ? "bg-amber-50 border border-amber-200/90 text-amber-950 font-black"
                             : "bg-white hover:bg-slate-50 border border-slate-100 text-slate-800"
-                        }`}
+                          }`}
                       >
                         <span className="text-xs font-bold">{link.name}</span>
                         <ChevronRight className={`w-4 h-4 shrink-0 ${active ? "text-amber-600" : "text-slate-400"}`} />
@@ -792,7 +783,7 @@ export default function AppShell({ children }) {
       {/* C. Enterprise Multi-Column Footer */}
       <footer className="bg-[#0082fe] text-white pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-blue-500">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
-          
+
           {/* Column 1 */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
@@ -829,7 +820,6 @@ export default function AppShell({ children }) {
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Bangalore to Ooty</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Mumbai to Pune</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chennai to Pondicherry</Link></li>
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Mumbai to Goa</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chandigarh to Manali</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Hyderabad to Vijayawada</Link></li>
             </ul>
@@ -878,11 +868,7 @@ export default function AppShell({ children }) {
               </li>
               <li className="flex items-start gap-2 mt-4 text-white/90">
                 <Navigation className="w-4 h-4 text-yellow-300 mt-1 shrink-0" />
-                <div className="flex flex-col gap-1 text-xs">
-                  <span>Anjananagar, Bangalore, Karnataka</span>
-                  <span>Pondicherry (Puducherry)</span>
-                  <span>Goa</span>
-                </div>
+                <span>Anjananagar, Bangalore, Karnataka</span>
               </li>
             </ul>
           </div>
@@ -901,13 +887,13 @@ export default function AppShell({ children }) {
             <span className="hidden md:inline">|</span>
             <Link href="/support" className="hover:text-yellow-300 hover:underline transition-colors">Customer Support</Link>
           </div>
-          
+
           <div className="text-xs text-white/90 flex items-center">
             <span>Powered by</span>
-            <a 
-              href="https://sensitive.co.in/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://sensitive.co.in/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-yellow-300 hover:text-white hover:underline font-extrabold ml-1 transition-colors"
             >
               Sensitive Technologies
