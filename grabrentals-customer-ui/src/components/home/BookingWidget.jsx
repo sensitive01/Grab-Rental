@@ -1091,7 +1091,7 @@ export default function BookingWidget() {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <span className="text-xs font-semibold text-slate-600">
-              {activeTab === "package" ? "Selected Special Tour Circuit:" : t("auto_detected_route") || "Auto-Detected Route:"}
+              {activeTab === "package" ? "Selected Special Tour Circuit:" : t("auto_detected_route") || "Total:"}
             </span>
             <span className="text-sm font-extrabold text-slate-900">
               {routeEstimate.distanceKm} km {activeTab === "package" ? "(Round Trip Circuit)" : ""}

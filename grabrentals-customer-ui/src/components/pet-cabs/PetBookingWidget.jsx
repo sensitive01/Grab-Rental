@@ -954,7 +954,7 @@ export default function PetBookingWidget() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <span className="text-xs font-semibold text-slate-600">Auto-Detected Route:</span>
+              <span className="text-xs font-semibold text-slate-600">Total:</span>
               <strong className="text-slate-900 text-sm font-black">{routeEstimate.distanceKm} km</strong>
               <span className="text-xs font-semibold text-slate-500 capitalize">
                 ({tripMode === "airport"
