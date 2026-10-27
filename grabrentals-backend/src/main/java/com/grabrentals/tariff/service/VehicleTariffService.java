@@ -260,33 +260,53 @@ public class VehicleTariffService {
         } else {
             Optional<VehicleTariff> existing = Optional.empty();
             String reqFuel = (req.getFuelType() != null && !req.getFuelType().isBlank()) ? req.getFuelType().trim() : "Diesel";
+            Integer reqPackageHours = "LOCAL".equalsIgnoreCase(sType) ? req.getPackageHours() : null;
+
             if (!Boolean.TRUE.equals(req.getSeasonal()) && req.getCategory() != null && req.getModelName() != null && req.getSeatingCapacity() != null) {
                 if (reqCity != null && !"all".equalsIgnoreCase(reqCity)) {
-                    existing = tariffRepository.findStandardByModelAndCityAndFuel(
-                            sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel, reqCity
-                    );
-                    if (existing.isEmpty()) {
-                        existing = tariffRepository.findStandardByModelAndCity(
-                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqCity
+                    if (reqPackageHours != null) {
+                        existing = tariffRepository.findStandardByModelAndCityAndFuelAndPackageHours(
+                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel, reqCity, reqPackageHours
                         );
+                    } else {
+                        existing = tariffRepository.findStandardByModelAndCityAndFuel(
+                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel, reqCity
+                        );
+                        if (existing.isEmpty()) {
+                            existing = tariffRepository.findStandardByModelAndCity(
+                                    sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqCity
+                            );
+                        }
                     }
                 } else if (reqState != null && !"all".equalsIgnoreCase(reqState)) {
-                    existing = tariffRepository.findStandardByModelAndStateAndFuel(
-                            sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel, reqState
-                    );
-                    if (existing.isEmpty()) {
-                        existing = tariffRepository.findStandardByModelAndState(
-                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqState
+                    if (reqPackageHours != null) {
+                        existing = tariffRepository.findStandardByModelAndStateAndFuelAndPackageHours(
+                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel, reqState, reqPackageHours
                         );
+                    } else {
+                        existing = tariffRepository.findStandardByModelAndStateAndFuel(
+                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel, reqState
+                        );
+                        if (existing.isEmpty()) {
+                            existing = tariffRepository.findStandardByModelAndState(
+                                    sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqState
+                            );
+                        }
                     }
                 } else {
-                    existing = tariffRepository.findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndFuelTypeIgnoreCaseAndSeasonalFalse(
-                            sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel
-                    );
-                    if (existing.isEmpty()) {
-                        existing = tariffRepository.findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndSeasonalFalse(
-                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim()
+                    if (reqPackageHours != null) {
+                        existing = tariffRepository.findStandardAllCitiesByModelAndFuelAndPackageHours(
+                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel, reqPackageHours
                         );
+                    } else {
+                        existing = tariffRepository.findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndFuelTypeIgnoreCaseAndSeasonalFalse(
+                                sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim(), reqFuel
+                        );
+                        if (existing.isEmpty()) {
+                            existing = tariffRepository.findFirstByServiceTypeIgnoreCaseAndCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacityAndSeasonalFalse(
+                                    sType, req.getCategory().trim(), req.getModelName().trim(), req.getSeatingCapacity().trim()
+                            );
+                        }
                     }
                 }
             }
@@ -428,7 +448,8 @@ public class VehicleTariffService {
         String model = (t.getModelName() != null && !t.getModelName().isBlank()) ? t.getModelName().trim().toLowerCase() : "all";
         String fuel = (t.getFuelType() != null && !t.getFuelType().isBlank()) ? t.getFuelType().trim().toLowerCase() : "all";
         String seats = (t.getSeatingCapacity() != null && !t.getSeatingCapacity().isBlank()) ? t.getSeatingCapacity().trim() : "all";
-        return prefix + "_" + state + "_" + city + "_" + category + "_" + model + "_" + fuel + "_" + seats;
+        String pkg = (t.getPackageHours() != null) ? ("_pkg" + t.getPackageHours()) : "";
+        return prefix + "_" + state + "_" + city + "_" + category + "_" + model + "_" + fuel + "_" + seats + pkg;
     }
 
     @Transactional(readOnly = true)
@@ -517,6 +538,22 @@ public class VehicleTariffService {
             String state,
             List<VehicleTariff> tariffs
     ) {
+        return calculateRate(category, modelName, seatingCapacity, fuelType, pickupDateStr, pickupTimeStr, serviceType, city, state, null, tariffs);
+    }
+
+    public Map<String, Object> calculateRate(
+            String category,
+            String modelName,
+            String seatingCapacity,
+            String fuelType,
+            String pickupDateStr,
+            String pickupTimeStr,
+            String serviceType,
+            String city,
+            String state,
+            Integer packageHours,
+            List<VehicleTariff> tariffs
+    ) {
         final String sType = ("PACKAGE".equalsIgnoreCase(serviceType))
                 ? "LOCAL"
                 : ((serviceType != null && !serviceType.isBlank()) ? serviceType.trim().toUpperCase() : "OUTSTATION");
@@ -552,7 +589,19 @@ public class VehicleTariffService {
 
         // 2a. Priority 1: City-specific standard tariff
         if (activeTariff == null && category != null && modelName != null && seatingCapacity != null && city != null && !city.isBlank()) {
-            if (fuelType != null && !fuelType.isBlank()) {
+            if (packageHours != null && "LOCAL".equalsIgnoreCase(sType)) {
+                activeTariff = safeTariffs.stream().filter(t ->
+                        !Boolean.TRUE.equals(t.getSeasonal())
+                        && sType.equalsIgnoreCase(t.getServiceType())
+                        && category.trim().equalsIgnoreCase(t.getCategory())
+                        && modelName.trim().equalsIgnoreCase(t.getModelName())
+                        && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
+                        && (fuelType == null || fuelType.isBlank() || (t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())))
+                        && t.getCity() != null && areCitiesEqual(city, t.getCity())
+                        && t.getPackageHours() != null && t.getPackageHours().equals(packageHours)
+                ).findFirst().orElse(null);
+            }
+            if (activeTariff == null && fuelType != null && !fuelType.isBlank()) {
                 activeTariff = safeTariffs.stream().filter(t ->
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && sType.equalsIgnoreCase(t.getServiceType())
@@ -577,7 +626,20 @@ public class VehicleTariffService {
 
         // 2b. Priority 2: State-level standard tariff (where city = 'ALL' or null)
         if (activeTariff == null && category != null && modelName != null && seatingCapacity != null && state != null && !state.isBlank()) {
-            if (fuelType != null && !fuelType.isBlank()) {
+            if (packageHours != null && "LOCAL".equalsIgnoreCase(sType)) {
+                activeTariff = safeTariffs.stream().filter(t ->
+                        !Boolean.TRUE.equals(t.getSeasonal())
+                        && sType.equalsIgnoreCase(t.getServiceType())
+                        && category.trim().equalsIgnoreCase(t.getCategory())
+                        && modelName.trim().equalsIgnoreCase(t.getModelName())
+                        && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
+                        && (fuelType == null || fuelType.isBlank() || (t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())))
+                        && (t.getCity() == null || t.getCity().isBlank() || "all".equalsIgnoreCase(t.getCity().trim()))
+                        && t.getState() != null && state.trim().equalsIgnoreCase(t.getState().trim())
+                        && t.getPackageHours() != null && t.getPackageHours().equals(packageHours)
+                ).findFirst().orElse(null);
+            }
+            if (activeTariff == null && fuelType != null && !fuelType.isBlank()) {
                 activeTariff = safeTariffs.stream().filter(t ->
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && sType.equalsIgnoreCase(t.getServiceType())
@@ -604,7 +666,18 @@ public class VehicleTariffService {
 
         // 2c. Fallback: If no city/state filter specified, look up tariff for this EXACT serviceType
         if (activeTariff == null && category != null && modelName != null && seatingCapacity != null && (city == null || city.isBlank())) {
-            if (fuelType != null && !fuelType.isBlank()) {
+            if (packageHours != null && "LOCAL".equalsIgnoreCase(sType)) {
+                activeTariff = safeTariffs.stream().filter(t ->
+                        !Boolean.TRUE.equals(t.getSeasonal())
+                        && sType.equalsIgnoreCase(t.getServiceType())
+                        && category.trim().equalsIgnoreCase(t.getCategory())
+                        && modelName.trim().equalsIgnoreCase(t.getModelName())
+                        && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
+                        && (fuelType == null || fuelType.isBlank() || (t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())))
+                        && t.getPackageHours() != null && t.getPackageHours().equals(packageHours)
+                ).findFirst().orElse(null);
+            }
+            if (activeTariff == null && fuelType != null && !fuelType.isBlank()) {
                 activeTariff = safeTariffs.stream().filter(t ->
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && sType.equalsIgnoreCase(t.getServiceType())
@@ -741,8 +814,6 @@ public class VehicleTariffService {
             } else {
                 hasModelTariff = true;
             }
-        } else if ("LOCAL".equalsIgnoreCase(sType) || "AIRPORT".equalsIgnoreCase(sType)) {
-            hasModelTariff = true;
         }
         result.put("hasTariff", hasModelTariff);
         result.put("discountPercentage", activeTariff != null && activeTariff.getDiscountPercentage() != null ? activeTariff.getDiscountPercentage() : BigDecimal.ZERO);

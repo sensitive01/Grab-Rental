@@ -225,7 +225,7 @@ public class PublicVehicleService {
 
                 // Dynamically resolve rate using Tariff Engine in-memory against pre-fetched tariffs
                 Map<String, Object> rateContext = vehicleTariffService.calculateRate(
-                        config.getCategory(), model, String.valueOf(seats), config.getFuelType(), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, tariffs
+                        config.getCategory(), model, String.valueOf(seats), config.getFuelType(), pickupDate, pickupTime, resolvedServiceType, pickupCity, pickupState, pkgHours, tariffs
                 );
 
                 Boolean hasTariff = (Boolean) rateContext.get("hasTariff");

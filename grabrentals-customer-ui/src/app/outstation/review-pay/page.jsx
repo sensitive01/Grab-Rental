@@ -680,6 +680,7 @@ export default function ReviewPayPage() {
     : (driverAllowanceType === "FLAT" && driverAllowanceAmount > 0);
 
   const driverAllowance = useMemo(() => {
+    if (isLocal) return 0;
     if (isDriverAllowanceFlat) {
       // Determine per-day flat allowance rate
       let perDay = 0;
@@ -705,7 +706,7 @@ export default function ReviewPayPage() {
       ? Number(driverAllowancePercentage || 10)
       : (Number(car.pricing?.driverAllowancePercentage) || Number(car.driverAllowancePercentage) || 10);
     return Math.round(baseFare * (pct / 100));
-  }, [car.pricing?.driverAllowance, isDriverAllowanceFlat, driverAllowanceAmount, car.driverAllowance, isRoundTripBooking, tripDays, pricingConfigLoaded, driverAllowancePercentage, car.pricing?.driverAllowancePercentage, car.driverAllowancePercentage, baseFare]);
+  }, [isLocal, car.pricing?.driverAllowance, isDriverAllowanceFlat, driverAllowanceAmount, car.driverAllowance, isRoundTripBooking, tripDays, pricingConfigLoaded, driverAllowancePercentage, car.pricing?.driverAllowancePercentage, car.driverAllowancePercentage, baseFare]);
 
   const driverAllowanceLabel = "Driver Allowance";
 

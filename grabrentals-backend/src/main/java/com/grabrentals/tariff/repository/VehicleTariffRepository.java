@@ -126,6 +126,61 @@ public interface VehicleTariffRepository extends JpaRepository<VehicleTariff, UU
             @Param("state") String state
     );
 
+    @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = false " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
+           "AND LOWER(t.category) = LOWER(:category) " +
+           "AND LOWER(t.modelName) = LOWER(:modelName) " +
+           "AND t.seatingCapacity = :seatingCapacity " +
+           "AND (LOWER(t.fuelType) = LOWER(:fuelType) OR (:fuelType = 'Diesel' AND t.fuelType IS NULL)) " +
+           "AND LOWER(t.city) = LOWER(:city) " +
+           "AND (:packageHours IS NULL OR t.packageHours = :packageHours)")
+    Optional<VehicleTariff> findStandardByModelAndCityAndFuelAndPackageHours(
+            @Param("serviceType") String serviceType,
+            @Param("category") String category,
+            @Param("modelName") String modelName,
+            @Param("seatingCapacity") String seatingCapacity,
+            @Param("fuelType") String fuelType,
+            @Param("city") String city,
+            @Param("packageHours") Integer packageHours
+    );
+
+    @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = false " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
+           "AND LOWER(t.category) = LOWER(:category) " +
+           "AND LOWER(t.modelName) = LOWER(:modelName) " +
+           "AND t.seatingCapacity = :seatingCapacity " +
+           "AND (LOWER(t.fuelType) = LOWER(:fuelType) OR (:fuelType = 'Diesel' AND t.fuelType IS NULL)) " +
+           "AND (LOWER(t.city) = 'all' OR t.city IS NULL OR t.city = '') " +
+           "AND LOWER(t.state) = LOWER(:state) " +
+           "AND (:packageHours IS NULL OR t.packageHours = :packageHours)")
+    Optional<VehicleTariff> findStandardByModelAndStateAndFuelAndPackageHours(
+            @Param("serviceType") String serviceType,
+            @Param("category") String category,
+            @Param("modelName") String modelName,
+            @Param("seatingCapacity") String seatingCapacity,
+            @Param("fuelType") String fuelType,
+            @Param("state") String state,
+            @Param("packageHours") Integer packageHours
+    );
+
+    @Query("SELECT t FROM VehicleTariff t WHERE t.seasonal = false " +
+           "AND LOWER(t.serviceType) = LOWER(:serviceType) " +
+           "AND LOWER(t.category) = LOWER(:category) " +
+           "AND LOWER(t.modelName) = LOWER(:modelName) " +
+           "AND t.seatingCapacity = :seatingCapacity " +
+           "AND (LOWER(t.fuelType) = LOWER(:fuelType) OR (:fuelType = 'Diesel' AND t.fuelType IS NULL)) " +
+           "AND (t.city IS NULL OR LOWER(t.city) = 'all' OR t.city = '') " +
+           "AND (t.state IS NULL OR LOWER(t.state) = 'all' OR t.state = '') " +
+           "AND (:packageHours IS NULL OR t.packageHours = :packageHours)")
+    Optional<VehicleTariff> findStandardAllCitiesByModelAndFuelAndPackageHours(
+            @Param("serviceType") String serviceType,
+            @Param("category") String category,
+            @Param("modelName") String modelName,
+            @Param("seatingCapacity") String seatingCapacity,
+            @Param("fuelType") String fuelType,
+            @Param("packageHours") Integer packageHours
+    );
+
     long countByServiceTypeIgnoreCase(String serviceType);
 
     @Query("SELECT COUNT(t) > 0 FROM VehicleTariff t WHERE " +
