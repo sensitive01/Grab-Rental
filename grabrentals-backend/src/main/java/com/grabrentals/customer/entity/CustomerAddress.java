@@ -56,6 +56,12 @@ public class CustomerAddress {
     @Column(name = "landmark")
     private String landmark;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Column(name = "is_default", nullable = false)
     @Builder.Default
     private Boolean isDefault = false;

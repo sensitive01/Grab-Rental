@@ -31,6 +31,7 @@ import {
   Loader2
 } from "lucide-react";
 import { getCurrentUser, setAuthSession } from "@/lib/auth";
+import LocationPickerModal from "@/components/booking/LocationPickerModal";
 
 function SettingsContent() {
   const router = useRouter();
@@ -54,6 +55,8 @@ function SettingsContent() {
   // Saved Addresses State (Home, Office, Other, etc.)
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [mapCoords, setMapCoords] = useState(null);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [addressForm, setAddressForm] = useState({
@@ -65,6 +68,8 @@ function SettingsContent() {
     state: "",
     pincode: "",
     landmark: "",
+    latitude: null,
+    longitude: null,
     isDefault: false,
   });
 
@@ -238,6 +243,7 @@ function SettingsContent() {
   // Address Modal Helpers
   const handleOpenAddAddress = () => {
     setEditingAddressId(null);
+    setMapCoords(null);
     setAddressForm({
       tag: "Home",
       customTag: "",
@@ -247,6 +253,8 @@ function SettingsContent() {
       state: "",
       pincode: "",
       landmark: "",
+      latitude: null,
+      longitude: null,
       isDefault: savedAddresses.length === 0,
     });
     setIsAddressModalOpen(true);
@@ -254,6 +262,11 @@ function SettingsContent() {
 
   const handleOpenEditAddress = (addr) => {
     setEditingAddressId(addr.id);
+    if (addr.latitude != null && addr.longitude != null) {
+      setMapCoords({ lat: Number(addr.latitude), lng: Number(addr.longitude) });
+    } else {
+      setMapCoords(null);
+    }
     const isStandard = ["Home", "Office"].includes(addr.tag);
     setAddressForm({
       tag: isStandard ? addr.tag : "Other",
@@ -264,6 +277,8 @@ function SettingsContent() {
       state: addr.state || "",
       pincode: addr.pincode || "",
       landmark: addr.landmark || "",
+      latitude: addr.latitude != null ? Number(addr.latitude) : null,
+      longitude: addr.longitude != null ? Number(addr.longitude) : null,
       isDefault: Boolean(addr.isDefault),
     });
     setIsAddressModalOpen(true);
@@ -293,6 +308,8 @@ function SettingsContent() {
       state: addressForm.state.trim(),
       pincode: addressForm.pincode.trim(),
       landmark: addressForm.landmark.trim(),
+      latitude: addressForm.latitude,
+      longitude: addressForm.longitude,
       isDefault: addressForm.isDefault,
     };
 
@@ -935,6 +952,15 @@ function SettingsContent() {
                             <Star className="w-3 h-3 fill-[#0082fe]" /> Default Pickup
                           </span>
                         )}
+
+                        {addr.latitude != null && addr.longitude != null && (
+                          <span
+                            title={`GPS: ${Number(addr.latitude).toFixed(4)}°N, ${Number(addr.longitude).toFixed(4)}°E`}
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center gap-1"
+                          >
+                            <MapPin className="w-2.5 h-2.5" /> Map Pinned
+                          </span>
+                        )}
                       </div>
 
                       {/* Action icons */}
@@ -1069,9 +1095,19 @@ function SettingsContent() {
 
               {/* Building number / street name */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Building number / street name *
-                </label>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                    Building number / street name *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#0082fe] hover:text-[#006ed6] hover:underline cursor-pointer group whitespace-nowrap"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-[#0082fe] group-hover:scale-110 transition-transform" />
+                    <span>Choose from Map</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
@@ -1192,6 +1228,54 @@ function SettingsContent() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Interactive Map Location Picker Modal */}
+      {isMapModalOpen && (
+        <LocationPickerModal
+          isOpen={isMapModalOpen}
+          onClose={() => setIsMapModalOpen(false)}
+          allowTargetSwitch={false}
+          allowStops={false}
+          title="Choose Address on Map"
+          subtitle="Search place, pin on map, or use GPS to set your address"
+          initialValue={addressForm.addressLine || addressForm.city || city || "Bangalore, Karnataka"}
+          pickupValue={addressForm.addressLine || addressForm.city || city || ""}
+          initialPickupCoords={mapCoords}
+          onSelect={(selectedLocation, coords, target, allValues, details) => {
+            if (coords) setMapCoords(coords);
+            setAddressForm((prev) => {
+              const newArea = details?.area || prev.area;
+              const newCity = details?.city || prev.city;
+              const newState = (details?.state && details.state !== "India") ? details.state : prev.state;
+              const newPincode = details?.pincode || prev.pincode;
+
+              const chosenStreet = selectedLocation || details?.fullAddress || "";
+              const hasExistingHouseNumber = /^(flat|apt|house|villa|#|\d+[\w\s,-]*)/i.test(prev.addressLine.trim());
+              let newAddressLine = chosenStreet;
+              if (prev.addressLine && hasExistingHouseNumber && !chosenStreet.toLowerCase().includes(prev.addressLine.toLowerCase().trim())) {
+                newAddressLine = `${prev.addressLine.trim()}, ${chosenStreet}`;
+              } else {
+                newAddressLine = chosenStreet || prev.addressLine;
+              }
+
+              const chosenLat = coords?.lat != null ? Number(coords.lat) : details?.lat != null ? Number(details.lat) : prev.latitude;
+              const chosenLng = coords?.lng != null ? Number(coords.lng) : details?.lng != null ? Number(details.lng) : prev.longitude;
+
+              return {
+                ...prev,
+                addressLine: newAddressLine,
+                area: newArea,
+                city: newCity,
+                state: newState,
+                pincode: newPincode,
+                latitude: chosenLat,
+                longitude: chosenLng,
+              };
+            });
+            setIsMapModalOpen(false);
+          }}
+        />
       )}
 
       {/* MODAL: RESET LOGIN PIN */}

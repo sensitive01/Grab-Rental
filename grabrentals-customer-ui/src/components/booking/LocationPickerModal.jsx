@@ -57,6 +57,7 @@ export default function LocationPickerModal({
   onSelect,
   initialValue = "",
   title,
+  subtitle,
   activeTarget = "pickup", // "pickup" | "drop" | "airport" | "stop-0" | "stop-1"...
   pickupValue = "",
   dropValue = "",
@@ -310,7 +311,7 @@ export default function LocationPickerModal({
   useEffect(() => {
     let cancelled = false;
     async function calcRoute() {
-      if (!isOpen || !pickupCityState || !dropCityState) {
+      if (!isOpen || !allowTargetSwitch || !pickupCityState || !dropCityState) {
         setModalRoute(null);
         setIsCalculatingRoute(false);
         return;
@@ -806,6 +807,11 @@ export default function LocationPickerModal({
     const activeTgt = currentTargetRef.current;
     applyLocationToTarget(formatted, { lat: hub.lat, lng: hub.lng }, null, activeTgt);
     panToLocation(hub.lat, hub.lng, 14);
+    if (hasGoogleMapsKey && !googleMapsError && mapInstanceRef.current) {
+      reverseGeocodeGoogle(hub.lat, hub.lng, activeTgt);
+    } else {
+      reverseGeocodeOsm(hub.lat, hub.lng, activeTgt);
+    }
   };
 
   // Switch between From (Pickup), Stops, and To (Drop) targets
@@ -992,12 +998,28 @@ export default function LocationPickerModal({
         fullAddr = place.formattedAddress || place.displayName || result.title;
         const placeName = (place.displayName || result.title || "").trim();
 
+        let area = "";
         let locality = "";
         let adminArea = "";
+        let pincode = "";
         if (place.addressComponents) {
           for (const comp of place.addressComponents) {
-            if (comp.types?.includes("locality")) locality = comp.longText || comp.name;
-            if (comp.types?.includes("administrative_area_level_1")) adminArea = comp.longText || comp.name;
+            const types = comp.types || [];
+            if (
+              types.includes("sublocality") ||
+              types.includes("sublocality_level_1") ||
+              types.includes("sublocality_level_2") ||
+              types.includes("neighborhood") ||
+              types.includes("suburb")
+            ) {
+              if (!area) area = comp.longText || comp.name;
+            }
+            if (types.includes("locality")) locality = comp.longText || comp.name;
+            if (!locality && types.includes("administrative_area_level_2")) {
+              locality = comp.longText || comp.name;
+            }
+            if (types.includes("administrative_area_level_1")) adminArea = comp.longText || comp.name;
+            if (types.includes("postal_code")) pincode = comp.longText || comp.name;
           }
         }
 
@@ -1013,6 +1035,24 @@ export default function LocationPickerModal({
         if (extraParts.length > 0) {
           specificLabel = `${placeName}, ${extraParts.join(", ")}`;
         }
+
+        const details = {
+          area: area || "",
+          city: locality || "",
+          state: adminArea || "India",
+          pincode: pincode || "",
+          fullAddress: fullAddr,
+          lat,
+          lng
+        };
+
+        setSearchQuery(specificLabel);
+        const activeTgt = currentTargetRef.current;
+        applyLocationToTarget(specificLabel, lat && lng ? { lat, lng } : null, details, activeTgt);
+        if (lat && lng) {
+          panToLocation(lat, lng, 16);
+        }
+        return;
       } catch (err) {
         console.warn("Failed to fetch Google Place details:", err);
         specificLabel = result.description ? `${result.title}, ${result.description.split(",")[0].trim()}` : result.title;
@@ -1032,6 +1072,11 @@ export default function LocationPickerModal({
     applyLocationToTarget(specificLabel, lat && lng ? { lat, lng } : null, null, activeTgt);
     if (lat && lng) {
       panToLocation(lat, lng, 16);
+      if (hasGoogleMapsKey && !googleMapsError && mapInstanceRef.current) {
+        reverseGeocodeGoogle(lat, lng, activeTgt);
+      } else {
+        reverseGeocodeOsm(lat, lng, activeTgt);
+      }
     }
   };
 
@@ -1151,13 +1196,17 @@ export default function LocationPickerModal({
                 }
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                {currentTarget === "airport"
-                  ? "Search airport or terminal, pin on map, or select a popular airport hub"
-                  : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
-                  ? `Stop ${parseInt(currentTarget.replace("stop-", ""), 10) + 1} — Search place, pin on map, or use GPS`
-                  : currentTarget === "drop"
-                    ? `${t("to_city") || "Drop Destination"} — Search place, pin on map, or use GPS`
-                    : `${t("from_city") || "Pickup City"} — Search place, pin on map, or use GPS`}
+                {subtitle || (
+                  currentTarget === "airport"
+                    ? "Search airport or terminal, pin on map, or select a popular airport hub"
+                    : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
+                    ? `Stop ${parseInt(currentTarget.replace("stop-", ""), 10) + 1} — Search place, pin on map, or use GPS`
+                    : currentTarget === "drop"
+                      ? `${t("to_city") || "Drop Destination"} — Search place, pin on map, or use GPS`
+                      : allowTargetSwitch
+                        ? `${t("from_city") || "Pickup City"} — Search place, pin on map, or use GPS`
+                        : "Search place, pin on map, or use GPS to set your address"
+                )}
               </p>
             </div>
           </div>
@@ -1406,7 +1455,9 @@ export default function LocationPickerModal({
                 }`} />
                 <span>
                   📍 Click anywhere on map to pin {
-                    typeof currentTarget === "string" && currentTarget.startsWith("stop-")
+                    !allowTargetSwitch
+                      ? "exact address"
+                      : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
                       ? `Stop ${parseInt(currentTarget.replace("stop-", ""), 10) + 1}`
                       : currentTarget === "drop"
                         ? (t("to_city") || "Drop")
@@ -1418,134 +1469,175 @@ export default function LocationPickerModal({
           </div>
 
 
-          {/* Dual Location Summary & Confirmation Box */}
+          {/* Location Summary & Confirmation Box */}
           <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-            {/* Location Cards */}
-            <div className={`grid gap-2.5 ${
-              stopsState.length === 0 ? "grid-cols-1 sm:grid-cols-2" :
-              stopsState.length === 1 ? "grid-cols-1 sm:grid-cols-3" :
-              "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
-            }`}>
-              {/* Pickup / From Location Preview */}
-              <button
-                type="button"
-                onClick={() => allowTargetSwitch && handleSwitchTarget("pickup")}
-                disabled={!allowTargetSwitch}
-                className={`p-2.5 rounded-xl border text-left transition-all ${
-                  allowTargetSwitch ? "cursor-pointer" : "cursor-default"
-                } ${
-                  currentTarget === "pickup"
-                    ? "bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-400/40"
-                    : "bg-white border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
-                      {t("from_city") || "From Location"}
-                    </span>
-                  </div>
-                  {currentTarget === "pickup" && (
-                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
-                      Editing
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs font-bold text-slate-900 truncate">
-                  {pickupCityState || "Set on map"}
-                </p>
-              </button>
-
-              {/* Intermediate Stops Previews */}
-              {stopsState.map((stop, sIdx) => {
-                const isThisStopActive = currentTarget === `stop-${sIdx}`;
-                return (
-                  <button
-                    key={`summary-stop-${sIdx}`}
-                    type="button"
-                    onClick={() => allowTargetSwitch && handleSwitchTarget(`stop-${sIdx}`)}
-                    disabled={!allowTargetSwitch}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      allowTargetSwitch ? "cursor-pointer" : "cursor-default"
-                    } ${
-                      isThisStopActive
-                        ? "bg-purple-50/80 border-purple-300 ring-2 ring-purple-400/40"
-                        : "bg-white border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-purple-700">
-                          Stop {sIdx + 1}
-                        </span>
-                      </div>
-                      {isThisStopActive && (
-                        <span className="text-[9px] font-black text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded">
-                          Editing
-                        </span>
-                      )}
+            {allowTargetSwitch ? (
+              /* Location Cards */
+              <div className={`grid gap-2.5 ${
+                stopsState.length === 0 ? "grid-cols-1 sm:grid-cols-2" :
+                stopsState.length === 1 ? "grid-cols-1 sm:grid-cols-3" :
+                "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
+              }`}>
+                {/* Pickup / From Location Preview */}
+                <button
+                  type="button"
+                  onClick={() => allowTargetSwitch && handleSwitchTarget("pickup")}
+                  disabled={!allowTargetSwitch}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    allowTargetSwitch ? "cursor-pointer" : "cursor-default"
+                  } ${
+                    currentTarget === "pickup"
+                      ? "bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-400/40"
+                      : "bg-white border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+                        {t("from_city") || "From Location"}
+                      </span>
                     </div>
-                    <p className="text-xs font-bold text-slate-900 truncate">
-                      {stop || "Set on map"}
-                    </p>
-                  </button>
-                );
-              })}
-
-              {/* Drop / To Location Preview */}
-              <button
-                type="button"
-                onClick={() => allowTargetSwitch && handleSwitchTarget("drop")}
-                disabled={!allowTargetSwitch}
-                className={`p-2.5 rounded-xl border text-left transition-all ${
-                  allowTargetSwitch ? "cursor-pointer" : "cursor-default"
-                } ${
-                  currentTarget === "drop"
-                    ? "bg-amber-50/80 border-amber-300 ring-2 ring-amber-400/40"
-                    : "bg-white border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
-                      {t("to_city") || "To Location"}
-                    </span>
+                    {currentTarget === "pickup" && (
+                      <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                        Editing
+                      </span>
+                    )}
                   </div>
-                  {currentTarget === "drop" && (
-                    <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">
-                      Editing
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs font-bold text-slate-900 truncate">
-                  {dropCityState || "Set on map"}
-                </p>
-              </button>
-            </div>
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {pickupCityState || "Set on map"}
+                  </p>
+                </button>
 
-            {/* Live Route Distance Display */}
-            {isCalculatingRoute ? (
-              <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3.5 py-2.5 text-xs text-slate-700">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
-                <span className="font-semibold text-slate-700">Calculating driving route...</span>
+                {/* Intermediate Stops Previews */}
+                {stopsState.map((stop, sIdx) => {
+                  const isThisStopActive = currentTarget === `stop-${sIdx}`;
+                  return (
+                    <button
+                      key={`summary-stop-${sIdx}`}
+                      type="button"
+                      onClick={() => allowTargetSwitch && handleSwitchTarget(`stop-${sIdx}`)}
+                      disabled={!allowTargetSwitch}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        allowTargetSwitch ? "cursor-pointer" : "cursor-default"
+                      } ${
+                        isThisStopActive
+                          ? "bg-purple-50/80 border-purple-300 ring-2 ring-purple-400/40"
+                          : "bg-white border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-purple-700">
+                            Stop {sIdx + 1}
+                          </span>
+                        </div>
+                        {isThisStopActive && (
+                          <span className="text-[9px] font-black text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded">
+                            Editing
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-slate-900 truncate">
+                        {stop || "Set on map"}
+                      </p>
+                    </button>
+                  );
+                })}
+
+                {/* Drop / To Location Preview */}
+                <button
+                  type="button"
+                  onClick={() => allowTargetSwitch && handleSwitchTarget("drop")}
+                  disabled={!allowTargetSwitch}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    allowTargetSwitch ? "cursor-pointer" : "cursor-default"
+                  } ${
+                    currentTarget === "drop"
+                      ? "bg-amber-50/80 border-amber-300 ring-2 ring-amber-400/40"
+                      : "bg-white border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+                        {t("to_city") || "To Location"}
+                      </span>
+                    </div>
+                    {currentTarget === "drop" && (
+                      <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">
+                        Editing
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {dropCityState || "Set on map"}
+                  </p>
+                </button>
               </div>
-            ) : modalRoute?.isDetected && modalRoute.distanceKm > 0 ? (
-              <div className="flex flex-wrap items-center justify-between gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3.5 py-2.5 text-xs">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-bold text-slate-700">Calculated Driving Route:</span>
-                  <span className="font-extrabold text-slate-900 text-sm">{modalRoute.distanceKm} km</span>
-                </div>
-                {modalRoute.durationText && (
-                  <span className="font-bold text-amber-900 bg-white/95 px-2.5 py-1 rounded-lg border border-amber-200/80 shadow-2xs">
-                    ⏱️ {modalRoute.durationText}
+            ) : (
+              /* Single Location Preview */
+              <div className="p-3 sm:p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/70 text-left">
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-800">
+                    Selected Location & Address
                   </span>
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                  {selectedAddress || cityLabel || "Select a location on the map"}
+                </p>
+                {pickupAddressDetails && (pickupAddressDetails.area || pickupAddressDetails.city || pickupAddressDetails.pincode) && (
+                  <div className="text-[11px] text-slate-600 mt-1.5 flex flex-wrap gap-x-2.5 gap-y-1">
+                    {pickupAddressDetails.area && (
+                      <span className="bg-white/80 px-2 py-0.5 rounded border border-emerald-200">
+                        Area: <strong className="text-slate-800">{pickupAddressDetails.area}</strong>
+                      </span>
+                    )}
+                    {pickupAddressDetails.city && (
+                      <span className="bg-white/80 px-2 py-0.5 rounded border border-emerald-200">
+                        City: <strong className="text-slate-800">{pickupAddressDetails.city}</strong>
+                      </span>
+                    )}
+                    {pickupAddressDetails.state && pickupAddressDetails.state !== "India" && (
+                      <span className="bg-white/80 px-2 py-0.5 rounded border border-emerald-200">
+                        State: <strong className="text-slate-800">{pickupAddressDetails.state}</strong>
+                      </span>
+                    )}
+                    {pickupAddressDetails.pincode && (
+                      <span className="bg-white/80 px-2 py-0.5 rounded border border-emerald-200">
+                        PIN: <strong className="text-slate-800 font-mono">{pickupAddressDetails.pincode}</strong>
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
-            ) : null}
+            )}
+
+            {/* Live Route Distance Display */}
+            {allowTargetSwitch && (
+              isCalculatingRoute ? (
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3.5 py-2.5 text-xs text-slate-700">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                  <span className="font-semibold text-slate-700">Calculating driving route...</span>
+                </div>
+              ) : modalRoute?.isDetected && modalRoute.distanceKm > 0 ? (
+                <div className="flex flex-wrap items-center justify-between gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3.5 py-2.5 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-bold text-slate-700">Calculated Driving Route:</span>
+                    <span className="font-extrabold text-slate-900 text-sm">{modalRoute.distanceKm} km</span>
+                  </div>
+                  {modalRoute.durationText && (
+                    <span className="font-bold text-amber-900 bg-white/95 px-2.5 py-1 rounded-lg border border-amber-200/80 shadow-2xs">
+                      ⏱️ {modalRoute.durationText}
+                    </span>
+                  )}
+                </div>
+              ) : null
+            )}
 
             {/* Action Buttons: Switch target & Confirm */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-1 border-t border-slate-200/80">

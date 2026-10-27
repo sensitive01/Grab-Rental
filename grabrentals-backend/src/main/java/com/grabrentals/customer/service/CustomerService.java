@@ -133,6 +133,8 @@ public class CustomerService {
                 .state(request.getState() != null ? request.getState().trim() : null)
                 .pincode(request.getPincode() != null ? request.getPincode().trim() : null)
                 .landmark(request.getLandmark() != null ? request.getLandmark().trim() : null)
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .isDefault(shouldBeDefault)
                 .build();
 
@@ -183,6 +185,12 @@ public class CustomerService {
         }
         if (request.getLandmark() != null) {
             address.setLandmark(request.getLandmark().trim());
+        }
+        if (request.getLatitude() != null) {
+            address.setLatitude(request.getLatitude());
+        }
+        if (request.getLongitude() != null) {
+            address.setLongitude(request.getLongitude());
         }
 
         com.grabrentals.customer.entity.CustomerAddress saved = customerAddressRepository.save(address);

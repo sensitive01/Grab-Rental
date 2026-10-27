@@ -423,7 +423,7 @@ export default function BookingWidget() {
     }
     const validStops = stops.filter((s) => s.trim());
     const resolvedServiceType = activeTab === "local" ? "LOCAL" : activeTab === "airport" ? "AIRPORT" : "OUTSTATION";
-    
+
     let fromLoc = pickupCity;
     let toLoc = dropCity;
     let pkgVal = undefined;
@@ -458,13 +458,13 @@ export default function BookingWidget() {
         distanceKm: routeEstimate.distanceKm,
         durationText: routeEstimate.durationText,
         tollPrice: routeEstimate.tollPrice,
-        tripType: activeTab === "airport" 
-          ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup") 
-          : activeTab === "package" 
-          ? "round-trip" 
-          : activeTab === "local"
-          ? "local"
-          : tripType,
+        tripType: activeTab === "airport"
+          ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup")
+          : activeTab === "package"
+            ? "round-trip"
+            : activeTab === "local"
+              ? "local"
+              : tripType,
         serviceType: resolvedServiceType,
         date: pickupDate,
         time: pickupTime,
@@ -481,7 +481,7 @@ export default function BookingWidget() {
 
   return (
     <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-4 sm:p-6 max-w-6xl mx-auto border border-black">
-      
+
       {/* Top Segmented Tabs */}
       <div className="relative mb-4 sm:mb-6">
         {/* Left Arrow (Mobile View) */}
@@ -516,11 +516,10 @@ export default function BookingWidget() {
               key={tab.id}
               data-tab-id={tab.id}
               onClick={(e) => handleTabClick(tab.id, e)}
-              className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${
-                activeTab === tab.id
+              className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${activeTab === tab.id
                   ? "text-brand-amber border-brand-amber bg-blue-50/50 rounded-t-lg"
                   : "text-slate-500 border-transparent hover:text-slate-800"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -553,16 +552,14 @@ export default function BookingWidget() {
             return (
               <label
                 key={item.id}
-                className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${
-                  isSelected
+                className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${isSelected
                     ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
                     : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
-                }`}
+                  }`}
               >
                 <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
-                    isSelected ? "border-[#0082fe]" : "border-slate-300"
-                  }`}
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
+                    }`}
                 >
                   {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
                 </div>
@@ -592,16 +589,14 @@ export default function BookingWidget() {
             return (
               <label
                 key={item.id}
-                className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${
-                  isSelected
+                className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${isSelected
                     ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
                     : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
-                }`}
+                  }`}
               >
                 <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
-                    isSelected ? "border-[#0082fe]" : "border-slate-300"
-                  }`}
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
+                    }`}
                 >
                   {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
                 </div>
@@ -628,7 +623,7 @@ export default function BookingWidget() {
         <div className="space-y-4">
           {/* ROW 1: Locations (FROM -> STOP 1 -> STOP 2 -> TO) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
-            
+
             {/* FROM: Pickup City */}
             <div className={`w-full relative ${hasStops ? "lg:col-span-4" : "lg:col-span-5"}`}>
               <div className="flex items-center justify-between mb-2 min-h-[18px]">
@@ -636,14 +631,14 @@ export default function BookingWidget() {
                   {t("from_city")}
                 </label>
               </div>
-              <CityAutocompleteInput 
+              <CityAutocompleteInput
                 value={pickupCity}
                 onChange={(val, coords, details) => {
                   setPickupCity(val);
                   setPickupCoords(coords || null);
                   if (details) setPickupDetails(details);
                 }}
-                placeholder="e.g. Bangalore (Bengaluru)" 
+                placeholder="e.g. Bangalore (Bengaluru)"
                 iconColor="text-brand-emerald"
                 inputClassName="rounded-xl"
               />
@@ -662,7 +657,7 @@ export default function BookingWidget() {
 
             {/* Swap Button (between pickup & stops/drop) */}
             <div className="hidden lg:flex items-center justify-center pt-6 lg:col-span-1">
-              <button 
+              <button
                 type="button"
                 onClick={handleSwap}
                 title="Swap Pickup & Destination"
@@ -726,13 +721,12 @@ export default function BookingWidget() {
             ))}
 
             {/* TO: Drop Destination */}
-            <div className={`w-full relative ${
-              hasStops 
-                ? stops.length === 1 
-                  ? "lg:col-span-4" 
+            <div className={`w-full relative ${hasStops
+                ? stops.length === 1
+                  ? "lg:col-span-4"
                   : "lg:col-span-4"
                 : "lg:col-span-6"
-            }`}>
+              }`}>
               <div className="flex items-center justify-between mb-2 min-h-[18px]">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   {activeTab === "package" ? "Select Packages" : t("to_city")}
@@ -748,14 +742,14 @@ export default function BookingWidget() {
                   </button>
                 )}
               </div>
-              <CityAutocompleteInput 
+              <CityAutocompleteInput
                 value={dropCity}
                 onChange={(val, coords, details) => {
                   setDropCity(val);
                   setDropCoords(coords || null);
                   if (details) setDropDetails(details);
                 }}
-                placeholder="e.g. Coimbatore, Tamil Nadu" 
+                placeholder="e.g. Coimbatore, Tamil Nadu"
                 iconColor="text-brand-orange"
                 inputClassName="rounded-xl"
               />
@@ -778,7 +772,7 @@ export default function BookingWidget() {
 
           {/* ROW 2: Schedule & Action (Pick Up Date, Return Date, Pick Up Time, Explore CTA) */}
           <div className="grid grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-5 items-end pt-4 mt-2 border-t border-slate-100 min-w-0">
-            
+
             {/* SEPARATE PICKUP DATE */}
             <div className={`col-span-1 min-w-0 ${isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}`}>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 truncate">
@@ -786,8 +780,8 @@ export default function BookingWidget() {
               </label>
               <div className="relative group min-w-0 w-full">
                 <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-[#0082fe] w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={pickupDate}
                   min={minDateStr}
                   suppressHydrationWarning
@@ -817,8 +811,8 @@ export default function BookingWidget() {
                 </label>
                 <div className="relative group min-w-0 w-full">
                   <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-[#0082fe] w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={dropDate}
                     min={pickupDate || minDateStr}
                     suppressHydrationWarning
@@ -831,7 +825,7 @@ export default function BookingWidget() {
 
             {/* CTA Button: EXPLORE / SEARCH CABS */}
             <div className={`col-span-2 sm:col-span-1 ${isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}`}>
-              <Link 
+              <Link
                 href={buildExploreUrl()}
                 onClick={handleExploreClick}
                 suppressHydrationWarning
@@ -846,15 +840,15 @@ export default function BookingWidget() {
       ) : (
         /* STANDARD 1-ROW VIEW (When 0 stops and one-way, Local, or Airport) */
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 items-start relative w-full">
-          
+
           {/* FIELD 1 (LEFT): Pickup City/Address OR Pickup Airport */}
           <div className="flex-1 min-w-0 w-full relative">
             <div className="flex items-center justify-between mb-2 min-h-[18px]">
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 {activeTab === "airport"
                   ? (airportTripType === "pickup"
-                      ? (t("pickup_airport") || "Pickup Airport")
-                      : (t("pickup_location") || "Pickup Location"))
+                    ? (t("pickup_airport") || "Pickup Airport")
+                    : (t("pickup_location") || "Pickup Location"))
                   : t("from_city")}
               </label>
             </div>
@@ -888,7 +882,7 @@ export default function BookingWidget() {
               </>
             ) : (
               <>
-                <CityAutocompleteInput 
+                <CityAutocompleteInput
                   value={pickupCity}
                   onChange={(val, coords, details) => {
                     setPickupCity(val);
@@ -899,7 +893,7 @@ export default function BookingWidget() {
                     setMapTarget("pickup");
                     setIsMapModalOpen(true);
                   }}
-                  placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : "e.g. Bangalore (Bengaluru)"} 
+                  placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : "e.g. Bangalore (Bengaluru)"}
                   iconColor="text-brand-emerald"
                 />
                 <button
@@ -920,7 +914,7 @@ export default function BookingWidget() {
           {/* Desktop Swap Button */}
           {showSwap && (
             <div className="hidden lg:flex items-center justify-center pt-6 px-1 shrink-0">
-              <button 
+              <button
                 type="button"
                 onClick={handleSwap}
                 title={activeTab === "airport" ? "Switch between Drop to Airport & Pickup from Airport" : "Swap Pickup & Destination"}
@@ -934,7 +928,7 @@ export default function BookingWidget() {
           {/* Mobile Swap Button */}
           {showSwap && (
             <div className="flex lg:hidden justify-center -my-1 w-full relative z-10 shrink-0">
-              <button 
+              <button
                 type="button"
                 onClick={handleSwap}
                 title={activeTab === "airport" ? "Switch between Drop to Airport & Pickup from Airport" : "Swap Pickup & Destination"}
@@ -949,15 +943,15 @@ export default function BookingWidget() {
           <div className="flex-1 min-w-0 w-full relative">
             <div className="flex items-center justify-between mb-2 min-h-[18px]">
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                {activeTab === "airport" 
-                  ? (airportTripType === "drop" 
-                      ? (t("drop_airport") || "Drop Airport") 
-                      : (t("drop_location") || "Drop Location"))
+                {activeTab === "airport"
+                  ? (airportTripType === "drop"
+                    ? (t("drop_airport") || "Drop Airport")
+                    : (t("drop_location") || "Drop Location"))
                   : activeTab === "local"
-                  ? "Select Hourly Package"
-                  : activeTab === "package"
-                  ? "Select Packages"
-                  : t("to_city")}
+                    ? "Select Hourly Package"
+                    : activeTab === "package"
+                      ? "Select Packages"
+                      : t("to_city")}
               </label>
               {allowsStops && stops.length < 3 && (
                 <button
@@ -1048,8 +1042,8 @@ export default function BookingWidget() {
               </div>
               <div className="relative group min-w-0 w-full">
                 <Calendar className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-[#0082fe] w-3.5 h-3.5 sm:w-4 sm:h-4 pointer-events-none shrink-0" />
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={pickupDate}
                   min={minDateStr}
                   suppressHydrationWarning
@@ -1076,7 +1070,7 @@ export default function BookingWidget() {
 
           {/* CTA Button */}
           <div className="w-full lg:w-auto mt-2 sm:mt-4 lg:mt-[23px] shrink-0">
-            <Link 
+            <Link
               href={buildExploreUrl()}
               onClick={handleExploreClick}
               suppressHydrationWarning
@@ -1106,8 +1100,8 @@ export default function BookingWidget() {
               ({activeTab === "airport"
                 ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup")
                 : activeTab === "package"
-                ? (routeEstimate.durationText || "Multi-Day Tour")
-                : tripType === "one-way" ? t("trip_one_way") : tripType === "round-trip" ? t("trip_round_trip") : t("multi_city_tour")})
+                  ? (routeEstimate.durationText || "Multi-Day Tour")
+                  : tripType === "one-way" ? t("trip_one_way") : tripType === "round-trip" ? t("trip_round_trip") : t("multi_city_tour")})
             </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -1171,7 +1165,7 @@ export default function BookingWidget() {
             </>
           )}
         </div>
-        
+
         {/* Promo Pill on Far Right */}
         <div className="bg-white text-[#0082fe] font-black text-xs px-3.5 py-1.5 rounded-lg shadow-xs whitespace-nowrap w-full sm:w-auto text-center">
           {activeTab === "airport" ? "100% On-Time Guarantee" : (t("flat_discount_promo") || "Flat 10% Off First Outstation Ride")}
@@ -1183,43 +1177,68 @@ export default function BookingWidget() {
         <LocationPickerModal
           isOpen={isMapModalOpen}
           onClose={() => setIsMapModalOpen(false)}
-        activeTarget={mapTarget}
-        pickupValue={pickupCity}
-        dropValue={dropCity}
-        airportValue={selectedAirport}
-        stops={stops}
-        allowStops={allowsStops && activeTab !== "airport"}
-        initialPickupCoords={pickupCoords}
-        initialDropCoords={dropCoords}
-        initialAirportCoords={airportCoords}
-        initialStopsCoords={stopsCoords}
-        tripType={activeTab === "package" ? "round-trip" : tripType}
-        onSelect={(selectedLocation, coords, target, allValues, details) => {
-          if (allValues) {
-            if (allValues.airport) {
-              setSelectedAirport(allValues.airport);
-              if (allValues.airportCoords) setAirportCoords(allValues.airportCoords);
-            }
-            if (allValues.pickup) {
-              setPickupCity(allValues.pickup);
-              if (allValues.pickupCoords) setPickupCoords(allValues.pickupCoords);
-              if (allValues.pickupDetails) setPickupDetails(allValues.pickupDetails);
-            }
-            if (allValues.drop) {
-              setDropCity(allValues.drop);
-              if (allValues.dropCoords) setDropCoords(allValues.dropCoords);
-              if (allValues.dropDetails) setDropDetails(allValues.dropDetails);
-            }
-            if (Array.isArray(allValues.stops)) {
-              setStops(allValues.stops);
-              if (allValues.stopsCoords) {
-                const arr = Array.isArray(allValues.stopsCoords)
-                  ? allValues.stopsCoords
-                  : allValues.stops.map((_, i) => allValues.stopsCoords[i] || null);
-                setStopsCoords(arr);
+          activeTarget={mapTarget}
+          pickupValue={pickupCity}
+          dropValue={dropCity}
+          airportValue={selectedAirport}
+          stops={stops}
+          allowStops={allowsStops && activeTab !== "airport"}
+          initialPickupCoords={pickupCoords}
+          initialDropCoords={dropCoords}
+          initialAirportCoords={airportCoords}
+          initialStopsCoords={stopsCoords}
+          tripType={activeTab === "package" ? "round-trip" : tripType}
+          onSelect={(selectedLocation, coords, target, allValues, details) => {
+            if (allValues) {
+              if (allValues.airport) {
+                setSelectedAirport(allValues.airport);
+                if (allValues.airportCoords) setAirportCoords(allValues.airportCoords);
               }
+              if (allValues.pickup) {
+                setPickupCity(allValues.pickup);
+                if (allValues.pickupCoords) setPickupCoords(allValues.pickupCoords);
+                if (allValues.pickupDetails) setPickupDetails(allValues.pickupDetails);
+              }
+              if (allValues.drop) {
+                setDropCity(allValues.drop);
+                if (allValues.dropCoords) setDropCoords(allValues.dropCoords);
+                if (allValues.dropDetails) setDropDetails(allValues.dropDetails);
+              }
+              if (Array.isArray(allValues.stops)) {
+                setStops(allValues.stops);
+                if (allValues.stopsCoords) {
+                  const arr = Array.isArray(allValues.stopsCoords)
+                    ? allValues.stopsCoords
+                    : allValues.stops.map((_, i) => allValues.stopsCoords[i] || null);
+                  setStopsCoords(arr);
+                }
+              }
+            } else if (target === "airport") {
+              setSelectedAirport(selectedLocation);
+              if (coords) {
+                setAirportCoords(coords);
+                if (airportTripType === "pickup") {
+                  setPickupCoords(coords);
+                } else {
+                  setDropCoords(coords);
+                }
+              }
+            } else if (target === "drop") {
+              setDropCity(selectedLocation);
+              if (coords) setDropCoords(coords);
+              if (details) setDropDetails(details);
+            } else if (typeof target === "string" && target.startsWith("stop-")) {
+              const idx = parseInt(target.replace("stop-", ""), 10);
+              if (idx >= 0) {
+                handleStopChange(idx, selectedLocation, coords);
+              }
+            } else {
+              setPickupCity(selectedLocation);
+              if (coords) setPickupCoords(coords);
+              if (details) setPickupDetails(details);
             }
-          } else if (target === "airport") {
+          }}
+          onSelectAirport={(selectedLocation, coords) => {
             setSelectedAirport(selectedLocation);
             if (coords) {
               setAirportCoords(coords);
@@ -1229,52 +1248,27 @@ export default function BookingWidget() {
                 setDropCoords(coords);
               }
             }
-          } else if (target === "drop") {
-            setDropCity(selectedLocation);
-            if (coords) setDropCoords(coords);
-            if (details) setDropDetails(details);
-          } else if (typeof target === "string" && target.startsWith("stop-")) {
-            const idx = parseInt(target.replace("stop-", ""), 10);
-            if (idx >= 0) {
-              handleStopChange(idx, selectedLocation, coords);
-            }
-          } else {
-            setPickupCity(selectedLocation);
-            if (coords) setPickupCoords(coords);
-            if (details) setPickupDetails(details);
-          }
-        }}
-        onSelectAirport={(selectedLocation, coords) => {
-          setSelectedAirport(selectedLocation);
-          if (coords) {
-            setAirportCoords(coords);
-            if (airportTripType === "pickup") {
-              setPickupCoords(coords);
-            } else {
-              setDropCoords(coords);
-            }
-          }
-        }}
-        onSelectPickup={(selectedLocation, coords, details) => {
-          setTimeout(() => {
-            setPickupCity(selectedLocation);
-            if (coords) setPickupCoords(coords);
-            if (details) setPickupDetails(details);
-          }, 0);
-        }}
-        onSelectDrop={(selectedLocation, coords, details) => {
-          setTimeout(() => {
-            setDropCity(selectedLocation);
-            if (coords) setDropCoords(coords);
-            if (details) setDropDetails(details);
-          }, 0);
-        }}
-        onSelectStops={(newStops) => {
-          setTimeout(() => {
-            setStops(newStops);
-          }, 0);
-        }}
-      />
+          }}
+          onSelectPickup={(selectedLocation, coords, details) => {
+            setTimeout(() => {
+              setPickupCity(selectedLocation);
+              if (coords) setPickupCoords(coords);
+              if (details) setPickupDetails(details);
+            }, 0);
+          }}
+          onSelectDrop={(selectedLocation, coords, details) => {
+            setTimeout(() => {
+              setDropCity(selectedLocation);
+              if (coords) setDropCoords(coords);
+              if (details) setDropDetails(details);
+            }, 0);
+          }}
+          onSelectStops={(newStops) => {
+            setTimeout(() => {
+              setStops(newStops);
+            }, 0);
+          }}
+        />
       )}
 
     </div>

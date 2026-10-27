@@ -490,6 +490,10 @@ export default function ReviewPayPage() {
     }
     if (addr.city) {
       setPickupCityName(addr.city);
+    }
+    if (addr.latitude != null && addr.longitude != null) {
+      setPickupCoords({ lat: Number(addr.latitude), lng: Number(addr.longitude) });
+    } else if (addr.city) {
       const coords = findCityCoordinates(addr.city);
       if (coords) setPickupCoords(coords);
     }

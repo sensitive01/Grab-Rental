@@ -25,6 +25,8 @@ public class CustomerAddressResponse {
     private String state;
     private String pincode;
     private String landmark;
+    private Double latitude;
+    private Double longitude;
     private Boolean isDefault;
     private Instant createdAt;
 
@@ -39,6 +41,8 @@ public class CustomerAddressResponse {
                 .state(entity.getState())
                 .pincode(entity.getPincode())
                 .landmark(entity.getLandmark())
+                .latitude(entity.getLatitude())
+                .longitude(entity.getLongitude())
                 .isDefault(Boolean.TRUE.equals(entity.getIsDefault()))
                 .createdAt(entity.getCreatedAt())
                 .build();

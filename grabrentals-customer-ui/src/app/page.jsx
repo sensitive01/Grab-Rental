@@ -165,16 +165,16 @@ export default function Home() {
               bg: "bg-sky-50"
             },
             {
-              stat: "98.9%",
+              stat: "99.4%",
               label: t("stat_on_time_departure") || "On-Time Departure Rate",
               icon: <CheckCircle className="text-emerald-500 w-5 h-5 sm:w-6 sm:h-6" />,
               bg: "bg-emerald-50"
             },
             {
-              stat: "4.8 / 5.0",
-              label: t("stat_reviews") || "(120,000+ Reviews)",
-              icon: <Star className="text-amber-500 fill-amber-500 w-5 h-5 sm:w-6 sm:h-6" />,
-              bg: "bg-amber-50"
+              stat: "4.9 / 5.0",
+              label: t("stat_reviews") || "(10,00,000+ Reviews)",
+              icon: <Star className="text-[#0082fe] fill-[#0082fe] w-5 h-5 sm:w-6 sm:h-6" />,
+              bg: "bg-blue-50"
             },
             {
               stat: "32-Point",

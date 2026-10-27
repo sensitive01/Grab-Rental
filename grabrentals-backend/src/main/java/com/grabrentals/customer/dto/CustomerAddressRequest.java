@@ -30,5 +30,9 @@ public class CustomerAddressRequest {
 
     private String landmark;
 
+    private Double latitude;
+
+    private Double longitude;
+
     private Boolean isDefault;
 }

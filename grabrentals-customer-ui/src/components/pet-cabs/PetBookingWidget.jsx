@@ -333,7 +333,7 @@ export default function PetBookingWidget() {
 
   return (
     <div className="w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden text-slate-800">
-      
+
       {/* 1. Header Banner & Trip Mode Dropdown */}
       <div className="bg-slate-900 text-white p-4 sm:px-6 sm:py-5 border-b border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -381,7 +381,7 @@ export default function PetBookingWidget() {
 
       {/* 2. Main Form Body */}
       <div className="p-4 sm:p-6 lg:p-7 space-y-5">
-        
+
         {/* Airport Transfer Toggle (if airport) */}
         {tripMode === "airport" && (
           <div className="flex items-center gap-2 sm:gap-3 p-1 bg-slate-100 rounded-2xl w-fit">
@@ -395,9 +395,8 @@ export default function PetBookingWidget() {
                   key={dir.id}
                   type="button"
                   onClick={() => setAirportTripType(dir.id)}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${
-                    selected ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all ${selected ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   {dir.label}
                 </button>

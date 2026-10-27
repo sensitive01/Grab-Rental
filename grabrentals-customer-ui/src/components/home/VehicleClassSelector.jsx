@@ -54,7 +54,7 @@ export const VEHICLE_CLASSES = [
   },
 ];
 
-export default function VehicleClassSelector({ onSelect, defaultSelected = "sedan" }) {
+export default function VehicleClassSelector({ onSelect, defaultSelected = null }) {
   const [selectedSlug, setSelectedSlug] = useState(defaultSelected);
 
   const handleSelect = (vehicle) => {
@@ -73,11 +73,7 @@ export default function VehicleClassSelector({ onSelect, defaultSelected = "seda
           <div
             key={fleet.slug}
             onClick={() => handleSelect(fleet)}
-            className={`bg-white rounded-2xl p-3 sm:p-4 flex flex-col items-center text-center relative cursor-pointer transition-all duration-200 select-none group ${
-              isSelected
-                ? "border-2 border-[#0082fe] shadow-[0_8px_24px_rgba(0,130,254,0.18)] -translate-y-0.5"
-                : "border border-slate-200/90 hover:border-blue-300 hover:shadow-md"
-            }`}
+            className="bg-white rounded-2xl p-3 sm:p-4 flex flex-col items-center text-center relative cursor-pointer transition-all duration-200 select-none group border border-slate-200/90 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5"
           >
             {/* Vehicle Image Container */}
             <div className="w-full aspect-[16/10] relative mb-3 rounded-xl overflow-hidden bg-[#f8f9fa] border border-slate-100 flex items-center justify-center p-1.5">
@@ -91,13 +87,7 @@ export default function VehicleClassSelector({ onSelect, defaultSelected = "seda
             </div>
 
             {/* Vehicle Title */}
-            <h3
-              className={`text-sm sm:text-base font-bold mb-2.5 transition-colors ${
-                isSelected
-                  ? "text-[#0082fe] font-extrabold"
-                  : "text-slate-900 group-hover:text-[#0082fe]"
-              }`}
-            >
+            <h3 className="text-sm sm:text-base font-bold mb-2.5 text-slate-900 transition-colors">
               {fleet.name}
             </h3>
 

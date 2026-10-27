@@ -66,7 +66,7 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="max-w-7xl mx-auto px-6 pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3">
-          <span>Copyright @ {new Date().getFullYear()} Grab Rentals. All rights reserved.</span>
+          <span>Copyright © 2014 Grab Rentals. All rights reserved.</span>
           <span className="hidden md:inline">|</span>
           <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
           <span className="hidden md:inline">|</span>

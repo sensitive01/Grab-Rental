@@ -829,6 +829,7 @@ export default function AppShell({ children }) {
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Bangalore to Ooty</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Mumbai to Pune</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chennai to Pondicherry</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Mumbai to Goa</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chandigarh to Manali</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Hyderabad to Vijayawada</Link></li>
             </ul>
@@ -877,7 +878,11 @@ export default function AppShell({ children }) {
               </li>
               <li className="flex items-start gap-2 mt-4 text-white/90">
                 <Navigation className="w-4 h-4 text-yellow-300 mt-1 shrink-0" />
-                <span>Anjananagar, Bangalore, Karnataka</span>
+                <div className="flex flex-col gap-1 text-xs">
+                  <span>Anjananagar, Bangalore, Karnataka</span>
+                  <span>Pondicherry (Puducherry)</span>
+                  <span>Goa</span>
+                </div>
               </li>
             </ul>
           </div>
@@ -886,7 +891,7 @@ export default function AppShell({ children }) {
         {/* Bottom Bar */}
         <div className="max-w-7xl mx-auto pt-6 border-t border-blue-400/40 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-xs text-white/85 flex flex-wrap items-center gap-3">
-            <span>Copyright @ {new Date().getFullYear()} Grab Rentals. All rights reserved.</span>
+            <span>Copyright © 2014 Grab Rentals. All rights reserved.</span>
             <span className="hidden md:inline">|</span>
             <Link href="/privacy-policy" className="hover:text-yellow-300 hover:underline transition-colors">Privacy Policy</Link>
             <span className="hidden md:inline">|</span>

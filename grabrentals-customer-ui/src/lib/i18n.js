@@ -81,7 +81,7 @@ export const translations = {
     // Key Metric Cards
     stat_cities_served: "Cities & Towns Served",
     stat_on_time_departure: "On-Time Departure Rate",
-    stat_reviews: "(120,000+ Reviews)",
+    stat_reviews: "(10,00,000+ Reviews)",
     stat_sanitized_inspection: "Sanitized Fleet Inspection",
 
     // Travel Class / Fleet Cards
@@ -309,7 +309,7 @@ export const translations = {
     // Key Metric Cards
     stat_cities_served: "சேவை வழங்கப்படும் நகரங்கள்",
     stat_on_time_departure: "சரியான நேர புறப்பாடு விகிதம்",
-    stat_reviews: "(1,20,000+ மதிப்புரைகள்)",
+    stat_reviews: "(10,00,000+ மதிப்புரைகள்)",
     stat_sanitized_inspection: "32-புள்ளி தூய்மைப் பரிசோதனை",
 
     // Travel Class / Fleet Cards
@@ -536,7 +536,7 @@ export const translations = {
     // Key Metric Cards
     stat_cities_served: "ಸೇವೆ ಒದಗಿಸಲಾದ ನಗರಗಳು",
     stat_on_time_departure: "ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಹೊರಡುವ ದರ",
-    stat_reviews: "(1,20,000+ ವಿಮರ್ಶೆಗಳು)",
+    stat_reviews: "(10,00,000+ ವಿಮರ್ಶೆಗಳು)",
     stat_sanitized_inspection: "32-ಪಾಯಿಂಟ್ ನೈರ್ಮಲ್ಯ ತಪಾಸಣೆ",
 
     // Travel Class / Fleet Cards
@@ -636,7 +636,7 @@ export const translations = {
     corporate_hero_title: "ಸರಳೀಕೃತ ಕಾರ್ಪೊರೇಟ್ ಪ್ರಯಾಣ",
     corporate_hero_subtitle: "ಸಮಯೋಚಿತ ಸೇವೆ, ಮೀಸಲಾದ ಖಾತೆ ನಿರ್ವಾಹಕರು ಮತ್ತು ಸ್ವಯಂಚಾಲಿತ ಜಿಎಸ್‌ಟಿ ಬಿಲ್ಲಿಂಗ್.",
     why_partner_with_us: "ನಮ್ಮೊಂದಿಗೆ ಏಕೆ ಸಹಭಾಗಿತ್ವ?",
-    corp_credit_facility: "ಕ್ರೆಡಿಟ್ ಸೌಲಭ್ಯ & ಜಿಎಸ್‌ಟಿ ಬಿಲ್ಲಿಂಗ್" ,
+    corp_credit_facility: "ಕ್ರೆಡಿಟ್ ಸೌಲಭ್ಯ & ಜಿಎಸ್‌ಟಿ ಬಿಲ್ಲಿಂಗ್",
     corp_credit_desc: "ಮಾಸಿಕ ಬಿಲ್ಲಿಂಗ್ ಸೈಕಲ್ ಮತ್ತು ಸ್ವಯಂಚಾಲಿತ ಜಿಎಸ್‌ಟಿ ಇನ್‌ವಾಯ್ಸ್‌ಗಳು.",
     corp_chauffeurs: "ಎಕ್ಸಿಕ್ಯೂಟಿವ್ ಚಾಲಕರು",
     corp_chauffeurs_desc: "ಉನ್ನತ ಅಧಿಕಾರಿಗಳಿಗೆ ತರಬೇತಿ ಪಡೆದ ವೃತ್ತಿಪರ ಚಾಲಕರು.",
@@ -763,7 +763,7 @@ export const translations = {
     // Key Metric Cards
     stat_cities_served: "సేవలు అందించే నగరాలు",
     stat_on_time_departure: "సమయపాలన నిష్పత్తి",
-    stat_reviews: "(1,20,000+ సమీక్షలు)",
+    stat_reviews: "(10,00,000+ సమీక్షలు)",
     stat_sanitized_inspection: "32-పాయింట్ పరిశుభ్రత తనిಖీ",
 
     // Travel Class / Fleet Cards
@@ -990,7 +990,7 @@ export const translations = {
     // Key Metric Cards
     stat_cities_served: "सेवा प्रदान किए गए शहर",
     stat_on_time_departure: "समय पर प्रस्थान दर",
-    stat_reviews: "(1,20,000+ समीक्षाएं)",
+    stat_reviews: "(10,00,000+ समीक्षाएं)",
     stat_sanitized_inspection: "32-बिंदु स्वच्छता निरीक्षण",
 
     // Travel Class / Fleet Cards
