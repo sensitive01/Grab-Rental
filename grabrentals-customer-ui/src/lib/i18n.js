@@ -36,7 +36,7 @@ export const translations = {
     customer_badge: "Customer",
 
     // Hero Section
-    hero_badge: "Grab Rentals",
+    hero_badge: "Grab Rentals - India’s first ISO travel company",
     hero_title_1: "India's Most Trusted Cab Rental Service",
     hero_title_2: "Car, Van & Bus Rentals",
     hero_subtitle: "Transparent billing, expert verified drivers, and pristine AC vehicles for Outstation, Local & Airport transit across 2,000+ Indian cities.",
@@ -271,7 +271,7 @@ export const translations = {
     customer_badge: "வாடிக்கையாளர்",
 
     // Hero Section
-    hero_badge: "Grab Rentals",
+    hero_badge: "Grab Rentals - இந்தியாவின் முதல் ISO பயண நிறுவனம்",
     hero_title_1: "இந்தியாவின் நம்பகமான ஓட்டுநருடன் கூடிய",
     hero_title_2: "கார், வேன் மற்றும் பேருந்து வாடகை",
     hero_subtitle: "வெளிப்படையான கட்டணம், அனுபவம் வாய்ந்த ஓட்டுநர்கள் மற்றும் 2,000+ இந்திய நகரங்களில் வெளியூர், உள்ளூர் மற்றும் விமான நிலைய பயணங்களுக்கான சிறந்த ஏசி வாகனங்கள்.",
@@ -498,7 +498,7 @@ export const translations = {
     customer_badge: "ಗ್ರಾಹಕ",
 
     // Hero Section
-    hero_badge: "Grab Rentals",
+    hero_badge: "Grab Rentals - ಭಾರತದ ಮೊದಲ ISO ಟ್ರಾವೆಲ್ ಕಂಪನಿ",
     hero_title_1: "ಭಾರತದ ವಿಶ್ವಾಸಾರ್ಹ ಚಾಲಕ-ಚಾಲಿತ",
     hero_title_2: "ಕಾರ್, ವ್ಯಾನ್ ಮತ್ತು ಬಸ್ ಬಾಡಿಗೆ",
     hero_subtitle: "ಪಾರದರ್ಶಕ ಬಿಲ್ಲಿಂಗ್, ಪರಿಣಿತ ಪರಿಶೀಲಿತ ಚಾಲಕರು ಮತ್ತು 2,000+ ಭಾರತೀಯ ನಗರಗಳಲ್ಲಿ ಹೊರಗಿನ, ಸ್ಥಳೀಯ ಮತ್ತು ವಿಮಾನ ನಿಲ್ದಾಣದ ಪ್ರಯಾಣಕ್ಕಾಗಿ ಸ್ವಚ್ಛವಾದ AC ವಾಹನಗಳು.",
@@ -725,7 +725,7 @@ export const translations = {
     customer_badge: "కస్టమర్",
 
     // Hero Section
-    hero_badge: "Grab Rentals",
+    hero_badge: "Grab Rentals - భారతదేశపు మొదటి ISO ట్రావెల్ కంపెనీ",
     hero_title_1: "భారతదేశంలో విశ్వసనీయమైన డ్రైవర్‌తో కూడిన",
     hero_title_2: "కార్, వ్యాన్ & బస్సు అద్దెలు",
     hero_subtitle: "పారదర్శక బిల్లింగ్, నిపుణులైన ధృవీకరించబడిన డ్రైవర్లు మరియు 2,000+ భారతీయ నగరాల్లో అవుట్‌స్టేషన్, లోకల్ & ఎయిర్‌పోర్ట్ ప్రయాణాల కోసం ఉత్తమ AC వాహనాలు.",
@@ -952,7 +952,7 @@ export const translations = {
     customer_badge: "ग्राहक",
 
     // Hero Section
-    hero_badge: "Grab Rentals",
+    hero_badge: "Grab Rentals - भारत की पहली ISO ट्रैवल कंपनी",
     hero_title_1: "भारत की विश्वसनीय शॉफर-चालित",
     hero_title_2: "कार, वैन और बस रेंटल",
     hero_subtitle: "पारदर्शी बिलिंग, अनुभवी सत्यापित चालक और 2,000+ भारतीय शहरों में आउटस्टेशन, लोकल और एयरपोर्ट यात्रा के लिए स्वच्छ एसी वाहन।",
