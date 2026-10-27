@@ -108,6 +108,7 @@ export default function AppShell({ children }) {
     { code: "ta", label: "தமிழ்", name: "Tamil" },
     { code: "te", label: "తెలుగు", name: "Telugu" },
     { code: "hi", label: "हिंदी", name: "Hindi" },
+    { code: "ml", label: "മലയാളം", name: "Malayalam" },
   ];
 
   const bookNowItems = [
