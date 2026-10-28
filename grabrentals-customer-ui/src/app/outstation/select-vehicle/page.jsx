@@ -378,7 +378,8 @@ function SelectVehicleContent() {
   }, [searchParams]);
 
   // Compute Active Distance
-  const isLocalBooking = trip.serviceType === "LOCAL" || (trip.to && trip.to.toLowerCase().includes("hr"));
+  const isAirportBooking = trip.serviceType === "AIRPORT" || (searchParams?.get("serviceType") || "").toUpperCase() === "AIRPORT";
+  const isLocalBooking = !isAirportBooking && (trip.serviceType === "LOCAL" || (trip.to && trip.to.toLowerCase().includes("hr")));
 
   const packageLabel = formatPackageLabel(trip.to);
 
@@ -417,7 +418,7 @@ function SelectVehicleContent() {
     ? parsePackageKm(trip.to) 
     : (googleRouteDetails?.distanceKm || backendDistance || fallbackDistance || 0);
 
-  const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
+  const isRoundTripBooking = !isLocalBooking && !isAirportBooking && (trip.tripType || "").toLowerCase().includes("round");
 
   const tripDays = useMemo(() => {
     if (!isRoundTripBooking) return 1;
@@ -545,14 +546,14 @@ function SelectVehicleContent() {
 
       const minKmThreshold = isRoundTripBooking
         ? Math.max(effectiveTripDistance, car.includedKms || 250)
-        : (!isLocalBooking ? (car.includedKms || 250) : 0);
+        : ((!isLocalBooking && !isAirportBooking) ? (car.includedKms || 250) : 0);
 
-      const effectiveTripKm = isLocalBooking
+      const effectiveTripKm = (isLocalBooking || isAirportBooking)
         ? (activeDistance || car.includedKms || 0)
         : Math.max(activeDistance || 0, minKmThreshold);
 
-      const standardRateFare = isLocalBooking
-        ? (car.pricing?.originalPrice || car.dailyPrice || 2000)
+      const standardRateFare = (isLocalBooking || isAirportBooking)
+        ? (car.pricing?.originalPrice || car.dailyPrice || car.baseFare || 2000)
         : (effectiveTripKm > 0 && perKmRate > 0
             ? Math.round(effectiveTripKm * perKmRate)
             : (car.pricing?.originalPrice || car.baseFare || car.fare || 0));
@@ -564,9 +565,11 @@ function SelectVehicleContent() {
       const originalFare = Math.round(standardRateFare);
 
       // displayFare = Discounted price directly deducted by discount%
-      const displayFare = discountPercentage > 0
-        ? Math.round(originalFare * (1 - (discountPercentage / 100)))
-        : originalFare;
+      const displayFare = car.pricing?.discountedPrice
+        ? Math.round(car.pricing.discountedPrice)
+        : (discountPercentage > 0
+            ? Math.round(originalFare * (1 - (discountPercentage / 100)))
+            : originalFare);
 
       const baseFare = displayFare;
       const tripDiscountedFare = displayFare;
@@ -579,7 +582,7 @@ function SelectVehicleContent() {
       const isDriverFlat = car.pricing?.driverAllowanceType === "FLAT" || (pricingConfig.driverAllowanceType === "FLAT" && pricingConfig.driverAllowanceAmount > 0);
 
       let driverAllowance = 0;
-      if (!isLocalBooking) {
+      if (!isLocalBooking && !isAirportBooking) {
         if (backendAllowance != null && !isNaN(Number(backendAllowance))) {
           driverAllowance = Math.round(Number(backendAllowance));
         } else if (isDriverFlat) {
@@ -594,12 +597,14 @@ function SelectVehicleContent() {
       const driverAllowanceLabel = "Driver Allowance";
 
       // GST / Taxes
-      const taxes = (pricingConfig.gstType === "FLAT" && pricingConfig.gstAmount > 0)
-        ? Math.round(pricingConfig.gstAmount)
-        : Math.round((displayFare + driverAllowance) * (pricingConfig.gstPercentage / 100));
+      const taxes = isAirportBooking
+        ? (car.pricing?.chargesAndTaxes ? Math.round(Number(car.pricing.chargesAndTaxes)) : 0)
+        : ((pricingConfig.gstType === "FLAT" && pricingConfig.gstAmount > 0)
+            ? Math.round(pricingConfig.gstAmount)
+            : Math.round((displayFare + driverAllowance) * (pricingConfig.gstPercentage / 100)));
 
-      // Toll price (0 for local, 0 for round trips, dynamic FASTag toll for outstation one-way)
-      const tollPrice = (isLocalBooking || isRoundTripBooking)
+      // Toll price (0 for local, 0 for airport, 0 for round trips, dynamic FASTag toll for outstation one-way)
+      const tollPrice = (isLocalBooking || isAirportBooking || isRoundTripBooking)
         ? 0
         : (googleRouteDetails?.tollPrice > 0
             ? Math.round(googleRouteDetails.tollPrice)
@@ -675,7 +680,7 @@ function SelectVehicleContent() {
         exclusions: resolvedExclusions
       };
     });
-  }, [backendVehicles, activeDistance, effectiveTripDistance, isRoundTripBooking, tripDays, trip.from, trip.tripType, isLocalBooking, pricingConfig, googleRouteDetails]);
+  }, [backendVehicles, activeDistance, effectiveTripDistance, isRoundTripBooking, isAirportBooking, tripDays, trip.from, trip.tripType, isLocalBooking, pricingConfig, googleRouteDetails]);
 
   // Dynamic Filter Counts based on live vehicles
   const counts = useMemo(() => {
@@ -821,13 +826,13 @@ function SelectVehicleContent() {
   };
 
   const handleCarSelect = (vehicle) => {
-    const isRoundTripBooking = !isLocalBooking && (trip.tripType || "").toLowerCase().includes("round");
+    const isRoundTripBooking = !isLocalBooking && !isAirportBooking && (trip.tripType || "").toLowerCase().includes("round");
     const minKmFloor = isRoundTripBooking
       ? (tripDays * 250)
-      : (!isLocalBooking ? (vehicle.includedKms || 250) : 0);
-    const chosenDistance = !isLocalBooking
+      : ((!isLocalBooking && !isAirportBooking) ? (vehicle.includedKms || 250) : 0);
+    const chosenDistance = (!isLocalBooking && !isAirportBooking)
       ? Math.max(activeDistance || 0, minKmFloor)
-      : activeDistance;
+      : (activeDistance || vehicle.includedKms || 0);
     if (typeof window !== "undefined") {
       const selectedData = {
         trip,
@@ -835,7 +840,7 @@ function SelectVehicleContent() {
         actualDistanceKm: activeDistance,
         routeDistanceKm: activeDistance,
         minPackageKm: minKmFloor > 0 ? minKmFloor : null,
-        tollPrice: (isRoundTripBooking || isLocalBooking)
+        tollPrice: (isRoundTripBooking || isLocalBooking || isAirportBooking)
           ? 0
           : (vehicle.pricing?.tollPrice ?? (googleRouteDetails?.tollPrice || (activeDistance > 20 ? Math.round(activeDistance * 1.35) : 0))),
         duration: googleRouteDetails?.durationText || null,
@@ -862,11 +867,11 @@ function SelectVehicleContent() {
           baseFare: vehicle.pricing?.baseFare ?? vehicle.pricing?.displayFare ?? (chosenDistance > 0 ? Math.round(chosenDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
           petCharge: vehicle.pricing?.petCharge != null ? Number(vehicle.pricing.petCharge) : 0,
           vendorPetCharge: vehicle.pricing?.vendorPetCharge != null ? Number(vehicle.pricing.vendorPetCharge) : 0,
-          driverAllowance: (isNightPickup(trip.time) || isLocalBooking) ? 0 : (vehicle.pricing?.driverAllowance ?? 0),
+          driverAllowance: (isNightPickup(trip.time) || isLocalBooking || isAirportBooking) ? 0 : (vehicle.pricing?.driverAllowance ?? 0),
           driverAllowanceLabel: vehicle.pricing?.driverAllowanceLabel,
-          taxes: vehicle.pricing?.chargesAndTaxes ?? 0,
-          gstPercentage: vehicle.pricing?.gstPercentage ?? 5,
-          driverAllowancePercentage: vehicle.pricing?.driverAllowancePercentage ?? 10,
+          taxes: isAirportBooking ? 0 : (vehicle.pricing?.chargesAndTaxes ?? 0),
+          gstPercentage: isAirportBooking ? 0 : (vehicle.pricing?.gstPercentage ?? 5),
+          driverAllowancePercentage: isAirportBooking ? 0 : (vehicle.pricing?.driverAllowancePercentage ?? 10),
           totalFare: vehicle.pricing?.discountedPrice ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0)),
           advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.discountedPrice ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0))) * 0.25),
           inclusions: vehicle.inclusions || [],
@@ -1421,14 +1426,24 @@ function SelectVehicleContent() {
                             </div>
                           )}
                           <div className="text-lg sm:text-2xl font-black text-[#0082fe] leading-tight">
-                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance) || 250) * car.perKmRate)).toLocaleString()}
+                            ₹{(car.pricing?.displayFare || car.pricing?.baseFare || car.dailyPrice).toLocaleString()}
                           </div>
-                          <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
-                            + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
-                          </div>
+                          {isAirportBooking ? (
+                            <div className="text-[10px] sm:text-[11px] font-bold text-emerald-600 mt-0.5">
+                              ✓ All-Inclusive Airport Fare
+                            </div>
+                          ) : (
+                            <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
+                              + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
+                            </div>
+                          )}
                           {isLocalBooking ? (
                             <p className="text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight mt-0.5">
                               Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                            </p>
+                          ) : isAirportBooking ? (
+                            <p className="text-[10px] sm:text-[11px] font-medium text-slate-600 leading-tight mt-0.5">
+                              {car.includedKms || 35} KM Included | Additional Rs.{Math.round(car.perKmRate || 14)} / KM
                             </p>
                           ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                             <p className="text-[10px] sm:text-[11px] font-medium text-slate-600 leading-tight mt-0.5">
@@ -1520,14 +1535,24 @@ function SelectVehicleContent() {
                           </div>
                         )}
                         <div className="text-2xl sm:text-3xl font-black text-[#0082fe] leading-tight">
-                          ₹{(car.pricing?.displayFare || car.pricing?.baseFare || Math.round((car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance) || 250) * car.perKmRate)).toLocaleString()}
+                          ₹{(car.pricing?.displayFare || car.pricing?.baseFare || car.dailyPrice).toLocaleString()}
                         </div>
-                        <div className="text-[11px] font-bold text-slate-500 md:text-right mt-0.5">
-                          + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
-                        </div>
+                        {isAirportBooking ? (
+                          <div className="text-[11px] font-bold text-emerald-600 md:text-right mt-0.5">
+                            ✓ All-Inclusive Airport Fare
+                          </div>
+                        ) : (
+                          <div className="text-[11px] font-bold text-slate-500 md:text-right mt-0.5">
+                            + ₹{(car.pricing?.chargesAndTaxesTotal || 0).toLocaleString()} Charges &amp; Taxes
+                          </div>
+                        )}
                         {isLocalBooking ? (
                           <p className="text-[11px] font-bold text-slate-700">
                             Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                          </p>
+                        ) : isAirportBooking ? (
+                          <p className="text-[11px] font-medium text-slate-600">
+                            {car.includedKms || 35} KM Included | Additional Rs.{Math.round(car.perKmRate || 14)} / KM
                           </p>
                         ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                           <p className="text-[11px] font-medium text-slate-600">

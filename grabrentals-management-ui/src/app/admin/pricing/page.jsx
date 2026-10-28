@@ -18,6 +18,7 @@ import {
   TableHead,
   TableCell
 } from "@/components/ui/Table";
+import AirportTariffSection from "@/components/pricing/AirportTariffSection";
 import {
   IndianRupee,
   Calendar,
@@ -81,6 +82,27 @@ const SERVICE_TYPES = [
   { id: "LOCAL", label: "Local", icon: MapPin, desc: "City Limits Per-KM Pricing" },
   { id: "AIRPORT", label: "Airport Transfer", icon: Plane, desc: "Airport Route Per-KM Pricing" },
 ];
+
+const AIRPORTS_LIST = [
+  "Kempegowda International Airport (BLR), Bengaluru",
+  "Chennai International Airport (MAA), Chennai",
+  "Coimbatore International Airport (CJB), Coimbatore",
+  "Madurai Airport (IXM), Madurai",
+  "Tiruchirappalli International Airport (TRZ), Trichy",
+  "Salem Airport (SXV), Salem",
+  "Tuticorin Airport (TCR), Thoothukudi",
+  "Cochin International Airport (COK), Kochi",
+  "Calicut International Airport (CCJ), Kozhikode",
+  "Trivandrum International Airport (TRV), Thiruvananthapuram",
+  "Rajiv Gandhi International Airport (HYD), Hyderabad",
+  "Mangalore International Airport (IXE), Mangaluru",
+  "Goa International Airport (GOI / GOX), Goa",
+  "Chhatrapati Shivaji Maharaj Airport (BOM), Mumbai",
+  "Indira Gandhi International Airport (DEL), New Delhi",
+  "ALL",
+];
+
+const AIRPORT_DAYS_OF_WEEK = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 const STATES_AND_CITIES = {
   "Andaman and Nicobar Islands": [
@@ -451,6 +473,7 @@ const DEFAULT_RATES_BY_CATEGORY = {
 export default function AdminPricingPage() {
   const [tariffs, setTariffs] = useState([]);
   const [models, setModels] = useState([]);
+  const [airportTariffsCount, setAirportTariffsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [serviceFilter, setServiceFilter] = useState("ALL"); // ALL, OUTSTATION, LOCAL, AIRPORT
   const [activeTab, setActiveTab] = useState("ALL"); // ALL, STANDARD, SEASONAL
@@ -515,7 +538,7 @@ export default function AdminPricingPage() {
     hourlyWeekendNightRate: "",
     hourlyVendorWeekendNightRate: "",
 
-    // Airport Specific Fares
+    // Airport Specific Fares & Distance Slabs
     airportCustomerFare: "",
     airportVendorFare: "",
     airportCustomerWeekendFare: "",
@@ -523,6 +546,16 @@ export default function AdminPricingPage() {
     airportIncludedKm: "",
     airportExtraKmRate: "",
     airportVendorExtraKmRate: "",
+    tripDirection: "BOTH", // CITY_TO_AIRPORT, AIRPORT_TO_CITY, BOTH
+    airportName: "ALL",
+    minKm: "0",
+    maxKm: "35",
+    daysOfWeek: "ALL",
+    timeSlotType: "ALL_DAY",
+    timeRangeStart: "",
+    timeRangeEnd: "",
+    expiryType: "NEVER",
+    status: "ACTIVE",
     tollIncluded: false,
     discountPercentage: "",
     petCharge: "",
@@ -543,13 +576,15 @@ export default function AdminPricingPage() {
     let isMounted = true;
     (async () => {
       try {
-        const [tariffRes, modelRes] = await Promise.all([
+        const [tariffRes, modelRes, airportTariffRes] = await Promise.all([
           adminApi.getTariffs(),
           adminApi.getModelConfigs(),
+          adminApi.getAirportTariffs().catch(() => []),
         ]);
         if (isMounted) {
           if (tariffRes.data) setTariffs(tariffRes.data);
           if (modelRes.data) setModels(modelRes.data);
+          if (Array.isArray(airportTariffRes)) setAirportTariffsCount(airportTariffRes.length);
         }
       } catch (err) {
         console.error(err);
@@ -662,6 +697,16 @@ export default function AdminPricingPage() {
       airportIncludedKm: "",
       airportExtraKmRate: "",
       airportVendorExtraKmRate: "",
+      tripDirection: "BOTH",
+      airportName: "ALL",
+      minKm: "0",
+      maxKm: "35",
+      daysOfWeek: "ALL",
+      timeSlotType: "ALL_DAY",
+      timeRangeStart: "",
+      timeRangeEnd: "",
+      expiryType: "NEVER",
+      status: "ACTIVE",
       tollIncluded: false,
       discountPercentage: "",
       petCharge: "",
@@ -749,11 +794,123 @@ export default function AdminPricingPage() {
     setIsModalOpen(true);
   }
 
+  function handleOpenEditAirport(item) {
+    setEditingItem(item);
+    setFormData({
+      id: item.id,
+      category: item.category || "Sedan",
+      modelName: item.modelName || "ALL",
+      seatingCapacity: item.seatingCapacity || "4",
+      fuelType: item.fuelType || "ALL",
+      serviceType: "AIRPORT",
+      state: item.state || "Tamil Nadu",
+      city: item.city || "Chennai",
+      customCity: "",
+      tariffType: (item.pricingType || "REGULAR").toUpperCase() === "SEASONAL" ? "SEASONAL" : "STANDARD",
+      seasonal: (item.pricingType || "REGULAR").toUpperCase() === "SEASONAL",
+      seasonName: item.title || "",
+      startDate: item.startDate || "",
+      endDate: item.endDate || "",
+      tripDirection: item.tripDirection || "BOTH",
+      airportName: item.airportName || "ALL",
+      minKm: item.minKm ?? 0,
+      maxKm: item.maxKm ?? 35,
+      customerFare: item.customerFare != null ? String(item.customerFare) : "",
+      baseFare: item.customerFare != null ? String(item.customerFare) : "",
+      airportCustomerFare: item.customerFare != null ? String(item.customerFare) : "",
+      vendorFare: item.vendorFare != null ? String(item.vendorFare) : "",
+      vendorBaseFare: item.vendorFare != null ? String(item.vendorFare) : "",
+      extraKmRate: item.extraKmRate != null ? String(item.extraKmRate) : "14",
+      weekdayDayRate: item.extraKmRate != null ? String(item.extraKmRate) : "14",
+      vendorExtraKmRate: item.vendorExtraKmRate != null ? String(item.vendorExtraKmRate) : "11",
+      daysOfWeek: item.daysOfWeek || "ALL",
+      timeSlotType: item.timeSlotType || "ALL_DAY",
+      timeRangeStart: item.timeRangeStart || "",
+      timeRangeEnd: item.timeRangeEnd || "",
+      expiryType: item.expiryType || "NEVER",
+      status: item.status || "ACTIVE",
+      tollIncluded: Boolean(item.tollIncluded),
+      discountPercentage: item.discountPercentage != null ? String(item.discountPercentage) : "0",
+      petCharge: item.petCharge != null ? String(item.petCharge) : "",
+      vendorPetCharge: item.vendorPetCharge != null ? String(item.vendorPetCharge) : "",
+    });
+    setIsModalOpen(true);
+  }
+
   async function handleSaveTariff(e) {
     e.preventDefault();
     if (!formData.category || !formData.modelName || !formData.seatingCapacity) {
       setToast({ type: "error", message: "Please choose Category, Model, and Seater" });
       return;
+    }
+
+    if (formData.serviceType === "AIRPORT") {
+      const custFare = parseFloat(formData.customerFare || formData.baseFare || formData.airportCustomerFare || 0);
+      if (isNaN(custFare) || custFare <= 0) {
+        setToast({ type: "error", message: "Please enter a valid Customer Fare (₹)" });
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+        const resolvedCity = formData.city === "__custom__"
+          ? (formData.customCity || "").trim()
+          : (formData.city || "Chennai").trim();
+
+        const minDistance = parseInt(formData.minKm || 0, 10);
+        const maxDistance = parseInt(formData.maxKm || formData.baseIncludedKm || formData.airportIncludedKm || 35, 10);
+        const vendFare = (formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare)
+          ? parseFloat(formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare)
+          : custFare * 0.75;
+
+        await adminApi.saveAirportTariff({
+          ...(editingItem ? { id: editingItem.id } : {}),
+          tripDirection: formData.tripDirection || "BOTH",
+          pricingType: formData.tariffType === "SEASONAL" ? "SEASONAL" : "REGULAR",
+          title: `${resolvedCity} ${formData.category} Airport Transfer (${minDistance}-${maxDistance} km)`,
+          state: formData.state || "Tamil Nadu",
+          city: resolvedCity,
+          airportName: formData.airportName || "ALL",
+          minKm: minDistance,
+          maxKm: maxDistance,
+          category: formData.category,
+          modelName: formData.modelName || "ALL",
+          seatingCapacity: formData.seatingCapacity || "4",
+          fuelType: formData.fuelType || "ALL",
+          customerFare: custFare,
+          vendorFare: vendFare,
+          extraKmRate: parseFloat(formData.extraKmRate || formData.weekdayDayRate || 14),
+          vendorExtraKmRate: parseFloat(formData.vendorExtraKmRate || formData.vendorWeekdayDayRate || 11),
+          daysOfWeek: formData.daysOfWeek || "ALL",
+          timeSlotType: formData.timeSlotType || "ALL_DAY",
+          timeRangeStart: formData.timeRangeStart || null,
+          timeRangeEnd: formData.timeRangeEnd || null,
+          expiryType: formData.tariffType === "SEASONAL" ? "FIXED_DAYS" : (formData.expiryType || "NEVER"),
+          startDate: formData.startDate || null,
+          endDate: formData.endDate || null,
+          status: formData.status || "ACTIVE",
+          tollIncluded: Boolean(formData.tollIncluded),
+          discountPercentage: parseFloat(formData.discountPercentage || 0),
+          petCharge: parseFloat(formData.petCharge || 0),
+          vendorPetCharge: parseFloat(formData.vendorPetCharge || 0),
+        });
+
+        const allAirports = await adminApi.getAirportTariffs().catch(() => []);
+        if (Array.isArray(allAirports)) setAirportTariffsCount(allAirports.length);
+
+        setToast({
+          type: "success",
+          message: `Airport charge for ${formData.category} (${minDistance}-${maxDistance} km) saved successfully`,
+        });
+        setIsModalOpen(false);
+        refreshData();
+        return;
+      } catch (err) {
+        setToast({ type: "error", message: err.response?.data?.message || "Failed to save airport charge rule" });
+        return;
+      } finally {
+        setSubmitting(false);
+      }
     }
 
     if (formData.tariffType === "SEASONAL" && (!formData.startDate || !formData.endDate)) {
@@ -915,10 +1072,27 @@ export default function AdminPricingPage() {
   // Live modal margin computation helper
   const modalMarginInfo = useMemo(() => {
     const isLocal = formData.serviceType === "LOCAL";
+    const isAirport = formData.serviceType === "AIRPORT";
+
+    if (isAirport) {
+      const custRate = parseFloat(formData.customerFare || formData.baseFare || formData.airportCustomerFare || 0);
+      const vendRate = parseFloat(formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare || (custRate * 0.75));
+      const margin = custRate > 0 ? ((custRate - vendRate) / custRate) * 100 : 0;
+      return {
+        unit: "/ Trip",
+        customer: custRate.toFixed(2),
+        vendor: vendRate.toFixed(2),
+        marginPercent: margin.toFixed(1),
+        sampleCust: custRate.toFixed(0),
+        sampleVend: vendRate.toFixed(0),
+        sampleMargin: (custRate - vendRate).toFixed(0),
+      };
+    }
+
     const custRate = parseFloat((isLocal && formData.hourlyWeekdayDayRate ? formData.hourlyWeekdayDayRate : formData.weekdayDayRate) || 0);
     const vendRate = parseFloat((isLocal && formData.hourlyVendorWeekdayDayRate ? formData.hourlyVendorWeekdayDayRate : formData.vendorWeekdayDayRate) || 0);
     const margin = custRate > 0 ? ((custRate - vendRate) / custRate) * 100 : 0;
-    const minUnits = isLocal ? 8 : parseInt(formData.baseIncludedKm || (formData.serviceType === "AIRPORT" ? 40 : 250), 10);
+    const minUnits = isLocal ? 8 : parseInt(formData.baseIncludedKm || 250, 10);
     const custSample = custRate * minUnits;
     const vendSample = vendRate * minUnits;
     return {
@@ -982,7 +1156,7 @@ export default function AdminPricingPage() {
             desc: "One Way & Round Trip Rates"
           },
           { id: "LOCAL", label: "Local", icon: MapPin, count: tariffs.filter(t => t.serviceType?.toUpperCase() === "LOCAL").length, desc: "City Limits Per-KM Pricing" },
-          { id: "AIRPORT", label: "Airport Transfer", icon: Plane, count: tariffs.filter(t => t.serviceType?.toUpperCase() === "AIRPORT").length, desc: "Pickup & Drop Flat Transfers" },
+          { id: "AIRPORT", label: "Airport Transfer", icon: Plane, count: airportTariffsCount, desc: "Distance Slabs & Transfer Rates" },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = serviceFilter === tab.id;
@@ -1011,7 +1185,14 @@ export default function AdminPricingPage() {
         })}
       </div>
 
-      {/* LIVE SIMULATOR: CUSTOMER VS VENDOR PAYOUT PREVIEW */}
+      {serviceFilter === "AIRPORT" ? (
+        <AirportTariffSection
+          onUpdateCount={(count) => setAirportTariffsCount(count)}
+          onEditItem={handleOpenEditAirport}
+        />
+      ) : (
+        <>
+          {/* LIVE SIMULATOR: CUSTOMER VS VENDOR PAYOUT PREVIEW */}
       <Card className="p-4 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white border-0 shadow-lg">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -1423,6 +1604,8 @@ export default function AdminPricingPage() {
           </Table>
         </Card>
       )}
+        </>
+      )}
 
       {/* CREATE / EDIT TARIFF MODAL */}
       <Modal
@@ -1615,83 +1798,85 @@ export default function AdminPricingPage() {
           </div>
 
           {/* STEP 3: OPERATIONAL TERRITORY (STATE & CITY) */}
-          <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2">
-            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-amber-600" />
-              Step 3: Operational Territory (State & City)
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  State <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={formData.state || "Tamil Nadu"}
-                  onChange={(e) => {
-                    const newState = e.target.value;
-                    const defaultCity = STATES_AND_CITIES[newState]?.[0] || "ALL";
-                    setFormData((prev) => ({
-                      ...prev,
-                      state: newState,
-                      city: defaultCity,
-                      customCity: "",
-                    }));
-                  }}
-                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold cursor-pointer text-slate-900"
-                  required
-                >
-                  {Object.keys(STATES_AND_CITIES).map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
+          {formData.serviceType !== "AIRPORT" && (
+            <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2">
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                Step 3: Operational Territory (State & City)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    State <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.state || "Tamil Nadu"}
+                    onChange={(e) => {
+                      const newState = e.target.value;
+                      const defaultCity = STATES_AND_CITIES[newState]?.[0] || "ALL";
+                      setFormData((prev) => ({
+                        ...prev,
+                        state: newState,
+                        city: defaultCity,
+                        customCity: "",
+                      }));
+                    }}
+                    className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold cursor-pointer text-slate-900"
+                    required
+                  >
+                    {Object.keys(STATES_AND_CITIES).map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    City / Hub <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.city || "ALL"}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        city: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold cursor-pointer text-slate-900"
+                    required
+                  >
+                    <option value="ALL">All Cities in {formData.state || "State"}</option>
+                    {(STATES_AND_CITIES[formData.state] || []).map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                    <option value="CUSTOM">+ Add Other City...</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  City / Hub <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={formData.city || "ALL"}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      city: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold cursor-pointer text-slate-900"
-                  required
-                >
-                  <option value="ALL">All Cities in {formData.state || "State"}</option>
-                  {(STATES_AND_CITIES[formData.state] || []).map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                  <option value="CUSTOM">+ Add Other City...</option>
-                </select>
-              </div>
+              {formData.city === "CUSTOM" && (
+                <div className="pt-2 border-t border-amber-200/60">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Custom City Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter specific city name (e.g. Kumbakonam)"
+                    value={formData.customCity || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, customCity: e.target.value }))
+                    }
+                    className="w-full px-3 py-1.5 text-xs border border-amber-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    required
+                  />
+                </div>
+              )}
             </div>
-
-            {formData.city === "CUSTOM" && (
-              <div className="pt-2 border-t border-amber-200/60">
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Custom City Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter specific city name (e.g. Kumbakonam)"
-                  value={formData.customCity || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, customCity: e.target.value }))
-                  }
-                  className="w-full px-3 py-1.5 text-xs border border-amber-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  required
-                />
-              </div>
-            )}
-          </div>
+          )}
 
           {/* STEP 4: SERVICE TYPE */}
           <div>
@@ -1814,10 +1999,10 @@ export default function AdminPricingPage() {
                         <Plane className="w-4 h-4 text-purple-600" />
                         <span className="text-xs font-black">Airport Transfer</span>
                       </div>
-                      <span className="text-[10px] opacity-75 block mt-0.5">Airport Route Per-KM Pricing</span>
+                      <span className="text-[10px] opacity-75 block mt-0.5">Distance Slabs & Flat Fares</span>
                     </div>
                     <div className="mt-2.5 pt-2 border-t border-transparent text-[11px] text-slate-400 font-medium">
-                      Pickup & Drop Flat
+                      Pickup & Drop Slabs
                     </div>
                   </button>
                 );
@@ -1825,14 +2010,481 @@ export default function AdminPricingPage() {
             </div>
           </div>
 
-          {/* STEP 5: BASE FARES & MINIMUM THRESHOLDS */}
-          {formData.serviceType === "LOCAL" ? (
+          {/* STEP 5+: DYNAMIC FOR AIRPORT VS OUTSTATION/LOCAL */}
+          {formData.serviceType === "AIRPORT" ? (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  Step 5: Base Fares & Minimum Thresholds (KM & Hours)
-                </h4>
+              {/* 1. Trip Direction */}
+              <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-blue-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <Plane className="w-3.5 h-3.5 text-blue-600" />
+                    Step 5: Trip Direction & Operational Territory (State & City)
+                  </label>
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-full border border-blue-300">
+                    Airport Route
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "CITY_TO_AIRPORT", label: "City ➔ Airport", desc: "Airport Drop" },
+                    { value: "AIRPORT_TO_CITY", label: "Airport ➔ City", desc: "Airport Pickup" },
+                    { value: "BOTH", label: "Both Directions", desc: "Uniform Drop & Pickup" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, tripDirection: opt.value }))}
+                      className={`py-2 px-2.5 rounded-xl border text-center transition-all ${
+                        formData.tripDirection === opt.value
+                          ? "border-blue-600 bg-white text-blue-900 font-bold shadow-xs ring-2 ring-blue-500/20"
+                          : "border-slate-200 bg-white/70 text-slate-600 hover:bg-white"
+                      }`}
+                    >
+                      <div className="text-xs">{opt.label}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-blue-200/60">
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                      State <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formData.state || "Tamil Nadu"}
+                      onChange={(e) => {
+                        const newState = e.target.value;
+                        const defaultCity = STATES_AND_CITIES[newState]?.[0] || "ALL";
+                        setFormData((prev) => ({
+                          ...prev,
+                          state: newState,
+                          city: defaultCity,
+                          customCity: "",
+                        }));
+                      }}
+                      className="w-full text-xs p-2 rounded-lg border border-blue-300 bg-white font-semibold cursor-pointer text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                      required
+                    >
+                      {Object.keys(STATES_AND_CITIES).map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                      City / Hub <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formData.city || "Chennai"}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          city: e.target.value,
+                        }))
+                      }
+                      className="w-full text-xs p-2 rounded-lg border border-blue-300 bg-white font-semibold cursor-pointer text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                      required
+                    >
+                      <option value="ALL">All Cities in {formData.state || "State"}</option>
+                      {(STATES_AND_CITIES[formData.state] || []).map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                      <option value="CUSTOM">+ Add Other City...</option>
+                    </select>
+                  </div>
+                </div>
+
+                {formData.city === "CUSTOM" && (
+                  <div className="pt-2 border-t border-blue-200/60">
+                    <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                      Custom City Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter specific city name (e.g. Kumbakonam)"
+                      value={formData.customCity || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, customCity: e.target.value }))
+                      }
+                      className="w-full px-3 py-1.5 text-xs border border-blue-300 rounded-lg bg-white"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 2. KM Range (Distance Slabs) */}
+              <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+                    Step 6: Distance Slab (KM Range)
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full border border-emerald-300">
+                    Distance Range
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Minimum KM
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.minKm ?? "0"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, minKm: e.target.value }))}
+                      placeholder="e.g. 0"
+                      className="w-full text-xs p-2 rounded-lg border border-emerald-300 bg-white font-bold text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Maximum KM <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={formData.maxKm ?? "35"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, maxKm: e.target.value, baseIncludedKm: e.target.value }))}
+                      placeholder="e.g. 35"
+                      className="w-full text-xs p-2 rounded-lg border border-emerald-300 bg-white font-bold text-slate-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Pricing: Customer Fare, Vendor Payout, Extra KM Rate */}
+              <div className="p-3 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <IndianRupee className="w-3.5 h-3.5 text-amber-600" />
+                    Step 7: Fares & Extra KM Rates
+                  </label>
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-full border border-amber-300">
+                    Flat Slab Fares
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                      👤 Customer Fare (₹) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="e.g. 1299"
+                      value={formData.customerFare || formData.baseFare || formData.airportCustomerFare || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData((prev) => ({
+                          ...prev,
+                          customerFare: val,
+                          baseFare: val,
+                          airportCustomerFare: val,
+                          vendorFare: prev.vendorFare || (val ? String(Math.round(parseFloat(val) * 0.75)) : ""),
+                        }));
+                      }}
+                      className="w-full text-xs p-2 rounded-lg border border-emerald-400 bg-white font-black text-emerald-950"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      🤝 Vendor Payout (₹)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g. 950"
+                      value={formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare || ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, vendorFare: e.target.value, vendorBaseFare: e.target.value }))}
+                      className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Extra KM Rate (₹/KM)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g. 14"
+                      value={formData.extraKmRate || formData.weekdayDayRate || "14"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, extraKmRate: e.target.value, weekdayDayRate: e.target.value }))}
+                      className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Vendor Extra KM (₹/KM)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g. 11"
+                      value={formData.vendorExtraKmRate || formData.vendorWeekdayDayRate || "11"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, vendorExtraKmRate: e.target.value, vendorWeekdayDayRate: e.target.value }))}
+                      className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-amber-200/60">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      🏷️ Discount %
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 5"
+                      value={formData.discountPercentage ?? "0"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
+                      className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"
+                    />
+                  </div>
+                  <div className="flex items-center pt-4">
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formData.tollIncluded)}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, tollIncluded: e.target.checked }))}
+                        className="w-4 h-4 text-blue-600 rounded-sm focus:ring-blue-500"
+                      />
+                      <span>Toll Included in Fare</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* STEP 8: PET TRAVEL CHARGES (SEPARATE SECTION) */}
+              <div className="p-3.5 bg-gradient-to-r from-amber-50/80 via-orange-50/40 to-amber-50/80 border border-amber-200/90 rounded-xl space-y-2.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-300 text-amber-700 flex items-center justify-center text-xs font-bold shadow-2xs">
+                      🐾
+                    </span>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                        Step 8: Pet Travel Charges (Customer Fare & Vendor Payout)
+                      </h4>
+                      <p className="text-[10px] text-slate-500 font-medium">
+                        Applied automatically when customer books via Pet-Friendly Cabs
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300 uppercase tracking-wide">
+                    Pet Add-on Surcharge
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                  <div className="p-2.5 bg-white border border-amber-200 rounded-lg shadow-2xs">
+                    <label className="block text-[11px] font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <span className="text-amber-600 font-extrabold">🐾</span>
+                      <span>Customer Pet Charge (₹)</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 500"
+                      value={formData.petCharge}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, petCharge: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs font-black border border-slate-300 rounded-md bg-white text-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Added to trip fare when booked from Pet-Friendly Cabs tab
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-white border border-amber-200 rounded-lg shadow-2xs">
+                    <label className="block text-[11px] font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <span className="text-amber-600 font-extrabold">🤝</span>
+                      <span>Vendor Pet Payout (₹)</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 350"
+                      value={formData.vendorPetCharge}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, vendorPetCharge: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs font-black border border-amber-300 rounded-md bg-amber-50/50 text-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Additional surcharge disbursed to vendor/driver for pet rides
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Schedule: Days of Week, Time Window & Expiry */}
+              <div className="p-3 bg-purple-50/60 border border-purple-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-purple-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-purple-600" />
+                    Step 9: Days, Time Range & Expiry
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, daysOfWeek: "ALL" }))}
+                      className="text-[10px] text-purple-700 font-bold hover:underline"
+                    >
+                      All Days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, daysOfWeek: "MON,TUE,WED,THU,FRI" }))}
+                      className="text-[10px] text-purple-700 font-bold hover:underline"
+                    >
+                      Weekdays
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, daysOfWeek: "SAT,SUN" }))}
+                      className="text-[10px] text-purple-700 font-bold hover:underline"
+                    >
+                      Weekends
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 flex-wrap">
+                  {AIRPORT_DAYS_OF_WEEK.map((d) => {
+                    const isAll = (formData.daysOfWeek || "ALL") === "ALL";
+                    const isSelected = isAll || (formData.daysOfWeek || "").split(",").includes(d);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          if (isAll) {
+                            setFormData((prev) => ({ ...prev, daysOfWeek: d }));
+                          } else {
+                            const current = formData.daysOfWeek ? formData.daysOfWeek.split(",") : [];
+                            const updated = current.includes(d) ? current.filter((x) => x !== d) : [...current, d];
+                            setFormData((prev) => ({
+                              ...prev,
+                              daysOfWeek: updated.length === 7 || updated.length === 0 ? "ALL" : updated.join(","),
+                            }));
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
+                          isSelected
+                            ? "bg-purple-600 text-white border-purple-600 shadow-xs"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-purple-200/60">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">Time Slot</label>
+                    <select
+                      value={formData.timeSlotType || "ALL_DAY"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, timeSlotType: e.target.value }))}
+                      className="w-full text-xs p-2 rounded-lg border border-purple-200 bg-white"
+                    >
+                      <option value="ALL_DAY">All Day (24 Hours)</option>
+                      <option value="DAY">Day Hours (06:00 to 22:00)</option>
+                      <option value="NIGHT">Night Hours (22:00 to 06:00)</option>
+                      <option value="CUSTOM">Custom Time Range</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">Expiry</label>
+                    <select
+                      value={formData.expiryType || "NEVER"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, expiryType: e.target.value }))}
+                      className="w-full text-xs p-2 rounded-lg border border-purple-200 bg-white font-medium"
+                    >
+                      <option value="NEVER">Never Expires</option>
+                      <option value="FIXED_DAYS">Fixed Days (Date Window)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">Status</label>
+                    <select
+                      value={formData.status || "ACTIVE"}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                      className="w-full text-xs p-2 rounded-lg border border-purple-200 bg-white font-bold"
+                    >
+                      <option value="ACTIVE">ACTIVE (Live)</option>
+                      <option value="INACTIVE">INACTIVE (Disabled)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {formData.expiryType === "FIXED_DAYS" && (
+                  <div className="grid grid-cols-2 gap-2 pt-1 bg-purple-100/40 p-2 rounded-lg border border-purple-200/60">
+                    <div>
+                      <label className="block text-[10px] font-bold text-purple-900 mb-1">Start Date</label>
+                      <input
+                        type="date"
+                        value={formData.startDate || ""}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
+                        className="w-full text-xs p-1.5 rounded-lg border border-purple-200 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-purple-900 mb-1">End Date</label>
+                      <input
+                        type="date"
+                        value={formData.endDate || ""}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
+                        className="w-full text-xs p-1.5 rounded-lg border border-purple-200 bg-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formData.timeSlotType === "CUSTOM" && (
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-700 mb-1">Start Time</label>
+                      <input
+                        type="time"
+                        value={formData.timeRangeStart || ""}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, timeRangeStart: e.target.value }))}
+                        className="w-full text-xs p-2 rounded-lg border border-purple-200 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-700 mb-1">End Time</label>
+                      <input
+                        type="time"
+                        value={formData.timeRangeEnd || ""}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, timeRangeEnd: e.target.value }))}
+                        className="w-full text-xs p-2 rounded-lg border border-purple-200 bg-white"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* STEP 5: BASE FARES & MINIMUM THRESHOLDS */}
+              {formData.serviceType === "LOCAL" ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      Step 5: Base Fares & Minimum Thresholds (KM & Hours)
+                    </h4>
                 <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/60 px-2 py-0.5 rounded-full border border-emerald-200">
                   Minimum Package Thresholds
                 </span>
@@ -2499,6 +3151,8 @@ export default function AdminPricingPage() {
               )}
             </div>
           </div>
+            </>
+          )}
 
             {/* LIVE MARGIN OVERVIEW BANNER IN MODAL */}
             <div className="p-3 bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-xl flex items-center justify-between">

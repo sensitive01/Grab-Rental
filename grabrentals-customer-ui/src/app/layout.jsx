@@ -71,14 +71,14 @@ export default function RootLayout({ children }) {
   };
 
   return (
-    <html lang="en" className="overflow-x-hidden" suppressHydrationWarning>
+    <html lang="en" className="overflow-x-clip" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased overflow-x-hidden max-w-[100vw]" suppressHydrationWarning>
+      <body className="antialiased overflow-x-clip max-w-[100vw]" suppressHydrationWarning>
         <LanguageProvider>
           <AppShell>
             {children}

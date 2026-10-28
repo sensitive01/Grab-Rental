@@ -18,7 +18,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
+import com.grabrentals.tariff.entity.AirportTariff;
 
 @Slf4j
 @Service
@@ -30,6 +33,7 @@ public class PublicVehicleService {
     private final VehicleTariffService vehicleTariffService;
     private final com.grabrentals.tariff.service.PricingTaxConfigService pricingTaxConfigService;
     private final com.grabrentals.tariff.service.DriverAllowanceService driverAllowanceService;
+    private final com.grabrentals.tariff.service.AirportTariffService airportTariffService;
 
     public BookingResponse getBookingByReference(String bookingReference) {
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
@@ -140,12 +144,37 @@ public class PublicVehicleService {
         String pickupCity = cityAndState[0];
         String pickupState = cityAndState[1];
 
-        // Fetch all tariffs for this service type in ONE single query (O(1) DB hit)
-        List<VehicleTariff> tariffs = vehicleTariffService.getTariffsForService(resolvedServiceType);
+        // Detect direction for Airport Transfer
+        String airportDir = "BOTH";
+        if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+            boolean fromIsAirport = cleanFrom != null && cleanFrom.toLowerCase().contains("airport");
+            boolean toIsAirport = cleanTo != null && cleanTo.toLowerCase().contains("airport");
+            if (fromIsAirport && !toIsAirport) {
+                airportDir = "AIRPORT_TO_CITY";
+                String toLookup = (toCity != null && !toCity.isBlank()) ? toCity.trim() : cleanTo;
+                String[] toCityAndState = extractCityAndState(toLookup);
+                if (toCityAndState[0] != null && !toCityAndState[0].isBlank()) {
+                    pickupCity = toCityAndState[0];
+                    if (toCityAndState[1] != null && !toCityAndState[1].isBlank()) {
+                        pickupState = toCityAndState[1];
+                    }
+                }
+            } else if (toIsAirport && !fromIsAirport) {
+                airportDir = "CITY_TO_AIRPORT";
+            }
+        }
 
-        boolean serviceable = vehicleTariffService.isCityServiceable(pickupCity, pickupState, resolvedServiceType, tariffs);
+        // Fetch all tariffs for this service type in ONE single query (O(1) DB hit)
+        List<VehicleTariff> tariffs = null;
+        boolean serviceable;
+        if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+            serviceable = airportTariffService.isCityServiceable(pickupCity, pickupState);
+        } else {
+            tariffs = vehicleTariffService.getTariffsForService(resolvedServiceType);
+            serviceable = vehicleTariffService.isCityServiceable(pickupCity, pickupState, resolvedServiceType, tariffs);
+        }
         long tCity = System.currentTimeMillis();
-        log.info("[PERF] distance & city check took {} ms", (tCity - t0));
+        log.info("[PERF] distance & city check took {} ms (serviceable={}, city={}, state={}, dir={})", (tCity - t0), serviceable, pickupCity, pickupState, airportDir);
 
         if (!serviceable) {
             return VehicleSearchResponseDto.builder()
@@ -207,6 +236,36 @@ public class PublicVehicleService {
             }
         }
 
+        // Auto-include vehicle models configured in Airport tariffs
+        if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+            List<AirportTariff> activeAirportTariffs = airportTariffService.getAllActiveTariffs();
+            for (AirportTariff at : activeAirportTariffs) {
+                String cat = (at.getCategory() != null && !at.getCategory().isBlank()) ? at.getCategory().trim() : "Sedan";
+                String model = (at.getModelName() != null && !at.getModelName().isBlank() && !"ALL".equalsIgnoreCase(at.getModelName()))
+                        ? at.getModelName().trim()
+                        : getDefaultModelNameForCategory(cat);
+                String modelKey = model.trim().toLowerCase() + "_" + cat.trim().toLowerCase();
+                if (!existingModelKeys.contains(modelKey)) {
+                    existingModelKeys.add(modelKey);
+                    String seats = (at.getSeatingCapacity() != null && !at.getSeatingCapacity().isBlank())
+                            ? at.getSeatingCapacity().trim()
+                            : getDefaultSeatsForCategory(cat);
+                    String fuel = (at.getFuelType() != null && !at.getFuelType().isBlank() && !"ALL".equalsIgnoreCase(at.getFuelType()))
+                            ? at.getFuelType().trim()
+                            : "Diesel";
+                    VehicleModelConfigResponse synthetic = VehicleModelConfigResponse.builder()
+                            .modelName(model)
+                            .category(cat)
+                            .seatingCapacity(seats)
+                            .fuelType(fuel)
+                            .active(true)
+                            .commonPhotoUrl(vehicleTariffService.resolveCommonPhoto(cat, model, seats))
+                            .build();
+                    activeConfigs.add(synthetic);
+                }
+            }
+        }
+
         long tConfigs = System.currentTimeMillis();
 
         List<PublicVehicleCardDto> cards = new ArrayList<>();
@@ -229,7 +288,16 @@ public class PublicVehicleService {
                 );
 
                 Boolean hasTariff = (Boolean) rateContext.get("hasTariff");
-                if (hasTariff == null || !hasTariff) {
+                boolean hasAirportSlab = false;
+                if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+                    LocalDate pDate = parseDateSafely(pickupDate);
+                    LocalTime pTime = parseTimeSafely(pickupTime);
+                    hasAirportSlab = airportTariffService.findMatchingTariff(
+                            pickupCity, pickupState, airportDir, config.getCategory(), model, distanceKm, pDate, pTime
+                    ).isPresent();
+                }
+
+                if ((hasTariff == null || !hasTariff) && !hasAirportSlab) {
                     // Only show car models where pricing/tariff has been added by admin for this service type
                     continue;
                 }
@@ -280,6 +348,38 @@ public class PublicVehicleService {
                         dailyPrice = rate.multiply(BigDecimal.valueOf(pkgKm))
                                 .add(BigDecimal.valueOf(pkgHours * 100))
                                 .setScale(0, RoundingMode.HALF_UP);
+                    }
+                } else if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
+                    LocalDate pDate = parseDateSafely(pickupDate);
+                    LocalTime pTime = parseTimeSafely(pickupTime);
+
+                    var airportTariffOpt = airportTariffService.findMatchingTariff(
+                            pickupCity, pickupState, airportDir, config.getCategory(), model, distanceKm, pDate, pTime
+                    );
+                    if (airportTariffOpt.isPresent()) {
+                        var at = airportTariffOpt.get();
+                        dailyPrice = at.getCustomerFare();
+                        rateContext.put("airportIncludedKm", at.getMaxKm());
+                        rateContext.put("airportExtraKmRate", at.getExtraKmRate());
+                        rateContext.put("airportVendorFare", at.getVendorFare());
+                        if (at.getDiscountPercentage() != null && at.getDiscountPercentage().compareTo(BigDecimal.ZERO) > 0) {
+                            rateContext.put("discountPercentage", at.getDiscountPercentage());
+                        }
+                        if (distanceKm > at.getMaxKm() && at.getExtraKmRate() != null && at.getExtraKmRate().compareTo(BigDecimal.ZERO) > 0) {
+                            int extraDist = distanceKm - at.getMaxKm();
+                            dailyPrice = dailyPrice.add(at.getExtraKmRate().multiply(BigDecimal.valueOf(extraDist))).setScale(0, RoundingMode.HALF_UP);
+                        }
+                    } else {
+                        BigDecimal airportFare = (BigDecimal) rateContext.get("airportCustomerFare");
+                        Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
+                        if (airportKm == null || airportKm <= 0) airportKm = 35;
+                        if (airportFare != null && airportFare.compareTo(BigDecimal.ZERO) > 0) {
+                            dailyPrice = airportFare;
+                        } else {
+                            dailyPrice = rate.multiply(BigDecimal.valueOf(airportKm))
+                                    .add(new BigDecimal("350.00"))
+                                    .setScale(0, RoundingMode.HALF_UP);
+                        }
                     }
                 }
 
@@ -385,6 +485,7 @@ public class PublicVehicleService {
                     BigDecimal extraKm = (rateContext.get("airportExtraKmRate") != null)
                             ? (BigDecimal) rateContext.get("airportExtraKmRate")
                             : postRate;
+                    card.setPerKmRate(extraKm);
                     card.setExclusions(List.of(
                             "Extra KM Charge: ₹" + extraKm + "/km beyond " + airportKm + " km",
                             "Airport Toll & Parking (if applicable) at actuals"
@@ -458,15 +559,38 @@ public class PublicVehicleService {
                                     .setScale(0, RoundingMode.HALF_UP);
                         }
                     } else if ("AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
-                        BigDecimal airportFare = (BigDecimal) rateContext.get("airportCustomerFare");
-                        Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
-                        if (airportKm == null || airportKm <= 0) airportKm = 35;
-                        if (airportFare != null && airportFare.compareTo(BigDecimal.ZERO) > 0) {
-                            dailyPrice = airportFare;
+                        java.time.LocalDate pDate = null;
+                        try { if (pickupDate != null && pickupDate.trim().length() >= 10) pDate = java.time.LocalDate.parse(pickupDate.trim().substring(0, 10)); } catch (Exception ignored) {}
+                        java.time.LocalTime pTime = null;
+                        try { if (pickupTime != null && !pickupTime.isBlank()) pTime = java.time.LocalTime.parse(pickupTime.trim()); } catch (Exception ignored) {}
+
+                        var airportTariffOpt = airportTariffService.findMatchingTariff(
+                                pickupCity, pickupState, tripType, v.getVehicleType(), distanceKm, pDate, pTime
+                        );
+                        if (airportTariffOpt.isPresent()) {
+                            var at = airportTariffOpt.get();
+                            dailyPrice = at.getCustomerFare();
+                            rateContext.put("airportIncludedKm", at.getMaxKm());
+                            rateContext.put("airportExtraKmRate", at.getExtraKmRate());
+                            rateContext.put("airportVendorFare", at.getVendorFare());
+                            if (at.getDiscountPercentage() != null && at.getDiscountPercentage().compareTo(BigDecimal.ZERO) > 0) {
+                                rateContext.put("discountPercentage", at.getDiscountPercentage());
+                            }
+                            if (distanceKm > at.getMaxKm() && at.getExtraKmRate() != null && at.getExtraKmRate().compareTo(BigDecimal.ZERO) > 0) {
+                                int extraDist = distanceKm - at.getMaxKm();
+                                dailyPrice = dailyPrice.add(at.getExtraKmRate().multiply(BigDecimal.valueOf(extraDist))).setScale(0, RoundingMode.HALF_UP);
+                            }
                         } else {
-                            dailyPrice = rate.multiply(BigDecimal.valueOf(airportKm))
-                                    .add(new BigDecimal("350.00"))
-                                    .setScale(0, RoundingMode.HALF_UP);
+                            BigDecimal airportFare = (BigDecimal) rateContext.get("airportCustomerFare");
+                            Integer airportKm = (Integer) rateContext.get("airportIncludedKm");
+                            if (airportKm == null || airportKm <= 0) airportKm = 35;
+                            if (airportFare != null && airportFare.compareTo(BigDecimal.ZERO) > 0) {
+                                dailyPrice = airportFare;
+                            } else {
+                                dailyPrice = rate.multiply(BigDecimal.valueOf(airportKm))
+                                        .add(new BigDecimal("350.00"))
+                                        .setScale(0, RoundingMode.HALF_UP);
+                            }
                         }
                     }
                     String loc = v.getParkingLocation() != null && !v.getParkingLocation().isBlank()
@@ -1124,5 +1248,58 @@ public class PublicVehicleService {
         if (m.contains("ertiga")) return 4.81;
         if (m.contains("innova")) return 4.92;
         return 4.85;
+    }
+
+    private LocalDate parseDateSafely(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return LocalDate.now();
+        String s = dateStr.trim();
+        if (s.length() > 10) s = s.substring(0, 10);
+        try {
+            return LocalDate.parse(s, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        } catch (Exception ignored) {}
+        try {
+            return LocalDate.parse(s, java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        } catch (Exception ignored) {}
+        try {
+            return LocalDate.parse(s, java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        } catch (Exception ignored) {}
+        try {
+            return LocalDate.parse(s, java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+        } catch (Exception ignored) {}
+        return LocalDate.now();
+    }
+
+    private LocalTime parseTimeSafely(String timeStr) {
+        if (timeStr == null || timeStr.isBlank()) return LocalTime.now();
+        String s = timeStr.trim();
+        try {
+            return LocalTime.parse(s);
+        } catch (Exception ignored) {}
+        try {
+            return LocalTime.parse(s, java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH));
+        } catch (Exception ignored) {}
+        try {
+            return LocalTime.parse(s, java.time.format.DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
+        } catch (Exception ignored) {}
+        return LocalTime.now();
+    }
+
+    private String getDefaultModelNameForCategory(String category) {
+        if (category == null) return "Dzire or equivalent";
+        String c = category.trim().toUpperCase();
+        if (c.contains("HATCHBACK")) return "WagonR or equivalent";
+        if (c.contains("SEDAN")) return "Dzire or equivalent";
+        if (c.contains("INNOVA")) return "Innova Crysta";
+        if (c.contains("SUV")) return "Ertiga or equivalent";
+        return category + " Fleet";
+    }
+
+    private String getDefaultSeatsForCategory(String category) {
+        if (category == null) return "4";
+        String c = category.trim().toUpperCase();
+        if (c.contains("HATCHBACK") || c.contains("SEDAN")) return "4";
+        if (c.contains("INNOVA")) return "7";
+        if (c.contains("SUV")) return "6";
+        return "4";
     }
 }

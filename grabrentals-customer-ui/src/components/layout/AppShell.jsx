@@ -200,8 +200,10 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-slate-50">
 
-      {/* A. Top Trust & Guarantee Ticker with Language Options */}
-      <div className="bg-[#0082fe] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-blue-600/70 shadow-xs">
+      {/* Sticky Combined Header Group (Top Trust Bar + Main Navigation) */}
+      <header className="sticky top-0 z-50 w-full shadow-xs">
+        {/* A. Top Trust & Guarantee Ticker with Language Options */}
+        <div className="bg-[#0082fe] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-blue-600/70 shadow-xs">
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
 
           {/* Trust Guarantees on Desktop, Helpline on Mobile */}
@@ -265,8 +267,8 @@ export default function AppShell({ children }) {
         </div>
       </div>
 
-      {/* B. Sticky Main Header */}
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-50 h-16 sm:h-20 px-3 sm:px-6 lg:px-8 flex items-center justify-between shadow-sm">
+        {/* B. Main Navigation Bar */}
+        <nav className="bg-white border-b border-slate-100 h-16 sm:h-20 px-3 sm:px-6 lg:px-8 flex items-center justify-between shadow-sm">
 
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
@@ -483,6 +485,7 @@ export default function AppShell({ children }) {
           </button>
         </div>
 
+        </nav>
       </header>
 
       {/* Mobile Navigation Drawer Overlay */}

@@ -24,12 +24,14 @@ public class TariffDataSeeder implements CommandLineRunner {
     private final VehicleModelConfigRepository modelConfigRepository;
     private final VehicleTariffRepository tariffRepository;
     private final VehicleTariffService tariffService;
+    private final com.grabrentals.tariff.service.AirportTariffService airportTariffService;
 
     @Override
     public void run(String... args) {
         log.info("TariffDataSeeder: ensuring default vehicle model configurations exist in database...");
         tariffService.seedDefaultModelConfigs();
         log.info("TariffDataSeeder: vehicle models check/seed completed.");
+        // Airport tariffs are configured manually by admin - no automatic seeding
     }
 
     private void seedVehicleModels() {

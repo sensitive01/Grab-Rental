@@ -714,6 +714,37 @@ export const adminApi = {
     return res.data;
   },
 
+  // === AIRPORT DISTANCE SLAB TARIFFS ===
+  async getAirportTariffs(params = {}) {
+    try {
+      const res = await axiosClient.get("/api/admin/airport-tariffs", { params });
+      return res.data?.data || [];
+    } catch (err) {
+      console.warn("Failed to fetch airport tariffs from backend:", err.message);
+      return [];
+    }
+  },
+
+  async saveAirportTariff(data) {
+    const res = await axiosClient.post("/api/admin/airport-tariffs", data);
+    return res.data;
+  },
+
+  async deleteAirportTariff(id) {
+    const res = await axiosClient.delete(`/api/admin/airport-tariffs/${id}`);
+    return res.data;
+  },
+
+  async toggleAirportTariffStatus(id, status) {
+    const res = await axiosClient.put(`/api/admin/airport-tariffs/${id}/status`, { status });
+    return res.data;
+  },
+
+  async seedDefaultAirportTariffs() {
+    const res = await axiosClient.post("/api/admin/airport-tariffs/seed-defaults");
+    return res.data?.data || [];
+  },
+
   async calculateRate(params) {
     const res = await axiosClient.get("/api/vehicles/rate-calculator", { params });
     return res.data;

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export const VEHICLE_CLASSES = [
   {
@@ -23,10 +24,26 @@ export const VEHICLE_CLASSES = [
   {
     slug: "suv",
     name: "Suv",
-    seats: "6 TO 8+DRIVER",
+    seats: "5+DRIVER",
     ac: "AC",
-    image: "/images/fleet/suv.jpg",
+    image: "/images/fleet/suv_electric.jpg",
     link: "/fleet/suv",
+  },
+  {
+    slug: "crysta",
+    name: "Innova Crysta",
+    seats: "6 TO 7+DRIVER",
+    ac: "AC",
+    image: "/images/fleet/crysta.jpg",
+    link: "/fleet/crysta",
+  },
+  {
+    slug: "innovahycross",
+    name: "Innova Hycross",
+    seats: "6 TO 7+DRIVER",
+    ac: "AC",
+    image: "/images/fleet/hycross.jpg",
+    link: "/fleet/innovahycross",
   },
   {
     slug: "urbania",
@@ -54,6 +71,9 @@ export const VEHICLE_CLASSES = [
   },
 ];
 
+// Repeat items so each track half is wide enough to cover large viewports seamlessly
+const TRACK_ITEMS = [...VEHICLE_CLASSES, ...VEHICLE_CLASSES];
+
 export default function VehicleClassSelector({ onSelect, defaultSelected = null }) {
   const [selectedSlug, setSelectedSlug] = useState(defaultSelected);
 
@@ -64,48 +84,78 @@ export default function VehicleClassSelector({ onSelect, defaultSelected = null 
     }
   };
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4.5">
-      {VEHICLE_CLASSES.map((fleet) => {
-        const isSelected = selectedSlug === fleet.slug;
+  const renderCard = (fleet, key) => {
+    const isSelected = selectedSlug === fleet.slug;
 
-        return (
-          <div
-            key={fleet.slug}
-            onClick={() => handleSelect(fleet)}
-            className="bg-white rounded-2xl p-3 sm:p-4 flex flex-col items-center text-center relative cursor-pointer transition-all duration-200 select-none group border border-slate-200/90 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5"
-          >
-            {/* Vehicle Image Container */}
-            <div className="w-full aspect-[16/10] relative mb-3 rounded-xl overflow-hidden bg-[#f8f9fa] border border-slate-100 flex items-center justify-center p-1.5">
-              <Image
-                src={fleet.image}
-                alt={fleet.name}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 180px"
-                className="object-contain p-1 group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
+    return (
+      <Link
+        key={key}
+        href={fleet.link || "#"}
+        onClick={(e) => {
+          if (onSelect) {
+            e.preventDefault();
+            handleSelect(fleet);
+          }
+        }}
+        className={`w-[185px] sm:w-[210px] shrink-0 bg-white rounded-2xl p-3 sm:p-4 flex flex-col items-center text-center relative cursor-pointer select-none transition-all duration-300 group/card border shadow-sm hover:shadow-xl hover:-translate-y-1.5 ${
+          isSelected
+            ? "border-blue-500 ring-2 ring-blue-400/40"
+            : "border-slate-200/90 hover:border-slate-300"
+        }`}
+      >
+        {/* Vehicle Image Container */}
+        <div className="w-full aspect-[16/10] relative mb-3 rounded-xl overflow-hidden bg-[#f8f9fa] border border-slate-100 flex items-center justify-center p-1.5">
+          <Image
+            src={fleet.image}
+            alt={fleet.name}
+            fill
+            sizes="210px"
+            className="object-contain p-1 group-hover/card:scale-105 transition-transform duration-300"
+          />
+        </div>
 
-            {/* Vehicle Title */}
-            <h3 className="text-sm sm:text-base font-bold mb-2.5 text-slate-900 transition-colors">
-              {fleet.name}
-            </h3>
+        {/* Vehicle Title */}
+        <h3 className="text-sm sm:text-base font-bold mb-2.5 text-slate-900 group-hover/card:text-blue-600 transition-colors">
+          {fleet.name}
+        </h3>
 
-            {/* Badges / Specs (Without Amount) */}
-            <div className="flex flex-col gap-1.5 items-center justify-center mt-auto w-full">
-              {/* Seating / Driver Badge */}
-              <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider bg-[#EEF2F7] border border-[#DCE4EE] text-slate-700 truncate shadow-2xs">
-                {fleet.seats}
-              </div>
-
-              {/* AC / Non-AC Badge */}
-              <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider bg-blue-50 border border-blue-200 text-blue-900 truncate shadow-2xs">
-                {fleet.ac}
-              </div>
-            </div>
+        {/* Badges / Specs (Without Amount) */}
+        <div className="flex flex-col gap-1.5 items-center justify-center mt-auto w-full">
+          {/* Seating / Driver Badge */}
+          <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider bg-[#EEF2F7] border border-[#DCE4EE] text-slate-700 truncate shadow-2xs">
+            {fleet.seats}
           </div>
-        );
-      })}
+
+          {/* AC / Non-AC Badge */}
+          <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider bg-blue-50 border border-blue-200 text-blue-900 truncate shadow-2xs">
+            {fleet.ac}
+          </div>
+        </div>
+      </Link>
+    );
+  };
+
+  return (
+    <div className="relative w-full overflow-hidden marquee-container py-2">
+      {/* Edge Gradient Fades */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-orange-600 via-orange-600/80 to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-orange-600 via-orange-600/80 to-transparent z-10" />
+
+      {/* Infinite Auto-Scroll Track */}
+      <div className="animate-marquee-infinite">
+        {/* Track Half A */}
+        <div className="flex items-center gap-3.5 sm:gap-4.5 pr-3.5 sm:pr-4.5 shrink-0">
+          {TRACK_ITEMS.map((fleet, index) => renderCard(fleet, `track-a-${fleet.slug}-${index}`))}
+        </div>
+
+        {/* Track Half B (Exact Clone for Seamless Infinite Loop) */}
+        <div className="flex items-center gap-3.5 sm:gap-4.5 pr-3.5 sm:pr-4.5 shrink-0" aria-hidden="true">
+          {TRACK_ITEMS.map((fleet, index) => renderCard(fleet, `track-b-${fleet.slug}-${index}`))}
+        </div>
+      </div>
+
+
     </div>
   );
 }
+

@@ -177,7 +177,7 @@ export default function Home() {
               bg: "bg-blue-50"
             },
             {
-              stat: "32-Point",
+              stat: "35-Point",
               label: t("stat_sanitized_inspection") || "Sanitized Fleet Inspection",
               icon: <ShieldCheck className="text-emerald-600 w-5 h-5 sm:w-6 sm:h-6" />,
               bg: "bg-emerald-50"
@@ -194,20 +194,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Choose Your Travel Class (Vehicle Cards Grid) */}
-      <section className="bg-orange-600 py-12 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2 sm:mb-3">
-              {t("choose_travel_class") || "Choose Your Travel Class"}
-            </h2>
-            <p className="text-xs sm:text-sm text-white/90 font-medium max-w-2xl mx-auto">
-              {t("choose_travel_class_sub") || "Experience our premium fleet tailored for every need—from executive sedans to luxury coaches."}
-            </p>
-          </div>
-
-          <VehicleClassSelector />
+      {/* 3. Choose Your Travel Class (Vehicle Cards Auto-Scroll Marquee) */}
+      <section className="bg-orange-600 py-12 sm:py-20 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2 sm:mb-3">
+            {t("choose_travel_class") || "Choose Your Travel Class"}
+          </h2>
+          <p className="text-xs sm:text-sm text-white/90 font-medium max-w-2xl mx-auto">
+            {t("choose_travel_class_sub") || "Experience our premium fleet tailored for every need—from executive sedans to luxury coaches."}
+          </p>
         </div>
+
+        <VehicleClassSelector />
       </section>
 
       {/* 4. Popular Outstation Corridors */}
@@ -302,7 +300,7 @@ export default function Home() {
                 bg: "bg-white"
               },
               {
-                title: t("vp_sanitization_title") || "32-Point Sanitization",
+                title: t("vp_sanitization_title") || "35-Point Sanitization",
                 desc: t("vp_sanitization_desc") || "Complimentary Water & Tissue inside pristine cabs.",
                 icon: <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />,
                 bg: "bg-white"
