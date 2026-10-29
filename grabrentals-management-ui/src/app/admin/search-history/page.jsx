@@ -154,14 +154,54 @@ export default function AdminSearchHistoryPage() {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return "—";
     try {
-      const d = new Date(dateStr);
+      // If dateStr doesn't contain a timezone indicator (Z or +/-offset), treat it as UTC
+      let normalized = dateStr;
+      if (typeof normalized === "string") {
+        if (!normalized.endsWith("Z") && !/[+-]\d{2}(:\d{2})?$/.test(normalized)) {
+          normalized = normalized + "Z";
+        }
+      }
+      const d = new Date(normalized);
+      if (isNaN(d.getTime())) return String(dateStr);
       return d.toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
         hour: "2-digit",
-        minute: "2-digit"
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
       });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatPickupTime = (timeStr) => {
+    if (!timeStr) return "—";
+    const trimmed = String(timeStr).trim();
+    if (/am|pm/i.test(trimmed)) return trimmed;
+    const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (!match) return trimmed;
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    if (isNaN(hours)) return trimmed;
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours === 0 ? 12 : hours;
+    const formattedHours = String(hours).padStart(2, "0");
+    return `${formattedHours}:${minutes} ${ampm}`;
+  };
+
+  const formatScheduleDate = (dateStr) => {
+    if (!dateStr) return "—";
+    try {
+      const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (match) {
+        const d = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+        return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      }
+      return dateStr;
     } catch {
       return dateStr;
     }
@@ -460,17 +500,17 @@ export default function AdminSearchHistoryPage() {
                       <td className="py-3.5 px-4 whitespace-nowrap text-xs">
                         <div className="font-semibold text-slate-800 flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{item.pickupDate || "—"}</span>
+                          <span>{formatScheduleDate(item.pickupDate)}</span>
                         </div>
                         {item.pickupTime && (
-                          <div className="text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                          <div className="text-slate-600 font-semibold flex items-center gap-1 mt-0.5">
                             <Clock className="w-3 h-3 text-slate-400" />
-                            <span>{item.pickupTime}</span>
+                            <span>{formatPickupTime(item.pickupTime)}</span>
                           </div>
                         )}
                         {item.returnDate && (
                           <div className="text-[11px] text-blue-600 font-medium mt-0.5">
-                            Return: {item.returnDate}
+                            Return: {formatScheduleDate(item.returnDate)}
                           </div>
                         )}
                         {item.packageHoursKm && (
@@ -569,6 +609,12 @@ export default function AdminSearchHistoryPage() {
                 <h3 className="text-lg font-black text-slate-900 mt-1">
                   Search Details & Traveler Profile
                 </h3>
+                {selectedSearch.createdAt && (
+                  <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Search Logged: <strong className="text-slate-800 font-bold">{formatDateTime(selectedSearch.createdAt)}</strong></span>
+                  </p>
+                )}
               </div>
               <button
                 type="button"
@@ -658,10 +704,10 @@ export default function AdminSearchHistoryPage() {
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                   <span className="text-[11px] font-bold text-slate-400 uppercase">Pickup Schedule</span>
                   <p className="text-xs font-bold text-slate-900 mt-1">
-                    {selectedSearch.pickupDate || "—"} at {selectedSearch.pickupTime || "—"}
+                    {formatScheduleDate(selectedSearch.pickupDate)} at {formatPickupTime(selectedSearch.pickupTime)}
                   </p>
                   {selectedSearch.returnDate && (
-                    <p className="text-[11px] font-semibold text-blue-600 mt-0.5">Return: {selectedSearch.returnDate}</p>
+                    <p className="text-[11px] font-semibold text-blue-600 mt-0.5">Return: {formatScheduleDate(selectedSearch.returnDate)}</p>
                   )}
                 </div>
 

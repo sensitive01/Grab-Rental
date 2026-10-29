@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -239,7 +240,7 @@ public class SearchHistoryServiceImpl implements SearchHistoryService {
                 .ipAddress(s.getIpAddress())
                 .userAgent(s.getUserAgent())
                 .sourcePage(s.getSourcePage())
-                .createdAt(s.getCreatedAt())
+                .createdAt(s.getCreatedAt() != null ? s.getCreatedAt().toInstant(ZoneOffset.UTC) : null)
                 .build();
     }
 

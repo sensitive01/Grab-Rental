@@ -2,7 +2,7 @@ package com.grabrentals.searchhistory.dto;
 
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -45,5 +45,5 @@ public class SearchHistoryResponseDto {
     private String userAgent;
     private String sourcePage;
 
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }
