@@ -217,19 +217,60 @@ export default function BookingInvoicePage({ params }) {
                 <tr>
                   <td className="py-3.5 px-2 font-bold text-slate-400">3</td>
                   <td className="py-3.5 px-3">
-                    <p className="font-bold text-slate-900">Highway Express Tolls & State Passenger Tax</p>
-                    <span className="text-[11px] text-slate-400">FASTag & Intercity permits</span>
+                    <p className="font-bold text-slate-900">Highway Express Tolls &amp; State Passenger Tax</p>
+                    <span className="text-[11px] text-slate-400">FASTag &amp; Intercity permits</span>
                   </td>
                   <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
-                  <td className="py-3.5 px-3 text-center">Included</td>
-                  <td className="py-3.5 px-3 text-right font-mono">₹0.00</td>
-                  <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-700">₹0.00 (Incl)</td>
+                  <td className="py-3.5 px-3 text-center">{Number(booking?.tollCharges || 0) > 0 ? "Actuals" : "Included"}</td>
+                  <td className="py-3.5 px-3 text-right font-mono">₹{Number(booking?.tollCharges || 0).toLocaleString()}.00</td>
+                  <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">
+                    {Number(booking?.tollCharges || 0) > 0 ? `₹${Number(booking.tollCharges).toLocaleString()}.00` : "₹0.00 (Incl)"}
+                  </td>
                 </tr>
-                {Boolean(booking?.isPetFriendly) && (
+                {Number(booking?.extraKm || 0) > 0 && (
                   <tr>
                     <td className="py-3.5 px-2 font-bold text-slate-400">4</td>
                     <td className="py-3.5 px-3">
-                      <p className="font-bold text-slate-900">Pet Friendly Travel Accommodation & Cabin Sanitization</p>
+                      <p className="font-bold text-slate-900">Extra Distance Traveled</p>
+                      <span className="text-[11px] text-slate-400">{booking.extraKm} KM @ ₹{booking.extraKmRate || 14}/km post package limit</span>
+                    </td>
+                    <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
+                    <td className="py-3.5 px-3 text-center">{booking.extraKm} KM</td>
+                    <td className="py-3.5 px-3 text-right font-mono">₹{Number(booking.extraKmCharge || 0).toLocaleString()}.00</td>
+                    <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹{Number(booking.extraKmCharge || 0).toLocaleString()}.00</td>
+                  </tr>
+                )}
+                {Number(booking?.permitCharges || 0) > 0 && (
+                  <tr>
+                    <td className="py-3.5 px-2 font-bold text-slate-400">5</td>
+                    <td className="py-3.5 px-3">
+                      <p className="font-bold text-slate-900">Interstate Permit / State Border Tax</p>
+                      <span className="text-[11px] text-slate-400">State passenger transit permit fee</span>
+                    </td>
+                    <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
+                    <td className="py-3.5 px-3 text-center">Actuals</td>
+                    <td className="py-3.5 px-3 text-right font-mono">₹{Number(booking.permitCharges).toLocaleString()}.00</td>
+                    <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹{Number(booking.permitCharges).toLocaleString()}.00</td>
+                  </tr>
+                )}
+                {Number(booking?.parkingCharges || 0) > 0 && (
+                  <tr>
+                    <td className="py-3.5 px-2 font-bold text-slate-400">6</td>
+                    <td className="py-3.5 px-3">
+                      <p className="font-bold text-slate-900">Commercial Parking Charges</p>
+                      <span className="text-[11px] text-slate-400">Destination / Terminal parking receipts</span>
+                    </td>
+                    <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>
+                    <td className="py-3.5 px-3 text-center">Actuals</td>
+                    <td className="py-3.5 px-3 text-right font-mono">₹{Number(booking.parkingCharges).toLocaleString()}.00</td>
+                    <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹{Number(booking.parkingCharges).toLocaleString()}.00</td>
+                  </tr>
+                )}
+                {Boolean(booking?.isPetFriendly) && (
+                  <tr>
+                    <td className="py-3.5 px-2 font-bold text-slate-400">7</td>
+                    <td className="py-3.5 px-3">
+                      <p className="font-bold text-slate-900">Pet Friendly Travel Accommodation &amp; Cabin Sanitization</p>
                       <span className="text-[11px] text-slate-400">🐾 {booking?.petType || "Pet"} ({booking?.petCount || 1} pet)</span>
                     </td>
                     <td className="py-3.5 px-3 font-mono text-slate-500">9966</td>

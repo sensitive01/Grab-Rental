@@ -36,6 +36,84 @@ export function normalizeBooking(b) {
   const pickup = b.pickupAddress ? `${b.pickupAddress}, ${b.pickupCity || ""}` : (b.pickupCity || "Pickup Location");
   const drop = b.dropAddress ? `${b.dropAddress}, ${b.dropCity || ""}` : (b.dropCity || "Destination");
 
+  const spec = b.specialInstructions || "";
+
+  // Parse Customer Selected Add-ons
+  const hasExpressway = /Expressway Fastag/i.test(spec);
+  const expresswayFee = Number(spec.match(/Expressway Fastag[^)]*₹(\d+)/i)?.[1]) || (hasExpressway ? 415 : 0);
+
+  const hasLanguageChauffeur = /Language Chauffeur/i.test(spec);
+  const chauffeurLanguage = (spec.match(/Language Chauffeur\s*\(([^)]+)\)/i)?.[1]?.trim()) || "English";
+  const languageChauffeurFee = Number(spec.match(/Language Chauffeur[^)]*₹(\d+)/i)?.[1]) || (hasLanguageChauffeur ? 199 : 0);
+
+  const hasLuggageCarrier = /Luggage Carrier/i.test(spec);
+  const luggageCarrierFee = Number(spec.match(/Luggage Carrier[^)]*₹(\d+)/i)?.[1]) || (hasLuggageCarrier ? 249 : 0);
+
+  const hasLessThan3Years = /Less than 3 years/i.test(spec);
+  const lessThan3YearsFee = Number(spec.match(/Less than 3 years[^)]*₹(\d+)/i)?.[1]) || (hasLessThan3Years ? 299 : 0);
+
+  const isPetFriendly = Boolean(
+    b.isPetFriendly ||
+    /🐾\s*Pet Friendly Cab/i.test(spec) ||
+    /Pet Fee:/i.test(spec)
+  );
+  const petType = b.petType || (spec.match(/Pet Friendly Cab\s*\(([^×,)]+)/i)?.[1]?.trim()) || "Pet";
+  const petCount = b.petCount || Number(spec.match(/([0-9]+)\s*,\s*Pet Fee/i)?.[1]) || 1;
+  const petCharge = b.petCharge != null && Number(b.petCharge) > 0 
+    ? Number(b.petCharge) 
+    : (Number(spec.match(/Pet Fee:\s*₹?([0-9.]+)/i)?.[1]) || (isPetFriendly ? 350 : 0));
+
+  const intermediateStops = b.stops || (spec.match(/Intermediate Stops:\s*([^|]+)/i)?.[1]?.trim()) || null;
+
+  const addons = [];
+  if (hasExpressway) {
+    addons.push({
+      id: "expressway",
+      name: "Expressway FASTag Included",
+      price: expresswayFee,
+      emoji: "🛣️",
+      desc: "Prepaid express highway fastag pass"
+    });
+  }
+  if (hasLanguageChauffeur) {
+    addons.push({
+      id: "language_chauffeur",
+      name: `Language Chauffeur (${chauffeurLanguage})`,
+      price: languageChauffeurFee,
+      emoji: "🗣️",
+      desc: `Chauffeur fluent in ${chauffeurLanguage}`
+    });
+  }
+  if (hasLuggageCarrier) {
+    addons.push({
+      id: "luggage_carrier",
+      name: "Luggage / Roof Top Carrier",
+      price: luggageCarrierFee,
+      emoji: "🧳",
+      desc: "Mounted carrier for extra luggage"
+    });
+  }
+  if (hasLessThan3Years) {
+    addons.push({
+      id: "less_than_3_years",
+      name: "Guaranteed Car < 3 Years Old",
+      price: lessThan3YearsFee,
+      emoji: "✨",
+      desc: "Top condition latest model vehicle"
+    });
+  }
+  if (isPetFriendly) {
+    addons.push({
+      id: "pet_friendly",
+      name: `Pet Friendly Cab (${petType} × ${petCount})`,
+      price: petCharge,
+      emoji: "🐾",
+      desc: "Seat protector & pet sanitation included"
+    });
+  }
+
+  const addonsTotal = addons.reduce((sum, item) => sum + (item.price || 0), 0);
+
   return {
     id: b.bookingReference || b.id,
     rawId: b.id,
@@ -61,7 +139,42 @@ export function normalizeBooking(b) {
     driverName: b.driverName || "Assigned Chauffeur",
     driverPhone: b.driverPhone || "N/A",
     passengers: b.passengerCount || 4,
-    distanceKm: 150,
+    distanceKm: (() => {
+      if (b.distanceKm != null && !isNaN(Number(b.distanceKm)) && Number(b.distanceKm) > 0) {
+        return Math.round(Number(b.distanceKm));
+      }
+      if (b.specialInstructions) {
+        const m = b.specialInstructions.match(/Distance:\s*(\d+(\.\d+)?)\s*km/i);
+        if (m) return Math.round(parseFloat(m[1]));
+      }
+      if (b.actualKm != null && Number(b.actualKm) > 0) return Math.round(Number(b.actualKm));
+      return 250;
+    })(),
+    customerRouteKm: (() => {
+      if (b.distanceKm != null && !isNaN(Number(b.distanceKm)) && Number(b.distanceKm) > 0) {
+        return Math.round(Number(b.distanceKm));
+      }
+      if (b.specialInstructions) {
+        const m = b.specialInstructions.match(/Distance:\s*(\d+(\.\d+)?)\s*km/i);
+        if (m) return Math.round(parseFloat(m[1]));
+      }
+      if (b.actualKm != null && Number(b.actualKm) > 0) return Math.round(Number(b.actualKm));
+      return null;
+    })(),
+    packageKm: (() => {
+      if (b.specialInstructions) {
+        const mPkg = b.specialInstructions.match(/Package:\s*(\d+)\s*(?:km|kms)/i);
+        if (mPkg) return parseInt(mPkg[1], 10);
+      }
+      if (b.distanceKm != null && !isNaN(Number(b.distanceKm)) && Number(b.distanceKm) > 0) {
+        return Math.round(Number(b.distanceKm));
+      }
+      if (b.specialInstructions) {
+        const m = b.specialInstructions.match(/Distance:\s*(\d+(\.\d+)?)\s*km/i);
+        if (m) return Math.round(parseFloat(m[1]));
+      }
+      return 250;
+    })(),
     estimatedAmount: total,
     totalFare: total,
     advancePaid: advance,
@@ -75,7 +188,40 @@ export function normalizeBooking(b) {
     rideOtp: b.rideOtp,
     specialInstructions: b.specialInstructions,
     vendorDeclineReason: b.vendorDeclineReason,
-    createdAt: b.createdAt
+    startKm: b.startKm != null ? Number(b.startKm) : null,
+    endKm: b.endKm != null ? Number(b.endKm) : null,
+    actualKm: b.actualKm != null ? Number(b.actualKm) : null,
+    extraKm: b.extraKm != null ? Number(b.extraKm) : 0,
+    extraKmRate: (() => {
+      if (b.extraKmRate != null && !isNaN(Number(b.extraKmRate))) return Number(b.extraKmRate);
+      if (b.specialInstructions) {
+        const mRate = b.specialInstructions.match(/Rate:\s*₹?(\d+(\.\d+)?)/i);
+        if (mRate) return parseFloat(mRate[1]);
+      }
+      return 14;
+    })(),
+    extraKmCharge: b.extraKmCharge != null ? Number(b.extraKmCharge) : 0,
+    tollCharges: b.tollCharges != null ? Number(b.tollCharges) : 0,
+    permitCharges: b.permitCharges != null ? Number(b.permitCharges) : 0,
+    parkingCharges: b.parkingCharges != null ? Number(b.parkingCharges) : 0,
+    driverAllowanceCharges: b.driverAllowanceCharges != null ? Number(b.driverAllowanceCharges) : 0,
+    otherCharges: b.otherCharges != null ? Number(b.otherCharges) : 0,
+    otherChargesNotes: b.otherChargesNotes || "",
+    tripClosingNotes: b.tripClosingNotes || "",
+    finalGst: b.finalGst != null ? Number(b.finalGst) : null,
+    finalTotalFare: b.finalTotalFare != null ? Number(b.finalTotalFare) : null,
+    invoiceNumber: b.invoiceNumber || (b.bookingReference ? `INV-${b.bookingReference.replace(/[^A-Za-z0-9]/g, "")}` : null),
+    tripCompletedAt: b.tripCompletedAt || null,
+    tripClosedBy: b.tripClosedBy || null,
+    createdAt: b.createdAt,
+    addons: addons,
+    addonsTotal: addonsTotal,
+    hasAddons: addons.length > 0,
+    isPetFriendly: isPetFriendly,
+    petType: petType,
+    petCount: petCount,
+    petCharge: petCharge,
+    intermediateStops: intermediateStops
   };
 }
 
@@ -329,6 +475,16 @@ export const vendorApi = {
       return normalizeBooking(res.data?.data);
     } catch (err) {
       logApiError(`vendorApi.declineBooking(${bookingId}) error:`, err);
+      throw err;
+    }
+  },
+
+  completeTrip: async (idOrRef, tripClosingData) => {
+    try {
+      const res = await axiosClient.post(`/api/vendor/bookings/${idOrRef}/complete-trip`, tripClosingData);
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError(`vendorApi.completeTrip(${idOrRef}) error:`, err);
       throw err;
     }
   },

@@ -23,7 +23,7 @@ export default function TopNavigation() {
           </div>
           <div className="flex items-center gap-1.5">
             <Shield className="w-4 h-4 text-brand-emerald" />
-            <span>32-Point Sanitized Fleet</span>
+            <span>35-Point Sanitized Fleet</span>
           </div>
         </div>
         <div className="flex items-center gap-4">

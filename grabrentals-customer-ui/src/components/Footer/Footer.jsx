@@ -74,18 +74,6 @@ export default function Footer() {
           <span className="hidden md:inline">|</span>
           <Link href="/refund-policy" className="hover:text-white transition-colors">Cancellation & Refund Policy</Link>
         </div>
-        
-        <div className="text-xs text-slate-400 flex items-center">
-          <span>Powered by</span>
-          <a 
-            href="https://sensitive.co.in/" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="text-amber-400 hover:text-amber-300 hover:underline font-bold ml-1 transition-colors"
-          >
-            Sensitive Technologies
-          </a>
-        </div>
       </div>
     </footer>
   );

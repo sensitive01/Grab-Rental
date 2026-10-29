@@ -408,6 +408,17 @@ export default function Sidebar({ isOpen, onClose }) {
             {tripsOpen && (
               <div className="pl-10 pr-2 py-1 space-y-1 text-xs">
                 <Link
+                  href="/vendor/trips"
+                  onClick={() => onClose && onClose()}
+                  className={`block py-1.5 px-2 rounded-lg transition-colors ${
+                    pathname === "/vendor/trips"
+                      ? "text-amber-400 font-bold bg-amber-400/10"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Trips &amp; Billing Hub
+                </Link>
+                <Link
                   href="/vendor/trips/active"
                   onClick={() => onClose && onClose()}
                   className={`flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors ${

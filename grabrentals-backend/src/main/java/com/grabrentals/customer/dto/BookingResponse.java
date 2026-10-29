@@ -93,11 +93,62 @@ public class BookingResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
+    // Trip Closing & Invoice Details
+    private Double startKm;
+    private Double endKm;
+    private Double actualKm;
+    private Double extraKm;
+    private BigDecimal extraKmRate;
+    private BigDecimal extraKmCharge;
+    private BigDecimal tollCharges;
+    private BigDecimal permitCharges;
+    private BigDecimal parkingCharges;
+    private BigDecimal driverAllowanceCharges;
+    private BigDecimal otherCharges;
+    private String otherChargesNotes;
+    private String tripClosingNotes;
+    private BigDecimal finalGst;
+    private BigDecimal finalTotalFare;
+    private String invoiceNumber;
+    private Instant tripCompletedAt;
+    private String tripClosedBy;
+
+    // Customer Booked Route Distance
+    private Integer distanceKm;
+
     public static BookingResponse fromEntity(Booking b) {
         if (b == null) return null;
 
+        // Extract customer-side route distance from special_instructions or actual_km
+        Integer dist = null;
+        BigDecimal extractedRate = b.getExtraKmRate();
+        if (b.getSpecialInstructions() != null) {
+            java.util.regex.Matcher mDist = java.util.regex.Pattern.compile("Distance:\\s*(\\d+(\\.\\d+)?)\\s*km", java.util.regex.Pattern.CASE_INSENSITIVE)
+                    .matcher(b.getSpecialInstructions());
+            if (mDist.find()) {
+                try {
+                    dist = (int) Math.round(Double.parseDouble(mDist.group(1)));
+                } catch (Exception ignored) {}
+            }
+
+            if (extractedRate == null) {
+                java.util.regex.Matcher mRate = java.util.regex.Pattern.compile("Rate:\\s*₹?(\\d+(\\.\\d+)?)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                        .matcher(b.getSpecialInstructions());
+                if (mRate.find()) {
+                    try {
+                        extractedRate = new BigDecimal(mRate.group(1));
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        if (dist == null && b.getActualKm() != null && b.getActualKm() > 0) {
+            dist = (int) Math.round(b.getActualKm());
+        }
+
         BookingResponseBuilder builder = BookingResponse.builder()
                 .id(b.getId())
+                .distanceKm(dist)
+                .extraKmRate(extractedRate)
                 .bookingReference(b.getBookingReference())
                 .customerId(b.getCustomer() != null ? b.getCustomer().getId() : null)
                 .customerName(b.getCustomer() != null ? b.getCustomer().getName() : b.getPassengerName())
@@ -143,6 +194,24 @@ public class BookingResponse {
                 .status(b.getStatus())
                 .specialInstructions(b.getSpecialInstructions())
                 .vendorDeclineReason(b.getVendorDeclineReason())
+                .startKm(b.getStartKm())
+                .endKm(b.getEndKm())
+                .actualKm(b.getActualKm())
+                .extraKm(b.getExtraKm())
+                .extraKmRate(b.getExtraKmRate())
+                .extraKmCharge(b.getExtraKmCharge())
+                .tollCharges(b.getTollCharges())
+                .permitCharges(b.getPermitCharges())
+                .parkingCharges(b.getParkingCharges())
+                .driverAllowanceCharges(b.getDriverAllowanceCharges())
+                .otherCharges(b.getOtherCharges())
+                .otherChargesNotes(b.getOtherChargesNotes())
+                .tripClosingNotes(b.getTripClosingNotes())
+                .finalGst(b.getFinalGst())
+                .finalTotalFare(b.getFinalTotalFare())
+                .invoiceNumber(b.getInvoiceNumber())
+                .tripCompletedAt(b.getTripCompletedAt())
+                .tripClosedBy(b.getTripClosedBy())
                 .createdAt(b.getCreatedAt())
                 .updatedAt(b.getUpdatedAt());
 
@@ -191,9 +260,9 @@ public class BookingResponse {
         if (b == null) return null;
         BookingResponse resp = fromEntity(b);
         BigDecimal payout = b.getVendorPayout() != null ? b.getVendorPayout() : b.getTotalFare();
-        resp.setTotalFare(b.getTotalFare() != null ? b.getTotalFare() : payout);
+        resp.setTotalFare(b.getFinalTotalFare() != null ? b.getFinalTotalFare() : (b.getTotalFare() != null ? b.getTotalFare() : payout));
         resp.setVendorPayout(payout);
-        resp.setDueAmount(payout);
+        resp.setDueAmount(b.getDueAmount() != null ? b.getDueAmount() : payout);
         return resp;
     }
 }

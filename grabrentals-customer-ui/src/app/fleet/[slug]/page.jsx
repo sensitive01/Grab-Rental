@@ -1,8 +1,9 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { 
   getFleetBySlug, 
   FLEET_CATEGORIES 
@@ -30,12 +31,23 @@ import {
 } from "lucide-react";
 
 export default function FleetDetailPage({ params }) {
-  const unwrappedParams = use(params);
-  const slug = unwrappedParams?.slug || "sedan";
-  const fleet = getFleetBySlug(slug);
+  const routeParams = useParams();
+  const rawSlug = 
+    (typeof routeParams?.slug === "string" ? routeParams.slug : Array.isArray(routeParams?.slug) ? routeParams.slug[0] : null) ||
+    (params && typeof params === "object" && "slug" in params && typeof params.slug === "string" ? params.slug : null) ||
+    "sedan";
+  const slug = decodeURIComponent(rawSlug).toLowerCase().trim();
+  const fleet = getFleetBySlug(slug) || FLEET_CATEGORIES[0];
 
-  const [activePhoto, setActivePhoto] = useState(fleet.gallery?.[0] || fleet.image);
+  const galleryImages = (fleet.gallery && fleet.gallery.length > 0) ? fleet.gallery : [fleet.image];
+  const [activePhoto, setActivePhoto] = useState(galleryImages[0]);
   const [selectedService, setSelectedService] = useState("outstation");
+
+  useEffect(() => {
+    if (galleryImages && galleryImages.length > 0) {
+      setActivePhoto(galleryImages[0]);
+    }
+  }, [fleet.slug]);
 
   const otherFleets = FLEET_CATEGORIES.filter((f) => f.slug !== fleet.slug);
 
@@ -92,7 +104,7 @@ export default function FleetDetailPage({ params }) {
 
             {/* Gallery Thumbnails */}
             <div className="flex items-center gap-3 overflow-x-auto pb-2">
-              {fleet.gallery.map((imgUrl, idx) => (
+              {galleryImages.map((imgUrl, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActivePhoto(imgUrl)}
@@ -370,7 +382,7 @@ export default function FleetDetailPage({ params }) {
 
                 {/* Instant Book CTA */}
                 <Link
-                  href={`/?fleet=${fleet.slug}&service=${selectedService}`}
+                  href={`/book?cab=${fleet.slug}&service=${selectedService}`}
                   className="w-full py-4 px-6 rounded-2xl bg-brand-navy hover:bg-slate-800 text-white font-black text-center flex items-center justify-center gap-2 shadow-lg transition-all text-sm uppercase tracking-wider"
                 >
                   <span>Book {fleet.name} Now</span>

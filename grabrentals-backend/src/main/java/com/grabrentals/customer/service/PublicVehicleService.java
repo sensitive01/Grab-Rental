@@ -921,9 +921,10 @@ public class PublicVehicleService {
             gstInclusionLabel = "GST (" + safeGst.stripTrailingZeros().toPlainString() + "%) & Government Passenger Cess";
         }
 
-        BigDecimal discounted = baseFare.add(driverAllowance).add(taxes);
         BigDecimal original = originalBaseFare;
-        BigDecimal advance = discounted.multiply(new BigDecimal("0.25")).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal discounted = baseFare;
+        BigDecimal totalTripFare = baseFare.add(driverAllowance).add(taxes);
+        BigDecimal advance = totalTripFare.multiply(new BigDecimal("0.25")).setScale(0, RoundingMode.HALF_UP);
 
         return PublicVehicleCardDto.builder()
                 .id(id)
@@ -939,6 +940,7 @@ public class PublicVehicleService {
                 .pricing(PublicVehicleCardDto.PublicPricingDto.builder()
                         .originalPrice(original)
                         .discountedPrice(discounted)
+                        .totalFare(totalTripFare)
                         .baseFare(baseFare)
                         .driverAllowance(driverAllowance)
                         .chargesAndTaxes(taxes)

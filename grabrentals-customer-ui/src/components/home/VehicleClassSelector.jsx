@@ -1,8 +1,8 @@
-"use client";
-
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 
 export const VEHICLE_CLASSES = [
   {
@@ -51,7 +51,7 @@ export const VEHICLE_CLASSES = [
     seats: "9 TO 16+DRIVER",
     ac: "AC",
     image: "/images/fleet/urbania.jpg",
-    link: "/vans",
+    link: "/fleet/urbania",
   },
   {
     slug: "tempo",
@@ -59,7 +59,7 @@ export const VEHICLE_CLASSES = [
     seats: "9 TO 21+DRIVER",
     ac: "AC & NON-AC",
     image: "/images/fleet/tempo_traveller.jpg",
-    link: "/vans",
+    link: "/fleet/tempo",
   },
   {
     slug: "bus",
@@ -67,7 +67,7 @@ export const VEHICLE_CLASSES = [
     seats: "35 TO 65 + DRIVER",
     ac: "AC & NON-AC",
     image: "/images/fleet/bus.jpg",
-    link: "/buses",
+    link: "/fleet/bus",
   },
 ];
 
@@ -75,6 +75,7 @@ export const VEHICLE_CLASSES = [
 const TRACK_ITEMS = [...VEHICLE_CLASSES, ...VEHICLE_CLASSES];
 
 export default function VehicleClassSelector({ onSelect, defaultSelected = null }) {
+  const router = useRouter();
   const [selectedSlug, setSelectedSlug] = useState(defaultSelected);
 
   const handleSelect = (vehicle) => {
@@ -130,6 +131,19 @@ export default function VehicleClassSelector({ onSelect, defaultSelected = null 
           <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-xs font-bold uppercase tracking-wider bg-blue-50 border border-blue-200 text-blue-900 truncate shadow-2xs">
             {fleet.ac}
           </div>
+
+          {/* Direct Instant Book Button */}
+          <span
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              router.push(`/book?cab=${fleet.slug}&service=outstation`);
+            }}
+            className="w-full mt-0.5 text-center py-1.5 px-2 rounded-lg text-[10.5px] sm:text-[11px] font-black uppercase tracking-wider bg-slate-900 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-1 shadow-2xs"
+          >
+            <span>Book Now</span>
+            <ArrowRight className="w-3 h-3" />
+          </span>
         </div>
       </Link>
     );

@@ -4,6 +4,7 @@ import com.grabrentals.common.exception.UserNotFoundException;
 import com.grabrentals.common.response.ApiResponse;
 import com.grabrentals.customer.dto.BookingResponse;
 import com.grabrentals.customer.dto.BookingStatusUpdateRequest;
+import com.grabrentals.customer.dto.TripClosingRequest;
 import com.grabrentals.customer.dto.VendorDeclineRequest;
 import com.grabrentals.customer.entity.BookingStatus;
 import com.grabrentals.customer.service.CustomerBookingService;
@@ -116,6 +117,18 @@ public class VendorBookingController {
         log.info("[HTTP API] PATCH /api/fleet/bookings/{}/status to {} by vendor '{}'", idOrRef, request.getStatus(), vendor.getEmail());
         BookingResponse response = bookingService.updateTripStatus(idOrRef, request.getStatus(), vendor);
         return ResponseEntity.ok(ApiResponse.success("Trip status updated successfully to " + request.getStatus(), response));
+    }
+
+    @PostMapping("/{idOrRef}/complete-trip")
+    public ResponseEntity<ApiResponse<BookingResponse>> completeTrip(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @Valid @RequestBody TripClosingRequest request
+    ) {
+        User vendor = getUser(userDetails);
+        log.info("[HTTP API] POST /api/fleet/bookings/{}/complete-trip by vendor '{}'", idOrRef, vendor.getEmail());
+        BookingResponse response = bookingService.vendorCompleteTrip(idOrRef, request, vendor);
+        return ResponseEntity.ok(ApiResponse.success("Trip finalized and completed successfully. GST invoice generated.", response));
     }
 
     private User getUser(CustomUserDetails userDetails) {

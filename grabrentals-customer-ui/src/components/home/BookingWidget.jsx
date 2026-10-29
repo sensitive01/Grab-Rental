@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight, ChevronDown, Plane } from "lucide-react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
 import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
+import CabSelectDropdown from "@/components/booking/CabSelectDropdown";
+import TripTypeSelectDropdown from "@/components/booking/TripTypeSelectDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -20,6 +22,9 @@ import {
   generateTimeSlots,
 } from "@/lib/dateTimeUtils";
 import { fetchLocalPackages, getCachedLocalPackages, DEFAULT_LOCAL_PACKAGES } from "@/lib/packageUtils";
+import SearchVerificationModal from "@/components/booking/SearchVerificationModal";
+import { isAuthenticated, getCurrentUser } from "@/lib/auth";
+import axiosClient from "@/lib/axiosClient";
 
 export const AIRPORT_LIST = [
   { id: "BLR", name: "Kempegowda International Airport (BLR), Bengaluru", city: "Bangalore, Karnataka", lat: 13.1986, lng: 77.7066 },
@@ -61,17 +66,38 @@ const getPathFromTab = (tabId) => {
   }
 };
 
-export default function BookingWidget() {
+function BookingWidgetInner({ isDropdownMode = false } = {}) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState(() => getTabFromPath(pathname));
-  const [tripType, setTripType] = useState("round-trip");
+
+  const isNewBookingPage = pathname?.startsWith("/book") || isDropdownMode;
+
+  const paramCab = searchParams?.get("cab") || searchParams?.get("cabType") || searchParams?.get("fleet") || "";
+  const [selectedCab, setSelectedCab] = useState(() => (paramCab ? paramCab.toLowerCase().trim() : ""));
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const serviceParam = searchParams?.get("service") || searchParams?.get("tripType");
+    if (serviceParam) {
+      const s = serviceParam.toLowerCase();
+      if (s.includes("local")) return "local";
+      if (s.includes("airport")) return "airport";
+      return "outstation";
+    }
+    return getTabFromPath(pathname);
+  });
+  const [tripType, setTripType] = useState(() => {
+    const serviceParam = searchParams?.get("service") || searchParams?.get("tripType");
+    if (serviceParam && serviceParam.toLowerCase().includes("one")) return "one-way";
+    return "round-trip";
+  });
   const [airportTripType, setAirportTripType] = useState("drop"); // "drop" = Drop to Airport, "pickup" = Pickup from Airport
   const [selectedAirport, setSelectedAirport] = useState(AIRPORT_LIST[0].name);
   const [airportCoords, setAirportCoords] = useState({ lat: 13.1986, lng: 77.7066 });
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapTarget, setMapTarget] = useState("pickup"); // 'pickup' | 'drop' | 'airport'
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Location inputs & exact GPS coordinates
   const [pickupCity, setPickupCity] = useState("Bangalore, Karnataka");
@@ -160,6 +186,30 @@ export default function BookingWidget() {
       }
     }
   }, [pathname]);
+
+  // Synchronize cab and trip type when searchParams change (e.g. from /book?cab=innovahycross)
+  useEffect(() => {
+    const urlCab = searchParams?.get("cab") || searchParams?.get("cabType") || searchParams?.get("fleet");
+    if (urlCab !== undefined && urlCab !== null) {
+      setSelectedCab(urlCab.toLowerCase().trim());
+    }
+    const urlService = searchParams?.get("service") || searchParams?.get("tripType");
+    if (urlService) {
+      const s = urlService.toLowerCase();
+      if (s.includes("local")) {
+        setActiveTab("local");
+      } else if (s.includes("airport")) {
+        setActiveTab("airport");
+      } else {
+        setActiveTab("outstation");
+        if (s.includes("one")) {
+          setTripType("one-way");
+        } else {
+          setTripType("round-trip");
+        }
+      }
+    }
+  }, [searchParams]);
 
   // Keep min pickup datetime current and ensure loaded/stored pickup is not in the past
   useEffect(() => {
@@ -414,7 +464,58 @@ export default function BookingWidget() {
     if (routeEstimate?.tollPrice > 0) {
       params.set("tollPrice", String(routeEstimate.tollPrice));
     }
+    if (selectedCab) {
+      params.set("cabType", selectedCab);
+    }
     return `/outstation/select-vehicle?${params.toString()}`;
+  };
+
+  const logSearchHistory = (tripData, userOverride = null) => {
+    try {
+      const user = userOverride || getCurrentUser();
+      let sessionId = null;
+      if (typeof window !== "undefined") {
+        sessionId = localStorage.getItem("grab_search_session_id");
+        if (!sessionId) {
+          sessionId = "sess_" + Math.random().toString(36).substring(2, 12);
+          localStorage.setItem("grab_search_session_id", sessionId);
+        }
+      }
+
+      const payload = {
+        serviceType: tripData.serviceType,
+        tripType: tripData.tripType,
+        cabType: tripData.cabType || null,
+        pickupLocation: tripData.from,
+        dropLocation: tripData.to,
+        pickupCity: tripData.fromCity || (tripData.pickupDetails?.city),
+        pickupState: tripData.fromState || (tripData.pickupDetails?.state),
+        dropCity: tripData.toCity || (tripData.dropDetails?.city),
+        stops: tripData.stops || null,
+        pickupCoords: tripData.pickupCoords ? `${tripData.pickupCoords.lat},${tripData.pickupCoords.lng}` : null,
+        dropCoords: tripData.dropCoords ? `${tripData.dropCoords.lat},${tripData.dropCoords.lng}` : null,
+        pickupDate: tripData.date,
+        pickupTime: tripData.time,
+        returnDate: tripData.dropDate || null,
+        packageHoursKm: tripData.package || null,
+        distanceKm: tripData.distanceKm ? Number(tripData.distanceKm) : null,
+        durationText: tripData.durationText || null,
+        tollPrice: tripData.tollPrice ? Number(tripData.tollPrice) : null,
+        userId: user?.id ? String(user.id) : null,
+        userName: user?.name || null,
+        userEmail: user?.email || null,
+        userPhone: user?.phone || null,
+        userRole: user ? "CUSTOMER" : "GUEST",
+        sessionId,
+        sourcePage: typeof window !== "undefined" ? window.location.pathname : "/",
+      };
+
+      axiosClient.post("/api/search-history", payload).catch((err) => {
+        console.warn("Non-blocking search logging error:", err);
+      });
+    } catch (err) {
+      console.warn("Failed to dispatch search logging:", err);
+    }
   };
 
   const handleExploreClick = (e) => {
@@ -439,39 +540,81 @@ export default function BookingWidget() {
       toLoc = dropCity || "Coimbatore, Tamil Nadu";
     }
 
+    const tripData = {
+      from: fromLoc,
+      fromCity: pickupDetails?.city || undefined,
+      fromState: pickupDetails?.state || undefined,
+      to: toLoc,
+      toCity: dropDetails?.city || undefined,
+      airportTripType: activeTab === "airport" ? airportTripType : undefined,
+      airport: activeTab === "airport" ? selectedAirport : undefined,
+      package: pkgVal,
+      stops: validStops.join("|"),
+      pickupCoords,
+      dropCoords,
+      stopsCoords,
+      pickupDetails,
+      dropDetails,
+      distanceKm: routeEstimate.distanceKm,
+      durationText: routeEstimate.durationText,
+      tollPrice: routeEstimate.tollPrice,
+      tripType: activeTab === "airport"
+        ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup")
+        : activeTab === "package"
+          ? "round-trip"
+          : activeTab === "local"
+            ? "local"
+            : tripType,
+      serviceType: resolvedServiceType,
+      cabType: selectedCab || undefined,
+      date: pickupDate,
+      time: pickupTime,
+      dropDate: (activeTab !== "local" && (tripType === "round-trip" || activeTab === "package")) ? dropDate : undefined,
+    };
+
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("grab_pending_trip", JSON.stringify({
-        from: fromLoc,
-        fromCity: pickupDetails?.city || undefined,
-        fromState: pickupDetails?.state || undefined,
-        to: toLoc,
-        toCity: dropDetails?.city || undefined,
-        airportTripType: activeTab === "airport" ? airportTripType : undefined,
-        airport: activeTab === "airport" ? selectedAirport : undefined,
-        package: pkgVal,
-        stops: validStops.join("|"),
-        pickupCoords,
-        dropCoords,
-        stopsCoords,
-        pickupDetails,
-        dropDetails,
-        distanceKm: routeEstimate.distanceKm,
-        durationText: routeEstimate.durationText,
-        tollPrice: routeEstimate.tollPrice,
-        tripType: activeTab === "airport"
-          ? (airportTripType === "drop" ? "Airport Drop" : "Airport Pickup")
-          : activeTab === "package"
-            ? "round-trip"
-            : activeTab === "local"
-              ? "local"
-              : tripType,
-        serviceType: resolvedServiceType,
-        date: pickupDate,
-        time: pickupTime,
-        dropDate: (activeTab !== "local" && (tripType === "round-trip" || activeTab === "package")) ? dropDate : undefined,
-      }));
+      sessionStorage.setItem("grab_pending_trip", JSON.stringify(tripData));
     }
 
+    const targetUrl = buildExploreUrl();
+
+    // If user is not authenticated, prompt verification modal
+    if (!isAuthenticated()) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    // If authenticated, record search history & navigate
+    logSearchHistory(tripData);
+    router.push(targetUrl);
+  };
+
+  const handleAuthVerified = (user) => {
+    setIsAuthModalOpen(false);
+    let pendingTrip = null;
+    try {
+      const raw = sessionStorage.getItem("grab_pending_trip");
+      if (raw) pendingTrip = JSON.parse(raw);
+    } catch {}
+
+    if (pendingTrip) {
+      logSearchHistory(pendingTrip, user);
+    }
+    const targetUrl = buildExploreUrl();
+    router.push(targetUrl);
+  };
+
+  const handleSkipAuth = () => {
+    setIsAuthModalOpen(false);
+    let pendingTrip = null;
+    try {
+      const raw = sessionStorage.getItem("grab_pending_trip");
+      if (raw) pendingTrip = JSON.parse(raw);
+    } catch {}
+
+    if (pendingTrip) {
+      logSearchHistory(pendingTrip, null);
+    }
     const targetUrl = buildExploreUrl();
     router.push(targetUrl);
   };
@@ -482,140 +625,223 @@ export default function BookingWidget() {
   return (
     <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-4 sm:p-6 max-w-6xl mx-auto border border-black">
 
-      {/* Top Segmented Tabs */}
-      <div className="relative mb-4 sm:mb-6">
-        {/* Left Arrow (Mobile View) */}
-        {canScrollLeft && (
-          <div className="absolute left-0 top-0 bottom-[1px] flex items-center pr-3 bg-gradient-to-r from-white via-white/95 to-transparent z-10 sm:hidden">
-            <button
-              type="button"
-              onClick={() => scrollTabs("left")}
-              aria-label="Scroll tabs left"
-              className="w-7 h-7 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-brand-amber active:scale-90 transition-all cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-            </button>
-          </div>
-        )}
+      {/* Top Controls: Dropdowns for New Booking Page, or Segmented Tabs for Homepage */}
+      {isNewBookingPage ? (
+        <div className="mb-4 sm:mb-6 pb-4 border-b border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-center">
+            {/* 1. Trip Type Dropdown */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Trip Type
+              </label>
+              <TripTypeSelectDropdown
+                activeTab={activeTab}
+                tripType={tripType}
+                onChange={(option) => {
+                  setActiveTab(option.service);
+                  if (option.service === "outstation") {
+                    setTripType(option.tripType);
+                  } else if (option.service === "airport") {
+                    setAirportTripType("drop");
+                  }
+                }}
+              />
+            </div>
 
-        {/* Scrollable / Centered Tabs */}
-        <div
-          ref={tabsRef}
-          onScroll={checkScroll}
-          className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 sm:gap-2 scroll-smooth justify-center items-center w-full"
-        >
-          {[
-            { id: "outstation", label: t("outstation") || "Outstation" },
-            { id: "local", label: t("local_rental") },
-            { id: "airport", label: t("airport") },
-            // { id: "van", label: t("tempo_traveller") },
-            // { id: "bus", label: t("luxury_buses") },
-            { id: "package", label: t("packages") || "Packages" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              data-tab-id={tab.id}
-              onClick={(e) => handleTabClick(tab.id, e)}
-              className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${activeTab === tab.id
-                  ? "text-brand-amber border-brand-amber bg-blue-50/50 rounded-t-lg"
-                  : "text-slate-500 border-transparent hover:text-slate-800"
-                }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+            {/* 2. Cab Type Dropdown */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Cab Type
+              </label>
+              <CabSelectDropdown
+                value={selectedCab}
+                onChange={(val) => setSelectedCab(val)}
+              />
+            </div>
+          </div>
         </div>
+      ) : (
+        /* Top Segmented Tabs (Normal Homepage View) */
+        <div className="relative mb-4 sm:mb-6">
+          {/* Left Arrow (Mobile View) */}
+          {canScrollLeft && (
+            <div className="absolute left-0 top-0 bottom-[1px] flex items-center pr-3 bg-gradient-to-r from-white via-white/95 to-transparent z-10 sm:hidden">
+              <button
+                type="button"
+                onClick={() => scrollTabs("left")}
+                aria-label="Scroll tabs left"
+                className="w-7 h-7 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-brand-amber active:scale-90 transition-all cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            </div>
+          )}
 
-        {/* Right Arrow (Mobile View) */}
-        {canScrollRight && (
-          <div className="absolute right-0 top-0 bottom-[1px] flex items-center pl-3 bg-gradient-to-l from-white via-white/95 to-transparent z-10 sm:hidden">
-            <button
-              type="button"
-              onClick={() => scrollTabs("right")}
-              aria-label="Scroll tabs right"
-              className="w-7 h-7 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-brand-amber active:scale-90 transition-all cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Trip Type Radios / Direction Options */}
-      {activeTab === "airport" ? (
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-5 animate-fade-in">
-          {[
-            { id: "drop", label: t("drop_to_airport") || "Drop to Airport" },
-            { id: "pickup", label: t("pickup_from_airport") || "Pickup from Airport" },
-          ].map((item) => {
-            const isSelected = airportTripType === item.id;
-            return (
-              <label
-                key={item.id}
-                className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${isSelected
-                    ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
+          {/* Scrollable / Centered Tabs */}
+          <div
+            ref={tabsRef}
+            onScroll={checkScroll}
+            className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 sm:gap-2 scroll-smooth justify-center items-center w-full"
+          >
+            {[
+              { id: "outstation", label: t("outstation") || "Outstation" },
+              { id: "local", label: t("local_rental") },
+              { id: "airport", label: t("airport") },
+              { id: "package", label: t("packages") || "Packages" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                data-tab-id={tab.id}
+                onClick={(e) => handleTabClick(tab.id, e)}
+                className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${activeTab === tab.id
+                    ? "text-brand-amber border-brand-amber bg-blue-50/50 rounded-t-lg"
+                    : "text-slate-500 border-transparent hover:text-slate-800"
                   }`}
               >
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Right Arrow (Mobile View) */}
+          {canScrollRight && (
+            <div className="absolute right-0 top-0 bottom-[1px] flex items-center pl-3 bg-gradient-to-l from-white via-white/95 to-transparent z-10 sm:hidden">
+              <button
+                type="button"
+                onClick={() => scrollTabs("right")}
+                aria-label="Scroll tabs right"
+                className="w-7 h-7 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-brand-amber active:scale-90 transition-all cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sub-row Options (Round trip / One way / Airport Direction) */}
+      {activeTab === "airport" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-5 animate-fade-in">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {[
+              { id: "drop", label: t("drop_to_airport") || "Drop to Airport" },
+              { id: "pickup", label: t("pickup_from_airport") || "Pickup from Airport" },
+            ].map((item) => {
+              const isSelected = airportTripType === item.id;
+              return (
+                <label
+                  key={item.id}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${isSelected
+                      ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
                     }`}
                 >
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
-                </div>
-                <input
-                  type="radio"
-                  name="airportTripType"
-                  value={item.id}
-                  checked={isSelected}
-                  onChange={() => setAirportTripType(item.id)}
-                  className="hidden"
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
+                      }`}
+                  >
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
+                  </div>
+                  <input
+                    type="radio"
+                    name="airportTripType"
+                    value={item.id}
+                    checked={isSelected}
+                    onChange={() => setAirportTripType(item.id)}
+                    className="hidden"
+                  />
+                  <span className="text-xs sm:text-sm whitespace-nowrap">
+                    {item.label}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          {!isNewBookingPage && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                Cab Type:
+              </span>
+              <div className="w-full sm:w-64">
+                <CabSelectDropdown
+                  value={selectedCab}
+                  onChange={(val) => setSelectedCab(val)}
                 />
-                <span className="text-xs sm:text-sm whitespace-nowrap">
-                  {item.label}
-                </span>
-              </label>
-            );
-          })}
+              </div>
+            </div>
+          )}
         </div>
       ) : allowsStops ? (
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
-          {[
-            { id: "round-trip", label: t("round_trip") },
-            { id: "one-way", label: t("one_way") },
-            { id: "multi-city-tour", label: t("multi_city_tour") || "Multi-City Tour" },
-          ].map((item) => {
-            const isSelected = tripType === item.id;
-            return (
-              <label
-                key={item.id}
-                className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${isSelected
-                    ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
-                  }`}
-              >
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {[
+              { id: "round-trip", label: t("round_trip") },
+              { id: "one-way", label: t("one_way") },
+              { id: "multi-city-tour", label: t("multi_city_tour") || "Multi-City Tour" },
+            ].map((item) => {
+              const isSelected = tripType === item.id;
+              return (
+                <label
+                  key={item.id}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${isSelected
+                      ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
                     }`}
                 >
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
-                </div>
-                <input
-                  type="radio"
-                  name="tripType"
-                  value={item.id}
-                  checked={isSelected}
-                  onChange={(e) => handleTripTypeChange(e.target.value)}
-                  className="hidden"
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
+                      }`}
+                  >
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
+                  </div>
+                  <input
+                    type="radio"
+                    name="tripType"
+                    value={item.id}
+                    checked={isSelected}
+                    onChange={(e) => handleTripTypeChange(e.target.value)}
+                    className="hidden"
+                  />
+                  <span className="text-xs sm:text-sm capitalize whitespace-nowrap">
+                    {item.label}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          {!isNewBookingPage && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                Cab Type:
+              </span>
+              <div className="w-full sm:w-64">
+                <CabSelectDropdown
+                  value={selectedCab}
+                  onChange={(val) => setSelectedCab(val)}
                 />
-                <span className="text-xs sm:text-sm capitalize whitespace-nowrap">
-                  {item.label}
-                </span>
-              </label>
-            );
-          })}
+              </div>
+            </div>
+          )}
         </div>
-      ) : null}
+      ) : (
+        !isNewBookingPage && (
+          <div className="flex flex-wrap items-center justify-end gap-3 mb-4 sm:mb-5">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                Cab Type:
+              </span>
+              <div className="w-full sm:w-64">
+                <CabSelectDropdown
+                  value={selectedCab}
+                  onChange={(val) => setSelectedCab(val)}
+                />
+              </div>
+            </div>
+          </div>
+        )
+      )}
 
       {/* ===================== INPUT SECTION ===================== */}
       {/* If stops or round-trip: 2-row multi-column grid like Savaari */}
@@ -1271,7 +1497,26 @@ export default function BookingWidget() {
         />
       )}
 
+      {/* Phone & Name OTP Verification Modal for unauthenticated searches */}
+      <SearchVerificationModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onVerified={handleAuthVerified}
+        onSkip={handleSkipAuth}
+      />
     </div>
+  );
+}
+
+export default function BookingWidget(props) {
+  return (
+    <Suspense fallback={
+      <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-6 max-w-6xl mx-auto border border-black min-h-[350px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
+      </div>
+    }>
+      <BookingWidgetInner {...props} />
+    </Suspense>
   );
 }
 

@@ -30,6 +30,7 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import BannerPopupManager from "@/components/banner/BannerPopupManager";
 import QuickEnquirySection from "@/components/common/QuickEnquirySection";
+import MobileFloatingSideTabs from "@/components/common/MobileFloatingSideTabs";
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
@@ -206,18 +207,9 @@ export default function AppShell({ children }) {
         <div className="bg-[#0082fe] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-blue-600/70 shadow-xs">
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
 
-          {/* Trust Guarantees on Desktop, Helpline on Mobile */}
-          <div className="flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none text-white/95">
-            {/* Mobile Quick Helpline */}
-            <a
-              href="tel:+919071100200"
-              className="md:hidden flex items-center gap-1.5 text-[11px] font-bold text-white hover:text-white/80 transition-colors"
-            >
-              <Phone className="w-3 h-3 text-white" />
-              <span>+91 90711 00200</span>
-            </a>
-
-            <div className="hidden md:flex items-center gap-1.5 shrink-0">
+          {/* Trust Guarantees (Desktop Only) */}
+          <div className="hidden md:flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none text-white/95">
+            <div className="flex items-center gap-1.5 shrink-0">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
               <span>{t("zero_cancellation")}</span>
             </div>
@@ -239,8 +231,8 @@ export default function AppShell({ children }) {
             </div>
           </div>
 
-          {/* Top Bar Language Selector */}
-          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold shrink-0 ml-auto pl-2 sm:pl-4 border-l border-white/30 whitespace-nowrap">
+          {/* Top Bar Language Selector (Centered on Mobile, Right-aligned on Desktop) */}
+          <div className="flex items-center justify-center w-full md:w-auto gap-1.5 text-[11px] sm:text-xs font-semibold shrink-0 md:ml-auto md:pl-4 md:border-l border-white/30 whitespace-nowrap overflow-x-auto hide-scrollbar">
             {TOP_LANGUAGES.map((lang, idx) => {
               const isActive = language === lang.code;
               return (
@@ -781,8 +773,13 @@ export default function AppShell({ children }) {
       {/* Dynamic Targeted Popup Banners */}
       <BannerPopupManager />
 
-      {/* Quick Enquiry Section across public pages (hidden on 404, account, support, notifications, dashboard, and booking checkout pages) */}
-      {shouldShowEnquiry() && <QuickEnquirySection />}
+      {/* Mobile View Floating Edge Dock: Attach Cabs, Pet Friendly Cabs, WhatsApp & Call */}
+      {!pathname?.includes("/review-pay") && !pathname?.includes("/payment") && (
+        <MobileFloatingSideTabs />
+      )}
+
+      {/* Quick Enquiry Section across public pages (hidden on home page since it is embedded in section 4, and hidden on 404, account, etc.) */}
+      {pathname !== "/" && shouldShowEnquiry() && <QuickEnquirySection />}
 
       {/* C. Enterprise Multi-Column Footer */}
       <footer className="bg-[#0082fe] text-white pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-blue-500">
@@ -846,7 +843,7 @@ export default function AppShell({ children }) {
           <div>
             <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("corporate_events") || "For Partners & B2B"}</h3>
             <ul className="space-y-2.5 text-sm text-white/90">
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Attach Taxi & Fleet</Link></li>
+              <li><a href="https://vendor.grabrentals.in/" target="_blank" rel="noopener noreferrer" className="hover:text-yellow-300 hover:underline transition-colors">Attach Taxi & Fleet</a></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Travel Agent Partner Login</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Corporate Travel Desk</Link></li>
               <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Hotel Concierge</Link></li>
@@ -890,18 +887,6 @@ export default function AppShell({ children }) {
             <Link href="/refund-policy" className="hover:text-yellow-300 hover:underline transition-colors">Cancellation & Refund Policy</Link>
             <span className="hidden md:inline">|</span>
             <Link href="/support" className="hover:text-yellow-300 hover:underline transition-colors">Customer Support</Link>
-          </div>
-
-          <div className="text-xs text-white/90 flex items-center">
-            <span>Powered by</span>
-            <a
-              href="https://sensitive.co.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-yellow-300 hover:text-white hover:underline font-extrabold ml-1 transition-colors"
-            >
-              Sensitive Technologies
-            </a>
           </div>
         </div>
       </footer>

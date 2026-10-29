@@ -1121,4 +1121,31 @@ export const adminApi = {
     const response = await axiosClient.delete(`/api/admin/enquiries/${id}`);
     return response.data;
   },
+
+  // === SEARCH HISTORY TRACKING ===
+  async getSearchHistory({ serviceType, search, startDate, endDate, page = 0, size = 20 } = {}) {
+    const params = { page, size };
+    if (serviceType && serviceType !== "ALL") params.serviceType = serviceType;
+    if (search && search.trim()) params.search = search.trim();
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
+    const response = await axiosClient.get("/api/admin/search-history", { params });
+    return response.data;
+  },
+
+  async getSearchHistoryStats() {
+    const response = await axiosClient.get("/api/admin/search-history/stats");
+    return response.data;
+  },
+
+  async getSearchHistoryById(id) {
+    const response = await axiosClient.get(`/api/admin/search-history/${id}`);
+    return response.data;
+  },
+
+  async deleteSearchHistory(id) {
+    const response = await axiosClient.delete(`/api/admin/search-history/${id}`);
+    return response.data;
+  },
 };

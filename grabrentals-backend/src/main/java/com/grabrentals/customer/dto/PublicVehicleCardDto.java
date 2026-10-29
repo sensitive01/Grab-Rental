@@ -50,6 +50,7 @@ public class PublicVehicleCardDto {
     public static class PublicPricingDto {
         private BigDecimal originalPrice;
         private BigDecimal discountedPrice;
+        private BigDecimal totalFare;
         private BigDecimal baseFare;
         private BigDecimal driverAllowance;
         private BigDecimal chargesAndTaxes;

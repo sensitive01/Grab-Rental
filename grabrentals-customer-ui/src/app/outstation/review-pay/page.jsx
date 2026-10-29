@@ -621,9 +621,9 @@ export default function ReviewPayPage() {
   // Standard (undiscounted) Base Fare before route discount
   const standardBaseFare = isLocal
     ? (car.pricing?.originalPrice || car.baseFare || car.fare || 4047)
-    : (perKmRate > 0 && distanceKm > 0
+    : (customDistanceKm != null && customDistanceKm > 0 && perKmRate > 0
       ? Math.round(perKmRate * distanceKm)
-      : (car.pricing?.originalPrice || car.baseFare || 4047));
+      : (car.pricing?.originalPrice || (perKmRate > 0 && distanceKm > 0 ? Math.round(perKmRate * distanceKm) : (car.baseFare || 4047))));
 
   // Base package fare & Additional KMs amount
   const basePackageFare = Math.round(basePackageKm * perKmRate);

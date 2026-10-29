@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import BookingWidget from "@/components/home/BookingWidget";
-import { Star, Shield, Bus } from "lucide-react";
+import { Star, Shield, Bus, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function BusesPage() {
@@ -39,21 +40,42 @@ export default function BusesPage() {
          <p className="text-xs sm:text-base text-slate-600 font-medium max-w-2xl mx-auto mb-8 sm:mb-10">{t("book_large_sub") || "Our fleet of luxury buses ensures safety, comfort, and reliability for large events. All buses come with an experienced driver and an attendant."}</p>
          
          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">45-Seater Volvo</h3>
-                <p className="text-xs sm:text-sm text-slate-500 mb-4">Air Suspension, Washroom Option</p>
-                <div className="text-brand-emerald-dark font-black text-base sm:text-lg">{t("price_starts") || "Starts"} ₹55/km</div>
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">45-Seater Volvo</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mb-4">Air Suspension, Washroom Option</p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-brand-emerald-dark font-black text-base sm:text-lg">{t("price_starts") || "Starts"} ₹55/km</div>
+                  <Link href="/fleet/bus" className="inline-flex items-center gap-1 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                    Details <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
             </div>
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-brand-amber shadow-md">
-                <div className="text-[10px] font-black text-brand-orange uppercase tracking-widest mb-2">{t("most_popular") || "Most Popular"}</div>
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">35-Seater Luxury AC</h3>
-                <p className="text-xs sm:text-sm text-slate-500 mb-4">Pushback Seats, Video Coach</p>
-                <div className="text-brand-amber font-black text-base sm:text-lg">{t("price_starts") || "Starts"} ₹45/km</div>
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-brand-amber shadow-md flex flex-col justify-between">
+                <div>
+                  <div className="text-[10px] font-black text-brand-orange uppercase tracking-widest mb-2">{t("most_popular") || "Most Popular"}</div>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">35-Seater Luxury AC</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mb-4">Pushback Seats, Video Coach</p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-brand-amber font-black text-base sm:text-lg">{t("price_starts") || "Starts"} ₹45/km</div>
+                  <Link href="/fleet/bus" className="inline-flex items-center gap-1 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                    Details <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
             </div>
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">55-Seater Semi-Sleeper</h3>
-                <p className="text-xs sm:text-sm text-slate-500 mb-4">Long Distance Comfort</p>
-                <div className="text-brand-emerald-dark font-black text-base sm:text-lg">{t("price_starts") || "Starts"} ₹65/km</div>
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">55-Seater Semi-Sleeper</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mb-4">Long Distance Comfort</p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-brand-emerald-dark font-black text-base sm:text-lg">{t("price_starts") || "Starts"} ₹65/km</div>
+                  <Link href="/fleet/bus" className="inline-flex items-center gap-1 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                    Details <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
             </div>
          </div>
 

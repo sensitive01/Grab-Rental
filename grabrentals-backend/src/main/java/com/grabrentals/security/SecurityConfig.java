@@ -76,12 +76,12 @@ public class SecurityConfig {
                 ).permitAll()
                 // Public vehicle search & catalog
                 .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
-                // Public banners, promo popup, coupon validation, UPI checkout, and customer enquiries
-                .requestMatchers("/api/coupons/**", "/api/promo-popup/**", "/api/banners/**", "/api/upi/**", "/api/enquiries/**").permitAll()
+                // Public banners, promo popup, coupon validation, UPI checkout, customer enquiries, and search history logging
+                .requestMatchers("/api/coupons/**", "/api/promo-popup/**", "/api/banners/**", "/api/upi/**", "/api/enquiries", "/api/enquiries/**", "/api/search-history", "/api/search-history/**").permitAll()
                 // Role-based endpoints
                 .requestMatchers("/api/customer/**").authenticated()
                 .requestMatchers("/api/vendor/**", "/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")
-                .requestMatchers("/api/admin/enquiries/**").hasAnyRole("ADMIN", "OPERATIONS")
+                .requestMatchers("/api/admin/enquiries", "/api/admin/enquiries/**", "/api/admin/search-history", "/api/admin/search-history/**").hasAnyRole("ADMIN", "OPERATIONS")
                 .requestMatchers("/api/operations/**").hasAnyRole("OPERATIONS", "ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Currently authenticated user info

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import BookingWidget from "@/components/home/BookingWidget";
-import { Users, CheckCircle, Shield } from "lucide-react";
+import { Users, CheckCircle, Shield, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function VansPage() {
@@ -43,35 +44,51 @@ export default function VansPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-6 items-center">
             <img
-              src="/images/fleet/tempo.jpg"
+              src="/images/fleet/tempo_traveller.jpg"
               alt="12-Seater Maharaja Tempo"
               className="w-full sm:w-1/3 aspect-square object-cover rounded-xl shadow-xs"
             />
-            <div className="flex-1">
-              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">12-Seater Maharaja Tempo</h3>
-              <ul className="space-y-2 mb-6 text-slate-600 text-xs sm:text-sm font-semibold">
+            <div className="flex-1 w-full">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">12-21 Seater Tempo Traveller</h3>
+              <ul className="space-y-2 mb-4 text-slate-600 text-xs sm:text-sm font-semibold">
                 <li className="flex gap-2 items-center"><CheckCircle className="w-4 h-4 text-brand-emerald" /> 1x1 Maharaja Recliner Seats</li>
                 <li className="flex gap-2 items-center"><CheckCircle className="w-4 h-4 text-brand-emerald" /> Individual AC Vents</li>
                 <li className="flex gap-2 items-center"><CheckCircle className="w-4 h-4 text-brand-emerald" /> Premium AV System</li>
               </ul>
-              <div className="text-brand-amber font-black text-lg sm:text-xl">{t("price_starts") || "Starts"} ₹24/km</div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <div className="text-brand-amber font-black text-lg sm:text-xl">{t("price_starts") || "Starts"} ₹24/km</div>
+                <Link
+                  href="/fleet/tempo"
+                  className="inline-flex items-center gap-1.5 bg-slate-900 text-white text-xs font-bold px-3.5 py-2 rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  View Details <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
           </div>
           
           <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-6 items-center">
             <img
-              src="/images/vendor/tempo.jpg"
-              alt="Force Urbania 17-Seater"
+              src="/images/fleet/urbania.jpg"
+              alt="Force Urbania 9-16 Seater"
               className="w-full sm:w-1/3 aspect-square object-cover rounded-xl shadow-xs"
             />
-            <div className="flex-1">
-              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">Force Urbania (17-Seater)</h3>
-              <ul className="space-y-2 mb-6 text-slate-600 text-xs sm:text-sm font-semibold">
+            <div className="flex-1 w-full">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">Force Urbania (9-16 Seater)</h3>
+              <ul className="space-y-2 mb-4 text-slate-600 text-xs sm:text-sm font-semibold">
                 <li className="flex gap-2 items-center"><CheckCircle className="w-4 h-4 text-brand-emerald" /> Airline-style seating</li>
                 <li className="flex gap-2 items-center"><CheckCircle className="w-4 h-4 text-brand-emerald" /> Standing Height Cabin</li>
                 <li className="flex gap-2 items-center"><CheckCircle className="w-4 h-4 text-brand-emerald" /> Advanced Suspension</li>
               </ul>
-              <div className="text-brand-amber font-black text-lg sm:text-xl">{t("price_starts") || "Starts"} ₹28/km</div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <div className="text-brand-amber font-black text-lg sm:text-xl">{t("price_starts") || "Starts"} ₹26/km</div>
+                <Link
+                  href="/fleet/urbania"
+                  className="inline-flex items-center gap-1.5 bg-slate-900 text-white text-xs font-bold px-3.5 py-2 rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  View Details <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>

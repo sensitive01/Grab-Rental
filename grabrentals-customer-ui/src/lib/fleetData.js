@@ -1,5 +1,51 @@
 export const FLEET_CATEGORIES = [
   {
+    slug: "hatchback",
+    name: "Hatchback",
+    popularName: "Maruti Wagon R, Celerio, Tata Tiago",
+    headline: "Smart, fuel-efficient & affordable city & short outstation travel",
+    desc: "Our hatchbacks offer exceptional agility and affordability without compromising on cleanliness or chauffeur professionalism. Perfect for city errands, daily office commutes, and quick airport runs.",
+    badge: "MOST ECONOMICAL",
+    price: "Starts ₹9.5/km",
+    perKmRate: 9.5,
+    baseDailyRate: 2000,
+    hourlyPackage: "₹1,400 for 8 hrs / 80 km",
+    airportFlatRate: "₹799 all-inclusive",
+    image: "/images/cars/wagon_r_white.jpg",
+    gallery: [
+      "/images/cars/wagon_r_white.jpg",
+      "/images/cars/wagon_r.jpg"
+    ],
+    variants: ["Maruti Suzuki WagonR ZXi", "Maruti Celerio VXi", "Tata Tiago XZ+", "Hyundai Grand i10"],
+    colors: ["Superior White", "Silky Silver", "Magma Grey"],
+    seatingCapacity: 4,
+    seatingLabel: "4 Passengers + 1 Chauffeur",
+    luggageCapacity: "2 Medium Suitcases + 2 Backpacks",
+    engineCc: "998 cc - 1197 cc K-Series",
+    transmission: "Manual & AMT Automatic",
+    alternateFuel: "Petrol & CNG Clean Fuel",
+    registrationType: "Yellow Board Commercial Tourist Permit",
+    parkingLocation: "City Hubs, Metro Terminals & Airport Express Zone",
+    features: [
+      "AC with Rapid Cool Cabin",
+      "Power Windows & Central Locking",
+      "Dual Airbags & ABS with EBD",
+      "Bluetooth Audio & Mobile Mount",
+      "Fast USB Phone Charger",
+      "Tall-Boy Easy Ingress & Egress",
+      "GPS Real-time Tracking & Speed Alert",
+      "Clean Seat Covers & Sanitized Interior",
+      "Complimentary Water Bottles"
+    ],
+    idealFor: ["Budget City Travel", "Solo Business Trips", "Couples & Small Families", "Daily Office Commutes"],
+    chauffeurStandards: [
+      "Experienced & Verified Drivers",
+      "English & Local Language Fluent",
+      "Uniformed & Courteous",
+      "35-Point Sanitization Verified"
+    ]
+  },
+  {
     slug: "sedan",
     name: "Executive Sedan",
     popularName: "Maruti Dzire, Toyota Etios, Hyundai Aura",
@@ -43,8 +89,8 @@ export const FLEET_CATEGORIES = [
     chauffeurStandards: [
       "English & Local Language Fluent",
       "Uniformed & Police Verified",
-      "Minimum 5+ Years Highway Driving Experience",
-      "32-Point Pre-Trip Sanitization Checklist Verified"
+      "Experienced & Verified Drivers",
+      "35-Point Pre-Trip Sanitization Checklist Verified"
     ]
   },
   {
@@ -61,7 +107,8 @@ export const FLEET_CATEGORIES = [
     airportFlatRate: "₹1,499 all-inclusive",
     image: "/images/fleet/suv_electric.jpg",
     gallery: [
-      "/images/fleet/suv_electric.jpg"
+      "/images/fleet/suv_electric.jpg",
+      "/images/fleet/suv.jpg"
     ],
     variants: ["Tata Nexon EV Long Range", "Tata Curvv EV", "MG ZS EV", "Hyundai Creta"],
     colors: ["Pristine White", "Empowered Oxide", "Daytona Grey", "Starlight Black"],
@@ -88,7 +135,7 @@ export const FLEET_CATEGORIES = [
     chauffeurStandards: [
       "EV Driving Certified",
       "Uniformed & Police Verified",
-      "5+ Years Commercial Experience",
+      "Experienced & Verified Drivers",
       "35-Point Sanitization Verified"
     ]
   },
@@ -131,7 +178,7 @@ export const FLEET_CATEGORIES = [
     ],
     idealFor: ["Family Vacations", "VIP Corporate Guests", "Hill Station & Ghat Roads", "Intercity Round-Trips"],
     chauffeurStandards: [
-      "8+ Years Highway & Mountain Pass Experience",
+      "Experienced & Verified Drivers",
       "Uniformed with ID Badge",
       "Multi-lingual (Tamil, English, Hindi)",
       "Luggage Assistance & Door Service Included"
@@ -177,65 +224,113 @@ export const FLEET_CATEGORIES = [
     chauffeurStandards: [
       "Senior Executive Chauffeur",
       "Uniformed, English Fluent & Hospitality Trained",
-      "10+ Years Highway Experience",
+      "Experienced & Verified Drivers",
       "35-Point Sanitization Verified"
     ]
   },
   {
+    slug: "urbania",
+    name: "Force Urbania",
+    popularName: "9, 12 & 16 Seater Force Urbania Luxury Van",
+    headline: "Next-gen European-styled luxury executive van with standing cabin height",
+    desc: "Force Urbania brings airline-style individual recliner seating, sealed whisper-quiet cabin acoustics, panoramic tinted windows, individual AC louvers, and dedicated charging sockets at every seat.",
+    badge: "LUXURY EXECUTIVE VAN",
+    price: "Starts ₹26/km",
+    perKmRate: 26,
+    baseDailyRate: 6500,
+    hourlyPackage: "₹5,000 for 8 hrs / 80 km",
+    airportFlatRate: "₹3,299 all-inclusive",
+    image: "/images/fleet/urbania.jpg",
+    gallery: [
+      "/images/fleet/urbania.jpg",
+      "/images/fleet/tempo_traveller.jpg",
+      "/images/fleet/tempo.jpg"
+    ],
+    variants: ["Force Urbania 9+1 Luxury Executive", "Force Urbania 12+1 Short Wheelbase", "Force Urbania 16+1 Long Wheelbase"],
+    colors: ["Pristine White", "Royal Champagne Gold", "Silver Metallic"],
+    seatingCapacity: 16,
+    seatingLabel: "9 to 16 Passengers + 1 Chauffeur",
+    luggageCapacity: "12-16 Large Suitcases + Dedicated Rear Cargo Deck",
+    engineCc: "2596 cc FM 2.6 CR ED Turbo Diesel",
+    transmission: "5-Speed Synchromesh Manual",
+    alternateFuel: "BS-VI Low-Emission Diesel",
+    registrationType: "Yellow Board Commercial Maxi-Cab Tourist Permit",
+    parkingLocation: "Airport Logistic Yard & Prime City Hubs",
+    features: [
+      "Airline-Style Individual Pushback Recliners",
+      "6.5 ft Standing Cabin Clearance Height",
+      "Individual Roof AC Vents with Fan Controls",
+      "Individual Fast USB Mobile Charging at Each Seat",
+      "LED Ambient Mood Lighting & Reading Lamps",
+      "High-Fidelity Audio System with Wireless Mic",
+      "Panoramic Tinted Glass Windows with Curtains",
+      "Electronic Stability Control & Hill Hold Assist",
+      "Soft Leaf Parabolic Suspensions for Smooth Ride",
+      "Complimentary Mineral Water & Tissue Dispenser"
+    ],
+    idealFor: ["Corporate VIP Offsites", "Luxury Family Holidays", "Destination Wedding Delegations", "Airport VIP Escorts"],
+    chauffeurStandards: [
+      "Commercial Maxi-Cab Heavy Passenger Vehicle License",
+      "Uniformed, Courteous & English/Local Language Fluent",
+      "Experienced & Verified Drivers",
+      "35-Point Pre-Trip Sanitization Verified"
+    ]
+  },
+  {
     slug: "tempo",
-    name: "Luxury Tempo Traveller & Vans",
-    popularName: "12, 16, 20 & 26 Seater Force Urbania",
-    headline: "Royal Maharaja comfort for group tours, weddings, and pilgrim journeys",
-    desc: "Featuring individual Maharaja recliner seats, generous head clearance, expansive tinted panoramic glass, and high-performance dual air conditioning for groups of 10 to 26 guests.",
-    badge: "LUXURY GROUP",
+    name: "Tempo Traveller",
+    popularName: "9, 12, 17, 20 & 21+ Seater Force Maharaja Tempo",
+    headline: "Royal Maharaja recliner comfort for family pilgrimages, weddings & group tours",
+    desc: "Featuring plush 2x1 Maharaja pushback recliner seats, generous head clearance, expansive windows, LCD TV entertainment, and heavy-duty dual air conditioning for groups of 9 to 21+ travelers.",
+    badge: "MOST POPULAR FOR GROUPS",
     price: "Starts ₹24/km",
     perKmRate: 24,
     baseDailyRate: 5800,
     hourlyPackage: "₹4,500 for 8 hrs / 80 km",
     airportFlatRate: "₹2,999 all-inclusive",
-    image: "/images/fleet/tempo.jpg",
+    image: "/images/fleet/tempo_traveller.jpg",
     gallery: [
+      "/images/fleet/tempo_traveller.jpg",
       "/images/fleet/tempo.jpg",
-      "/images/fleet/bus.jpg",
-      "/images/cars/innova.jpg"
+      "/images/fleet/urbania.jpg"
     ],
-    variants: ["Force Urbania 12-Seater Luxury", "Force Traveller Maharaja 17-Seater", "26-Seater Executive Coach"],
+    variants: ["12-Seater Maharaja 2x1 Recliner", "17-Seater Executive Deluxe", "20-Seater Tourist Coach", "21-26 Seater Maxi Traveller"],
     colors: ["Arctic White", "Royal Champagne Gold", "Silver Metallic"],
-    seatingCapacity: 16,
-    seatingLabel: "12 to 26 Seater Configurations",
-    luggageCapacity: "10-15 Large Suitcases + Dedicated Rear Luggage Deck",
+    seatingCapacity: 21,
+    seatingLabel: "9 to 21 Passengers + 1 Chauffeur",
+    luggageCapacity: "15+ Large Suitcases + Dedicated Rear Luggage Deck + Roof Carrier",
     engineCc: "2596 cc FM 2.6 CR ED Turbo Diesel",
     transmission: "5-Speed Synchromesh Manual",
     alternateFuel: "Ultra-Low Emission Diesel",
-    registrationType: "Yellow Board Commercial Maxi-Cab Permit",
+    registrationType: "Yellow Board Commercial Maxi-Cab Tourist Permit",
     parkingLocation: "Central Fleet Depot & Airport Logistics Yard",
     features: [
-      "Maharaja 2x1 Push-Back Recliner Seats",
+      "Maharaja 2x1 Push-Back Recliner Seats with Armrests",
       "Roof Mounted Luggage Carrier & Boot Space",
-      "LED TV & Hi-Fi Audio System with Wireless Mic",
       "Dual AC with Individual Overhead Louvers",
+      "LED TV & Hi-Fi Audio System with Wireless Mic",
       "Recliner Seats with Footrests & Calf Support",
-      "360 Blindspot Proximity Cameras",
-      "Air Suspension / Soft Leaf Parabolic Dampers",
       "Reading Lamps & Individual Mobile Charging Sockets",
+      "Air Suspension / Soft Leaf Parabolic Dampers",
       "GPS Speed Governor & Real-time Live Tracking",
-      "Ample 6ft Standing Headroom Inside Cabin"
+      "Wide Center Aisle & Ample Headroom",
+      "First-Aid Kit & Fire Extinguisher Equipped"
     ],
-    idealFor: ["Wedding Guest Shuttles", "Corporate Team Outings", "Pilgrim Circuits & Temple Tours", "Large Family Sightseeing"],
+    idealFor: ["Pilgrim Circuits & Temple Tours", "Wedding Guest Shuttles", "Corporate Team Outings", "Large Family Sightseeing"],
     chauffeurStandards: [
       "10+ Years Commercial Heavy/Maxi-Cab License",
       "Police Verified & Defensive Driving Certified",
-      "Dedicated Chauffeur + Assistant on Long Tours",
-      "First-Aid & Emergency Response Certified"
+      "Experienced & Verified Drivers",
+      "35-Point Sanitization Verified"
     ]
   },
   {
     slug: "bus",
-    name: "Luxury Coaches & Volvo Buses",
-    popularName: "35 to 55 Seater Volvo 9600 & Scania",
-    headline: "Unrivaled long-distance grand touring luxury for large organizations",
-    desc: "Air-suspension luxury coaches engineered for utmost passenger serenity. Equipped with onboard washroom options, ergonomic reclining seating, and generous under-deck luggage bays.",
-    badge: "ULTRA LUXURY",
+    name: "Luxury Bus",
+    popularName: "35 to 65 Seater Volvo, BharatBenz & Scania",
+    headline: "Unrivaled long-distance grand touring luxury for large organizations & weddings",
+    desc: "Multi-axle air-suspension luxury coaches engineered for utmost passenger serenity. Equipped with ergonomic reclining seating, panoramic view windows, onboard washroom options, and generous under-deck luggage bays.",
+    badge: "COACHES & VOLVO",
     price: "Starts ₹45/km",
     perKmRate: 45,
     baseDailyRate: 11500,
@@ -244,13 +339,13 @@ export const FLEET_CATEGORIES = [
     image: "/images/fleet/bus.jpg",
     gallery: [
       "/images/fleet/bus.jpg",
-      "/images/fleet/tempo.jpg",
-      "/images/fleet/suv.jpg"
+      "/images/vendor/bus.jpg",
+      "/images/fleet/tempo_traveller.jpg"
     ],
-    variants: ["Volvo 9600 Multi-Axle Intercity", "Scania Metrolink HD", "BharatBenz Tourist Executive"],
+    variants: ["Volvo 9600 Multi-Axle Intercity Coach", "BharatBenz 35-Seater Luxury AC", "Scania Metrolink HD 45-Seater", "55-65 Seater Tourist Deluxe"],
     colors: ["White & Royal Blue", "Pearl Platinum", "Crimson Red"],
-    seatingCapacity: 45,
-    seatingLabel: "35 to 55 Executive Recliner Berths/Seats",
+    seatingCapacity: 65,
+    seatingLabel: "35 to 65 Executive Recliner Berths/Seats",
     luggageCapacity: "50+ Large Suitcases in Heavy Underbelly Cargo Hold",
     engineCc: "10,800 cc Volvo D11K Euro-6 Turbocharged",
     transmission: "Volvo I-Shift Automated 12-Speed",
@@ -272,7 +367,7 @@ export const FLEET_CATEGORIES = [
     idealFor: ["Large Corporate Conferences & Offsites", "College & Educational Excursions", "Grand Destination Weddings", "Inter-State Tour Groups"],
     chauffeurStandards: [
       "Two Commercial Heavy-Vehicle Captains for Shift Driving",
-      "12+ Years Interstate Coach Experience",
+      "Experienced & Verified Drivers",
       "Uniformed, Courteous & Trained in Guest Hospitality",
       "Complete Compliance with National Highway Safety Protocols"
     ]
@@ -280,11 +375,11 @@ export const FLEET_CATEGORIES = [
 ];
 
 export function getFleetBySlug(slug) {
-  if (!slug) return null;
+  if (!slug) return FLEET_CATEGORIES[0];
   const normalized = slug.toLowerCase().trim();
   return (
     FLEET_CATEGORIES.find((f) => f.slug === normalized) ||
-    FLEET_CATEGORIES.find((f) => normalized.includes(f.slug)) ||
+    FLEET_CATEGORIES.find((f) => normalized.includes(f.slug) || f.slug.includes(normalized)) ||
     FLEET_CATEGORIES[0]
   );
 }

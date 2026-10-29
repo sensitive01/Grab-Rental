@@ -1,0 +1,48 @@
+package com.grabrentals.searchhistory.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RecordSearchRequest {
+
+    @NotBlank(message = "Service type is required")
+    private String serviceType;
+
+    private String tripType;
+
+    @NotBlank(message = "Pickup location is required")
+    private String pickupLocation;
+
+    private String dropLocation;
+
+    private String pickupCity;
+    private String pickupState;
+    private String dropCity;
+    private String dropState;
+
+    private String stops;
+    private String pickupCoords;
+    private String dropCoords;
+
+    private String pickupDate;
+    private String pickupTime;
+    private String returnDate;
+    private String packageHoursKm;
+
+    private Double distanceKm;
+    private String durationText;
+    private Double tollPrice;
+
+    private String userId;
+    private String userName;
+    private String userEmail;
+    private String userPhone;
+    private String userRole;
+
+    private String sessionId;
+    private String sourcePage;
+}

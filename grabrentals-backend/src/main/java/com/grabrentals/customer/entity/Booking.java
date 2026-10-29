@@ -185,6 +185,61 @@ public class Booking {
     @Column(name = "ride_otp", length = 10)
     private String rideOtp;
 
+    // === Trip Closing & End-of-Trip Extras ===
+    @Column(name = "start_km")
+    private Double startKm;
+
+    @Column(name = "end_km")
+    private Double endKm;
+
+    @Column(name = "actual_km")
+    private Double actualKm;
+
+    @Column(name = "extra_km")
+    private Double extraKm;
+
+    @Column(name = "extra_km_rate", precision = 10, scale = 2)
+    private BigDecimal extraKmRate;
+
+    @Column(name = "extra_km_charge", precision = 10, scale = 2)
+    private BigDecimal extraKmCharge;
+
+    @Column(name = "toll_charges", precision = 10, scale = 2)
+    private BigDecimal tollCharges;
+
+    @Column(name = "permit_charges", precision = 10, scale = 2)
+    private BigDecimal permitCharges;
+
+    @Column(name = "parking_charges", precision = 10, scale = 2)
+    private BigDecimal parkingCharges;
+
+    @Column(name = "driver_allowance_charges", precision = 10, scale = 2)
+    private BigDecimal driverAllowanceCharges;
+
+    @Column(name = "other_charges", precision = 10, scale = 2)
+    private BigDecimal otherCharges;
+
+    @Column(name = "other_charges_notes", length = 300)
+    private String otherChargesNotes;
+
+    @Column(name = "trip_closing_notes", length = 500)
+    private String tripClosingNotes;
+
+    @Column(name = "final_gst", precision = 10, scale = 2)
+    private BigDecimal finalGst;
+
+    @Column(name = "final_total_fare", precision = 12, scale = 2)
+    private BigDecimal finalTotalFare;
+
+    @Column(name = "invoice_number", length = 50)
+    private String invoiceNumber;
+
+    @Column(name = "trip_completed_at")
+    private Instant tripCompletedAt;
+
+    @Column(name = "trip_closed_by", length = 100)
+    private String tripClosedBy;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

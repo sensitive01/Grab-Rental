@@ -50,6 +50,7 @@ export const OPERATIONS_NAV = [
       { label: "All Bookings", href: "/operations/bookings", icon: CalendarCheck },
       { label: "New Requests", href: "/operations/bookings/new", icon: PlusCircle },
       { label: "Customer Enquiries", href: "/admin/enquiries", icon: MessageSquare },
+      { label: "Search History", href: "/admin/search-history", icon: Navigation },
     ],
   },
   {
@@ -95,6 +96,7 @@ export const ADMIN_NAV = [
       { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
       { label: "Enquiries & Leads", href: "/admin/enquiries", icon: MessageSquare },
+      { label: "Search History", href: "/admin/search-history", icon: Navigation },
       { label: "Vehicles Models", href: "/admin/vehicle-models", icon: Layers },
       { label: "Pricing Matrix", href: "/admin/pricing", icon: IndianRupee },
       { label: "Driver Allowance", href: "/admin/driver-allowance", icon: UserCheck },

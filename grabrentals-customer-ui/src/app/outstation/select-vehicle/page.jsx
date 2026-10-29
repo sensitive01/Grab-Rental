@@ -90,6 +90,67 @@ function formatTimeDisplay(rawTime) {
   }
 }
 
+function matchesCabClass(car, cabSlug) {
+  if (!cabSlug) return true;
+  const slug = cabSlug.toLowerCase().trim();
+  const title = (car.title || car.model || car.modelName || "").toLowerCase();
+  const category = (car.category || "").toLowerCase();
+  const type = (car.vehicleType || "").toLowerCase();
+
+  switch (slug) {
+    case "hatchback":
+      return (
+        type.includes("hatchback") ||
+        category.includes("hatchback") ||
+        title.includes("wagon") ||
+        title.includes("celerio") ||
+        title.includes("tiago") ||
+        title.includes("i10") ||
+        title.includes("swift") ||
+        title.includes("alto") ||
+        title.includes("spresso")
+      );
+    case "sedan":
+      return (
+        type.includes("sedan") ||
+        category.includes("sedan") ||
+        title.includes("dzire") ||
+        title.includes("etios") ||
+        title.includes("aura") ||
+        title.includes("amaze") ||
+        title.includes("verna") ||
+        title.includes("city")
+      );
+    case "suv":
+      return (
+        (type.includes("suv") || category.includes("suv")) &&
+        !title.includes("crysta") &&
+        !title.includes("hycross")
+      );
+    case "crysta":
+      return title.includes("crysta") || category.includes("crysta");
+    case "innovahycross":
+      return title.includes("hycross") || category.includes("hycross");
+    case "urbania":
+      return title.includes("urbania") || category.includes("urbania");
+    case "tempo":
+      return (
+        (title.includes("tempo") || title.includes("traveller") || category.includes("tempo")) &&
+        !title.includes("urbania")
+      );
+    case "bus":
+      return (
+        title.includes("bus") ||
+        title.includes("volvo") ||
+        title.includes("coach") ||
+        title.includes("scania") ||
+        category.includes("bus")
+      );
+    default:
+      return type.includes(slug) || category.includes(slug) || title.includes(slug);
+  }
+}
+
 const INDIAN_STATES = new Set([
   "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh",
   "goa", "gujarat", "haryana", "himachal pradesh", "jharkhand", "karnataka",
@@ -263,12 +324,21 @@ function SelectVehicleContent() {
   // Filter States
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCabFilter, setActiveCabFilter] = useState(() => {
+    return searchParams?.get("cabType") || searchParams?.get("cab") || searchParams?.get("fleet") || null;
+  });
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedFuels, setSelectedFuels] = useState([]);
   const [selectedTransmissions, setSelectedTransmissions] = useState([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [seatingCapacity, setSeatingCapacity] = useState("all");
+
+  // Keep activeCabFilter in sync with URL searchParams (e.g. on client navigation from /book)
+  useEffect(() => {
+    const rawCab = searchParams?.get("cabType") || searchParams?.get("cab") || searchParams?.get("fleet");
+    setActiveCabFilter(rawCab || null);
+  }, [searchParams]);
 
   // Dynamic pricing & tax configuration from backend
   const [pricingConfig, setPricingConfig] = useState({
@@ -562,14 +632,18 @@ function SelectVehicleContent() {
 
       // Model B: Direct Fare Reduction
       // originalFare = Standard rate before discount
-      const originalFare = Math.round(standardRateFare);
+      const originalFare = car.pricing?.originalPrice
+        ? Math.round(Number(car.pricing.originalPrice))
+        : Math.round(standardRateFare);
 
-      // displayFare = Discounted price directly deducted by discount%
-      const displayFare = car.pricing?.discountedPrice
-        ? Math.round(car.pricing.discountedPrice)
-        : (discountPercentage > 0
-            ? Math.round(originalFare * (1 - (discountPercentage / 100)))
-            : originalFare);
+      // displayFare = Discounted base fare directly deducted by discount%
+      const displayFare = car.pricing?.baseFare
+        ? Math.round(Number(car.pricing.baseFare))
+        : (car.pricing?.discountedPrice
+            ? Math.round(Number(car.pricing.discountedPrice))
+            : (discountPercentage > 0
+                ? Math.round(originalFare * (1 - (discountPercentage / 100)))
+                : originalFare));
 
       const baseFare = displayFare;
       const tripDiscountedFare = displayFare;
@@ -662,7 +736,8 @@ function SelectVehicleContent() {
         distanceKm: effectiveTripKm,
         pricing: {
           originalPrice: originalFare,
-          discountedPrice: tripTotalFare,
+          discountedPrice: displayFare,
+          totalFare: tripTotalFare,
           baseFare: baseFare,
           displayFare: displayFare,
           discountPercentage: discountPercentage,
@@ -713,6 +788,11 @@ function SelectVehicleContent() {
         if (!matchTitle && !matchReg) return false;
       }
 
+      // Specific Cab Type Filter (when arriving from /book or fleet selection)
+      if (activeCabFilter) {
+        if (!matchesCabClass(car, activeCabFilter)) return false;
+      }
+
       // Vehicle Type Filter
       if (selectedTypes.length > 0) {
         if (!selectedTypes.includes(car.vehicleType)) return false;
@@ -758,6 +838,7 @@ function SelectVehicleContent() {
   }, [
     fleetWithPricing, 
     searchQuery, 
+    activeCabFilter,
     selectedTypes, 
     selectedFuels, 
     selectedTransmissions, 
@@ -775,7 +856,7 @@ function SelectVehicleContent() {
       return;
     }
     setCurrentPage(1);
-  }, [searchQuery, selectedTypes, selectedFuels, selectedTransmissions, minPrice, maxPrice, seatingCapacity, sortBy]);
+  }, [searchQuery, activeCabFilter, selectedTypes, selectedFuels, selectedTransmissions, minPrice, maxPrice, seatingCapacity, sortBy]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage) || 1;
@@ -814,6 +895,7 @@ function SelectVehicleContent() {
   };
 
   const handleResetFilters = () => {
+    setActiveCabFilter(null);
     setSearchQuery("");
     setSelectedTypes([]);
     setSelectedFuels([]);
@@ -872,8 +954,8 @@ function SelectVehicleContent() {
           taxes: isAirportBooking ? 0 : (vehicle.pricing?.chargesAndTaxes ?? 0),
           gstPercentage: isAirportBooking ? 0 : (vehicle.pricing?.gstPercentage ?? 5),
           driverAllowancePercentage: isAirportBooking ? 0 : (vehicle.pricing?.driverAllowancePercentage ?? 10),
-          totalFare: vehicle.pricing?.discountedPrice ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0)),
-          advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.discountedPrice ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0))) * 0.25),
+          totalFare: vehicle.pricing?.totalFare ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0)),
+          advancePaid: vehicle.pricing?.advanceAmount ?? Math.round((vehicle.pricing?.totalFare ?? ((vehicle.pricing?.baseFare || 0) + (vehicle.pricing?.chargesAndTaxesTotal || 0))) * 0.25),
           inclusions: vehicle.inclusions || [],
           exclusions: vehicle.exclusions || [],
           image: vehicle.image,
@@ -1277,6 +1359,25 @@ function SelectVehicleContent() {
                 </div>
               )}
             </div>
+
+            {/* Dedicated Active Cab Type Banner */}
+            {activeCabFilter && (
+              <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0"></div>
+                  <span className="text-slate-800 font-bold">
+                    Showing exclusive <strong className="text-amber-900 font-black uppercase tracking-wide bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300/80">{activeCabFilter}</strong> fleet options for your journey.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveCabFilter(null)}
+                  className="px-3 py-1 rounded-xl bg-white hover:bg-slate-900 hover:text-white border border-amber-300 text-amber-950 font-bold transition-all shadow-2xs cursor-pointer text-[11px]"
+                >
+                  Show All Cabs & Vehicles
+                </button>
+              </div>
+            )}
 
             {/* Loading Pulse Skeletons */}
             {isLoadingVehicles ? (

@@ -723,6 +723,141 @@ public class CustomerBookingService {
         return BookingResponse.fromEntity(saved);
     }
 
+    @Transactional
+    public BookingResponse vendorCompleteTrip(String idOrRef, TripClosingRequest request, User vendor) {
+        Booking booking = null;
+        try {
+            UUID id = UUID.fromString(idOrRef);
+            booking = bookingRepository.findById(id).orElse(null);
+        } catch (IllegalArgumentException ignored) {}
+
+        if (booking == null) {
+            booking = bookingRepository.findByBookingReference(idOrRef)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + idOrRef));
+        }
+
+        validateVendorOwnership(booking, vendor);
+
+        BookingStatus current = booking.getStatus();
+        if (current == BookingStatus.COMPLETED) {
+            throw new BadRequestException("Trip has already been finalized and completed.");
+        }
+        if (current == BookingStatus.CANCELLED) {
+            throw new BadRequestException("Cannot finalize a cancelled booking.");
+        }
+
+        // Set Odometer & KM Metrics
+        booking.setStartKm(request.getStartKm());
+        booking.setEndKm(request.getEndKm());
+
+        Double actualKm = request.getActualKm();
+        if (actualKm == null && request.getStartKm() != null && request.getEndKm() != null) {
+            actualKm = Math.max(0, request.getEndKm() - request.getStartKm());
+        }
+        booking.setActualKm(actualKm);
+
+        Double extraKm = request.getExtraKm() != null ? Math.max(0, request.getExtraKm()) : 0.0;
+        booking.setExtraKm(extraKm);
+
+        BigDecimal extraKmRate = (request.getExtraKmRate() != null && request.getExtraKmRate().compareTo(BigDecimal.ZERO) > 0)
+                ? request.getExtraKmRate()
+                : (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getPerKmRate() != null
+                    ? booking.getAssignedVehicle().getPerKmRate()
+                    : new BigDecimal("14.00"));
+        booking.setExtraKmRate(extraKmRate);
+
+        BigDecimal extraKmCharge = extraKmRate.multiply(BigDecimal.valueOf(extraKm)).setScale(0, RoundingMode.HALF_UP);
+        booking.setExtraKmCharge(extraKmCharge);
+
+        // Additional Expenses
+        BigDecimal toll = request.getTollCharges() != null ? request.getTollCharges().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        BigDecimal permit = request.getPermitCharges() != null ? request.getPermitCharges().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        BigDecimal parking = request.getParkingCharges() != null ? request.getParkingCharges().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        BigDecimal allowance = request.getDriverAllowance() != null ? request.getDriverAllowance().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        BigDecimal other = request.getOtherCharges() != null ? request.getOtherCharges().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+
+        booking.setTollCharges(toll);
+        booking.setPermitCharges(permit);
+        booking.setParkingCharges(parking);
+        booking.setDriverAllowanceCharges(allowance);
+        booking.setOtherCharges(other);
+        booking.setOtherChargesNotes(request.getOtherChargesNotes());
+        booking.setTripClosingNotes(request.getClosingNotes());
+
+        // Recalculate Final Fare
+        BigDecimal baseTripFare = booking.getTotalFare() != null ? booking.getTotalFare() : BigDecimal.ZERO;
+        BigDecimal totalExtras = extraKmCharge.add(toll).add(permit).add(parking).add(allowance).add(other);
+
+        // Compute 5% GST on the extra charges
+        BigDecimal extrasGst = totalExtras.multiply(new BigDecimal("0.05")).setScale(0, RoundingMode.HALF_UP);
+        // Original GST included in base
+        BigDecimal originalGst = baseTripFare.multiply(new BigDecimal("0.05")).divide(new BigDecimal("1.05"), 0, RoundingMode.HALF_UP);
+        BigDecimal totalFinalGst = originalGst.add(extrasGst);
+
+        BigDecimal finalTotal = baseTripFare.add(totalExtras).add(extrasGst);
+        booking.setFinalGst(totalFinalGst);
+        booking.setFinalTotalFare(finalTotal);
+        booking.setTotalFare(finalTotal);
+
+        // Balance Due = Final Total - Advance Paid
+        BigDecimal advance = booking.getAdvancePaid() != null ? booking.getAdvancePaid() : BigDecimal.ZERO;
+        BigDecimal due = finalTotal.subtract(advance);
+        booking.setDueAmount(due.compareTo(BigDecimal.ZERO) > 0 ? due : BigDecimal.ZERO);
+
+        // Generate Invoice Number
+        String invNum = "INV-" + booking.getBookingReference().replaceAll("[^A-Za-z0-9]", "");
+        booking.setInvoiceNumber(invNum);
+        booking.setTripCompletedAt(Instant.now());
+        booking.setTripClosedBy(vendor != null ? vendor.getName() : "Vendor Partner");
+
+        // Mark COMPLETED
+        booking.setStatus(BookingStatus.COMPLETED);
+
+        // Release vehicle and driver to AVAILABLE
+        if (booking.getAssignedVehicle() != null) {
+            booking.getAssignedVehicle().setStatus(VehicleStatus.AVAILABLE);
+            vehicleRepository.save(booking.getAssignedVehicle());
+        }
+        if (booking.getAssignedDriver() != null) {
+            booking.getAssignedDriver().setStatus(DriverStatus.AVAILABLE);
+            driverRepository.save(booking.getAssignedDriver());
+        }
+
+        Booking saved = bookingRepository.save(booking);
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("OPERATIONS")
+                    .event("TRIP_FINALIZED_AND_COMPLETED")
+                    .userId(vendor != null ? vendor.getId().toString() : "VENDOR")
+                    .userName(vendor != null ? vendor.getName() : "Vendor")
+                    .userRole("VENDOR")
+                    .module("TRIP_CLOSING")
+                    .targetEntity("Booking: " + booking.getBookingReference())
+                    .details("Trip " + booking.getBookingReference() + " finalized by vendor with total fare ₹" + finalTotal + " (Extras: ₹" + totalExtras + ", GST: ₹" + totalFinalGst + ", Balance Due: ₹" + due + ")")
+                    .status("SUCCESS")
+                    .build());
+        } catch (Exception ex) {
+            log.warn("Failed to log audit event for trip closing: {}", ex.getMessage());
+        }
+
+        try {
+            notificationService.createNotification(
+                    Role.OPERATIONS,
+                    "Trip Finalized & Invoiced",
+                    "Booking #" + booking.getBookingReference() + " completed. Final Bill: ₹" + finalTotal + ", Invoice: " + invNum,
+                    "INFO",
+                    "TRIP_COMPLETED",
+                    booking.getBookingReference(),
+                    "/operations/bookings/" + booking.getBookingReference()
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create notification for trip closing: {}", ex.getMessage());
+        }
+
+        return BookingResponse.fromEntityForVendor(saved);
+    }
+
     public BigDecimal calculateVendorPayoutForBooking(Booking booking, Vehicle vehicle) {
         if (booking == null) return null;
         try {

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import BookingWidget from "@/components/home/BookingWidget";
 import VehicleClassSelector from "@/components/home/VehicleClassSelector";
 import InPageBanner from "@/components/banner/InPageBanner";
+import QuickEnquirySection from "@/components/common/QuickEnquirySection";
 import {
   CheckCircle,
   ShieldCheck,
@@ -208,12 +209,18 @@ export default function Home() {
         <VehicleClassSelector />
       </section>
 
-      {/* 4. Popular Outstation Corridors */}
+      {/* Dynamic In-Page Promotional Banners */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+        <InPageBanner page="HOME" />
+      </div>
+
+      {/* 4. Have Custom Travel Requirements? (Quick Enquiry Section) */}
+      <QuickEnquirySection />
+
+      {/* 
+      // 4. Popular Outstation Corridors (Commented out)
       <section className="py-12 sm:py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          {/* Dynamic In-Page Promotional Banners */}
-          <InPageBanner page="HOME" />
-
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
               {t("popular_outstation_corridors") || "Popular Outstation Corridors"}
@@ -272,6 +279,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      */}
 
       {/* 5. The Standard of Excellence (5 Circular Icon Pillars) */}
       <section className="py-12 sm:py-20 bg-orange-600">
@@ -295,7 +303,7 @@ export default function Home() {
               },
               {
                 title: t("vp_chauffeurs_title") || "Expert Chauffeurs",
-                desc: t("vp_chauffeurs_desc") || "8+ years highway experience & police verified.",
+                desc: t("vp_chauffeurs_desc") || "Experience and Verified Drivers",
                 icon: <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />,
                 bg: "bg-white"
               },
