@@ -24,4 +24,7 @@ public class TripClosingRequest {
     private BigDecimal otherCharges;
     private String otherChargesNotes;
     private String closingNotes;
+    private String paymentMethod;
+    private String paymentProofUrl;
+    private String endOdometerProofUrl;
 }

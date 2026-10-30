@@ -40,7 +40,9 @@ axiosClient.interceptors.response.use(
         // Do not forcefully redirect away on review-pay or checkout flows
         // Let the checkout page handle inline re-authentication without losing user inputs
         if (window.location.pathname.includes("review-pay") || error.config?.skipAuthRedirect) {
-          console.warn("Customer session expired (401) on review-pay. Deferring to in-page verification...");
+          if (!error.config?.silent401) {
+            console.debug("Customer session expired (401) on review-pay. Deferring to in-page verification...");
+          }
           return Promise.reject(error);
         }
 

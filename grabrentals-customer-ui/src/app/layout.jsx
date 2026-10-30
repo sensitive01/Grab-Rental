@@ -1,4 +1,6 @@
 import "./globals.css";
+import "@/lib/patchDOM";
+import Script from "next/script";
 import AppShell from "@/components/layout/AppShell";
 import { LanguageProvider } from "@/context/LanguageContext";
 
@@ -74,11 +76,66 @@ export default function RootLayout({ children }) {
     <html lang="en" className="overflow-x-clip" suppressHydrationWarning>
       <head>
         <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof Node === 'function' && Node.prototype && !window.__dom_translate_patched) {
+                window.__dom_translate_patched = true;
+                var origRemoveChild = Node.prototype.removeChild;
+                Node.prototype.removeChild = function(child) {
+                  if (child.parentNode !== this) {
+                    if (child.parentNode) {
+                      return child.parentNode.removeChild(child);
+                    }
+                    return child;
+                  }
+                  return origRemoveChild.apply(this, arguments);
+                };
+                var origInsertBefore = Node.prototype.insertBefore;
+                Node.prototype.insertBefore = function(newNode, refNode) {
+                  if (refNode && refNode.parentNode !== this) {
+                    if (refNode.parentNode) {
+                      return refNode.parentNode.insertBefore(newNode, refNode);
+                    }
+                    return newNode;
+                  }
+                  return origInsertBefore.apply(this, arguments);
+                };
+              }
+            `,
+          }}
+        />
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="antialiased overflow-x-clip max-w-[100vw]" suppressHydrationWarning>
+        {/* Hidden Google Translate Mount Container */}
+        <div id="google_translate_element" style={{ display: "none" }} />
+
+        {/* Google Translate Callback & Script */}
+        <Script
+          id="google-translate-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.googleTranslateElementInit = function() {
+                if (window.google && window.google.translate) {
+                  new window.google.translate.TranslateElement({
+                    pageLanguage: 'en',
+                    includedLanguages: 'en,kn,hi,ta,te',
+                    autoDisplay: false
+                  }, 'google_translate_element');
+                }
+              };
+            `,
+          }}
+        />
+        <Script
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="afterInteractive"
+        />
+
         <LanguageProvider>
           <AppShell>
             {children}

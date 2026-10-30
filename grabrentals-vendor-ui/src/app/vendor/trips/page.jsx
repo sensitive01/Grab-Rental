@@ -26,6 +26,7 @@ import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import TripClosingModal from "@/components/trips/TripClosingModal";
+import StartRideModal from "@/components/trips/StartRideModal";
 import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export default function VendorTripsPage() {
 
   // Modal State
   const [closingTrip, setClosingTrip] = useState(null);
+  const [startingTrip, setStartingTrip] = useState(null);
 
   const fetchTripsData = async (isSilent = false) => {
     try {
@@ -301,8 +303,21 @@ export default function VendorTripsPage() {
       ) : (
         <div className="space-y-4">
           {filteredTrips.map((trip) => {
-            const isCompleted = String(trip.rawStatus || trip.status).toUpperCase() === "COMPLETED";
-            const isActiveOrAssigned = !isCompleted && String(trip.rawStatus || trip.status).toUpperCase() !== "CANCELLED";
+            const rawSt = String(trip.rawStatus || trip.status).toUpperCase();
+            const isCompleted = rawSt === "COMPLETED";
+            const isActive = rawSt === "ON_THE_WAY" || rawSt === "IN_TRANSIT" || rawSt === "ACTIVE";
+
+            const hasVehicle = Boolean(
+              trip.vehicleNumber && 
+              trip.vehicleNumber !== "Assigned by Fleet" && 
+              trip.vehicleNumber !== "Unassigned" && 
+              trip.vehicleNumber !== "Assigned" &&
+              trip.vehicleNumber.trim().length > 0
+            );
+
+            // Only allow starting the ride IF the trip is assigned AND vendor has actually assigned a vehicle
+            const isReadyToStart = (rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED") && hasVehicle;
+            const isPendingVehicle = (rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED" || rawSt === "PENDING_ALLOCATION") && !hasVehicle;
 
             return (
               <div
@@ -367,10 +382,17 @@ export default function VendorTripsPage() {
 
                     {/* Chauffeur and Vehicle Pair */}
                     <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
-                      <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
-                        <NumberPlate number={trip.vehicleNumber || "Assigned"} />
-                        <span className="text-slate-600 font-semibold text-[11px]">{trip.vehicleType}</span>
-                      </div>
+                      {hasVehicle ? (
+                        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <NumberPlate number={trip.vehicleNumber} />
+                          <span className="text-slate-600 font-semibold text-[11px]">{trip.vehicleType}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold">
+                          <Car className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>Vehicle Pending Assignment</span>
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
                         <span className="text-slate-400 text-[10px] uppercase font-bold">Driver:</span>
@@ -408,11 +430,40 @@ export default function VendorTripsPage() {
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row lg:flex-col gap-2">
-                      {isActiveOrAssigned && (
+                      {/* Assigned & Vehicle Allocated -> Show Start Ride */}
+                      {isReadyToStart && (
+                        <button
+                          type="button"
+                          onClick={() => setStartingTrip(trip)}
+                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                        >
+                          <Navigation className="w-4 h-4 fill-white" />
+                          Start Ride
+                        </button>
+                      )}
+
+                      {/* Assigned BUT Vehicle NOT Allocated -> Assign Vehicle First */}
+                      {isPendingVehicle && (
+                        <div className="space-y-1">
+                          <Link
+                            href={`/vendor/bookings/${trip.id}`}
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 transition-all text-center"
+                          >
+                            <Car className="w-4 h-4" />
+                            Assign Vehicle First
+                          </Link>
+                          <span className="text-[10px] text-amber-700 font-semibold block text-center lg:text-right">
+                            Vehicle required to start ride
+                          </span>
+                        </div>
+                      )}
+
+                      {/* In Transit / Active -> Show End Trip & Finalize Fare */}
+                      {isActive && (
                         <button
                           type="button"
                           onClick={() => setClosingTrip(trip)}
-                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 transition-all"
+                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                         >
                           <Receipt className="w-4 h-4 text-slate-950" />
                           End Trip &amp; Finalize Fare
@@ -446,7 +497,19 @@ export default function VendorTripsPage() {
         </div>
       )}
 
-      {/* Trip Closing Modal */}
+      {/* Start Ride Modal (Step 1) */}
+      {startingTrip && (
+        <StartRideModal
+          isOpen={Boolean(startingTrip)}
+          onClose={() => setStartingTrip(null)}
+          trip={startingTrip}
+          onRideStarted={(updated) => {
+            fetchTripsData(true);
+          }}
+        />
+      )}
+
+      {/* Trip Closing Modal (Step 2) */}
       {closingTrip && (
         <TripClosingModal
           isOpen={Boolean(closingTrip)}

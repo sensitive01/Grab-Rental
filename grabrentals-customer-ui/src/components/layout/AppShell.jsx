@@ -31,6 +31,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import BannerPopupManager from "@/components/banner/BannerPopupManager";
 import QuickEnquirySection from "@/components/common/QuickEnquirySection";
 import MobileFloatingSideTabs from "@/components/common/MobileFloatingSideTabs";
+import LanguageSelector from "@/components/LanguageSelector";
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
@@ -101,16 +102,7 @@ export default function AppShell({ children }) {
     }
   };
 
-  const { t, language, setLanguage } = useLanguage();
-
-  const TOP_LANGUAGES = [
-    { code: "en", label: "English", name: "English" },
-    { code: "kn", label: "ಕನ್ನಡ", name: "Kannada" },
-    { code: "ta", label: "தமிழ்", name: "Tamil" },
-    { code: "te", label: "తెలుగు", name: "Telugu" },
-    { code: "hi", label: "हिंदी", name: "Hindi" },
-    { code: "ml", label: "മലയാളം", name: "Malayalam" },
-  ];
+  const { t } = useLanguage();
 
   const bookNowItems = [
     {
@@ -237,29 +229,7 @@ export default function AppShell({ children }) {
           </div>
 
           {/* Top Bar Language Selector (Centered on Mobile, Right-aligned on Desktop) */}
-          <div className="flex items-center justify-center w-full md:w-auto gap-1.5 text-[11px] sm:text-xs font-semibold shrink-0 md:ml-auto md:pl-4 md:border-l border-white/30 whitespace-nowrap overflow-x-auto hide-scrollbar">
-            {TOP_LANGUAGES.map((lang, idx) => {
-              const isActive = language === lang.code;
-              return (
-                <span key={lang.code} className="inline-flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setLanguage(lang.code)}
-                    className={`transition-all cursor-pointer ${isActive
-                        ? "text-yellow-300 font-black underline underline-offset-4 decoration-2"
-                        : "text-white/90 hover:text-white font-semibold"
-                      }`}
-                    title={lang.name}
-                  >
-                    {lang.label}
-                  </button>
-                  {idx < TOP_LANGUAGES.length - 1 && (
-                    <span className="text-white/40 font-bold select-none text-[10px]">|</span>
-                  )}
-                </span>
-              );
-            })}
-          </div>
+          <LanguageSelector variant="links" />
 
         </div>
       </div>
@@ -587,25 +557,7 @@ export default function AppShell({ children }) {
                   <Globe className="w-3.5 h-3.5 text-[#0082fe]" />
                   <span>{t("select_language") || "Select Language"}</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {TOP_LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.code}
-                      type="button"
-                      onClick={() => {
-                        setLanguage(lang.code);
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${language === lang.code
-                          ? "bg-[#0082fe] text-white font-black shadow-xs ring-2 ring-[#0082fe]/30"
-                          : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-                        }`}
-                      title={lang.name}
-                    >
-                      {lang.label}
-                    </button>
-                  ))}
-                </div>
+                <LanguageSelector variant="pills" />
               </div>
 
               {/* Book Rides Section */}

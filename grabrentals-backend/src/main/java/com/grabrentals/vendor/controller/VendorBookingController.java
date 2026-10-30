@@ -115,7 +115,7 @@ public class VendorBookingController {
     ) {
         User vendor = getUser(userDetails);
         log.info("[HTTP API] PATCH /api/fleet/bookings/{}/status to {} by vendor '{}'", idOrRef, request.getStatus(), vendor.getEmail());
-        BookingResponse response = bookingService.updateTripStatus(idOrRef, request.getStatus(), vendor);
+        BookingResponse response = bookingService.updateTripStatus(idOrRef, request, vendor);
         return ResponseEntity.ok(ApiResponse.success("Trip status updated successfully to " + request.getStatus(), response));
     }
 

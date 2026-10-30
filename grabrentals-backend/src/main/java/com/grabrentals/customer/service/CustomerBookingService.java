@@ -645,6 +645,11 @@ public class CustomerBookingService {
 
     @Transactional
     public BookingResponse updateTripStatus(String idOrRef, BookingStatus newStatus, User actor) {
+        return updateTripStatus(idOrRef, BookingStatusUpdateRequest.builder().status(newStatus).build(), actor);
+    }
+
+    @Transactional
+    public BookingResponse updateTripStatus(String idOrRef, BookingStatusUpdateRequest request, User actor) {
         Booking booking = null;
         try {
             UUID id = UUID.fromString(idOrRef);
@@ -661,7 +666,18 @@ public class CustomerBookingService {
             throw new BadRequestException("Cannot change status of a " + current + " booking");
         }
 
+        BookingStatus newStatus = request.getStatus();
+
+        // Enforce: Vehicle must be assigned by vendor before starting the ride
+        if ((newStatus == BookingStatus.IN_TRANSIT || newStatus == BookingStatus.ON_THE_WAY) && booking.getAssignedVehicle() == null) {
+            throw new BadRequestException("Cannot start ride: A vehicle must be assigned before starting the trip.");
+        }
+
         booking.setStatus(newStatus);
+
+        if (request.getStartKm() != null && request.getStartKm() > 0) {
+            booking.setStartKm(request.getStartKm());
+        }
 
         // If completed, release vehicle and driver
         if (newStatus == BookingStatus.COMPLETED) {
@@ -809,6 +825,14 @@ public class CustomerBookingService {
         booking.setInvoiceNumber(invNum);
         booking.setTripCompletedAt(Instant.now());
         booking.setTripClosedBy(vendor != null ? vendor.getName() : "Vendor Partner");
+
+        if (request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank()) {
+            booking.setPaymentMethod(request.getPaymentMethod());
+        }
+
+        if (request.getPaymentProofUrl() != null && !request.getPaymentProofUrl().isBlank()) {
+            booking.setPaymentProofUrl(request.getPaymentProofUrl());
+        }
 
         // Mark COMPLETED
         booking.setStatus(BookingStatus.COMPLETED);

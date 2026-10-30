@@ -17,4 +17,8 @@ public class BookingStatusUpdateRequest {
     private BookingStatus status;
 
     private String milestoneText;
+
+    private Double startKm;
+
+    private String startOdometerProofUrl;
 }

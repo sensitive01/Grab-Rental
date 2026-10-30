@@ -250,34 +250,43 @@ export default function ReviewPayPage() {
 
         // Fetch fresh profile from API if authenticated
         if (isAuthenticated()) {
-          const res = await customerApi.getProfile();
-          if (res?.data) {
-            const prof = res.data;
-            if (prof.name && prof.name.trim().toLowerCase() !== "customer") {
-              setPassengerName((prev) => (prev && prev !== "Customer" ? prev : prof.name.trim()));
-            }
-            const phoneVal = prof.phone || prof.mobile || "";
-            if (phoneVal) {
-              const digits = phoneVal.replace(/[^0-9]/g, "");
-              const formatted = digits.length > 10 ? digits.slice(-10) : digits;
-              setPassengerPhone((prev) => (prev ? prev : formatted));
-            }
-            if (prof.addresses && Array.isArray(prof.addresses) && prof.addresses.length > 0) {
-              setSavedAddresses(prof.addresses);
-            }
-          }
-
           try {
-            const addrRes = await customerApi.getAddresses();
-            if (addrRes?.data && Array.isArray(addrRes.data)) {
-              setSavedAddresses(addrRes.data);
+            const res = await customerApi.getProfile({ skipAuthRedirect: true, silent401: true });
+            if (res?.data) {
+              const prof = res.data;
+              if (prof.name && prof.name.trim().toLowerCase() !== "customer") {
+                setPassengerName((prev) => (prev && prev !== "Customer" ? prev : prof.name.trim()));
+              }
+              const phoneVal = prof.phone || prof.mobile || "";
+              if (phoneVal) {
+                const digits = phoneVal.replace(/[^0-9]/g, "");
+                const formatted = digits.length > 10 ? digits.slice(-10) : digits;
+                setPassengerPhone((prev) => (prev ? prev : formatted));
+              }
+              if (prof.addresses && Array.isArray(prof.addresses) && prof.addresses.length > 0) {
+                setSavedAddresses(prof.addresses);
+              }
             }
-          } catch (addrErr) {
-            console.warn("Could not fetch customer addresses:", addrErr);
+
+            try {
+              const addrRes = await customerApi.getAddresses({ skipAuthRedirect: true, silent401: true });
+              if (addrRes?.data && Array.isArray(addrRes.data)) {
+                setSavedAddresses(addrRes.data);
+              }
+            } catch {
+              // Silently ignore secondary addresses fetch
+            }
+          } catch (profileErr) {
+            // Silently ignore 401 for unauthenticated/expired sessions; customer can book as guest
+            if (profileErr?.response?.status !== 401) {
+              console.warn("Could not sync customer profile for autofill:", profileErr);
+            }
           }
         }
       } catch (err) {
-        console.warn("Could not sync customer profile for autofill:", err);
+        if (err?.response?.status !== 401) {
+          console.warn("Could not sync customer profile for autofill:", err);
+        }
       }
     }
     syncLoggedInUserProfile();

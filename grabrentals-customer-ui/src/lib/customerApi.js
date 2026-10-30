@@ -28,16 +28,16 @@ export const customerApi = {
   /**
    * Get authenticated customer profile (name, phone, email)
    */
-  async getProfile() {
-    const res = await axiosClient.get("/api/customer/profile");
+  async getProfile(config = {}) {
+    const res = await axiosClient.get("/api/customer/profile", config);
     return res.data;
   },
 
   /**
    * Get customer saved addresses (Home, Office, Other)
    */
-  async getAddresses() {
-    const res = await axiosClient.get("/api/customer/addresses");
+  async getAddresses(config = {}) {
+    const res = await axiosClient.get("/api/customer/addresses", config);
     return res.data;
   },
 
