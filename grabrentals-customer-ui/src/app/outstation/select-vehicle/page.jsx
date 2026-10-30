@@ -131,6 +131,18 @@ function matchesCabClass(car, cabSlug) {
       return title.includes("crysta") || category.includes("crysta");
     case "innovahycross":
       return title.includes("hycross") || category.includes("hycross");
+    case "vans":
+    case "van":
+    case "urbania_tempo":
+      return (
+        title.includes("urbania") ||
+        category.includes("urbania") ||
+        title.includes("tempo") ||
+        title.includes("traveller") ||
+        category.includes("tempo") ||
+        category.includes("van") ||
+        type.includes("van")
+      );
     case "urbania":
       return title.includes("urbania") || category.includes("urbania");
     case "tempo":
@@ -144,7 +156,10 @@ function matchesCabClass(car, cabSlug) {
         title.includes("volvo") ||
         title.includes("coach") ||
         title.includes("scania") ||
-        category.includes("bus")
+        category.includes("bus") ||
+        category.includes("coach") ||
+        type.includes("bus") ||
+        type.includes("coach")
       );
     default:
       return type.includes(slug) || category.includes(slug) || title.includes(slug);
@@ -1366,7 +1381,9 @@ function SelectVehicleContent() {
                 <div className="flex items-center gap-2.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0"></div>
                   <span className="text-slate-800 font-bold">
-                    Showing exclusive <strong className="text-amber-900 font-black uppercase tracking-wide bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300/80">{activeCabFilter}</strong> fleet options for your journey.
+                    Showing exclusive <strong className="text-amber-900 font-black uppercase tracking-wide bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300/80">
+                      {activeCabFilter === "vans" || activeCabFilter === "van" || activeCabFilter === "urbania_tempo" ? "Urbania & Tempo Traveller" : (activeCabFilter === "urbania" ? "Force Urbania" : (activeCabFilter === "tempo" ? "Tempo Traveller" : (activeCabFilter === "crysta" ? "Innova Crysta" : (activeCabFilter === "innovahycross" ? "Innova Hycross" : (activeCabFilter === "bus" ? "Bus" : activeCabFilter)))))}
+                    </strong> fleet options for your journey.
                   </span>
                 </div>
                 <button

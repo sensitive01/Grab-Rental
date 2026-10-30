@@ -1,9 +1,44 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import BookingWidget from "@/components/home/BookingWidget";
 import { Users, CheckCircle, Shield, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+
+function VansHeroContent() {
+  const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const cab = searchParams?.get("cab");
+  const isUrbania = cab === "urbania";
+  const isTempo = cab === "tempo";
+
+  return (
+    <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
+      <div className="inline-flex items-center gap-2 bg-[#0082fe] border border-blue-400/40 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white mb-3 sm:mb-5 shadow-lg shadow-blue-900/30">
+        <Users className="w-3 h-3 text-white" />{" "}
+        {isUrbania
+          ? "Luxury 9 to 16 Seater Van"
+          : isTempo
+            ? "12 to 26 Seater Group Van"
+            : (t("vans_hero_badge") || "9 to 26 Seater Vehicles")}
+      </div>
+      <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
+        {isUrbania
+          ? "Force Urbania Rentals"
+          : isTempo
+            ? "Tempo Traveller Rentals"
+            : (t("vans_hero_title") || "Tempo Traveller & Van Rentals")}
+      </h1>
+      <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
+        {isUrbania
+          ? "Experience executive luxury with individual pushback recliners, standing-height cabin, and panoramic windows for outstation trips."
+          : (t("vans_hero_subtitle") || "Travel together. Rent premium Force Urbania and luxury Tempo Travellers for outstation family trips and group tours.")}
+      </p>
+    </div>
+  );
+}
 
 export default function VansPage() {
   const { t } = useLanguage();
@@ -17,17 +52,13 @@ export default function VansPage() {
           style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
-        <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
-          <div className="inline-flex items-center gap-2 bg-[#0082fe] border border-blue-400/40 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white mb-3 sm:mb-5 shadow-lg shadow-blue-900/30">
-            <Users className="w-3 h-3 text-white" /> {t("vans_hero_badge") || "9 to 26 Seater Vehicles"}
+        <Suspense fallback={
+          <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4 text-white">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold">Tempo Traveller & Van Rentals</h1>
           </div>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            {t("vans_hero_title") || "Tempo Traveller & Van Rentals"}
-          </h1>
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
-            {t("vans_hero_subtitle") || "Travel together. Rent premium Force Urbania and luxury Tempo Travellers for outstation family trips and group tours."}
-          </p>
-        </div>
+        }>
+          <VansHeroContent />
+        </Suspense>
       </section>
 
       {/* Booking Widget */}

@@ -9,7 +9,6 @@ import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
 import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
-import CabSelectDropdown from "@/components/booking/CabSelectDropdown";
 import TripTypeSelectDropdown from "@/components/booking/TripTypeSelectDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
@@ -75,7 +74,14 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
   const isNewBookingPage = pathname?.startsWith("/book") || isDropdownMode;
 
   const paramCab = searchParams?.get("cab") || searchParams?.get("cabType") || searchParams?.get("fleet") || "";
-  const [selectedCab, setSelectedCab] = useState(() => (paramCab ? paramCab.toLowerCase().trim() : ""));
+  const [selectedCab, setSelectedCab] = useState(() => {
+    if (paramCab) return paramCab.toLowerCase().trim();
+    if (pathname === "/vans") return "vans";
+    if (pathname?.startsWith("/fleet/urbania")) return "urbania";
+    if (pathname?.startsWith("/fleet/tempo")) return "tempo";
+    if (pathname === "/buses" || pathname === "/bus" || pathname?.startsWith("/fleet/bus")) return "bus";
+    return "";
+  });
 
   const [activeTab, setActiveTab] = useState(() => {
     const serviceParam = searchParams?.get("service") || searchParams?.get("tripType");
@@ -187,11 +193,21 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
     }
   }, [pathname]);
 
-  // Synchronize cab and trip type when searchParams change (e.g. from /book?cab=innovahycross)
+  // Synchronize cab and trip type when searchParams or pathname change (e.g. from /book?cab=urbania or /vans)
   useEffect(() => {
     const urlCab = searchParams?.get("cab") || searchParams?.get("cabType") || searchParams?.get("fleet");
-    if (urlCab !== undefined && urlCab !== null) {
+    if (urlCab !== undefined && urlCab !== null && urlCab !== "") {
       setSelectedCab(urlCab.toLowerCase().trim());
+    } else if (pathname === "/vans") {
+      setSelectedCab("vans");
+    } else if (pathname?.startsWith("/fleet/urbania")) {
+      setSelectedCab("urbania");
+    } else if (pathname?.startsWith("/fleet/tempo")) {
+      setSelectedCab("tempo");
+    } else if (pathname === "/buses" || pathname === "/bus" || pathname?.startsWith("/fleet/bus")) {
+      setSelectedCab("bus");
+    } else if (pathname === "/" || pathname === "/book") {
+      if (!paramCab) setSelectedCab("");
     }
     const urlService = searchParams?.get("service") || searchParams?.get("tripType");
     if (urlService) {
@@ -628,8 +644,8 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       {/* Top Controls: Dropdowns for New Booking Page, or Segmented Tabs for Homepage */}
       {isNewBookingPage ? (
         <div className="mb-4 sm:mb-6 pb-4 border-b border-slate-200">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-center">
-            {/* 1. Trip Type Dropdown */}
+          <div className="max-w-xs">
+            {/* Trip Type Dropdown */}
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 Trip Type
@@ -645,17 +661,6 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                     setAirportTripType("drop");
                   }
                 }}
-              />
-            </div>
-
-            {/* 2. Cab Type Dropdown */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                Cab Type
-              </label>
-              <CabSelectDropdown
-                value={selectedCab}
-                onChange={(val) => setSelectedCab(val)}
               />
             </div>
           </div>
@@ -757,20 +762,6 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               );
             })}
           </div>
-
-          {!isNewBookingPage && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                Cab Type:
-              </span>
-              <div className="w-full sm:w-64">
-                <CabSelectDropdown
-                  value={selectedCab}
-                  onChange={(val) => setSelectedCab(val)}
-                />
-              </div>
-            </div>
-          )}
         </div>
       ) : allowsStops ? (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-5">
@@ -810,38 +801,8 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               );
             })}
           </div>
-
-          {!isNewBookingPage && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                Cab Type:
-              </span>
-              <div className="w-full sm:w-64">
-                <CabSelectDropdown
-                  value={selectedCab}
-                  onChange={(val) => setSelectedCab(val)}
-                />
-              </div>
-            </div>
-          )}
         </div>
-      ) : (
-        !isNewBookingPage && (
-          <div className="flex flex-wrap items-center justify-end gap-3 mb-4 sm:mb-5">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                Cab Type:
-              </span>
-              <div className="w-full sm:w-64">
-                <CabSelectDropdown
-                  value={selectedCab}
-                  onChange={(val) => setSelectedCab(val)}
-                />
-              </div>
-            </div>
-          </div>
-        )
-      )}
+      ) : null}
 
       {/* ===================== INPUT SECTION ===================== */}
       {/* If stops or round-trip: 2-row multi-column grid like Savaari */}

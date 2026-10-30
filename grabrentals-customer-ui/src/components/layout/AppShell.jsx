@@ -134,7 +134,7 @@ export default function AppShell({ children }) {
   ];
 
   const mainNavLinks = [
-    { name: t("tempo_traveller") || "Urbania / Tempo Traveller", href: "/vans" },
+    { name: t("urbania_tempo") || "Urbania / Tempo Traveller", href: "/vans" },
     { name: t("luxury_buses") || "Bus Hire", href: "/buses" },
     { name: t("packages") || "Tour Packages", href: "/packages" },
     { name: t("pet_friendly_cabs") || "🐶 Pet Friendly Cabs", href: "/pet-friendly-cabs" },
@@ -143,7 +143,12 @@ export default function AppShell({ children }) {
 
   const isNavActive = (href) => {
     if (href === "/") return pathname === "/";
-    return pathname === href || pathname?.startsWith(href + "/");
+    const [targetPath, targetQuery] = href.split("?");
+    if (targetQuery && typeof window !== "undefined") {
+      const search = window.location.search || "";
+      return pathname === targetPath && search.includes(targetQuery);
+    }
+    return pathname === targetPath || (pathname?.startsWith(targetPath + "/") && pathname !== "/vans");
   };
 
   const isBookNowActive = pathname === "/" || pathname === "/local" || pathname?.startsWith("/local") || pathname === "/airport" || pathname?.startsWith("/airport");
