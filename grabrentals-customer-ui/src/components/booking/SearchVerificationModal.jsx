@@ -301,7 +301,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
                 </button>
               </div>
 
-              {onSkip && (
+              {/* {onSkip && (
                 <div className="text-center pt-2">
                   <button
                     type="button"
@@ -311,7 +311,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
                     Skip & search as guest
                   </button>
                 </div>
-              )}
+              )} */}
             </form>
           )}
 
@@ -392,7 +392,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
                 </button>
               </div>
 
-              {onSkip && (
+              {/* {onSkip && (
                 <div className="text-center">
                   <button
                     type="button"
@@ -402,7 +402,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
                     Skip & search as guest
                   </button>
                 </div>
-              )}
+              )} */}
             </div>
           )}
 
