@@ -820,8 +820,8 @@ export default function AppShell({ children }) {
                 <span className="block text-xs text-blue-100 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span>
               </li>
               <li>
-                <a href="mailto:info@grabrentals.in" className="hover:text-yellow-300 hover:underline transition-colors ml-6">
-                  info@grabrentals.in
+                <a href="mailto:grabrentals2016@gmail.com" className="hover:text-yellow-300 hover:underline transition-colors ml-6">
+                  grabrentals2016@gmail.com
                 </a>
               </li>
               <li className="flex items-start gap-2 mt-4 text-white/90">

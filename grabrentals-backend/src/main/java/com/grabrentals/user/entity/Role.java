@@ -5,5 +5,6 @@ public enum Role {
     FLEET,
     VENDOR,
     OPERATIONS,
-    ADMIN
+    ADMIN,
+    DRIVER
 }

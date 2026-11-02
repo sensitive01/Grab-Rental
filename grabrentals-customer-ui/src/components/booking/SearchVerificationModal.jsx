@@ -182,7 +182,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden transform transition-all"
         onClick={(e) => e.stopPropagation()}
@@ -211,14 +211,14 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
 
           <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             {step === 1
-              ? "Quick Verification"
+              ? "Login and Grab offers"
               : isExistingUser
                 ? "Welcome Back!"
                 : "Enter Verification Code"}
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 mb-6">
             {step === 1
-              ? "Verify your mobile to see verified fares, chauffeur availability, and save your trip."
+              ? "Verify your mobile to unlock exclusive offers, verified fares, and save your trip."
               : isExistingUser
                 ? `Enter the 6-digit OTP sent to +91 ${phone} to sign in and view cabs.`
                 : `Enter the 6-digit OTP sent to +91 ${phone} to verify.`}

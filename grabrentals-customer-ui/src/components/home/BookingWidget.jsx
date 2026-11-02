@@ -523,7 +523,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
         userPhone: user?.phone || null,
         userRole: user ? "CUSTOMER" : "GUEST",
         sessionId,
-        sourcePage: typeof window !== "undefined" ? window.location.pathname : "/",
+        sourcePage: isNewBookingPage ? "/book" : (typeof window !== "undefined" ? window.location.pathname : "/"),
       };
 
       axiosClient.post("/api/search-history", payload).catch((err) => {
@@ -1012,14 +1012,14 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
 
             {/* CTA Button: EXPLORE / SEARCH CABS */}
             <div className={`col-span-2 sm:col-span-1 ${isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}`}>
-              <Link
-                href={buildExploreUrl()}
+              <button
+                type="button"
                 onClick={handleExploreClick}
                 suppressHydrationWarning
-                className="flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white py-3 sm:py-3.5 px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0"
+                className="flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white py-3 sm:py-3.5 px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0 cursor-pointer"
               >
                 {t("search_cabs")} <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
             </div>
 
           </div>
@@ -1257,14 +1257,14 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
 
           {/* CTA Button */}
           <div className="w-full lg:w-auto mt-2 sm:mt-4 lg:mt-[23px] shrink-0">
-            <Link
-              href={buildExploreUrl()}
+            <button
+              type="button"
               onClick={handleExploreClick}
               suppressHydrationWarning
-              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0"
+              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
             >
               {t("search_cabs")} <ArrowRight className="w-4 h-4" />
-            </Link>
+            </button>
           </div>
         </div>
       )}

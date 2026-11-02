@@ -41,6 +41,7 @@ public class AuthService {
     private final TokenBlacklistService tokenBlacklistService;
     private final CustomUserDetailsService customUserDetailsService;
     private final com.grabrentals.audit.service.AuditLogService auditLogService;
+    private final com.grabrentals.vendor.repository.DriverRepository driverRepository;
 
     private static final int MAX_FAILED_LOGINS = 5;
     private static final int LOGIN_LOCKOUT_MINUTES = 15;
@@ -98,18 +99,30 @@ public class AuthService {
     public SendOtpResponse sendOtp(SendOtpRequest request) {
         java.util.Optional<User> existingUser = findUserByPhoneFlexible(request.getPhone());
         boolean userExists = existingUser.isPresent();
+        boolean driverExists = false;
+
+        if (!userExists) {
+            driverExists = driverRepository.existsByNormalizedPhone(request.getPhone());
+            if (driverExists) {
+                userExists = true;
+            }
+        }
 
         if ("REGISTRATION".equalsIgnoreCase(request.getPurpose()) && userExists) {
             throw new IllegalArgumentException("An account is already registered with this mobile number. Please log in to continue.");
         }
 
         if ("LOGIN".equalsIgnoreCase(request.getPurpose()) && !userExists) {
-            throw new IllegalArgumentException("No partner account found with this mobile number. Please register your fleet first.");
+            throw new IllegalArgumentException("No partner or chauffeur account found with this mobile number. Please contact your fleet operator.");
         }
 
         SendOtpResponse response = otpService.generateAndSendOtp(request.getPhone());
         response.setUserExists(userExists);
-        existingUser.ifPresent(u -> response.setExistingRole(u.getRole() != null ? u.getRole().name() : null));
+        if (existingUser.isPresent()) {
+            response.setExistingRole(existingUser.get().getRole() != null ? existingUser.get().getRole().name() : null);
+        } else if (driverExists) {
+            response.setExistingRole("DRIVER");
+        }
         return response;
     }
 
@@ -117,24 +130,42 @@ public class AuthService {
     public LoginResponse verifyOtp(VerifyOtpRequest request) {
         otpService.verifyOtp(request.getPhone(), request.getOtp());
 
+        boolean isDriverPhone = driverRepository.existsByNormalizedPhone(request.getPhone());
+        boolean isDriverRequest = "DRIVER".equalsIgnoreCase(request.getRole()) || isDriverPhone;
+
         if ("LOGIN".equalsIgnoreCase(request.getPurpose())) {
             java.util.Optional<User> existing = findUserByPhoneFlexible(request.getPhone());
-            if (existing.isEmpty()) {
-                throw new IllegalArgumentException("No partner account found with this mobile number. Please register your fleet first.");
+            if (existing.isEmpty() && !isDriverPhone) {
+                throw new IllegalArgumentException("No partner or chauffeur account found with this mobile number.");
             }
         }
 
         String phone = otpService.normalizePhone(request.getPhone());
 
-        boolean isVendorRequest = request.getRole() != null &&
+        boolean isVendorRequest = !isDriverRequest && request.getRole() != null &&
                 (request.getRole().equalsIgnoreCase("FLEET") || request.getRole().equalsIgnoreCase("VENDOR"));
 
         java.util.concurrent.atomic.AtomicBoolean isNew = new java.util.concurrent.atomic.AtomicBoolean(false);
 
-        // Find existing user or auto-provision a new Vendor Partner or Customer
+        // Find existing user or auto-provision a Driver, Vendor Partner or Customer
         User user = findUserByPhoneFlexible(request.getPhone()).orElseGet(() -> {
             isNew.set(true);
             String digitsOnly = phone.replaceAll("[^0-9]", "");
+
+            if (isDriverRequest) {
+                var driverOpt = driverRepository.findByNormalizedPhone(request.getPhone());
+                String driverName = driverOpt.map(com.grabrentals.vendor.entity.Driver::getName).orElse("Chauffeur");
+                User newDriver = User.builder()
+                        .name(driverName)
+                        .phone(phone)
+                        .email(digitsOnly + "@driver.grabrentals.in")
+                        .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
+                        .role(Role.DRIVER)
+                        .status(UserStatus.ACTIVE)
+                        .build();
+                return userRepository.save(newDriver);
+            }
+
             String placeholderEmail = digitsOnly + (isVendorRequest ? "@vendor.grabrentals.in" : "@grabrentals.guest");
             String displayName = request.getName() != null && !request.getName().isBlank()
                     ? request.getName().trim()
@@ -173,6 +204,12 @@ public class AuthService {
 
             return saved;
         });
+
+        // If driver request and user is customer, upgrade to DRIVER
+        if (isDriverRequest && user.getRole() == Role.CUSTOMER) {
+            user.setRole(Role.DRIVER);
+            user = userRepository.save(user);
+        }
 
         // If vendor request and user lacks vendor profile, ensure one is created
         if (isVendorRequest) {

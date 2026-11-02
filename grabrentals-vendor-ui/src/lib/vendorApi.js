@@ -38,7 +38,8 @@ export function normalizeBooking(b) {
 
   let uiStatus = "Pending";
   let st = String(b.status || "").toUpperCase();
-  if (cachedStartData && (st === "ASSIGNED_TO_VENDOR" || st === "CONFIRMED" || st === "ASSIGNED")) {
+  // Never override already completed or cancelled trips
+  if (st !== "COMPLETED" && st !== "CANCELLED" && cachedStartData && (st === "ASSIGNED_TO_VENDOR" || st === "CONFIRMED" || st === "ASSIGNED")) {
     st = "IN_TRANSIT";
   }
 
@@ -543,6 +544,15 @@ export const vendorApi = {
   },
 
   completeTrip: async (idOrRef, tripClosingData) => {
+    if (typeof window !== "undefined") {
+      try {
+        const key = "grab_trip_start_readings";
+        const current = JSON.parse(localStorage.getItem(key) || "{}");
+        delete current[idOrRef];
+        if (tripClosingData?.bookingReference) delete current[tripClosingData.bookingReference];
+        localStorage.setItem(key, JSON.stringify(current));
+      } catch (e) {}
+    }
     try {
       const res = await axiosClient.post(`/api/vendor/bookings/${idOrRef}/complete-trip`, tripClosingData);
       return normalizeBooking(res.data?.data);
@@ -713,6 +723,69 @@ export const vendorApi = {
     } catch (err) {
       logApiError("vendorApi.getNotifications error:", err);
       return [];
+    }
+  }
+};
+
+export const driverApi = {
+  getTrips: async (status) => {
+    try {
+      const url = status ? `/api/driver/trips?status=${status}` : `/api/driver/trips`;
+      const res = await axiosClient.get(url);
+      const list = res.data?.data || [];
+      return Array.isArray(list) ? list.map(normalizeBooking) : [];
+    } catch (err) {
+      logApiError("driverApi.getTrips error:", err);
+      return [];
+    }
+  },
+
+  getTripById: async (idOrRef) => {
+    try {
+      const res = await axiosClient.get(`/api/driver/trips/${idOrRef}`);
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError("driverApi.getTripById error:", err);
+      throw err;
+    }
+  },
+
+  updateStatus: async (idOrRef, statusData) => {
+    try {
+      const res = await axiosClient.patch(`/api/driver/trips/${idOrRef}/status`, statusData);
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError("driverApi.updateStatus error:", err);
+      throw err;
+    }
+  },
+
+  completeTrip: async (idOrRef, closingData) => {
+    if (typeof window !== "undefined") {
+      try {
+        const key = "grab_trip_start_readings";
+        const current = JSON.parse(localStorage.getItem(key) || "{}");
+        delete current[idOrRef];
+        if (closingData?.bookingReference) delete current[closingData.bookingReference];
+        localStorage.setItem(key, JSON.stringify(current));
+      } catch (e) {}
+    }
+    try {
+      const res = await axiosClient.post(`/api/driver/trips/${idOrRef}/complete-trip`, closingData);
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError("driverApi.completeTrip error:", err);
+      throw err;
+    }
+  },
+
+  getProfile: async () => {
+    try {
+      const res = await axiosClient.get(`/api/driver/trips/profile`);
+      return res.data?.data || null;
+    } catch (err) {
+      logApiError("driverApi.getProfile error:", err);
+      return null;
     }
   }
 };

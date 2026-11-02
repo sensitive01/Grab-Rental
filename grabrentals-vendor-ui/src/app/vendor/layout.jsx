@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import TopNavbar from "@/components/layout/TopNavbar";
-import { isAuthenticated, getCurrentUser, updateSessionStatus } from "@/lib/auth";
+import { 
+  isAuthenticated, 
+  getCurrentUser, 
+  getVendorAuthToken, 
+  getVendorUser, 
+  updateSessionStatus 
+} from "@/lib/auth";
 import { vendorApi } from "@/lib/vendorApi";
 import { Clock } from "lucide-react";
 
@@ -16,7 +22,10 @@ export default function VendorLayout({ children }) {
   const [vendorStatus, setVendorStatus] = useState("PENDING");
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    const token = getVendorAuthToken();
+    const user = getVendorUser();
+
+    if (!token || !user) {
       if (pathname?.startsWith("/vendor/reset-password")) {
         const search = typeof window !== "undefined" ? window.location.search : "";
         router.replace(`/reset-password${search}`);
@@ -24,22 +33,27 @@ export default function VendorLayout({ children }) {
       }
       const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
       router.replace(redirectUrl);
-    } else {
-      setIsAuthorized(true);
-      const user = getCurrentUser();
-      if (user?.status) {
-        setVendorStatus(user.status);
-      }
-      vendorApi.getProfile()
-        .then((p) => {
-          const fresh = p?.status || p?.approvalStatus;
-          if (fresh) {
-            setVendorStatus(fresh);
-            updateSessionStatus(fresh);
-          }
-        })
-        .catch(() => {});
+      return;
     }
+
+    if (user?.role === "DRIVER") {
+      router.replace("/driver/dashboard");
+      return;
+    }
+
+    setIsAuthorized(true);
+    if (user?.status) {
+      setVendorStatus(user.status);
+    }
+    vendorApi.getProfile()
+      .then((p) => {
+        const fresh = p?.status || p?.approvalStatus;
+        if (fresh) {
+          setVendorStatus(fresh);
+          updateSessionStatus(fresh);
+        }
+      })
+      .catch(() => {});
   }, [router, pathname]);
 
   if (!isAuthorized) {

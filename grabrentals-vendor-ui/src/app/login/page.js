@@ -467,8 +467,18 @@ function LoginContent() {
             </form>
           )}
 
-          {/* Registration Link */}
+          {/* Chauffeur / Driver Portal Link */}
           <div className="pt-2 text-center">
+            <Link
+              href="/driver/login"
+              className="text-xs font-semibold text-slate-400 hover:text-amber-400 transition-colors hover:underline"
+            >
+              Login as driver
+            </Link>
+          </div>
+
+          {/* Registration Link */}
+          <div className="pt-1 text-center">
             <span className="text-slate-400 text-[11.5px]">
               {t("dont_have_account")}{" "}
               <Link

@@ -111,6 +111,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "";
+        if (msg.contains("Broken pipe") || ex.getClass().getName().contains("ClientAbortException") || (ex.getCause() != null && ex.getCause().getMessage() != null && ex.getCause().getMessage().contains("Broken pipe"))) {
+            log.debug("Client closed connection early (Broken pipe) on {}", request.getRequestURI());
+            return null;
+        }
         log.error("Unhandled internal server exception on {}: ", request.getRequestURI(), ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected internal error occurred: " + ex.getMessage(), request.getRequestURI());
     }

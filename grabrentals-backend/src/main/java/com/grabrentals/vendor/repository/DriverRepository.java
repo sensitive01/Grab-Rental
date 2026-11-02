@@ -35,4 +35,12 @@ public interface DriverRepository extends JpaRepository<Driver, UUID> {
     Optional<Driver> findByAssignedVehicleId(UUID vehicleId);
 
     List<Driver> findByStatus(com.grabrentals.vendor.entity.DriverStatus status);
+
+    Optional<Driver> findFirstByPhoneOrderByCreatedAtDesc(String phone);
+
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM Driver d WHERE RIGHT(REPLACE(REPLACE(REPLACE(d.phone, ' ', ''), '-', ''), '+91', ''), 10) = RIGHT(REPLACE(REPLACE(REPLACE(:phone, ' ', ''), '-', ''), '+91', ''), 10)")
+    Optional<Driver> findByNormalizedPhone(@org.springframework.data.repository.query.Param("phone") String phone);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(d) > 0 FROM Driver d WHERE RIGHT(REPLACE(REPLACE(REPLACE(d.phone, ' ', ''), '-', ''), '+91', ''), 10) = RIGHT(REPLACE(REPLACE(REPLACE(:phone, ' ', ''), '-', ''), '+91', ''), 10)")
+    boolean existsByNormalizedPhone(@org.springframework.data.repository.query.Param("phone") String phone);
 }

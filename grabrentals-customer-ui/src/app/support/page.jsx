@@ -138,10 +138,10 @@ export default function SupportHelpPage() {
             </div>
             <div>
               <a
-                href="mailto:info@grabrentals.in"
+                href="mailto:grabrentals2016@gmail.com"
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all"
               >
-                info@grabrentals.in
+                grabrentals2016@gmail.com
               </a>
             </div>
           </div>

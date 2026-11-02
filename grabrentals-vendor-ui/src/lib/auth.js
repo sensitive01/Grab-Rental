@@ -2,17 +2,29 @@
 
 import axios from "axios";
 
-const SESSION_KEY = "grabrentals_vendor_session";
-const TOKEN_KEY = "grabrentals_vendor_token";
+export const VENDOR_SESSION_KEY = "grabrentals_vendor_session";
+export const VENDOR_TOKEN_KEY = "grabrentals_vendor_token";
+
+export const DRIVER_SESSION_KEY = "grabrentals_driver_session";
+export const DRIVER_TOKEN_KEY = "grabrentals_driver_token";
+
+const SESSION_KEY = VENDOR_SESSION_KEY;
+const TOKEN_KEY = VENDOR_TOKEN_KEY;
+
 const ONBOARDING_KEY = "grabrentals_vendor_onboarding";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export function getAuthToken() {
+export function isDriverContext() {
+  if (typeof window === "undefined") return false;
+  return window.location.pathname.startsWith("/driver");
+}
+
+export function getVendorAuthToken() {
   if (typeof window === "undefined") return null;
   try {
-    const direct = localStorage.getItem(TOKEN_KEY);
+    const direct = localStorage.getItem(VENDOR_TOKEN_KEY);
     if (direct) return direct;
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(VENDOR_SESSION_KEY);
     if (raw) {
       const session = JSON.parse(raw);
       if (session?.token) return session.token;
@@ -23,18 +35,62 @@ export function getAuthToken() {
   }
 }
 
-export function getCurrentUser() {
+export function getDriverAuthToken() {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const direct = localStorage.getItem(DRIVER_TOKEN_KEY);
+    if (direct) return direct;
+    const raw = localStorage.getItem(DRIVER_SESSION_KEY);
+    if (raw) {
+      const session = JSON.parse(raw);
+      if (session?.token) return session.token;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function getAuthToken() {
+  if (isDriverContext()) {
+    return getDriverAuthToken();
+  }
+  return getVendorAuthToken();
+}
+
+export function getVendorUser() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(VENDOR_SESSION_KEY);
     if (!raw) return null;
     const user = JSON.parse(raw);
-    const token = getAuthToken();
+    const token = getVendorAuthToken();
     if (!token) return null;
     return user;
   } catch {
     return null;
   }
+}
+
+export function getDriverUser() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(DRIVER_SESSION_KEY);
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    const token = getDriverAuthToken();
+    if (!token) return null;
+    return user;
+  } catch {
+    return null;
+  }
+}
+
+export function getCurrentUser() {
+  if (isDriverContext()) {
+    return getDriverUser();
+  }
+  return getVendorUser();
 }
 
 export function isAuthenticated() {
@@ -45,7 +101,7 @@ export function isAuthenticated() {
 }
 
 export function getVendorStatus() {
-  const user = getCurrentUser();
+  const user = getVendorUser();
   return user?.status || "PENDING";
 }
 
@@ -57,19 +113,24 @@ export function isVendorApproved() {
 export function updateSessionStatus(newStatus) {
   if (typeof window === "undefined" || !newStatus) return;
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(VENDOR_SESSION_KEY);
     if (raw) {
       const session = JSON.parse(raw);
       session.status = newStatus;
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem(VENDOR_SESSION_KEY, JSON.stringify(session));
     }
   } catch (ignored) {}
 }
 
-export function logout() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(TOKEN_KEY);
+export function logout(target) {
+  if (typeof window === "undefined") return;
+  const isDriver = target === "driver" || (target !== "vendor" && isDriverContext());
+  if (isDriver) {
+    localStorage.removeItem(DRIVER_SESSION_KEY);
+    localStorage.removeItem(DRIVER_TOKEN_KEY);
+  } else {
+    localStorage.removeItem(VENDOR_SESSION_KEY);
+    localStorage.removeItem(VENDOR_TOKEN_KEY);
     localStorage.removeItem("grab_portal_role");
     localStorage.removeItem("grab_portal_email");
   }
@@ -199,8 +260,8 @@ export async function verifyVendorOtp({ phone, otp, name, businessName, purpose 
       };
 
       if (typeof window !== "undefined") {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
-        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(VENDOR_SESSION_KEY, JSON.stringify(userObj));
+        localStorage.setItem(VENDOR_TOKEN_KEY, token);
         localStorage.setItem("grab_portal_role", role.toLowerCase());
         localStorage.setItem("grab_portal_email", beUser.email);
       }
@@ -210,6 +271,65 @@ export async function verifyVendorOtp({ phone, otp, name, businessName, purpose 
         user: userObj,
         isNewUser: isNewUser,
         message: "Phone verified successfully.",
+      };
+    }
+
+    return {
+      success: false,
+      error: res.data?.message || "Invalid or expired verification code.",
+    };
+  } catch (err) {
+    const msg = err.response?.data?.message || "Verification failed. Please check the code and try again.";
+    return { success: false, error: msg };
+  }
+}
+
+export async function verifyDriverOtp({ phone, otp, purpose = "LOGIN" }) {
+  const cleanPhone = String(phone || "").trim();
+  const cleanOtp = String(otp || "").trim();
+
+  if (!cleanPhone || !cleanOtp) {
+    return { success: false, error: "Please provide both mobile number and verification code." };
+  }
+
+  try {
+    const res = await axios.post(
+      `${API_BASE_URL}/api/auth/otp/verify`,
+      {
+        phone: cleanPhone,
+        otp: cleanOtp,
+        role: "DRIVER",
+        purpose: purpose,
+      },
+      { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+    );
+
+    if (res.data?.success && res.data?.data?.accessToken) {
+      const token = res.data.data.accessToken;
+      const beUser = res.data.data.user;
+      const role = beUser.role || "DRIVER";
+
+      const userObj = {
+        id: beUser.id,
+        email: beUser.email,
+        phone: cleanPhone,
+        name: beUser.name || "Chauffeur",
+        role: role,
+        status: beUser.status || "ACTIVE",
+        token: token,
+        loginTime: new Date().toISOString(),
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(DRIVER_SESSION_KEY, JSON.stringify(userObj));
+        localStorage.setItem(DRIVER_TOKEN_KEY, token);
+      }
+
+      return {
+        success: true,
+        user: userObj,
+        redirectUrl: "/driver/dashboard",
+        message: "Chauffeur verified successfully.",
       };
     }
 
@@ -257,8 +377,8 @@ export async function login(identifier, password) {
       };
 
       if (typeof window !== "undefined") {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
-        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(VENDOR_SESSION_KEY, JSON.stringify(userObj));
+        localStorage.setItem(VENDOR_TOKEN_KEY, token);
         localStorage.setItem("grab_portal_role", role.toLowerCase());
         localStorage.setItem("grab_portal_email", beUser.email || beUser.phone || cleanId);
       }

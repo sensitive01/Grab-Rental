@@ -26,7 +26,7 @@ import {
   Trash2
 } from "lucide-react";
 import { formatINR } from "@/lib/utils";
-import { vendorApi } from "@/lib/vendorApi";
+import { vendorApi, driverApi } from "@/lib/vendorApi";
 
 const EXTRA_CHARGE_CONFIG = [
   { id: "TOLL", label: "FASTag Tolls", icon: "🛣️", placeholder: "e.g. 350" },
@@ -36,7 +36,7 @@ const EXTRA_CHARGE_CONFIG = [
   { id: "OTHER", label: "Other Extras", icon: "➕", placeholder: "e.g. 250", hasNotes: true }
 ];
 
-export default function TripClosingModal({ isOpen, onClose, trip, onTripCompleted }) {
+export default function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuccess }) {
   if (!isOpen || !trip) return null;
 
   // Step State: 1 = End Odometer & Proof, 2 = Extra Charges, 3 = Payment & Invoice
@@ -345,10 +345,18 @@ export default function TripClosingModal({ isOpen, onClose, trip, onTripComplete
       };
 
       const bookingIdentifier = trip.rawId || trip.bookingReference || trip.id;
-      const updated = await vendorApi.completeTrip(bookingIdentifier, payload);
+      let updated;
+      try {
+        updated = await driverApi.completeTrip(bookingIdentifier, payload);
+      } catch (errDriver) {
+        updated = await vendorApi.completeTrip(bookingIdentifier, payload);
+      }
       setCompletedSuccess(updated || { ...trip, ...payload, ...calculations });
       if (onTripCompleted) {
         onTripCompleted(updated);
+      }
+      if (onSuccess) {
+        onSuccess(updated);
       }
     } catch (err) {
       console.error("Failed to complete trip:", err);
@@ -512,7 +520,11 @@ export default function TripClosingModal({ isOpen, onClose, trip, onTripComplete
               </Link>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => {
+                  if (onTripCompleted) onTripCompleted(completedSuccess);
+                  if (onSuccess) onSuccess(completedSuccess);
+                  onClose();
+                }}
                 className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
                 Close &amp; Return

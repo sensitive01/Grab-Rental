@@ -26,7 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping({"/api/vendor/bookings", "/api/fleet/bookings"})
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('FLEET', 'VENDOR', 'ADMIN')")
+@PreAuthorize("hasAnyRole('FLEET', 'VENDOR', 'ADMIN', 'DRIVER')")
 public class VendorBookingController {
 
     private final CustomerBookingService bookingService;

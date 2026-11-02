@@ -31,8 +31,17 @@ export default function TripInvoicePage({ params }) {
 
     async function loadTripInvoice() {
       try {
-        setLoading(true);
-        const data = await vendorApi.getBookingById(tripId);
+        let data = null;
+        try {
+          data = await vendorApi.getBookingById(tripId);
+        } catch (vErr) {
+          try {
+            const { driverApi } = await import("@/lib/vendorApi");
+            data = await driverApi.getTripById(tripId);
+          } catch (dErr) {
+            throw vErr;
+          }
+        }
         if (data) {
           setTrip(data);
         } else {
@@ -410,7 +419,7 @@ export default function TripInvoicePage({ params }) {
         {/* Footer Notice */}
         <div className="pt-6 border-t border-slate-200 text-center space-y-1">
           <p className="text-[11px] text-slate-500 font-medium">
-            Thank you for choosing Grab Rentals Fleet Services. For assistance, email support@grabrentals.com
+            Thank you for choosing Grab Rentals Fleet Services. For assistance, email grabrentals2016@gmail.com
           </p>
           <p className="text-[10px] text-slate-400">
             This is a computer-generated tax invoice and requires no physical signature under the Information Technology Act.

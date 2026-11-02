@@ -80,7 +80,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/coupons/**", "/api/promo-popup/**", "/api/banners/**", "/api/upi/**", "/api/enquiries", "/api/enquiries/**", "/api/search-history", "/api/search-history/**").permitAll()
                 // Role-based endpoints
                 .requestMatchers("/api/customer/**").authenticated()
-                .requestMatchers("/api/vendor/**", "/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN")
+                .requestMatchers("/api/driver/**").hasAnyRole("DRIVER", "FLEET", "VENDOR", "ADMIN")
+                .requestMatchers("/api/vendor/**", "/api/fleet/**").hasAnyRole("FLEET", "VENDOR", "ADMIN", "DRIVER")
                 .requestMatchers("/api/admin/enquiries", "/api/admin/enquiries/**", "/api/admin/search-history", "/api/admin/search-history/**").hasAnyRole("ADMIN", "OPERATIONS")
                 .requestMatchers("/api/operations/**").hasAnyRole("OPERATIONS", "ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

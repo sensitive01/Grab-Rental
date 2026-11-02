@@ -40,6 +40,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
     const user = getCurrentUser();
     if (user) setCurrentUser(user);
+    if (user?.role === "DRIVER") return;
 
     async function loadCounts() {
       try {

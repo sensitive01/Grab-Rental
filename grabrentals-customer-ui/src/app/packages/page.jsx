@@ -27,47 +27,93 @@ import {
 } from "lucide-react";
 import { SPECIAL_TOUR_PACKAGES, PACKAGE_CATEGORIES } from "@/lib/specialPackages";
 import { useLanguage } from "@/context/LanguageContext";
+import SearchVerificationModal from "@/components/booking/SearchVerificationModal";
+import { isAuthenticated } from "@/lib/auth";
+import { logSearchHistory } from "@/lib/searchHistory";
 
 export default function PackagesPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState("All Packages");
   const [activeModalPackage, setActiveModalPackage] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingPackage, setPendingPackage] = useState(null);
 
   const filteredPackages =
     selectedCategory === "All Packages"
       ? SPECIAL_TOUR_PACKAGES
       : SPECIAL_TOUR_PACKAGES.filter((p) => p.category === selectedCategory);
 
-  const handleBookPackage = (pkg) => {
-    if (typeof window !== "undefined") {
-      const defaultPickup = getDefaultPickupDateTime();
-      sessionStorage.setItem(
-        "grab_pending_trip",
-        JSON.stringify({
-          from: pkg.from,
-          to: pkg.to,
-          package: pkg.id,
-          packageName: pkg.name,
-          tripType: "round-trip",
-          serviceType: "OUTSTATION",
-          distanceKm: pkg.distanceKm,
-          durationText: pkg.duration,
-          date: defaultPickup.date,
-          time: defaultPickup.time,
-        })
-      );
-    }
-
+  const proceedWithPackage = (pkg) => {
+    const targetPkg = pkg || pendingPackage;
+    if (!targetPkg) return;
     const params = new URLSearchParams({
       serviceType: "OUTSTATION",
+      from: targetPkg.from,
+      to: targetPkg.to,
+      package: targetPkg.id,
+      packageName: targetPkg.name,
+      tripType: "round-trip",
+    });
+    router.push(`/outstation/select-vehicle?${params.toString()}`);
+  };
+
+  const handleBookPackage = (pkg) => {
+    const defaultPickup = getDefaultPickupDateTime();
+    const tripData = {
       from: pkg.from,
       to: pkg.to,
       package: pkg.id,
       packageName: pkg.name,
       tripType: "round-trip",
-    });
-    router.push(`/outstation/select-vehicle?${params.toString()}`);
+      serviceType: "OUTSTATION",
+      distanceKm: pkg.distanceKm,
+      durationText: pkg.duration,
+      date: defaultPickup.date,
+      time: defaultPickup.time,
+    };
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("grab_pending_trip", JSON.stringify(tripData));
+    }
+
+    setPendingPackage(pkg);
+
+    if (!isAuthenticated()) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    logSearchHistory(tripData);
+    proceedWithPackage(pkg);
+  };
+
+  const handleAuthVerified = (user) => {
+    setIsAuthModalOpen(false);
+    let pendingTrip = null;
+    try {
+      const raw = sessionStorage.getItem("grab_pending_trip");
+      if (raw) pendingTrip = JSON.parse(raw);
+    } catch {}
+
+    if (pendingTrip) {
+      logSearchHistory(pendingTrip, user);
+    }
+    proceedWithPackage(pendingPackage);
+  };
+
+  const handleSkipAuth = () => {
+    setIsAuthModalOpen(false);
+    let pendingTrip = null;
+    try {
+      const raw = sessionStorage.getItem("grab_pending_trip");
+      if (raw) pendingTrip = JSON.parse(raw);
+    } catch {}
+
+    if (pendingTrip) {
+      logSearchHistory(pendingTrip, null);
+    }
+    proceedWithPackage(pendingPackage);
   };
 
   return (
@@ -499,6 +545,14 @@ export default function PackagesPage() {
           </div>
         </div>
       )}
+
+      {/* Verification Modal for Package Direct Bookings */}
+      <SearchVerificationModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onVerified={handleAuthVerified}
+        onSkip={handleSkipAuth}
+      />
     </main>
   );
 }

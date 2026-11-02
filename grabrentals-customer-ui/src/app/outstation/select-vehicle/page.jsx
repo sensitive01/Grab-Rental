@@ -873,12 +873,9 @@ function SelectVehicleContent() {
     setCurrentPage(1);
   }, [searchQuery, activeCabFilter, selectedTypes, selectedFuels, selectedTransmissions, minPrice, maxPrice, seatingCapacity, sortBy]);
 
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage) || 1;
-  const paginatedVehicles = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredVehicles.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredVehicles, currentPage]);
+  // Show all vehicles on a single page
+  const totalPages = 1;
+  const paginatedVehicles = filteredVehicles;
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -1483,10 +1480,11 @@ function SelectVehicleContent() {
               </div>
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                {paginatedVehicles.map((car) => (
+                {paginatedVehicles.map((car, idx) => (
                   <div
                     key={car.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 hover:border-[#0082fe] hover:shadow-md transition-all flex flex-col justify-between group"
+                    style={{ animationDelay: `${Math.min(idx * 40, 400)}ms` }}
+                    className="bg-white rounded-2xl border border-slate-200 p-4 hover:border-[#0082fe] hover:shadow-md transition-all flex flex-col justify-between group animate-vehicle-card"
                   >
                     {/* Top Row: Left Image + Right Info */}
                     <div className="flex gap-4 items-start">
@@ -1596,10 +1594,11 @@ function SelectVehicleContent() {
             ) : (
               /* List View Mode */
               <div className="space-y-3">
-                {paginatedVehicles.map((car) => (
+                {paginatedVehicles.map((car, idx) => (
                   <div
                     key={car.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 hover:border-[#0082fe] hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group"
+                    style={{ animationDelay: `${Math.min(idx * 40, 400)}ms` }}
+                    className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 hover:border-[#0082fe] hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group animate-vehicle-card"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <div 
@@ -1700,40 +1699,16 @@ function SelectVehicleContent() {
               </div>
             )}
 
-            {/* Pagination Controls */}
-            {!isLoadingVehicles && totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs mt-4">
-                <span className="text-xs font-semibold text-slate-500">
-                  Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredVehicles.length)} - {Math.min(currentPage * itemsPerPage, filteredVehicles.length)} of {filteredVehicles.length} vehicles
+            {/* All Vehicles Loaded Status */}
+            {!isLoadingVehicles && filteredVehicles.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-2xs mt-4">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Showing all {filteredVehicles.length} available vehicles
                 </span>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${currentPage === pageNum ? "bg-[#0082fe] text-white shadow-2xs" : "border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
-                    >
-                      {pageNum}
-                    </button>
-                  ))}
-
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                <span className="text-[11px] font-semibold text-slate-400">
+                  Fixed transparent pricing • 24x7 Verified Chauffeur
+                </span>
               </div>
             )}
 

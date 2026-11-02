@@ -21,6 +21,8 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
 
         executeSafe("ALTER TABLE users ALTER COLUMN city TYPE TEXT");
         executeSafe("ALTER TABLE users ALTER COLUMN alternate_phone TYPE VARCHAR(255)");
+        executeSafe("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
+        executeSafe("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role::text = ANY (ARRAY['CUSTOMER'::character varying, 'VENDOR'::character varying, 'FLEET'::character varying, 'ADMIN'::character varying, 'OPERATIONS'::character varying, 'DRIVER'::character varying]::text[]))");
         executeSafe("ALTER TABLE customer_profiles ALTER COLUMN city TYPE TEXT");
         executeSafe("ALTER TABLE customer_profiles ALTER COLUMN alternate_phone TYPE VARCHAR(255)");
 

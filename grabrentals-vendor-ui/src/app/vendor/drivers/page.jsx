@@ -12,7 +12,9 @@ import {
   Star, 
   Car,
   Filter,
-  Navigation
+  Navigation,
+  Share2,
+  Copy
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -27,6 +29,17 @@ export default function VendorDriversPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [driverToDelete, setDriverToDelete] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+
+  const handleCopyDriverPortalLink = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const driverPortalUrl = `${origin}/driver/login`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(driverPortalUrl);
+      setToastMessage("Driver Portal URL copied to clipboard! Share it with your drivers.");
+    } else {
+      setToastMessage(`Driver Portal: ${driverPortalUrl}`);
+    }
+  };
 
   const fetchDrivers = async () => {
     try {
@@ -184,6 +197,17 @@ export default function VendorDriversPage() {
       sortable: false,
       render: (d) => (
         <div className="flex items-center justify-center gap-1.5">
+          <a
+            href={`https://wa.me/91${(d.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+              `Hello ${d.name}, here is your Grab Rentals Chauffeur Portal link to view and start your assigned trips:\n${typeof window !== "undefined" ? window.location.origin : ""}/driver/login\n\nLogin using your phone number (${d.phone}) and 6-digit OTP.`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Share Login Link via WhatsApp"
+            className="p-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 text-emerald-700 transition-colors"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </a>
           <Link
             href={`/vendor/drivers/${d.id}`}
             title="View Profile"
@@ -265,6 +289,17 @@ export default function VendorDriversPage() {
       </div>
 
       <div className="flex items-center justify-between gap-2 pt-1">
+        <a
+          href={`https://wa.me/91${(d.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+            `Hello ${d.name}, here is your Grab Rentals Chauffeur Portal link to view and start your assigned trips:\n${typeof window !== "undefined" ? window.location.origin : ""}/driver/login\n\nLogin using your phone number (${d.phone}) and 6-digit OTP.`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors flex items-center justify-center shrink-0"
+          title="Share Login Link via WhatsApp"
+        >
+          <Share2 className="w-4 h-4" />
+        </a>
         <Link
           href={`/vendor/drivers/${d.id}`}
           className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold text-center transition-colors"
@@ -322,12 +357,21 @@ export default function VendorDriversPage() {
           </p>
         </div>
 
-        <Link
-          href="/vendor/drivers/add"
-          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 shrink-0 text-center"
-        >
-          <Plus className="w-4 h-4" /> Add Drivers
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyDriverPortalLink}
+            className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <Copy className="w-3.5 h-3.5 text-slate-500" /> Copy Chauffeur Portal URL
+          </button>
+          <Link
+            href="/vendor/drivers/add"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 shrink-0 text-center"
+          >
+            <Plus className="w-4 h-4" /> Add Drivers
+          </Link>
+        </div>
       </div>
 
       {/* Driver Fleet Hero Banner Photo */}

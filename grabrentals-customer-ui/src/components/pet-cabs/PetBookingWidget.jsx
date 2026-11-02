@@ -22,9 +22,12 @@ import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
 import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
+import SearchVerificationModal from "@/components/booking/SearchVerificationModal";
 import { AIRPORT_LIST } from "@/components/home/BookingWidget";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
+import { isAuthenticated, getCurrentUser } from "@/lib/auth";
+import { logSearchHistory } from "@/lib/searchHistory";
 import {
   formatLocalDate,
   getMinPickupDateTimeString,
@@ -38,6 +41,9 @@ import { fetchLocalPackages, getCachedLocalPackages, DEFAULT_LOCAL_PACKAGES } fr
 export default function PetBookingWidget() {
   const router = useRouter();
   const { t } = useLanguage();
+
+  // Verification modal state for unauthenticated customer searches
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // 1. Trip Mode: "one-way" | "round-trip" | "multicity" | "local" | "airport"
   const [tripMode, setTripMode] = useState("one-way");
@@ -304,30 +310,69 @@ export default function PetBookingWidget() {
       serviceType: serviceType,
     };
 
+    const tripData = {
+      from: fromLoc,
+      to: toLoc,
+      fromCity: pickupDetails?.city || undefined,
+      fromState: pickupDetails?.state || undefined,
+      toCity: dropDetails?.city || undefined,
+      pickupDetails,
+      dropDetails,
+      tripType: bookingConfig.trip.type,
+      date: pickupDate,
+      returnDate: bookingConfig.trip.returnDate,
+      time: pickupTime,
+      isPetFriendly: true,
+      petDetails: bookingConfig.petDetails,
+      serviceType,
+      distanceKm: routeEstimate.distanceKm,
+      durationText: routeEstimate.durationText,
+      package: pkgVal,
+    };
+
     try {
       localStorage.setItem("grabrentals_booking_config", JSON.stringify(bookingConfig));
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("grab_pending_trip", JSON.stringify({
-          from: fromLoc,
-          to: toLoc,
-          fromCity: pickupDetails?.city || undefined,
-          fromState: pickupDetails?.state || undefined,
-          toCity: dropDetails?.city || undefined,
-          pickupDetails,
-          dropDetails,
-          type: bookingConfig.trip.type,
-          date: pickupDate,
-          returnDate: bookingConfig.trip.returnDate,
-          time: pickupTime,
-          isPetFriendly: true,
-          petDetails: bookingConfig.petDetails,
-          serviceType,
-        }));
+        sessionStorage.setItem("grab_pending_trip", JSON.stringify(tripData));
       }
     } catch (err) {
       console.warn("Could not save pet booking config to storage", err);
     }
 
+    if (!isAuthenticated()) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    logSearchHistory(tripData);
+    router.push(buildExploreUrl());
+  };
+
+  const handleAuthVerified = (user) => {
+    setIsAuthModalOpen(false);
+    let pendingTrip = null;
+    try {
+      const raw = sessionStorage.getItem("grab_pending_trip");
+      if (raw) pendingTrip = JSON.parse(raw);
+    } catch {}
+
+    if (pendingTrip) {
+      logSearchHistory(pendingTrip, user);
+    }
+    router.push(buildExploreUrl());
+  };
+
+  const handleSkipAuth = () => {
+    setIsAuthModalOpen(false);
+    let pendingTrip = null;
+    try {
+      const raw = sessionStorage.getItem("grab_pending_trip");
+      if (raw) pendingTrip = JSON.parse(raw);
+    } catch {}
+
+    if (pendingTrip) {
+      logSearchHistory(pendingTrip, null);
+    }
     router.push(buildExploreUrl());
   };
 
@@ -987,6 +1032,14 @@ export default function PetBookingWidget() {
         </div>
 
       </div>
+
+      {/* Phone & Name OTP Verification Modal for unauthenticated searches */}
+      <SearchVerificationModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onVerified={handleAuthVerified}
+        onSkip={handleSkipAuth}
+      />
     </div>
   );
 }

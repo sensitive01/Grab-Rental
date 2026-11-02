@@ -55,4 +55,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Modifying
     @Query("UPDATE Booking b SET b.assignedVehicle = null WHERE b.assignedVehicle.id = :vehicleId")
     void unassignVehicle(@Param("vehicleId") UUID vehicleId);
+
+    List<Booking> findByAssignedDriverIdOrderByCreatedAtDesc(UUID driverId);
+
+    List<Booking> findByAssignedDriverIdAndStatusOrderByCreatedAtDesc(UUID driverId, BookingStatus status);
+
+    @Query("SELECT b FROM Booking b WHERE b.assignedDriver.id = :driverId AND b.status IN :statuses ORDER BY b.createdAt DESC")
+    List<Booking> findByAssignedDriverIdAndStatusIn(@Param("driverId") UUID driverId, @Param("statuses") List<BookingStatus> statuses);
 }

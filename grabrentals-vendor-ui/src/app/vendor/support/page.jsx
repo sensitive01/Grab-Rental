@@ -143,7 +143,7 @@ export default function VendorSupportPage() {
             <span className="text-[10px] font-black uppercase tracking-wider text-sky-700">
               Partner Accounts & GST
             </span>
-            <p className="font-black text-sm text-slate-900">partner@grabrentals.in</p>
+            <p className="font-black text-sm text-slate-900">grabrentals2016@gmail.com</p>
             <p className="text-slate-400">Payout queries & invoices</p>
           </div>
         </div>

@@ -240,7 +240,7 @@ public class SearchHistoryServiceImpl implements SearchHistoryService {
                 .ipAddress(s.getIpAddress())
                 .userAgent(s.getUserAgent())
                 .sourcePage(s.getSourcePage())
-                .createdAt(s.getCreatedAt() != null ? s.getCreatedAt().toInstant(ZoneOffset.UTC) : null)
+                .createdAt(s.getCreatedAt() != null ? s.getCreatedAt().atZone(java.time.ZoneId.of("Asia/Kolkata")).toInstant() : null)
                 .build();
     }
 

@@ -154,14 +154,7 @@ export default function AdminSearchHistoryPage() {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return "—";
     try {
-      // If dateStr doesn't contain a timezone indicator (Z or +/-offset), treat it as UTC
-      let normalized = dateStr;
-      if (typeof normalized === "string") {
-        if (!normalized.endsWith("Z") && !/[+-]\d{2}(:\d{2})?$/.test(normalized)) {
-          normalized = normalized + "Z";
-        }
-      }
-      const d = new Date(normalized);
+      const d = new Date(dateStr);
       if (isNaN(d.getTime())) return String(dateStr);
       return d.toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -220,6 +213,81 @@ export default function AdminSearchHistoryPage() {
       default:
         return <Badge className="bg-slate-100 text-slate-700">{type || "General"}</Badge>;
     }
+  };
+
+  const renderSourceWidgetBadge = (sourcePage, item) => {
+    const raw = String(sourcePage || item?.sourcePage || "").toLowerCase().trim();
+    
+    if (raw.includes("pet-friendly") || raw.includes("pet")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs whitespace-nowrap">
+          <span>🐾</span>
+          <span>Pet Friendly</span>
+        </span>
+      );
+    }
+    if (raw === "/book" || raw.startsWith("/book")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs whitespace-nowrap">
+          <span>⚡</span>
+          <span>Fast-Track (/book)</span>
+        </span>
+      );
+    }
+    if (raw.includes("package")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs whitespace-nowrap">
+          <span>🏖️</span>
+          <span>Tour Packages</span>
+        </span>
+      );
+    }
+    if (raw.includes("airport")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-50 text-sky-900 border border-sky-200 shadow-2xs whitespace-nowrap">
+          <span>✈️</span>
+          <span>Airport Widget</span>
+        </span>
+      );
+    }
+    if (raw.includes("local")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs whitespace-nowrap">
+          <span>📍</span>
+          <span>Local Rental</span>
+        </span>
+      );
+    }
+    if (raw.includes("van") || raw.includes("tempo") || raw.includes("urbania")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs whitespace-nowrap">
+          <span>🚐</span>
+          <span>Vans / Urbania</span>
+        </span>
+      );
+    }
+    if (raw.includes("bus")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-50 text-cyan-900 border border-cyan-200 shadow-2xs whitespace-nowrap">
+          <span>🚌</span>
+          <span>Buses</span>
+        </span>
+      );
+    }
+    if (raw === "/" || !raw) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs whitespace-nowrap">
+          <span>🏠</span>
+          <span>Home Widget</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap">
+        <span>🌐</span>
+        <span>{sourcePage}</span>
+      </span>
+    );
   };
 
   return (
@@ -369,6 +437,7 @@ export default function AdminSearchHistoryPage() {
               <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th className="py-3 px-4">Date & Time</th>
                 <th className="py-3 px-4">Customer Details</th>
+                <th className="py-3 px-4">Search Source</th>
                 <th className="py-3 px-4">Service & Trip</th>
                 <th className="py-3 px-4">Route (From → To)</th>
                 <th className="py-3 px-4">Schedule</th>
@@ -379,14 +448,14 @@ export default function AdminSearchHistoryPage() {
             <tbody className="divide-y divide-slate-100 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
                     <p className="font-semibold text-sm">Loading search history...</p>
                   </td>
                 </tr>
               ) : searches.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     <Navigation className="w-10 h-10 mx-auto text-slate-300 mb-2" />
                     <p className="font-bold text-slate-700">No search records found</p>
                     <p className="text-xs text-slate-500 mt-1">
@@ -457,6 +526,11 @@ export default function AdminSearchHistoryPage() {
                             )}
                           </div>
                         </div>
+                      </td>
+
+                      {/* Search Source / Widget */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {renderSourceWidgetBadge(item.sourcePage, item)}
                       </td>
 
                       {/* Service & Trip Type */}
@@ -602,9 +676,10 @@ export default function AdminSearchHistoryPage() {
             {/* Modal Header */}
             <div className="p-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-mono font-bold text-slate-400">Search #{selectedSearch.id}</span>
                   {getServiceBadge(selectedSearch.serviceType)}
+                  {renderSourceWidgetBadge(selectedSearch.sourcePage, selectedSearch)}
                 </div>
                 <h3 className="text-lg font-black text-slate-900 mt-1">
                   Search Details & Traveler Profile

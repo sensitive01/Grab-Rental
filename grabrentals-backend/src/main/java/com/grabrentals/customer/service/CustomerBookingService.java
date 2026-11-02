@@ -613,9 +613,11 @@ public class CustomerBookingService {
 
         return list.stream()
                 .map(b -> {
-                    BigDecimal tariffPayout = calculateVendorPayoutForBooking(b, b.getAssignedVehicle());
-                    if (tariffPayout != null && tariffPayout.compareTo(BigDecimal.ZERO) > 0) {
-                        b.setVendorPayout(tariffPayout);
+                    if (b.getVendorPayout() == null || b.getVendorPayout().compareTo(BigDecimal.ZERO) <= 0) {
+                        BigDecimal tariffPayout = calculateVendorPayoutForBooking(b, b.getAssignedVehicle());
+                        if (tariffPayout != null && tariffPayout.compareTo(BigDecimal.ZERO) > 0) {
+                            b.setVendorPayout(tariffPayout);
+                        }
                     }
                     return BookingResponse.fromEntityForVendor(b);
                 })
@@ -998,7 +1000,61 @@ public class CustomerBookingService {
         return 150;
     }
 
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getDriverBookings(User driverUser, BookingStatus status) {
+        Driver driver = driverRepository.findByNormalizedPhone(driverUser.getPhone()).orElse(null);
+        if (driver == null) {
+            return java.util.Collections.emptyList();
+        }
+
+        List<Booking> list = (status != null)
+                ? bookingRepository.findByAssignedDriverIdAndStatusOrderByCreatedAtDesc(driver.getId(), status)
+                : bookingRepository.findByAssignedDriverIdOrderByCreatedAtDesc(driver.getId());
+
+        return list.stream()
+                .map(b -> {
+                    BookingResponse resp = BookingResponse.fromEntity(b);
+                    resp.setVendorPayout(null);
+                    return resp;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public BookingResponse getDriverBookingByIdOrRef(String idOrRef, User driverUser) {
+        Booking booking = null;
+        try {
+            UUID id = UUID.fromString(idOrRef);
+            booking = bookingRepository.findById(id).orElse(null);
+        } catch (IllegalArgumentException ignored) {}
+
+        if (booking == null) {
+            booking = bookingRepository.findByBookingReference(idOrRef)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + idOrRef));
+        }
+
+        validateVendorOwnership(booking, driverUser);
+        BookingResponse resp = BookingResponse.fromEntity(booking);
+        resp.setVendorPayout(null);
+        return resp;
+    }
+
     private void validateVendorOwnership(Booking booking, User vendor) {
+        if (vendor == null) return;
+        if (vendor.getRole() == Role.ADMIN || vendor.getRole() == Role.OPERATIONS) return;
+
+        if (vendor.getRole() == Role.DRIVER) {
+            String uPhone = vendor.getPhone() != null ? vendor.getPhone().replaceAll("[^0-9]", "") : "";
+            boolean isAssignedDriver = booking.getAssignedDriver() != null && (
+                    (booking.getAssignedDriver().getPhone() != null && booking.getAssignedDriver().getPhone().replaceAll("[^0-9]", "").endsWith(uPhone.length() >= 10 ? uPhone.substring(uPhone.length() - 10) : uPhone))
+                    || (booking.getAssignedDriver().getUser() != null && booking.getAssignedDriver().getUser().getId().equals(vendor.getId()))
+            );
+            if (!isAssignedDriver) {
+                throw new BadRequestException("Access denied: You are not the assigned chauffeur for this booking");
+            }
+            return;
+        }
+
         if (booking.getVendor() == null || !booking.getVendor().getId().equals(vendor.getId())) {
             throw new BadRequestException("Access denied: This booking is not assigned to your vendor account");
         }
