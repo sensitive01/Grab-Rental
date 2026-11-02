@@ -38,56 +38,60 @@ public class ChargesTariffIntegrationTest {
 
         seededTariffs = new ArrayList<>();
         for (ChargesTariffSeeder.ChargesRecord r : matrixRecords) {
-            ChargesTariffSeeder.VehicleTypeMapping mapping = ChargesTariffSeeder.TYPE_MAPPINGS.get(r.getVehicleType());
-            assertNotNull(mapping, "Mapping must exist for " + r.getVehicleType());
+            List<ChargesTariffSeeder.VehicleTypeMapping> mappings = ChargesTariffSeeder.getMappingsForVehicleType(r.getVehicleType());
+            assertFalse(mappings.isEmpty(), "Mapping must exist for " + r.getVehicleType());
 
-            seededTariffs.add(VehicleTariff.builder()
-                    .serviceType("ONE_WAY")
-                    .state(r.getState())
-                    .city(r.getCity())
-                    .category(mapping.category)
-                    .modelName(mapping.modelName)
-                    .seatingCapacity(mapping.seatingCapacity)
-                    .fuelType(mapping.fuelType)
-                    .seasonal(false)
-                    .weekdayDayRate(BigDecimal.valueOf(r.getOneWayPerKm()))
-                    .weekdayNightRate(BigDecimal.valueOf(r.getOneWayPerKm()))
-                    .weekendDayRate(BigDecimal.valueOf(r.getOneWayPerKm()))
-                    .weekendNightRate(BigDecimal.valueOf(r.getOneWayPerKm()))
-                    .build());
+            for (ChargesTariffSeeder.VehicleTypeMapping mapping : mappings) {
+                seededTariffs.add(VehicleTariff.builder()
+                        .serviceType("ONE_WAY")
+                        .state(r.getState())
+                        .city(r.getCity())
+                        .category(mapping.category)
+                        .modelName(mapping.modelName)
+                        .seatingCapacity(mapping.seatingCapacity)
+                        .fuelType(mapping.fuelType)
+                        .seasonal(false)
+                        .weekdayDayRate(BigDecimal.valueOf(r.getOneWayPerKm()))
+                        .weekdayNightRate(BigDecimal.valueOf(r.getOneWayPerKm()))
+                        .weekendDayRate(BigDecimal.valueOf(r.getOneWayPerKm()))
+                        .weekendNightRate(BigDecimal.valueOf(r.getOneWayPerKm()))
+                        .build());
 
-            seededTariffs.add(VehicleTariff.builder()
-                    .serviceType("OUTSTATION")
-                    .state(r.getState())
-                    .city(r.getCity())
-                    .category(mapping.category)
-                    .modelName(mapping.modelName)
-                    .seatingCapacity(mapping.seatingCapacity)
-                    .fuelType(mapping.fuelType)
-                    .seasonal(false)
-                    .weekdayDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .weekdayNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .weekendDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .weekendNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .build());
+                seededTariffs.add(VehicleTariff.builder()
+                        .serviceType("OUTSTATION")
+                        .state(r.getState())
+                        .city(r.getCity())
+                        .category(mapping.category)
+                        .modelName(mapping.modelName)
+                        .seatingCapacity(mapping.seatingCapacity)
+                        .fuelType(mapping.fuelType)
+                        .seasonal(false)
+                        .weekdayDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .weekdayNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .weekendDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .weekendNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .build());
 
-            seededTariffs.add(VehicleTariff.builder()
-                    .serviceType("ROUND_TRIP")
-                    .state(r.getState())
-                    .city(r.getCity())
-                    .category(mapping.category)
-                    .modelName(mapping.modelName)
-                    .seatingCapacity(mapping.seatingCapacity)
-                    .fuelType(mapping.fuelType)
-                    .seasonal(false)
-                    .weekdayDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .weekdayNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .weekendDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .weekendNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
-                    .build());
+                seededTariffs.add(VehicleTariff.builder()
+                        .serviceType("ROUND_TRIP")
+                        .state(r.getState())
+                        .city(r.getCity())
+                        .category(mapping.category)
+                        .modelName(mapping.modelName)
+                        .seatingCapacity(mapping.seatingCapacity)
+                        .fuelType(mapping.fuelType)
+                        .seasonal(false)
+                        .weekdayDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .weekdayNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .weekendDayRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .weekendNightRate(BigDecimal.valueOf(r.getOutstationPerKm()))
+                        .build());
+            }
         }
 
-        assertEquals(752 * 3, seededTariffs.size(), "Should have 2256 total seeded tariffs");
+        // 752 matrix records: 94 cities * (8 types + 2 additional models for Hatchback and Sedan) = 94 * 10 = 940 per service type
+        // 940 * 3 = 2820 total seeded tariffs
+        assertEquals(940 * 3, seededTariffs.size(), "Should have 2820 total seeded tariffs including Swift and Etios");
     }
 
     @Test
@@ -166,5 +170,39 @@ public class ChargesTariffIntegrationTest {
                 "2026-11-05", "10:00", "ROUND_TRIP", "Pune", "Maharashtra", null, seededTariffs
         );
         assertEquals(new BigDecimal("42.0"), puneUrbania.get("ratePerKm"));
+    }
+
+    @Test
+    @DisplayName("Verify rate calculation for Swift (Hatchback) and Etios (Sedan)")
+    void testSwiftAndEtiosRates() {
+        VehicleTariffService service = new VehicleTariffService(null, null, null);
+
+        // Swift One-way Gurugram -> same Hatchback rate 10.0
+        Map<String, Object> swiftOw = service.calculateRate(
+                "Hatchback", "Swift", "4", "Petrol + CNG",
+                "2026-11-05", "10:00", "ONE_WAY", "Gurgaon", "Haryana", null, seededTariffs
+        );
+        assertEquals(new BigDecimal("10.0"), swiftOw.get("ratePerKm"));
+
+        // Swift Outstation Gurugram -> same Hatchback rate 9.0
+        Map<String, Object> swiftOst = service.calculateRate(
+                "Hatchback", "Swift", "4", "Petrol + CNG",
+                "2026-11-05", "10:00", "ROUND_TRIP", "Gurugram", "Haryana", null, seededTariffs
+        );
+        assertEquals(new BigDecimal("9.0"), swiftOst.get("ratePerKm"));
+
+        // Etios One-way Agra -> same Sedan rate 11.0
+        Map<String, Object> etiosOw = service.calculateRate(
+                "Sedan", "Etios", "4", "Diesel",
+                "2026-11-05", "10:00", "ONE_WAY", "Agra", "Uttar Pradesh", null, seededTariffs
+        );
+        assertEquals(new BigDecimal("11.0"), etiosOw.get("ratePerKm"));
+
+        // Etios Outstation Agra -> same Sedan rate 10.0
+        Map<String, Object> etiosOst = service.calculateRate(
+                "Sedan", "Etios", "4", "Diesel",
+                "2026-11-05", "10:00", "ROUND_TRIP", "Agra", "Uttar Pradesh", null, seededTariffs
+        );
+        assertEquals(new BigDecimal("10.0"), etiosOst.get("ratePerKm"));
     }
 }

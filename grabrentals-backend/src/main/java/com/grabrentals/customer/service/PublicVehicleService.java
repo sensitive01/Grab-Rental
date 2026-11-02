@@ -1212,7 +1212,7 @@ public class PublicVehicleService {
         if (m.contains("s-presso") || m.contains("spresso")) {
             return "/images/cars/spresso-clean.jpg";
         }
-        if (m.contains("wagon") || m.contains("celerio") || m.contains("tiago") || m.contains("alto") || m.contains("kwid")) {
+        if (m.contains("wagon") || m.contains("swift") || m.contains("celerio") || m.contains("tiago") || m.contains("alto") || m.contains("kwid")) {
             return "/images/cars/wagon_r.jpg";
         }
         if (m.contains("ertiga") || m.contains("carens") || m.contains("triber") || m.contains("rumion") || m.contains("marazzo")) {
@@ -1220,6 +1220,15 @@ public class PublicVehicleService {
         }
         if (m.contains("dzire") || m.contains("etios") || m.contains("amaze") || m.contains("verna") || m.contains("city") || m.contains("aura") || m.contains("tigor")) {
             return "/images/cars/dzire.jpg";
+        }
+        if (m.contains("urbania")) {
+            return "/images/cars/urbania.jpg";
+        }
+        if (m.contains("tempo") || m.contains("traveller")) {
+            return "/images/cars/tempo.jpg";
+        }
+        if (m.contains("bus") || m.contains("minibus") || m.contains("coach")) {
+            return "/images/cars/bus.jpg";
         }
 
         // If custom image is provided and not a dummy/broken link
@@ -1234,6 +1243,12 @@ public class PublicVehicleService {
                 return "/images/cars/ertiga.jpg";
             case "SUV_7":
                 return "/images/cars/innova.jpg";
+            case "TEMPO":
+                return "/images/cars/tempo.jpg";
+            case "BUS":
+                return "/images/cars/bus.jpg";
+            case "URBANIA":
+                return "/images/cars/urbania.jpg";
             case "SEDAN":
             default:
                 return "/images/cars/dzire.jpg";

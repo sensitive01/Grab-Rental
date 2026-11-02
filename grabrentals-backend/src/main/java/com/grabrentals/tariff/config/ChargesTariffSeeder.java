@@ -111,6 +111,36 @@ public class ChargesTariffSeeder implements CommandLineRunner {
         ));
     }
 
+    public static final List<VehicleTypeMapping> ALL_CATALOG_MODELS = List.of(
+            new VehicleTypeMapping("Hatchback", "WagonR", "4", "Petrol + CNG", "/images/cars/wagon_r.jpg", new BigDecimal("350.00"), new BigDecimal("250.00")),
+            new VehicleTypeMapping("Hatchback", "Swift", "4", "Petrol + CNG", "/images/cars/wagon_r.jpg", new BigDecimal("350.00"), new BigDecimal("250.00")),
+            new VehicleTypeMapping("Sedan", "Dzire", "4", "CNG", "/images/cars/dzire.jpg", new BigDecimal("400.00"), new BigDecimal("300.00")),
+            new VehicleTypeMapping("Sedan", "Etios", "4", "Diesel", "/images/cars/dzire.jpg", new BigDecimal("400.00"), new BigDecimal("300.00")),
+            new VehicleTypeMapping("SUV", "Ertiga", "6", "Diesel", "/images/cars/ertiga.jpg", new BigDecimal("450.00"), new BigDecimal("350.00")),
+            new VehicleTypeMapping("Innovacrysta", "Innova Crysta", "7", "Diesel", "/images/cars/innova.jpg", new BigDecimal("500.00"), new BigDecimal("400.00")),
+            new VehicleTypeMapping("innovahycross", "Innova Hycross", "7", "Hybrid", "/images/cars/innova.jpg", new BigDecimal("500.00"), new BigDecimal("400.00")),
+            new VehicleTypeMapping("Tempo", "Tempo Traveller", "12", "Diesel", "/images/cars/tempo.jpg", new BigDecimal("600.00"), new BigDecimal("450.00")),
+            new VehicleTypeMapping("Bus", "Luxury Bus", "35", "Diesel", "/images/cars/bus.jpg", new BigDecimal("800.00"), new BigDecimal("600.00")),
+            new VehicleTypeMapping("urbania", "Force Urbania", "12", "Diesel", "/images/cars/urbania.jpg", new BigDecimal("650.00"), new BigDecimal("500.00"))
+    );
+
+    public static List<VehicleTypeMapping> getMappingsForVehicleType(String vehicleType) {
+        if ("Hatchback".equalsIgnoreCase(vehicleType)) {
+            return List.of(
+                    TYPE_MAPPINGS.get("Hatchback"),
+                    new VehicleTypeMapping("Hatchback", "Swift", "4", "Petrol + CNG", "/images/cars/wagon_r.jpg", new BigDecimal("350.00"), new BigDecimal("250.00"))
+            );
+        } else if ("Sedan".equalsIgnoreCase(vehicleType)) {
+            return List.of(
+                    TYPE_MAPPINGS.get("Sedan"),
+                    new VehicleTypeMapping("Sedan", "Etios", "4", "Diesel", "/images/cars/dzire.jpg", new BigDecimal("400.00"), new BigDecimal("300.00"))
+            );
+        } else {
+            VehicleTypeMapping m = TYPE_MAPPINGS.get(vehicleType);
+            return m != null ? List.of(m) : Collections.emptyList();
+        }
+    }
+
     @Override
     public void run(String... args) {
         if (!seedTariffEnabled) {
@@ -145,7 +175,7 @@ public class ChargesTariffSeeder implements CommandLineRunner {
 
     @Transactional
     public void syncModelConfigs() {
-        for (VehicleTypeMapping m : TYPE_MAPPINGS.values()) {
+        for (VehicleTypeMapping m : ALL_CATALOG_MODELS) {
             Optional<VehicleModelConfig> existing = modelConfigRepository
                     .findByCategoryIgnoreCaseAndModelNameIgnoreCaseAndSeatingCapacity(
                             m.category, m.modelName, m.seatingCapacity
@@ -168,7 +198,7 @@ public class ChargesTariffSeeder implements CommandLineRunner {
 
     public void syncChargesTariffs(boolean force) {
         long oneWayCount = tariffRepository.countByServiceTypeIgnoreCase("ONE_WAY");
-        if (!force && oneWayCount >= 752) {
+        if (!force && oneWayCount >= 940) {
             log.info("ChargesTariffSeeder: Found {} existing ONE_WAY tariffs. Skipping automatic seeding.", oneWayCount);
             backfillVendorRatesAndBaseFares();
             return;
@@ -198,112 +228,113 @@ public class ChargesTariffSeeder implements CommandLineRunner {
                 jdbcTemplate.update("DELETE FROM vehicle_tariffs WHERE service_type IN ('ONE_WAY', 'OUTSTATION', 'ROUND_TRIP')");
             }
 
-            log.info("ChargesTariffSeeder: Batch inserting tariffs for {} city-vehicle rows ({} total tariffs)...",
-                    records.size(), records.size() * 3);
+            log.info("ChargesTariffSeeder: Batch inserting tariffs for {} city-vehicle rows...", records.size());
 
-            List<VehicleTariff> tariffsToSave = new ArrayList<>(records.size() * 3);
+            List<VehicleTariff> tariffsToSave = new ArrayList<>(records.size() * 4);
             int baseKm = 250;
 
             for (ChargesRecord r : records) {
-                VehicleTypeMapping mapping = TYPE_MAPPINGS.get(r.getVehicleType());
-                if (mapping == null) {
+                List<VehicleTypeMapping> mappings = getMappingsForVehicleType(r.getVehicleType());
+                if (mappings.isEmpty()) {
                     log.warn("ChargesTariffSeeder: Unknown vehicle type '{}'. Skipping.", r.getVehicleType());
                     continue;
                 }
 
-                BigDecimal oneWayRate = BigDecimal.valueOf(r.getOneWayPerKm());
-                BigDecimal oneWayVendorRate = oneWayRate.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal oneWayBaseFare = oneWayRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal oneWayVendorBaseFare = oneWayVendorRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
+                for (VehicleTypeMapping mapping : mappings) {
+                    BigDecimal oneWayRate = BigDecimal.valueOf(r.getOneWayPerKm());
+                    BigDecimal oneWayVendorRate = oneWayRate.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal oneWayBaseFare = oneWayRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal oneWayVendorBaseFare = oneWayVendorRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
 
-                BigDecimal outstationRate = BigDecimal.valueOf(r.getOutstationPerKm());
-                BigDecimal outstationVendorRate = outstationRate.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal outstationBaseFare = outstationRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal outstationVendorBaseFare = outstationVendorRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal outstationRate = BigDecimal.valueOf(r.getOutstationPerKm());
+                    BigDecimal outstationVendorRate = outstationRate.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal outstationBaseFare = outstationRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal outstationVendorBaseFare = outstationVendorRate.multiply(BigDecimal.valueOf(baseKm)).setScale(2, RoundingMode.HALF_UP);
 
-                BigDecimal vendorBattaDay = mapping.driverBattaDay.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal vendorBattaNight = mapping.driverBattaNight.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal vendorBattaDay = mapping.driverBattaDay.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal vendorBattaNight = mapping.driverBattaNight.multiply(new BigDecimal("0.80")).setScale(2, RoundingMode.HALF_UP);
 
-                // 1. ONE_WAY Tariff
-                tariffsToSave.add(VehicleTariff.builder()
-                        .id(UUID.randomUUID())
-                        .serviceType("ONE_WAY")
-                        .state(r.getState())
-                        .city(r.getCity())
-                        .category(mapping.category)
-                        .modelName(mapping.modelName)
-                        .seatingCapacity(mapping.seatingCapacity)
-                        .fuelType(mapping.fuelType)
-                        .weekdayDayRate(oneWayRate)
-                        .weekdayNightRate(oneWayRate)
-                        .weekendDayRate(oneWayRate)
-                        .weekendNightRate(oneWayRate)
-                        .vendorWeekdayDayRate(oneWayVendorRate)
-                        .vendorWeekdayNightRate(oneWayVendorRate)
-                        .vendorWeekendDayRate(oneWayVendorRate)
-                        .vendorWeekendNightRate(oneWayVendorRate)
-                        .baseIncludedKm(baseKm)
-                        .baseFare(oneWayBaseFare)
-                        .vendorBaseFare(oneWayVendorBaseFare)
-                        .driverBattaDay(mapping.driverBattaDay)
-                        .driverBattaNight(mapping.driverBattaNight)
-                        .vendorDriverBattaDay(vendorBattaDay)
-                        .vendorDriverBattaNight(vendorBattaNight)
-                        .build());
+                    // 1. ONE_WAY Tariff
+                    tariffsToSave.add(VehicleTariff.builder()
+                            .id(UUID.randomUUID())
+                            .serviceType("ONE_WAY")
+                            .state(r.getState())
+                            .city(r.getCity())
+                            .category(mapping.category)
+                            .modelName(mapping.modelName)
+                            .seatingCapacity(mapping.seatingCapacity)
+                            .fuelType(mapping.fuelType)
+                            .weekdayDayRate(oneWayRate)
+                            .weekdayNightRate(oneWayRate)
+                            .weekendDayRate(oneWayRate)
+                            .weekendNightRate(oneWayRate)
+                            .vendorWeekdayDayRate(oneWayVendorRate)
+                            .vendorWeekdayNightRate(oneWayVendorRate)
+                            .vendorWeekendDayRate(oneWayVendorRate)
+                            .vendorWeekendNightRate(oneWayVendorRate)
+                            .baseIncludedKm(baseKm)
+                            .baseFare(oneWayBaseFare)
+                            .vendorBaseFare(oneWayVendorBaseFare)
+                            .driverBattaDay(mapping.driverBattaDay)
+                            .driverBattaNight(mapping.driverBattaNight)
+                            .vendorDriverBattaDay(vendorBattaDay)
+                            .vendorDriverBattaNight(vendorBattaNight)
+                            .build());
 
-                // 2. OUTSTATION Tariff
-                tariffsToSave.add(VehicleTariff.builder()
-                        .id(UUID.randomUUID())
-                        .serviceType("OUTSTATION")
-                        .state(r.getState())
-                        .city(r.getCity())
-                        .category(mapping.category)
-                        .modelName(mapping.modelName)
-                        .seatingCapacity(mapping.seatingCapacity)
-                        .fuelType(mapping.fuelType)
-                        .weekdayDayRate(outstationRate)
-                        .weekdayNightRate(outstationRate)
-                        .weekendDayRate(outstationRate)
-                        .weekendNightRate(outstationRate)
-                        .vendorWeekdayDayRate(outstationVendorRate)
-                        .vendorWeekdayNightRate(outstationVendorRate)
-                        .vendorWeekendDayRate(outstationVendorRate)
-                        .vendorWeekendNightRate(outstationVendorRate)
-                        .baseIncludedKm(baseKm)
-                        .baseFare(outstationBaseFare)
-                        .vendorBaseFare(outstationVendorBaseFare)
-                        .driverBattaDay(mapping.driverBattaDay)
-                        .driverBattaNight(mapping.driverBattaNight)
-                        .vendorDriverBattaDay(vendorBattaDay)
-                        .vendorDriverBattaNight(vendorBattaNight)
-                        .build());
+                    // 2. OUTSTATION Tariff
+                    tariffsToSave.add(VehicleTariff.builder()
+                            .id(UUID.randomUUID())
+                            .serviceType("OUTSTATION")
+                            .state(r.getState())
+                            .city(r.getCity())
+                            .category(mapping.category)
+                            .modelName(mapping.modelName)
+                            .seatingCapacity(mapping.seatingCapacity)
+                            .fuelType(mapping.fuelType)
+                            .weekdayDayRate(outstationRate)
+                            .weekdayNightRate(outstationRate)
+                            .weekendDayRate(outstationRate)
+                            .weekendNightRate(outstationRate)
+                            .vendorWeekdayDayRate(outstationVendorRate)
+                            .vendorWeekdayNightRate(outstationVendorRate)
+                            .vendorWeekendDayRate(outstationVendorRate)
+                            .vendorWeekendNightRate(outstationVendorRate)
+                            .baseIncludedKm(baseKm)
+                            .baseFare(outstationBaseFare)
+                            .vendorBaseFare(outstationVendorBaseFare)
+                            .driverBattaDay(mapping.driverBattaDay)
+                            .driverBattaNight(mapping.driverBattaNight)
+                            .vendorDriverBattaDay(vendorBattaDay)
+                            .vendorDriverBattaNight(vendorBattaNight)
+                            .build());
 
-                // 3. ROUND_TRIP Tariff
-                tariffsToSave.add(VehicleTariff.builder()
-                        .id(UUID.randomUUID())
-                        .serviceType("ROUND_TRIP")
-                        .state(r.getState())
-                        .city(r.getCity())
-                        .category(mapping.category)
-                        .modelName(mapping.modelName)
-                        .seatingCapacity(mapping.seatingCapacity)
-                        .fuelType(mapping.fuelType)
-                        .weekdayDayRate(outstationRate)
-                        .weekdayNightRate(outstationRate)
-                        .weekendDayRate(outstationRate)
-                        .weekendNightRate(outstationRate)
-                        .vendorWeekdayDayRate(outstationVendorRate)
-                        .vendorWeekdayNightRate(outstationVendorRate)
-                        .vendorWeekendDayRate(outstationVendorRate)
-                        .vendorWeekendNightRate(outstationVendorRate)
-                        .baseIncludedKm(baseKm)
-                        .baseFare(outstationBaseFare)
-                        .vendorBaseFare(outstationVendorBaseFare)
-                        .driverBattaDay(mapping.driverBattaDay)
-                        .driverBattaNight(mapping.driverBattaNight)
-                        .vendorDriverBattaDay(vendorBattaDay)
-                        .vendorDriverBattaNight(vendorBattaNight)
-                        .build());
+                    // 3. ROUND_TRIP Tariff
+                    tariffsToSave.add(VehicleTariff.builder()
+                            .id(UUID.randomUUID())
+                            .serviceType("ROUND_TRIP")
+                            .state(r.getState())
+                            .city(r.getCity())
+                            .category(mapping.category)
+                            .modelName(mapping.modelName)
+                            .seatingCapacity(mapping.seatingCapacity)
+                            .fuelType(mapping.fuelType)
+                            .weekdayDayRate(outstationRate)
+                            .weekdayNightRate(outstationRate)
+                            .weekendDayRate(outstationRate)
+                            .weekendNightRate(outstationRate)
+                            .vendorWeekdayDayRate(outstationVendorRate)
+                            .vendorWeekdayNightRate(outstationVendorRate)
+                            .vendorWeekendDayRate(outstationVendorRate)
+                            .vendorWeekendNightRate(outstationVendorRate)
+                            .baseIncludedKm(baseKm)
+                            .baseFare(outstationBaseFare)
+                            .vendorBaseFare(outstationVendorBaseFare)
+                            .driverBattaDay(mapping.driverBattaDay)
+                            .driverBattaNight(mapping.driverBattaNight)
+                            .vendorDriverBattaDay(vendorBattaDay)
+                            .vendorDriverBattaNight(vendorBattaNight)
+                            .build());
+                }
             }
 
             String sql = "INSERT INTO vehicle_tariffs (" +

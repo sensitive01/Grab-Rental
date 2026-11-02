@@ -55,7 +55,7 @@ function resolveCarImage(title, category, rawImage) {
   if (t.includes("s-presso") || t.includes("spresso")) {
     return "/images/cars/spresso-clean.jpg";
   }
-  if (t.includes("wagon") || t.includes("celerio") || t.includes("tiago") || t.includes("alto")) {
+  if (t.includes("wagon") || t.includes("swift") || t.includes("celerio") || t.includes("tiago") || t.includes("alto")) {
     return "/images/cars/wagon_r.jpg";
   }
   if (t.includes("ertiga") || t.includes("carens") || t.includes("triber") || t.includes("rumion")) {
@@ -64,10 +64,22 @@ function resolveCarImage(title, category, rawImage) {
   if (t.includes("dzire") || t.includes("etios") || t.includes("amaze") || t.includes("verna") || t.includes("aura") || t.includes("city")) {
     return "/images/cars/dzire.jpg";
   }
+  if (t.includes("urbania")) {
+    return "/images/cars/urbania.jpg";
+  }
+  if (t.includes("tempo") || t.includes("traveller")) {
+    return "/images/cars/tempo.jpg";
+  }
+  if (t.includes("bus") || t.includes("minibus") || t.includes("coach")) {
+    return "/images/cars/bus.jpg";
+  }
 
   if (c.includes("hatchback")) return "/images/cars/wagon_r.jpg";
   if (c.includes("suv_6")) return "/images/cars/ertiga.jpg";
   if (c.includes("suv_7")) return "/images/cars/innova.jpg";
+  if (c.includes("tempo")) return "/images/cars/tempo.jpg";
+  if (c.includes("bus")) return "/images/cars/bus.jpg";
+  if (c.includes("urbania")) return "/images/cars/urbania.jpg";
   return "/images/cars/dzire.jpg";
 }
 
