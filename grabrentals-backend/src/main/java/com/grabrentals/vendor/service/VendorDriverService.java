@@ -60,6 +60,19 @@ public class VendorDriverService {
             }
         }
 
+        String rawPhone = request.getPhone() != null ? request.getPhone().trim() : "";
+        if (!rawPhone.isBlank()) {
+            Optional<Driver> existingPhoneOpt = driverRepository.findByNormalizedPhone(rawPhone);
+            if (existingPhoneOpt.isPresent()) {
+                Driver existing = existingPhoneOpt.get();
+                if (existing.getUser() != null && existing.getUser().getId().equals(vendorUserId)) {
+                    throw new IllegalArgumentException("Driver with mobile number '" + rawPhone + "' is already registered in your chauffeur roster. Duplicate driver phone entries are not allowed.");
+                } else {
+                    throw new IllegalArgumentException("Driver with mobile number '" + rawPhone + "' is already registered on Grab Rentals by another fleet partner. A driver cannot be registered across multiple vendors.");
+                }
+            }
+        }
+
         Vehicle assignedVehicle = null;
         if (request.getAssignedVehicleId() != null) {
             assignedVehicle = vehicleRepository.findByIdAndUserId(request.getAssignedVehicleId(), vendorUserId)
@@ -194,6 +207,19 @@ public class VendorDriverService {
                     throw new IllegalArgumentException("Driver with commercial license '" + rawLicense.toUpperCase() + "' is already registered to another chauffeur in your roster.");
                 } else {
                     throw new IllegalArgumentException("Driver with commercial license '" + rawLicense.toUpperCase() + "' is already registered on Grab Rentals by another fleet partner. Duplicate driver profiles across vendors are strictly prohibited.");
+                }
+            }
+        }
+
+        String rawPhone = request.getPhone() != null ? request.getPhone().trim() : "";
+        if (!rawPhone.isBlank()) {
+            Optional<Driver> duplicatePhoneOpt = driverRepository.findByNormalizedPhone(rawPhone);
+            if (duplicatePhoneOpt.isPresent() && !duplicatePhoneOpt.get().getId().equals(driverId)) {
+                Driver other = duplicatePhoneOpt.get();
+                if (other.getUser() != null && other.getUser().getId().equals(vendorUserId)) {
+                    throw new IllegalArgumentException("Driver with mobile number '" + rawPhone + "' is already registered to another chauffeur in your roster.");
+                } else {
+                    throw new IllegalArgumentException("Driver with mobile number '" + rawPhone + "' is already registered on Grab Rentals by another fleet partner. A driver cannot be registered across multiple vendors.");
                 }
             }
         }
