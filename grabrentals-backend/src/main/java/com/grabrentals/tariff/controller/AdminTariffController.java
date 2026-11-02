@@ -24,6 +24,7 @@ public class AdminTariffController {
     private final VehicleTariffService tariffService;
     private final CloudinaryService cloudinaryService;
     private final com.grabrentals.tariff.service.PricingTaxConfigService pricingTaxConfigService;
+    private final com.grabrentals.tariff.config.ChargesTariffSeeder chargesTariffSeeder;
 
     // ==========================================
     // VEHICLE MODEL CONFIGS & COMMON PHOTOS
@@ -151,6 +152,15 @@ public class AdminTariffController {
     public ResponseEntity<ApiResponse<Void>> deleteTariff(@PathVariable UUID id) {
         tariffService.deleteTariff(id);
         return ResponseEntity.ok(ApiResponse.success("Tariff deleted successfully", null));
+    }
+
+    @PostMapping("/tariffs/sync-charges-matrix")
+    public ResponseEntity<ApiResponse<String>> syncChargesMatrix(
+            @RequestParam(defaultValue = "false") boolean force
+    ) {
+        chargesTariffSeeder.syncModelConfigs();
+        chargesTariffSeeder.syncChargesTariffs(force);
+        return ResponseEntity.ok(ApiResponse.success("Charges matrix synchronization completed successfully", "Synced"));
     }
 
     // ==========================================

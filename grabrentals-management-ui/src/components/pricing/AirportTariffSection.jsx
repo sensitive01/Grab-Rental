@@ -220,7 +220,7 @@ export default function AirportTariffSection({ onUpdateCount, onEditItem }) {
         seatingCapacity: formData.seatingCapacity || "4",
         fuelType: formData.fuelType || "ALL",
         customerFare: parseFloat(formData.customerFare),
-        vendorFare: formData.vendorFare ? parseFloat(formData.vendorFare) : parseFloat(formData.customerFare) * 0.75,
+        vendorFare: formData.vendorFare ? parseFloat(formData.vendorFare) : parseFloat(formData.customerFare) * 0.80,
         extraKmRate: parseFloat(formData.extraKmRate || 0),
         vendorExtraKmRate: parseFloat(formData.vendorExtraKmRate || 0),
         daysOfWeek: formData.daysOfWeek || "ALL",
@@ -495,7 +495,7 @@ export default function AirportTariffSection({ onUpdateCount, onEditItem }) {
                         <span className="text-[10px] font-semibold text-slate-400">cust</span>
                       </div>
                       <div className="text-[10px] text-slate-500 font-medium">
-                        {formatINR(item.vendorFare || item.customerFare * 0.75)} vend • +{formatINR(item.extraKmRate)}/km
+                        {formatINR(item.vendorFare || item.customerFare * 0.80)} vend • +{formatINR(item.extraKmRate)}/km
                       </div>
                     </TableCell>
 
@@ -778,7 +778,7 @@ export default function AirportTariffSection({ onUpdateCount, onEditItem }) {
                     setFormData((prev) => ({
                       ...prev,
                       customerFare: val,
-                      vendorFare: prev.vendorFare || (val ? String(Math.round(parseFloat(val) * 0.75)) : ""),
+                      vendorFare: prev.vendorFare || (val ? String(Math.round(parseFloat(val) * 0.80)) : ""),
                     }));
                   }}
                   className="w-full text-xs p-2 rounded-lg border border-emerald-300 bg-white font-black text-emerald-900"

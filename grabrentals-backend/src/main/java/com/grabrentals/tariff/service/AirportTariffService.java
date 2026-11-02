@@ -74,7 +74,7 @@ public class AirportTariffService {
         entity.setSeatingCapacity(req.getSeatingCapacity() != null && !req.getSeatingCapacity().isBlank() ? req.getSeatingCapacity().trim() : "4");
         entity.setFuelType(req.getFuelType() != null && !req.getFuelType().isBlank() ? req.getFuelType().trim() : "ALL");
         entity.setCustomerFare(req.getCustomerFare());
-        entity.setVendorFare(req.getVendorFare() != null ? req.getVendorFare() : req.getCustomerFare().multiply(new BigDecimal("0.75")));
+        entity.setVendorFare(req.getVendorFare() != null ? req.getVendorFare() : req.getCustomerFare().multiply(new BigDecimal("0.80")));
         entity.setExtraKmRate(req.getExtraKmRate() != null ? req.getExtraKmRate() : BigDecimal.ZERO);
         entity.setVendorExtraKmRate(req.getVendorExtraKmRate() != null ? req.getVendorExtraKmRate() : (req.getExtraKmRate() != null ? req.getExtraKmRate().multiply(new BigDecimal("0.80")) : BigDecimal.ZERO));
         entity.setDaysOfWeek(req.getDaysOfWeek() != null && !req.getDaysOfWeek().isBlank() ? req.getDaysOfWeek().trim().toUpperCase() : "ALL");

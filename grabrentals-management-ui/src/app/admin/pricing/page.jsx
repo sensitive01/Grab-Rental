@@ -16,7 +16,9 @@ import {
   TableBody,
   TableRow,
   TableHead,
-  TableCell
+  TableCell,
+  SortableHeader,
+  Pagination,
 } from "@/components/ui/Table";
 import AirportTariffSection from "@/components/pricing/AirportTariffSection";
 import {
@@ -42,6 +44,8 @@ import {
   Navigation,
   ArrowLeftRight,
   Clock,
+  RotateCcw,
+  Filter,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -449,24 +453,24 @@ const STATES_AND_CITIES = {
 
 const DEFAULT_RATES_BY_CATEGORY = {
   Hatchback: {
-    outstation: { custWdDay: "11.00", custWdNight: "12.50", custWeDay: "12.50", custWeNight: "14.00", vendWdDay: "8.50", vendWdNight: "9.50", vendWeDay: "9.50", vendWeNight: "10.50", custBase: "2800.00", vendBase: "2000.00", minKm: "250" },
-    local: { custWdDay: "13.00", custWdNight: "14.50", custWeDay: "14.50", custWeNight: "16.00", vendWdDay: "9.50", vendWdNight: "10.50", vendWeDay: "10.50", vendWeNight: "11.50", custBase: "1500.00", vendBase: "1100.00", minKm: "80" },
-    airport: { custWdDay: "11.00", custWdNight: "12.50", custWeDay: "12.50", custWeNight: "14.00", vendWdDay: "8.50", vendWdNight: "9.50", vendWeDay: "9.50", vendWeNight: "10.50", custBase: "1200.00", vendBase: "850.00", minKm: "40" }
+    outstation: { custWdDay: "11.00", custWdNight: "12.50", custWeDay: "12.50", custWeNight: "14.00", vendWdDay: "8.80", vendWdNight: "10.00", vendWeDay: "10.00", vendWeNight: "11.20", custBase: "2800.00", vendBase: "2240.00", minKm: "250" },
+    local: { custWdDay: "13.00", custWdNight: "14.50", custWeDay: "14.50", custWeNight: "16.00", vendWdDay: "10.40", vendWdNight: "11.60", vendWeDay: "11.60", vendWeNight: "12.80", custBase: "1500.00", vendBase: "1200.00", minKm: "80" },
+    airport: { custWdDay: "11.00", custWdNight: "12.50", custWeDay: "12.50", custWeNight: "14.00", vendWdDay: "8.80", vendWdNight: "10.00", vendWeDay: "10.00", vendWeNight: "11.20", custBase: "1200.00", vendBase: "960.00", minKm: "40" }
   },
   Sedan: {
-    outstation: { custWdDay: "12.50", custWdNight: "14.00", custWeDay: "14.00", custWeNight: "15.50", vendWdDay: "9.50", vendWdNight: "10.50", vendWeDay: "10.50", vendWeNight: "11.50", custBase: "3200.00", vendBase: "2300.00", minKm: "250" },
-    local: { custWdDay: "14.50", custWdNight: "16.00", custWeDay: "16.00", custWeNight: "17.50", vendWdDay: "10.50", vendWdNight: "11.50", vendWeDay: "11.50", vendWeNight: "12.50", custBase: "1800.00", vendBase: "1300.00", minKm: "80" },
-    airport: { custWdDay: "12.50", custWdNight: "14.00", custWeDay: "14.00", custWeNight: "15.50", vendWdDay: "9.50", vendWdNight: "10.50", vendWeDay: "10.50", vendWeNight: "11.50", custBase: "1400.00", vendBase: "1000.00", minKm: "40" }
+    outstation: { custWdDay: "12.50", custWdNight: "14.00", custWeDay: "14.00", custWeNight: "15.50", vendWdDay: "10.00", vendWdNight: "11.20", vendWeDay: "11.20", vendWeNight: "12.40", custBase: "3200.00", vendBase: "2560.00", minKm: "250" },
+    local: { custWdDay: "14.50", custWdNight: "16.00", custWeDay: "16.00", custWeNight: "17.50", vendWdDay: "11.60", vendWdNight: "12.80", vendWeDay: "12.80", vendWeNight: "14.00", custBase: "1800.00", vendBase: "1440.00", minKm: "80" },
+    airport: { custWdDay: "12.50", custWdNight: "14.00", custWeDay: "14.00", custWeNight: "15.50", vendWdDay: "10.00", vendWdNight: "11.20", vendWeDay: "11.20", vendWeNight: "12.40", custBase: "1400.00", vendBase: "1120.00", minKm: "40" }
   },
   SUV: {
-    outstation: { custWdDay: "16.00", custWdNight: "18.00", custWeDay: "18.00", custWeNight: "20.00", vendWdDay: "12.00", vendWdNight: "13.50", vendWeDay: "13.50", vendWeNight: "15.00", custBase: "4500.00", vendBase: "3200.00", minKm: "250" },
-    local: { custWdDay: "18.00", custWdNight: "20.00", custWeDay: "20.00", custWeNight: "22.00", vendWdDay: "13.50", vendWdNight: "15.00", vendWeDay: "15.00", vendWeNight: "16.50", custBase: "2400.00", vendBase: "1700.00", minKm: "80" },
-    airport: { custWdDay: "16.00", custWdNight: "18.00", custWeDay: "18.00", custWeNight: "20.00", vendWdDay: "12.00", vendWdNight: "13.50", vendWeDay: "13.50", vendWeNight: "15.00", custBase: "1800.00", vendBase: "1300.00", minKm: "40" }
+    outstation: { custWdDay: "16.00", custWdNight: "18.00", custWeDay: "18.00", custWeNight: "20.00", vendWdDay: "12.80", vendWdNight: "14.40", vendWeDay: "14.40", vendWeNight: "16.00", custBase: "4500.00", vendBase: "3600.00", minKm: "250" },
+    local: { custWdDay: "18.00", custWdNight: "20.00", custWeDay: "20.00", custWeNight: "22.00", vendWdDay: "14.40", vendWdNight: "16.00", vendWeDay: "16.00", vendWeNight: "17.60", custBase: "2400.00", vendBase: "1920.00", minKm: "80" },
+    airport: { custWdDay: "16.00", custWdNight: "18.00", custWeDay: "18.00", custWeNight: "20.00", vendWdDay: "12.80", vendWdNight: "14.40", vendWeDay: "14.40", vendWeNight: "16.00", custBase: "1800.00", vendBase: "1440.00", minKm: "40" }
   },
   Innovacrysta: {
-    outstation: { custWdDay: "20.00", custWdNight: "22.00", custWeDay: "22.00", custWeNight: "24.00", vendWdDay: "15.00", vendWdNight: "16.50", vendWeDay: "16.50", vendWeNight: "18.00", custBase: "5500.00", vendBase: "3900.00", minKm: "250" },
-    local: { custWdDay: "22.00", custWdNight: "24.50", custWeDay: "24.50", custWeNight: "27.00", vendWdDay: "16.50", vendWdNight: "18.00", vendWeDay: "18.00", vendWeNight: "19.50", custBase: "3000.00", vendBase: "2200.00", minKm: "80" },
-    airport: { custWdDay: "20.00", custWdNight: "22.00", custWeDay: "22.00", custWeNight: "24.00", vendWdDay: "15.00", vendWdNight: "16.50", vendWeDay: "16.50", vendWeNight: "18.00", custBase: "2200.00", vendBase: "1600.00", minKm: "40" }
+    outstation: { custWdDay: "20.00", custWdNight: "22.00", custWeDay: "22.00", custWeNight: "24.00", vendWdDay: "16.00", vendWdNight: "17.60", vendWeDay: "17.60", vendWeNight: "19.20", custBase: "5500.00", vendBase: "4400.00", minKm: "250" },
+    local: { custWdDay: "22.00", custWdNight: "24.50", custWeDay: "24.50", custWeNight: "27.00", vendWdDay: "17.60", vendWdNight: "19.60", vendWeDay: "19.60", vendWeNight: "21.60", custBase: "3000.00", vendBase: "2400.00", minKm: "80" },
+    airport: { custWdDay: "20.00", custWdNight: "22.00", custWeDay: "22.00", custWeNight: "24.00", vendWdDay: "16.00", vendWdNight: "17.60", vendWeDay: "17.60", vendWeNight: "19.20", custBase: "2200.00", vendBase: "1760.00", minKm: "40" }
   }
 };
 
@@ -479,6 +483,11 @@ export default function AdminPricingPage() {
   const [activeTab, setActiveTab] = useState("ALL"); // ALL, STANDARD, SEASONAL
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("ALL");
+  const [cityFilter, setCityFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sortConfig, setSortConfig] = useState({ key: "city", direction: "asc" });
   const [toast, setToast] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
@@ -732,6 +741,39 @@ export default function AdminPricingPage() {
     const rawService = item.serviceType || "ONE_WAY";
     const sType = rawService === "OUTSTATION" ? "ONE_WAY" : rawService;
 
+    const custWdDay = parseFloat(item.weekdayDayRate || 0);
+    const custWdNight = parseFloat(item.weekdayNightRate || item.weekdayDayRate || 0);
+    const custWeDay = parseFloat(item.weekendDayRate || item.weekdayDayRate || 0);
+    const custWeNight = parseFloat(item.weekendNightRate || item.weekdayNightRate || item.weekdayDayRate || 0);
+
+    const minKm = item.baseIncludedKm != null && Number(item.baseIncludedKm) > 0
+      ? Number(item.baseIncludedKm)
+      : (sType === "LOCAL" ? 80 : sType === "AIRPORT" ? 40 : 250);
+
+    const rawBaseFare = item.baseFare != null && Number(item.baseFare) > 0
+      ? Number(item.baseFare)
+      : (custWdDay > 0 ? Math.round(custWdDay * minKm) : 0);
+
+    const rawVendorBaseFare = item.vendorBaseFare != null && Number(item.vendorBaseFare) > 0
+      ? Number(item.vendorBaseFare)
+      : Math.round(rawBaseFare * 0.80);
+
+    const vendWdDay = item.vendorWeekdayDayRate != null && Number(item.vendorWeekdayDayRate) > 0
+      ? String(item.vendorWeekdayDayRate)
+      : (custWdDay > 0 ? (custWdDay * 0.80).toFixed(2) : "");
+
+    const vendWdNight = item.vendorWeekdayNightRate != null && Number(item.vendorWeekdayNightRate) > 0
+      ? String(item.vendorWeekdayNightRate)
+      : (custWdNight > 0 ? (custWdNight * 0.80).toFixed(2) : "");
+
+    const vendWeDay = item.vendorWeekendDayRate != null && Number(item.vendorWeekendDayRate) > 0
+      ? String(item.vendorWeekendDayRate)
+      : (custWeDay > 0 ? (custWeDay * 0.80).toFixed(2) : "");
+
+    const vendWeNight = item.vendorWeekendNightRate != null && Number(item.vendorWeekendNightRate) > 0
+      ? String(item.vendorWeekendNightRate)
+      : (custWeNight > 0 ? (custWeNight * 0.80).toFixed(2) : "");
+
     setFormData({
       id: item.id,
       category: item.category || "Sedan",
@@ -749,22 +791,22 @@ export default function AdminPricingPage() {
       endDate: item.endDate || "",
 
       weekdayDayRate: item.weekdayDayRate != null ? String(item.weekdayDayRate) : "",
-      weekdayNightRate: item.weekdayNightRate != null ? String(item.weekdayNightRate) : "",
-      weekendDayRate: item.weekendDayRate != null ? String(item.weekendDayRate) : "",
-      weekendNightRate: item.weekendNightRate != null ? String(item.weekendNightRate) : "",
-      baseFare: item.baseFare != null ? String(item.baseFare) : "",
-      baseIncludedKm: item.baseIncludedKm != null ? String(item.baseIncludedKm) : "",
+      weekdayNightRate: item.weekdayNightRate != null ? String(item.weekdayNightRate) : (item.weekdayDayRate != null ? String(item.weekdayDayRate) : ""),
+      weekendDayRate: item.weekendDayRate != null ? String(item.weekendDayRate) : (item.weekdayDayRate != null ? String(item.weekdayDayRate) : ""),
+      weekendNightRate: item.weekendNightRate != null ? String(item.weekendNightRate) : (item.weekdayDayRate != null ? String(item.weekdayDayRate) : ""),
+      baseFare: rawBaseFare > 0 ? String(rawBaseFare) : (item.baseFare != null ? String(item.baseFare) : "0"),
+      baseIncludedKm: String(minKm),
       packageHours: item.packageHours != null ? String(item.packageHours) : (sType === "LOCAL" ? "8" : ""),
-      driverBattaDay: item.driverBattaDay != null ? String(item.driverBattaDay) : "",
-      driverBattaNight: item.driverBattaNight != null ? String(item.driverBattaNight) : "",
+      driverBattaDay: item.driverBattaDay != null ? String(item.driverBattaDay) : "400",
+      driverBattaNight: item.driverBattaNight != null ? String(item.driverBattaNight) : "300",
 
-      vendorWeekdayDayRate: item.vendorWeekdayDayRate != null ? String(item.vendorWeekdayDayRate) : "",
-      vendorWeekdayNightRate: item.vendorWeekdayNightRate != null ? String(item.vendorWeekdayNightRate) : "",
-      vendorWeekendDayRate: item.vendorWeekendDayRate != null ? String(item.vendorWeekendDayRate) : "",
-      vendorWeekendNightRate: item.vendorWeekendNightRate != null ? String(item.vendorWeekendNightRate) : "",
-      vendorBaseFare: item.vendorBaseFare != null ? String(item.vendorBaseFare) : "",
-      vendorDriverBattaDay: item.vendorDriverBattaDay != null ? String(item.vendorDriverBattaDay) : "",
-      vendorDriverBattaNight: item.vendorDriverBattaNight != null ? String(item.vendorDriverBattaNight) : "",
+      vendorWeekdayDayRate: vendWdDay,
+      vendorWeekdayNightRate: vendWdNight,
+      vendorWeekendDayRate: vendWeDay,
+      vendorWeekendNightRate: vendWeNight,
+      vendorBaseFare: rawVendorBaseFare > 0 ? String(rawVendorBaseFare) : "",
+      vendorDriverBattaDay: item.vendorDriverBattaDay != null ? String(item.vendorDriverBattaDay) : "300",
+      vendorDriverBattaNight: item.vendorDriverBattaNight != null ? String(item.vendorDriverBattaNight) : "250",
 
       hourlyCustomerFare: item.hourlyCustomerFare != null ? String(item.hourlyCustomerFare) : (sType === "LOCAL" ? String(item.baseFare || "") : ""),
       hourlyVendorFare: item.hourlyVendorFare != null ? String(item.hourlyVendorFare) : (sType === "LOCAL" ? String(item.vendorBaseFare || "") : ""),
@@ -861,7 +903,7 @@ export default function AdminPricingPage() {
         const maxDistance = parseInt(formData.maxKm || formData.baseIncludedKm || formData.airportIncludedKm || 35, 10);
         const vendFare = (formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare)
           ? parseFloat(formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare)
-          : custFare * 0.75;
+          : custFare * 0.80;
 
         await adminApi.saveAirportTariff({
           ...(editingItem ? { id: editingItem.id } : {}),
@@ -924,30 +966,43 @@ export default function AdminPricingPage() {
         ? (formData.customCity || "").trim()
         : (formData.city || "Theni").trim();
 
+      const custWd = parseFloat(formData.weekdayDayRate || 0);
+      const custWn = parseFloat(formData.weekdayNightRate || custWd);
+      const custWeD = parseFloat(formData.weekendDayRate || custWd);
+      const custWeN = parseFloat(formData.weekendNightRate || custWd);
+      const minKm = parseInt(formData.baseIncludedKm || (formData.serviceType === "LOCAL" ? 80 : formData.serviceType === "AIRPORT" ? 40 : 250), 10);
+      const custBase = parseFloat(formData.baseFare || (custWd > 0 ? custWd * minKm : 0));
+      const vendBase = parseFloat(formData.vendorBaseFare || (custBase * 0.80));
+
+      const vendWd = parseFloat(formData.vendorWeekdayDayRate || (custWd * 0.80));
+      const vendWn = parseFloat(formData.vendorWeekdayNightRate || (custWn * 0.80));
+      const vendWeD = parseFloat(formData.vendorWeekendDayRate || (custWeD * 0.80));
+      const vendWeN = parseFloat(formData.vendorWeekendNightRate || (custWeN * 0.80));
+
       await adminApi.saveTariff({
         ...formData,
         fuelType: formData.fuelType || "Diesel",
         state: formData.state || "Tamil Nadu",
         city: resolvedCity || "Theni",
         serviceType: formData.serviceType || "ONE_WAY",
-        weekdayDayRate: parseFloat(formData.weekdayDayRate || 0),
-        weekdayNightRate: parseFloat(formData.weekdayNightRate || 0),
-        weekendDayRate: parseFloat(formData.weekendDayRate || 0),
-        weekendNightRate: parseFloat(formData.weekendNightRate || 0),
-        baseFare: parseFloat(formData.baseFare || 0),
-        baseIncludedKm: parseInt(formData.baseIncludedKm || (formData.serviceType === "LOCAL" ? 80 : formData.serviceType === "AIRPORT" ? 40 : 250), 10),
+        weekdayDayRate: custWd,
+        weekdayNightRate: custWn,
+        weekendDayRate: custWeD,
+        weekendNightRate: custWeN,
+        baseFare: custBase,
+        baseIncludedKm: minKm,
         packageHours: formData.packageHours ? parseInt(formData.packageHours, 10) : (formData.serviceType === "LOCAL" ? 8 : null),
-        packageKm: parseInt(formData.baseIncludedKm || (formData.serviceType === "LOCAL" ? 80 : 250), 10),
-        driverBattaDay: parseFloat(formData.driverBattaDay || 0),
-        driverBattaNight: parseFloat(formData.driverBattaNight || 0),
+        packageKm: minKm,
+        driverBattaDay: parseFloat(formData.driverBattaDay || 400),
+        driverBattaNight: parseFloat(formData.driverBattaNight || 300),
 
-        vendorWeekdayDayRate: parseFloat(formData.vendorWeekdayDayRate || 0),
-        vendorWeekdayNightRate: parseFloat(formData.vendorWeekdayNightRate || 0),
-        vendorWeekendDayRate: parseFloat(formData.vendorWeekendDayRate || 0),
-        vendorWeekendNightRate: parseFloat(formData.vendorWeekendNightRate || 0),
-        vendorBaseFare: parseFloat(formData.vendorBaseFare || 0),
-        vendorDriverBattaDay: parseFloat(formData.vendorDriverBattaDay || 0),
-        vendorDriverBattaNight: parseFloat(formData.vendorDriverBattaNight || 0),
+        vendorWeekdayDayRate: vendWd,
+        vendorWeekdayNightRate: vendWn,
+        vendorWeekendDayRate: vendWeD,
+        vendorWeekendNightRate: vendWeN,
+        vendorBaseFare: vendBase,
+        vendorDriverBattaDay: parseFloat(formData.vendorDriverBattaDay || 300),
+        vendorDriverBattaNight: parseFloat(formData.vendorDriverBattaNight || 250),
 
         hourlyWeekdayDayRate: parseFloat(formData.hourlyWeekdayDayRate || 0),
         hourlyVendorWeekdayDayRate: parseFloat(formData.hourlyVendorWeekdayDayRate || 0),
@@ -1038,9 +1093,31 @@ export default function AdminPricingPage() {
     }
   }
 
-  // Filtered Tariffs
-  const filteredTariffs = useMemo(() => {
-    return tariffs.filter((t) => {
+  // Available cities dynamically derived from tariffs matching the selected state (or all if ALL)
+  const availableCities = useMemo(() => {
+    const set = new Set();
+    tariffs.forEach((t) => {
+      if (t.city && t.city !== "ALL") {
+        if (stateFilter === "ALL" || (t.state && t.state.toLowerCase() === stateFilter.toLowerCase())) {
+          set.add(t.city);
+        }
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tariffs, stateFilter]);
+
+  // Unique categories derived from tariffs
+  const availableCategories = useMemo(() => {
+    const set = new Set();
+    tariffs.forEach((t) => {
+      if (t.category) set.add(t.category);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tariffs]);
+
+  // Filtered & Sorted Tariffs for DataTable
+  const filteredAndSortedTariffs = useMemo(() => {
+    const filtered = tariffs.filter((t) => {
       const sType = (t.serviceType || "OUTSTATION").toUpperCase();
       const isOutstation = sType === "OUTSTATION" || sType === "ONE_WAY" || sType === "ROUND_TRIP";
       const matchService =
@@ -1056,6 +1133,10 @@ export default function AdminPricingPage() {
 
       const matchState = stateFilter === "ALL" || (t.state && t.state.toLowerCase() === stateFilter.toLowerCase());
 
+      const matchCity = cityFilter === "ALL" || (t.city && t.city.toLowerCase() === cityFilter.toLowerCase());
+
+      const matchCategory = categoryFilter === "ALL" || (t.category && t.category.toLowerCase() === categoryFilter.toLowerCase());
+
       const matchSearch =
         !search.trim() ||
         t.category?.toLowerCase().includes(search.toLowerCase()) ||
@@ -1063,11 +1144,71 @@ export default function AdminPricingPage() {
         t.fuelType?.toLowerCase().includes(search.toLowerCase()) ||
         t.seasonName?.toLowerCase().includes(search.toLowerCase()) ||
         t.city?.toLowerCase().includes(search.toLowerCase()) ||
-        t.state?.toLowerCase().includes(search.toLowerCase());
+        t.state?.toLowerCase().includes(search.toLowerCase()) ||
+        t.serviceType?.toLowerCase().includes(search.toLowerCase());
 
-      return matchService && matchType && matchState && matchSearch;
+      return matchService && matchType && matchState && matchCity && matchCategory && matchSearch;
     });
-  }, [tariffs, serviceFilter, activeTab, stateFilter, search]);
+
+    if (!sortConfig?.key) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+
+      if (
+        sortConfig.key === "weekdayDayRate" ||
+        sortConfig.key === "weekendDayRate" ||
+        sortConfig.key === "baseFare" ||
+        sortConfig.key === "discountPercentage"
+      ) {
+        valA = Number(valA || 0);
+        valB = Number(valB || 0);
+      } else if (sortConfig.key === "margin") {
+        const cA = parseFloat(a.weekdayDayRate || 1);
+        const vA = parseFloat(a.vendorWeekdayDayRate || (a.weekdayDayRate * 0.80) || 0.80);
+        valA = cA > 0 ? ((cA - vA) / cA) * 100 : 0;
+
+        const cB = parseFloat(b.weekdayDayRate || 1);
+        const vB = parseFloat(b.vendorWeekdayDayRate || (b.weekdayDayRate * 0.80) || 0.80);
+        valB = cB > 0 ? ((cB - vB) / cB) * 100 : 0;
+      } else if (sortConfig.key === "tariffType") {
+        valA = a.seasonal ? "Seasonal" : "Standard";
+        valB = b.seasonal ? "Seasonal" : "Standard";
+      } else if (typeof valA === "string") {
+        valA = (valA || "").toLowerCase();
+        valB = (valB || "").toLowerCase();
+      }
+
+      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [tariffs, serviceFilter, activeTab, stateFilter, cityFilter, categoryFilter, search, sortConfig]);
+
+  const totalPages = Math.ceil(filteredAndSortedTariffs.length / pageSize) || 1;
+  const paginatedTariffs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAndSortedTariffs.slice(start, start + pageSize);
+  }, [filteredAndSortedTariffs, currentPage, pageSize]);
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setStateFilter("ALL");
+    setCityFilter("ALL");
+    setCategoryFilter("ALL");
+    setServiceFilter("ALL");
+    setActiveTab("ALL");
+    setCurrentPage(1);
+  };
 
   // Live modal margin computation helper
   const modalMarginInfo = useMemo(() => {
@@ -1076,7 +1217,7 @@ export default function AdminPricingPage() {
 
     if (isAirport) {
       const custRate = parseFloat(formData.customerFare || formData.baseFare || formData.airportCustomerFare || 0);
-      const vendRate = parseFloat(formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare || (custRate * 0.75));
+      const vendRate = parseFloat(formData.vendorFare || formData.vendorBaseFare || formData.airportVendorFare || (custRate * 0.80));
       const margin = custRate > 0 ? ((custRate - vendRate) / custRate) * 100 : 0;
       return {
         unit: "/ Trip",
@@ -1090,7 +1231,7 @@ export default function AdminPricingPage() {
     }
 
     const custRate = parseFloat((isLocal && formData.hourlyWeekdayDayRate ? formData.hourlyWeekdayDayRate : formData.weekdayDayRate) || 0);
-    const vendRate = parseFloat((isLocal && formData.hourlyVendorWeekdayDayRate ? formData.hourlyVendorWeekdayDayRate : formData.vendorWeekdayDayRate) || 0);
+    const vendRate = parseFloat((isLocal && formData.hourlyVendorWeekdayDayRate ? formData.hourlyVendorWeekdayDayRate : (formData.vendorWeekdayDayRate || (custRate * 0.80))) || 0);
     const margin = custRate > 0 ? ((custRate - vendRate) / custRate) * 100 : 0;
     const minUnits = isLocal ? 8 : parseInt(formData.baseIncludedKm || 250, 10);
     const custSample = custRate * minUnits;
@@ -1347,112 +1488,292 @@ export default function AdminPricingPage() {
         )}
       </Card>
 
-      {/* FILTER TABS & SEARCH */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 w-full md:w-auto">
-          {[
-            { id: "ALL", label: `All Rules (${tariffs.length})` },
-            { id: "STANDARD", label: `Standard (${tariffs.filter((t) => !t.seasonal).length})` },
-            { id: "SEASONAL", label: `✨ Seasonal (${tariffs.filter((t) => t.seasonal).length})` },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-white text-blue-600 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* DATATABLE CONTROLS & FILTER TOOLBAR */}
+      <div className="space-y-3">
+        {/* Row 1: Rule Type Tabs, Result Counter & Reset Button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar">
+            {[
+              { id: "ALL", label: `All Rules (${tariffs.length.toLocaleString()})` },
+              { id: "STANDARD", label: `Standard (${tariffs.filter((t) => !t.seasonal).length.toLocaleString()})` },
+              { id: "SEASONAL", label: `✨ Seasonal (${tariffs.filter((t) => t.seasonal).length.toLocaleString()})` },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setCurrentPage(1);
+                }}
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                  activeTab === tab.id
+                    ? "bg-white text-blue-600 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {(search || stateFilter !== "ALL" || cityFilter !== "ALL" || categoryFilter !== "ALL" || serviceFilter !== "ALL" || activeTab !== "ALL") && (
+              <button
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset Filters
+              </button>
+            )}
+
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-2xs">
+              <span>Showing</span>
+              <strong className="text-slate-900 font-bold">{filteredAndSortedTariffs.length.toLocaleString()}</strong>
+              <span>of {tariffs.length.toLocaleString()}</span>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          {/* State Filter */}
-          <select
-            value={stateFilter}
-            onChange={(e) => setStateFilter(e.target.value)}
-            className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
-          >
-            <option value="ALL">All States</option>
-            {Object.keys(STATES_AND_CITIES).map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
+        {/* Row 2: Deep Filters (Service, Category, State, City, Search, PageSize) */}
+        <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-wrap items-center gap-2.5">
+          {/* Service Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Service:</span>
+            <select
+              value={serviceFilter}
+              onChange={(e) => {
+                setServiceFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-2.5 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="ALL">All Services</option>
+              <option value="OUTSTATION">One Way / Outstation</option>
+              <option value="ROUND_TRIP">Round Trip</option>
+              <option value="LOCAL">Local Rental</option>
+              <option value="AIRPORT">Airport Transfer</option>
+            </select>
+          </div>
 
-          <div className="relative w-full md:w-64">
+          {/* Vehicle Category Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Category:</span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-2.5 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="ALL">All Categories</option>
+              {availableCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* State Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">State:</span>
+            <select
+              value={stateFilter}
+              onChange={(e) => {
+                setStateFilter(e.target.value);
+                setCityFilter("ALL");
+                setCurrentPage(1);
+              }}
+              className="px-2.5 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="ALL">All States</option>
+              {Object.keys(STATES_AND_CITIES).map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Dynamic City Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">City:</span>
+            <select
+              value={cityFilter}
+              onChange={(e) => {
+                setCityFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-2.5 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[180px] truncate cursor-pointer"
+            >
+              <option value="ALL">All Cities ({availableCities.length})</option>
+              {availableCities.map((ct) => (
+                <option key={ct} value={ct}>
+                  {ct}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Search Box */}
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search Model, City, State..."
+              placeholder="Search Model, City, State, Fuel..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 focus:bg-white"
             />
+          </div>
+
+          {/* Page Size Selector */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Per Page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value={10}>10 / page</option>
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={100}>100 / page</option>
+              <option value={250}>250 / page</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* TARIFF TABLE */}
+      {/* TARIFF DATATABLE */}
       {loading ? (
         <div className="py-20 flex justify-center">
           <LoadingAnimation message="Loading pricing matrix..." />
         </div>
-      ) : filteredTariffs.length === 0 ? (
+      ) : filteredAndSortedTariffs.length === 0 ? (
         <Card className="p-12 text-center text-slate-500 border border-dashed border-slate-300">
           <IndianRupee className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-semibold text-slate-700">No tariff rules found for current filter</p>
           <p className="text-xs text-slate-400 mt-1">
-            Click &quot;+ Standard Tariff&quot; to configure pricing for One Way, Round Trip, Local, or Airport.
+            Try adjusting your search or filters, or reset filters to view all pricing rules.
           </p>
+          <div className="mt-4 flex justify-center gap-3">
+            <button
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset All Filters
+            </button>
+            <Button
+              onClick={() => handleOpenCreate("STANDARD", "OUTSTATION")}
+              size="sm"
+              variant="primary"
+            >
+              + Standard Tariff
+            </Button>
+          </div>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden border border-slate-200 shadow-xs">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Vehicle & Model</TableHead>
-                <TableHead>Territory (State / City)</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Tariff Type</TableHead>
-                <TableHead className="text-center">Weekday Rates (Cust / Vend)</TableHead>
-                <TableHead className="text-center">Weekend Rates (Cust / Vend)</TableHead>
-                <TableHead className="text-center">Base Min Fare</TableHead>
-                <TableHead className="text-center">Discount %</TableHead>
-                <TableHead className="text-center">Platform Margin</TableHead>
+                <SortableHeader
+                  columnKey="modelName"
+                  label="Vehicle & Model"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  columnKey="city"
+                  label="Territory (State / City)"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  columnKey="serviceType"
+                  label="Service"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  columnKey="tariffType"
+                  label="Tariff Type"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  columnKey="weekdayDayRate"
+                  label="Weekday Rates (Cust / Vend)"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                  align="center"
+                />
+                <SortableHeader
+                  columnKey="weekendDayRate"
+                  label="Weekend Rates (Cust / Vend)"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                  align="center"
+                />
+                <SortableHeader
+                  columnKey="baseFare"
+                  label="Base Min Fare"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                  align="center"
+                />
+                <SortableHeader
+                  columnKey="discountPercentage"
+                  label="Discount %"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                  align="center"
+                />
+                <SortableHeader
+                  columnKey="margin"
+                  label="Platform Margin"
+                  currentSort={sortConfig}
+                  onSort={handleSort}
+                  align="center"
+                />
                 <TableHead className="text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTariffs.map((t) => {
+              {paginatedTariffs.map((t) => {
                 const sType = (t.serviceType || "ONE_WAY").toUpperCase();
                 
                 let custWd = sType === "LOCAL" && (t.hourlyWeekdayDayRate || t.hourlyCustomerFare)
                   ? `₹${parseFloat(t.hourlyWeekdayDayRate || t.hourlyCustomerFare).toFixed(0)}/hr • ₹${parseFloat(t.weekdayDayRate || 0).toFixed(1)}/km`
                   : `₹${parseFloat(t.weekdayDayRate || 0).toFixed(1)}/km`;
                 let vendWd = sType === "LOCAL" && (t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare)
-                  ? `₹${parseFloat(t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0).toFixed(1)}/km`
-                  : `₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0).toFixed(1)}/km`;
+                  ? `₹${parseFloat(t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.80) || 0).toFixed(1)}/km`
+                  : `₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.80) || 0).toFixed(1)}/km`;
                 let custWe = sType === "LOCAL" && (t.hourlyWeekendDayRate || t.hourlyCustomerWeekendFare)
                   ? `₹${parseFloat(t.hourlyWeekendDayRate || t.hourlyCustomerWeekendFare).toFixed(0)}/hr • ₹${parseFloat(t.weekendDayRate || 0).toFixed(1)}/km`
                   : `₹${parseFloat(t.weekendDayRate || 0).toFixed(1)}/km`;
                 let vendWe = sType === "LOCAL" && (t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare)
-                  ? `₹${parseFloat(t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.75) || 0).toFixed(1)}/km`
-                  : `₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.75) || 0).toFixed(1)}/km`;
+                  ? `₹${parseFloat(t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.80) || 0).toFixed(1)}/km`
+                  : `₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.80) || 0).toFixed(1)}/km`;
                 let defaultKm = sType === "LOCAL" ? 80 : sType === "AIRPORT" ? 40 : 250;
                 let defaultHrs = sType === "LOCAL" ? (t.packageHours || 8) : null;
                 let baseDisplay = sType === "LOCAL" && defaultHrs
                   ? `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`
                   : `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")}`;
                 let vendBaseDisplay = sType === "LOCAL" && defaultHrs
-                  ? `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.75) || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`
-                  : `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.75) || 0).toLocaleString("en-IN")} (${t.baseIncludedKm || defaultKm}km)`;
+                  ? `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.80) || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`
+                  : `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.80) || 0).toLocaleString("en-IN")} (${t.baseIncludedKm || defaultKm}km)`;
                 const c = sType === "LOCAL" && t.hourlyWeekdayDayRate ? parseFloat(t.hourlyWeekdayDayRate) : parseFloat(t.weekdayDayRate || 1);
-                const v = sType === "LOCAL" && t.hourlyVendorWeekdayDayRate ? parseFloat(t.hourlyVendorWeekdayDayRate) : parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.75) || 0.75);
+                const v = sType === "LOCAL" && t.hourlyVendorWeekdayDayRate ? parseFloat(t.hourlyVendorWeekdayDayRate) : parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.80) || 0.80);
                 let marginPct = c > 0 ? ((c - v) / c) * 100 : 0;
 
                 return (
@@ -1602,6 +1923,16 @@ export default function AdminPricingPage() {
               })}
             </TableBody>
           </Table>
+
+          {filteredAndSortedTariffs.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(p) => setCurrentPage(p)}
+              totalItems={filteredAndSortedTariffs.length}
+              pageSize={pageSize}
+            />
+          )}
         </Card>
       )}
         </>
@@ -2190,7 +2521,7 @@ export default function AdminPricingPage() {
                           customerFare: val,
                           baseFare: val,
                           airportCustomerFare: val,
-                          vendorFare: prev.vendorFare || (val ? String(Math.round(parseFloat(val) * 0.75)) : ""),
+                          vendorFare: prev.vendorFare || (val ? String(Math.round(parseFloat(val) * 0.80)) : ""),
                         }));
                       }}
                       className="w-full text-xs p-2 rounded-lg border border-emerald-400 bg-white font-black text-emerald-950"

@@ -626,6 +626,15 @@ public class VehicleTariffService {
                         && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
+            if (activeTariff == null) {
+                activeTariff = safeTariffs.stream().filter(t ->
+                        !Boolean.TRUE.equals(t.getSeasonal())
+                        && sType.equalsIgnoreCase(t.getServiceType())
+                        && areCategoriesEqual(category, t.getCategory())
+                        && t.getCity() != null && areCitiesEqual(city, t.getCity())
+                        && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
+                ).findFirst().orElse(null);
+            }
         }
 
         // 2b. Priority 2: State-level standard tariff (where city = 'ALL' or null)
@@ -764,14 +773,14 @@ public class VehicleTariffService {
                 chosenRate = getBaselineRate(category, isWeekend, isNight);
             }
             if (vendorRate == null) {
-                vendorRate = chosenRate.multiply(new BigDecimal("0.75")).setScale(2, java.math.RoundingMode.HALF_UP);
+                vendorRate = chosenRate.multiply(new BigDecimal("0.80")).setScale(2, java.math.RoundingMode.HALF_UP);
             }
 
             if (activeTariff.getBaseFare() != null) baseFare = activeTariff.getBaseFare();
             if (activeTariff.getVendorBaseFare() != null) {
                 vendorBaseFare = activeTariff.getVendorBaseFare();
             } else {
-                vendorBaseFare = baseFare.multiply(new BigDecimal("0.75")).setScale(2, java.math.RoundingMode.HALF_UP);
+                vendorBaseFare = baseFare.multiply(new BigDecimal("0.80")).setScale(2, java.math.RoundingMode.HALF_UP);
             }
 
             if (activeTariff.getBaseIncludedKm() != null) baseKm = activeTariff.getBaseIncludedKm();
@@ -789,7 +798,7 @@ public class VehicleTariffService {
         } else {
             // Default system baseline rates
             chosenRate = getBaselineRate(category, isWeekend, isNight);
-            vendorRate = chosenRate.multiply(new BigDecimal("0.75")).setScale(2, java.math.RoundingMode.HALF_UP);
+            vendorRate = chosenRate.multiply(new BigDecimal("0.80")).setScale(2, java.math.RoundingMode.HALF_UP);
             baseFare = chosenRate.multiply(BigDecimal.valueOf(250)).setScale(2, java.math.RoundingMode.HALF_UP);
             vendorBaseFare = vendorRate.multiply(BigDecimal.valueOf(250)).setScale(2, java.math.RoundingMode.HALF_UP);
         }
@@ -897,7 +906,7 @@ public class VehicleTariffService {
                 hCust = comp.multiply(new BigDecimal("1.10")).setScale(0, java.math.RoundingMode.HALF_UP);
             }
             if (hVend == null || hVend.compareTo(BigDecimal.ZERO) <= 0) {
-                hVend = hCust.multiply(new BigDecimal("0.75")).setScale(0, java.math.RoundingMode.HALF_UP);
+                hVend = hCust.multiply(new BigDecimal("0.80")).setScale(0, java.math.RoundingMode.HALF_UP);
             }
 
             result.put("hourlyCustomerFare", hCust);
@@ -937,7 +946,7 @@ public class VehicleTariffService {
                 aCust = comp.multiply(new BigDecimal("1.10")).setScale(0, java.math.RoundingMode.HALF_UP);
             }
             if (aVend == null || aVend.compareTo(BigDecimal.ZERO) <= 0) {
-                aVend = aCust.multiply(new BigDecimal("0.75")).setScale(0, java.math.RoundingMode.HALF_UP);
+                aVend = aCust.multiply(new BigDecimal("0.80")).setScale(0, java.math.RoundingMode.HALF_UP);
             }
 
             result.put("airportCustomerFare", aCust);
@@ -1008,6 +1017,17 @@ public class VehicleTariffService {
         String b = c2.trim().toLowerCase();
         if (a.equals(b)) return true;
 
+        // Split slash separated city names (e.g. "Gurugram / Gurgaon", "Allahabad / Prayagraj")
+        if (a.contains("/") || b.contains("/")) {
+            String[] partsA = a.split("/");
+            String[] partsB = b.split("/");
+            for (String pa : partsA) {
+                for (String pb : partsB) {
+                    if (areCitiesEqual(pa.trim(), pb.trim())) return true;
+                }
+            }
+        }
+
         String normA = normalizeCityAlias(a);
         String normB = normalizeCityAlias(b);
         if (normA.equals(normB)) return true;
@@ -1024,6 +1044,27 @@ public class VehicleTariffService {
         if (!cleanA.isBlank() && !cleanB.isBlank() && (containsCityWord(cleanA, cleanB) || containsCityWord(cleanB, cleanA))) return true;
 
         return false;
+    }
+
+    public static boolean areCategoriesEqual(String cat1, String cat2) {
+        if (cat1 == null || cat2 == null) return false;
+        if (cat1.trim().equalsIgnoreCase(cat2.trim())) return true;
+        return normalizeCategory(cat1).equals(normalizeCategory(cat2));
+    }
+
+    public static String normalizeCategory(String cat) {
+        if (cat == null) return "";
+        String s = cat.trim().toLowerCase();
+        if (s.contains("hatch")) return "hatchback";
+        if (s.contains("sedan") || s.contains("dzire") || s.contains("etios")) return "sedan";
+        if (s.contains("hycross")) return "innovahycross";
+        if (s.contains("crysta")) return "innovacrysta";
+        if (s.contains("innova")) return "innova";
+        if (s.contains("suv") || s.contains("muv") || s.contains("ertiga")) return "suv";
+        if (s.contains("urbania")) return "urbania";
+        if (s.contains("tempo")) return "tempo";
+        if (s.contains("bus") || s.contains("minibus") || s.contains("coach")) return "bus";
+        return s;
     }
 
     private static boolean containsCityWord(String full, String target) {

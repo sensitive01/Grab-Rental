@@ -79,13 +79,13 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
         executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_landmark VARCHAR(255)");
         executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_pincode VARCHAR(20)");
 
-        // Set default vendor rates for existing tariffs if empty (75% of customer rates by default)
+        // Set default vendor rates for existing tariffs if empty (80% of customer rates by default, 20% platform margin)
         executeSafe("UPDATE vehicle_tariffs SET service_type = 'OUTSTATION' WHERE service_type IS NULL");
-        executeSafe("UPDATE vehicle_tariffs SET vendor_weekday_day_rate = ROUND(weekday_day_rate * 0.75, 2) WHERE vendor_weekday_day_rate IS NULL AND weekday_day_rate IS NOT NULL");
-        executeSafe("UPDATE vehicle_tariffs SET vendor_weekday_night_rate = ROUND(weekday_night_rate * 0.75, 2) WHERE vendor_weekday_night_rate IS NULL AND weekday_night_rate IS NOT NULL");
-        executeSafe("UPDATE vehicle_tariffs SET vendor_weekend_day_rate = ROUND(weekend_day_rate * 0.75, 2) WHERE vendor_weekend_day_rate IS NULL AND weekend_day_rate IS NOT NULL");
-        executeSafe("UPDATE vehicle_tariffs SET vendor_weekend_night_rate = ROUND(weekend_night_rate * 0.75, 2) WHERE vendor_weekend_night_rate IS NULL AND weekend_night_rate IS NOT NULL");
-        executeSafe("UPDATE vehicle_tariffs SET vendor_base_fare = ROUND(base_fare * 0.75, 2) WHERE vendor_base_fare IS NULL AND base_fare IS NOT NULL");
+        executeSafe("UPDATE vehicle_tariffs SET vendor_weekday_day_rate = ROUND(weekday_day_rate * 0.80, 2) WHERE vendor_weekday_day_rate IS NULL AND weekday_day_rate IS NOT NULL");
+        executeSafe("UPDATE vehicle_tariffs SET vendor_weekday_night_rate = ROUND(weekday_night_rate * 0.80, 2) WHERE vendor_weekday_night_rate IS NULL AND weekday_night_rate IS NOT NULL");
+        executeSafe("UPDATE vehicle_tariffs SET vendor_weekend_day_rate = ROUND(weekend_day_rate * 0.80, 2) WHERE vendor_weekend_day_rate IS NULL AND weekend_day_rate IS NOT NULL");
+        executeSafe("UPDATE vehicle_tariffs SET vendor_weekend_night_rate = ROUND(weekend_night_rate * 0.80, 2) WHERE vendor_weekend_night_rate IS NULL AND weekend_night_rate IS NOT NULL");
+        executeSafe("UPDATE vehicle_tariffs SET vendor_base_fare = ROUND(base_fare * 0.80, 2) WHERE vendor_base_fare IS NULL AND base_fare IS NOT NULL");
 
         // Ensure distinct dynamic rates for vehicle categories in tariffs
         executeSafe("UPDATE vehicle_tariffs SET weekday_day_rate = 16.00, weekday_night_rate = 18.00, weekend_day_rate = 18.00, weekend_night_rate = 20.00, base_fare = 4500.00 WHERE LOWER(model_name) LIKE '%ertiga%' AND is_seasonal = false");

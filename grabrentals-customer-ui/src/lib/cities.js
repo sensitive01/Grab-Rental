@@ -146,7 +146,40 @@ export const INDIAN_CITIES = [
   { name: "Indore", state: "Madhya Pradesh", aliases: ["IDR"], lat: 22.7196, lng: 75.8577 },
   { name: "Bhopal", state: "Madhya Pradesh", aliases: ["BHO"], lat: 23.2599, lng: 77.4126 },
   { name: "Gwalior", state: "Madhya Pradesh", aliases: ["GWL"], lat: 26.2183, lng: 78.1828 },
-  { name: "Raipur", state: "Chhattisgarh", aliases: ["RPR"], lat: 21.2514, lng: 81.6296 }
+  { name: "Raipur", state: "Chhattisgarh", aliases: ["RPR"], lat: 21.2514, lng: 81.6296 },
+
+  // Additional Cities from Master Rate Card (charges.xlsx)
+  { name: "Agartala", state: "Tripura", aliases: ["IXA"], lat: 23.8315, lng: 91.2868 },
+  { name: "Allahabad", state: "Uttar Pradesh", aliases: ["Prayagraj", "Allahabad / Prayagraj", "IXD"], lat: 25.4358, lng: 81.8463 },
+  { name: "Ambala", state: "Haryana", aliases: ["Ambala Cantt"], lat: 30.3782, lng: 76.7767 },
+  { name: "Bathinda", state: "Punjab", aliases: ["BTI"], lat: 30.2110, lng: 74.9455 },
+  { name: "Bareilly", state: "Uttar Pradesh", aliases: ["BE"], lat: 28.3670, lng: 79.4304 },
+  { name: "Bhilai", state: "Chhattisgarh", aliases: ["Durg Bhilai"], lat: 21.2144, lng: 81.3800 },
+  { name: "Bikaner", state: "Rajasthan", aliases: ["BKB"], lat: 28.0229, lng: 73.3119 },
+  { name: "Cuttack", state: "Odisha", aliases: ["CTC"], lat: 20.4625, lng: 85.8828 },
+  { name: "Dhanbad", state: "Jharkhand", aliases: ["DHN"], lat: 23.7957, lng: 86.4304 },
+  { name: "Dibrugarh", state: "Assam", aliases: ["DIB"], lat: 27.4728, lng: 94.9120 },
+  { name: "Durgapur", state: "West Bengal", aliases: ["DGR"], lat: 23.5204, lng: 87.3119 },
+  { name: "Faridabad", state: "Haryana", aliases: ["FDB"], lat: 28.4089, lng: 77.3178 },
+  { name: "Gandhinagar", state: "Gujarat", aliases: ["GNC"], lat: 23.2156, lng: 72.6369 },
+  { name: "Gaya", state: "Bihar", aliases: ["Bodh Gaya", "GAY"], lat: 24.7914, lng: 85.0002 },
+  { name: "Ghaziabad", state: "Uttar Pradesh", aliases: ["GZB"], lat: 28.6692, lng: 77.4538 },
+  { name: "Gorakhpur", state: "Uttar Pradesh", aliases: ["GKP"], lat: 26.7606, lng: 83.3732 },
+  { name: "Jabalpur", state: "Madhya Pradesh", aliases: ["JBP"], lat: 23.1815, lng: 79.9864 },
+  { name: "Jalandhar", state: "Punjab", aliases: ["JUC"], lat: 31.3260, lng: 75.5762 },
+  { name: "Jammu", state: "Jammu and Kashmir", aliases: ["Jammu Tawi", "JAT"], lat: 32.7266, lng: 74.8570 },
+  { name: "Jamnagar", state: "Gujarat", aliases: ["JGA"], lat: 22.4707, lng: 70.0577 },
+  { name: "Jamshedpur", state: "Jharkhand", aliases: ["Tatanagar", "TAT"], lat: 22.8046, lng: 86.2029 },
+  { name: "Jhansi", state: "Uttar Pradesh", aliases: ["JHS"], lat: 25.4484, lng: 78.5685 },
+  { name: "Khajuraho", state: "Madhya Pradesh", aliases: ["HJR"], lat: 24.8318, lng: 79.9199 },
+  { name: "Kota", state: "Rajasthan", aliases: ["KOTA"], lat: 25.2138, lng: 75.8648 },
+  { name: "Bhuj", state: "Gujarat", aliases: ["Kutch", "Kutch / Bhuj", "BHJ"], lat: 23.2420, lng: 69.6669 },
+  { name: "Meerut", state: "Uttar Pradesh", aliases: ["MUT"], lat: 28.9845, lng: 77.7064 },
+  { name: "Pathankot", state: "Punjab", aliases: ["PTK"], lat: 32.2689, lng: 75.6499 },
+  { name: "Patiala", state: "Punjab", aliases: ["PTA"], lat: 30.3398, lng: 76.3869 },
+  { name: "Srinagar", state: "Jammu and Kashmir", aliases: ["SXR"], lat: 34.0837, lng: 74.7973 },
+  { name: "Tiruppur", state: "Tamil Nadu", aliases: ["Tirupur", "TUP"], lat: 11.1085, lng: 77.3411 },
+  { name: "Ujjain", state: "Madhya Pradesh", aliases: ["UJN", "Mahakal"], lat: 23.1765, lng: 75.7885 }
 ];
 
 const STORAGE_KEY = "grabrentals_custom_cities";

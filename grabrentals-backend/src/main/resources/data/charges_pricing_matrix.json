@@ -1,0 +1,6018 @@
+[
+  {
+    "sNo": 1,
+    "vehicleType": "Hatchback",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 9.0
+  },
+  {
+    "sNo": 2,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 9.0
+  },
+  {
+    "sNo": 3,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 4,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 5,
+    "vehicleType": "Hatchback",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 6,
+    "vehicleType": "Hatchback",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 7,
+    "vehicleType": "Hatchback",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 8,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 9,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 10,
+    "vehicleType": "Hatchback",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 11,
+    "vehicleType": "Hatchback",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 12,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 13,
+    "vehicleType": "Hatchback",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 14,
+    "vehicleType": "Hatchback",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 15,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 16,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 17,
+    "vehicleType": "Hatchback",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 18,
+    "vehicleType": "Hatchback",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 19,
+    "vehicleType": "Sedan",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 20,
+    "vehicleType": "Hatchback",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 21,
+    "vehicleType": "Sedan",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 22,
+    "vehicleType": "Hatchback",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 23,
+    "vehicleType": "Sedan",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 24,
+    "vehicleType": "Hatchback",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 25,
+    "vehicleType": "Hatchback",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 26,
+    "vehicleType": "Hatchback",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 27,
+    "vehicleType": "Hatchback",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 28,
+    "vehicleType": "Hatchback",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 29,
+    "vehicleType": "Sedan",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 30,
+    "vehicleType": "Hatchback",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 31,
+    "vehicleType": "Hatchback",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 32,
+    "vehicleType": "Hatchback",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 33,
+    "vehicleType": "Sedan",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 34,
+    "vehicleType": "Hatchback",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 35,
+    "vehicleType": "Hatchback",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 36,
+    "vehicleType": "Hatchback",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 37,
+    "vehicleType": "Hatchback",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 38,
+    "vehicleType": "Hatchback",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 39,
+    "vehicleType": "Sedan",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 40,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 41,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 42,
+    "vehicleType": "Hatchback",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 43,
+    "vehicleType": "Hatchback",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 44,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 45,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 46,
+    "vehicleType": "Sedan",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 47,
+    "vehicleType": "Hatchback",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 48,
+    "vehicleType": "Hatchback",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 49,
+    "vehicleType": "Sedan",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 50,
+    "vehicleType": "Hatchback",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 51,
+    "vehicleType": "Sedan",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 52,
+    "vehicleType": "Hatchback",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 53,
+    "vehicleType": "Hatchback",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 54,
+    "vehicleType": "Hatchback",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 55,
+    "vehicleType": "Hatchback",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 56,
+    "vehicleType": "Hatchback",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 57,
+    "vehicleType": "Hatchback",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 58,
+    "vehicleType": "Sedan",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 59,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 60,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 61,
+    "vehicleType": "Hatchback",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 62,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 63,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 64,
+    "vehicleType": "Hatchback",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 65,
+    "vehicleType": "Sedan",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 66,
+    "vehicleType": "Hatchback",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 67,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 68,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 69,
+    "vehicleType": "Hatchback",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 70,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 71,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 72,
+    "vehicleType": "Hatchback",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 73,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 74,
+    "vehicleType": "Hatchback",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 75,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 76,
+    "vehicleType": "Hatchback",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 77,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 78,
+    "vehicleType": "Hatchback",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 79,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 80,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 81,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 82,
+    "vehicleType": "Hatchback",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 83,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 84,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 85,
+    "vehicleType": "Hatchback",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 86,
+    "vehicleType": "Hatchback",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 87,
+    "vehicleType": "Hatchback",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 88,
+    "vehicleType": "Hatchback",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 89,
+    "vehicleType": "Sedan",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 90,
+    "vehicleType": "Hatchback",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 91,
+    "vehicleType": "Hatchback",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 92,
+    "vehicleType": "Sedan",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 93,
+    "vehicleType": "Hatchback",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 94,
+    "vehicleType": "Hatchback",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 95,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 96,
+    "vehicleType": "Hatchback",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 97,
+    "vehicleType": "Sedan",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 98,
+    "vehicleType": "Hatchback",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 99,
+    "vehicleType": "Hatchback",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 100,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 101,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 102,
+    "vehicleType": "Hatchback",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 103,
+    "vehicleType": "Hatchback",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 104,
+    "vehicleType": "Hatchback",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 105,
+    "vehicleType": "Hatchback",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 106,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 107,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 108,
+    "vehicleType": "Hatchback",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 109,
+    "vehicleType": "Hatchback",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 110,
+    "vehicleType": "Hatchback",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 111,
+    "vehicleType": "Sedan",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 112,
+    "vehicleType": "Hatchback",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 113,
+    "vehicleType": "Hatchback",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 114,
+    "vehicleType": "Sedan",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 11.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 115,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 116,
+    "vehicleType": "Hatchback",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 117,
+    "vehicleType": "Hatchback",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 10.0
+  },
+  {
+    "sNo": 118,
+    "vehicleType": "Sedan",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 119,
+    "vehicleType": "Sedan",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 120,
+    "vehicleType": "Sedan",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 121,
+    "vehicleType": "Sedan",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 122,
+    "vehicleType": "Sedan",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 123,
+    "vehicleType": "Sedan",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 124,
+    "vehicleType": "Sedan",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 125,
+    "vehicleType": "Sedan",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 126,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 127,
+    "vehicleType": "Hatchback",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 128,
+    "vehicleType": "Sedan",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 129,
+    "vehicleType": "Sedan",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 130,
+    "vehicleType": "Sedan",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 131,
+    "vehicleType": "Sedan",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 132,
+    "vehicleType": "Sedan",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 133,
+    "vehicleType": "Sedan",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 134,
+    "vehicleType": "Sedan",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 135,
+    "vehicleType": "Sedan",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 136,
+    "vehicleType": "Sedan",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 137,
+    "vehicleType": "Sedan",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 138,
+    "vehicleType": "Sedan",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 139,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 140,
+    "vehicleType": "Sedan",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 141,
+    "vehicleType": "Sedan",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 142,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 143,
+    "vehicleType": "Sedan",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 144,
+    "vehicleType": "Sedan",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 145,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 146,
+    "vehicleType": "Sedan",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 147,
+    "vehicleType": "Sedan",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 148,
+    "vehicleType": "Sedan",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 149,
+    "vehicleType": "Sedan",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 150,
+    "vehicleType": "Hatchback",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 10.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 151,
+    "vehicleType": "Sedan",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 152,
+    "vehicleType": "Sedan",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 153,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 154,
+    "vehicleType": "Sedan",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 155,
+    "vehicleType": "Sedan",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 156,
+    "vehicleType": "Sedan",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 157,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 158,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 159,
+    "vehicleType": "Sedan",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 160,
+    "vehicleType": "Sedan",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 161,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 162,
+    "vehicleType": "Sedan",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 163,
+    "vehicleType": "Sedan",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 11.0
+  },
+  {
+    "sNo": 164,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 165,
+    "vehicleType": "Sedan",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 166,
+    "vehicleType": "Sedan",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 167,
+    "vehicleType": "Sedan",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 168,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 169,
+    "vehicleType": "Sedan",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 12.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 170,
+    "vehicleType": "Sedan",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 171,
+    "vehicleType": "Sedan",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 172,
+    "vehicleType": "Sedan",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 173,
+    "vehicleType": "Sedan",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 174,
+    "vehicleType": "Sedan",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 175,
+    "vehicleType": "Sedan",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 176,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 177,
+    "vehicleType": "Sedan",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 178,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 179,
+    "vehicleType": "Sedan",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 180,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 181,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 182,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 183,
+    "vehicleType": "Sedan",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 184,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 185,
+    "vehicleType": "Sedan",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 186,
+    "vehicleType": "Sedan",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 187,
+    "vehicleType": "Sedan",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 188,
+    "vehicleType": "Sedan",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 13.0,
+    "outstationPerKm": 12.0
+  },
+  {
+    "sNo": 189,
+    "vehicleType": "SUV / MUV",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 13.0
+  },
+  {
+    "sNo": 190,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 191,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 192,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 193,
+    "vehicleType": "SUV / MUV",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 194,
+    "vehicleType": "SUV / MUV",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 195,
+    "vehicleType": "SUV / MUV",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 196,
+    "vehicleType": "SUV / MUV",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 197,
+    "vehicleType": "SUV / MUV",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 198,
+    "vehicleType": "SUV / MUV",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 199,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 200,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 201,
+    "vehicleType": "SUV / MUV",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 202,
+    "vehicleType": "SUV / MUV",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 203,
+    "vehicleType": "SUV / MUV",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 204,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 205,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 206,
+    "vehicleType": "SUV / MUV",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 207,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 208,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 209,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 210,
+    "vehicleType": "SUV / MUV",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 211,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 212,
+    "vehicleType": "SUV / MUV",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 213,
+    "vehicleType": "SUV / MUV",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 214,
+    "vehicleType": "SUV / MUV",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 215,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 15.0,
+    "outstationPerKm": 14.0
+  },
+  {
+    "sNo": 216,
+    "vehicleType": "SUV / MUV",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 217,
+    "vehicleType": "SUV / MUV",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 218,
+    "vehicleType": "SUV / MUV",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 219,
+    "vehicleType": "SUV / MUV",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 220,
+    "vehicleType": "SUV / MUV",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 221,
+    "vehicleType": "SUV / MUV",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 222,
+    "vehicleType": "SUV / MUV",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 223,
+    "vehicleType": "SUV / MUV",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 224,
+    "vehicleType": "SUV / MUV",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 225,
+    "vehicleType": "SUV / MUV",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 226,
+    "vehicleType": "SUV / MUV",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 227,
+    "vehicleType": "SUV / MUV",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 228,
+    "vehicleType": "SUV / MUV",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 229,
+    "vehicleType": "SUV / MUV",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 230,
+    "vehicleType": "SUV / MUV",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 231,
+    "vehicleType": "SUV / MUV",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 232,
+    "vehicleType": "SUV / MUV",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 233,
+    "vehicleType": "SUV / MUV",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 234,
+    "vehicleType": "SUV / MUV",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 235,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 236,
+    "vehicleType": "SUV / MUV",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 237,
+    "vehicleType": "SUV / MUV",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 238,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 239,
+    "vehicleType": "SUV / MUV",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 240,
+    "vehicleType": "SUV / MUV",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 241,
+    "vehicleType": "SUV / MUV",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 242,
+    "vehicleType": "SUV / MUV",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 243,
+    "vehicleType": "SUV / MUV",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 244,
+    "vehicleType": "SUV / MUV",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 245,
+    "vehicleType": "SUV / MUV",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 246,
+    "vehicleType": "SUV / MUV",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 247,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 248,
+    "vehicleType": "SUV / MUV",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 249,
+    "vehicleType": "SUV / MUV",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 250,
+    "vehicleType": "SUV / MUV",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 251,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 252,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 253,
+    "vehicleType": "SUV / MUV",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 254,
+    "vehicleType": "SUV / MUV",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 255,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 256,
+    "vehicleType": "SUV / MUV",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 257,
+    "vehicleType": "SUV / MUV",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 15.0
+  },
+  {
+    "sNo": 258,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 259,
+    "vehicleType": "SUV / MUV",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 260,
+    "vehicleType": "SUV / MUV",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 261,
+    "vehicleType": "SUV / MUV",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 262,
+    "vehicleType": "SUV / MUV",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 263,
+    "vehicleType": "SUV / MUV",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 264,
+    "vehicleType": "SUV / MUV",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 265,
+    "vehicleType": "SUV / MUV",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 266,
+    "vehicleType": "SUV / MUV",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 267,
+    "vehicleType": "SUV / MUV",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 268,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 269,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 270,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 271,
+    "vehicleType": "SUV / MUV",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 272,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 273,
+    "vehicleType": "SUV / MUV",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 274,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 275,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 276,
+    "vehicleType": "SUV / MUV",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 277,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 278,
+    "vehicleType": "SUV / MUV",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 279,
+    "vehicleType": "SUV / MUV",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 280,
+    "vehicleType": "SUV / MUV",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 281,
+    "vehicleType": "SUV / MUV",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 17.0,
+    "outstationPerKm": 16.0
+  },
+  {
+    "sNo": 282,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 283,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 284,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 285,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 286,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 287,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 288,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 289,
+    "vehicleType": "SUV / MUV",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 16.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 290,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 291,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 292,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 293,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 294,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 295,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 296,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 297,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 298,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 299,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 300,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 301,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 302,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 303,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 304,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 305,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 306,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 307,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 19.0,
+    "outstationPerKm": 17.0
+  },
+  {
+    "sNo": 308,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 309,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 310,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 311,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 312,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 313,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 314,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 315,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 316,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 317,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 318,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 319,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 320,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 321,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 322,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 323,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 324,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 325,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 326,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 327,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 328,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 329,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 330,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 331,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 332,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 333,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 334,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 335,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 336,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 337,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 338,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 339,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 340,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 341,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 342,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 343,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 344,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 345,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 346,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 347,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 348,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 349,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 18.0
+  },
+  {
+    "sNo": 350,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 351,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 352,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 353,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 354,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 355,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 356,
+    "vehicleType": "Innova Hycross",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 357,
+    "vehicleType": "Innova Hycross",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 358,
+    "vehicleType": "Innova Hycross",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 359,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 360,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 361,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 362,
+    "vehicleType": "Innova Hycross",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 363,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 364,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 365,
+    "vehicleType": "Innova Hycross",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 366,
+    "vehicleType": "Innova Hycross",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 367,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 368,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 369,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 370,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 371,
+    "vehicleType": "Innova Hycross",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 372,
+    "vehicleType": "Innova Hycross",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 373,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 374,
+    "vehicleType": "Innova Hycross",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 375,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 376,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 377,
+    "vehicleType": "Innova Hycross",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 378,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 379,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 380,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 381,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 382,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 383,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 384,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 385,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 386,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 387,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 388,
+    "vehicleType": "Innova Hycross",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 389,
+    "vehicleType": "Innova Hycross",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 390,
+    "vehicleType": "Innova Hycross",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 391,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 392,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 393,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 394,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 395,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 396,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 397,
+    "vehicleType": "Innova Hycross",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 398,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 19.0
+  },
+  {
+    "sNo": 399,
+    "vehicleType": "Innova Hycross",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 400,
+    "vehicleType": "Innova Hycross",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 401,
+    "vehicleType": "Innova Hycross",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 402,
+    "vehicleType": "Innova Hycross",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 403,
+    "vehicleType": "Innova Hycross",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 404,
+    "vehicleType": "Innova Hycross",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 405,
+    "vehicleType": "Innova Hycross",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 406,
+    "vehicleType": "Innova Hycross",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 407,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 408,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 409,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 410,
+    "vehicleType": "Innova Hycross",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 411,
+    "vehicleType": "Innova Hycross",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 412,
+    "vehicleType": "Innova Hycross",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 413,
+    "vehicleType": "Innova Hycross",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 414,
+    "vehicleType": "Innova Hycross",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 415,
+    "vehicleType": "Innova Hycross",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 416,
+    "vehicleType": "Innova Hycross",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 417,
+    "vehicleType": "Innova Hycross",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 418,
+    "vehicleType": "Innova Hycross",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 419,
+    "vehicleType": "Innova Hycross",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 420,
+    "vehicleType": "Innova Hycross",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 421,
+    "vehicleType": "Innova Hycross",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 422,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 423,
+    "vehicleType": "Innova Hycross",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 424,
+    "vehicleType": "Innova Hycross",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 425,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 426,
+    "vehicleType": "Innova Hycross",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 427,
+    "vehicleType": "Innova Hycross",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 428,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 429,
+    "vehicleType": "Innova Hycross",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 430,
+    "vehicleType": "Innova Hycross",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 431,
+    "vehicleType": "Innova Hycross",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 432,
+    "vehicleType": "Innova Hycross",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 433,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 21.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 434,
+    "vehicleType": "Innova Hycross",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 435,
+    "vehicleType": "Innova Hycross",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 436,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 437,
+    "vehicleType": "Innova Hycross",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 438,
+    "vehicleType": "Innova Hycross",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 439,
+    "vehicleType": "Innova Hycross",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 440,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 441,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 442,
+    "vehicleType": "Innova Hycross",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 443,
+    "vehicleType": "Innova Hycross",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 444,
+    "vehicleType": "Innova Hycross",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 445,
+    "vehicleType": "Innova Hycross",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 446,
+    "vehicleType": "Innova Hycross",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 20.0
+  },
+  {
+    "sNo": 447,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 448,
+    "vehicleType": "Innova Hycross",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 449,
+    "vehicleType": "Innova Hycross",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 450,
+    "vehicleType": "Innova Hycross",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 451,
+    "vehicleType": "Innova Hycross",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 452,
+    "vehicleType": "Innova Hycross",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 453,
+    "vehicleType": "Innova Hycross",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 454,
+    "vehicleType": "Innova Hycross",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 455,
+    "vehicleType": "Innova Hycross",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 456,
+    "vehicleType": "Innova Hycross",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 457,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 458,
+    "vehicleType": "Innova Hycross",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 459,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 460,
+    "vehicleType": "Innova Hycross",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 461,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 462,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 463,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 464,
+    "vehicleType": "Innova Hycross",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 465,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 466,
+    "vehicleType": "Innova Hycross",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 467,
+    "vehicleType": "Innova Hycross",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 468,
+    "vehicleType": "Innova Hycross",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 469,
+    "vehicleType": "Innova Hycross",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 23.0,
+    "outstationPerKm": 21.0
+  },
+  {
+    "sNo": 470,
+    "vehicleType": "Toyota Innova / Innova Crysta",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 20.0,
+    "outstationPerKm": 22.0
+  },
+  {
+    "sNo": 471,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 24.0
+  },
+  {
+    "sNo": 472,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 25.0
+  },
+  {
+    "sNo": 473,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 474,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 475,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 476,
+    "vehicleType": "Tempo Traveller",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 477,
+    "vehicleType": "Tempo Traveller",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 478,
+    "vehicleType": "Tempo Traveller",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 479,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 480,
+    "vehicleType": "Tempo Traveller",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 481,
+    "vehicleType": "Tempo Traveller",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 482,
+    "vehicleType": "Tempo Traveller",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 483,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 484,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 485,
+    "vehicleType": "Tempo Traveller",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 486,
+    "vehicleType": "Tempo Traveller",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 487,
+    "vehicleType": "Tempo Traveller",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 488,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 489,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 490,
+    "vehicleType": "Tempo Traveller",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 491,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 492,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 493,
+    "vehicleType": "Tempo Traveller",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 494,
+    "vehicleType": "Tempo Traveller",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 495,
+    "vehicleType": "Tempo Traveller",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 496,
+    "vehicleType": "Tempo Traveller",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 497,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 26.0
+  },
+  {
+    "sNo": 498,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 499,
+    "vehicleType": "Tempo Traveller",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 500,
+    "vehicleType": "Tempo Traveller",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 501,
+    "vehicleType": "Tempo Traveller",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 502,
+    "vehicleType": "Tempo Traveller",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 503,
+    "vehicleType": "Tempo Traveller",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 504,
+    "vehicleType": "Tempo Traveller",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 505,
+    "vehicleType": "Tempo Traveller",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 506,
+    "vehicleType": "Tempo Traveller",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 507,
+    "vehicleType": "Tempo Traveller",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 508,
+    "vehicleType": "Tempo Traveller",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 509,
+    "vehicleType": "Tempo Traveller",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 510,
+    "vehicleType": "Tempo Traveller",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 511,
+    "vehicleType": "Tempo Traveller",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 512,
+    "vehicleType": "Tempo Traveller",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 513,
+    "vehicleType": "Tempo Traveller",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 514,
+    "vehicleType": "Tempo Traveller",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 515,
+    "vehicleType": "Tempo Traveller",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 516,
+    "vehicleType": "Tempo Traveller",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 517,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 518,
+    "vehicleType": "Tempo Traveller",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 519,
+    "vehicleType": "Tempo Traveller",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 520,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 521,
+    "vehicleType": "Tempo Traveller",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 522,
+    "vehicleType": "Tempo Traveller",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 523,
+    "vehicleType": "Tempo Traveller",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 524,
+    "vehicleType": "Tempo Traveller",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 525,
+    "vehicleType": "Tempo Traveller",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 526,
+    "vehicleType": "Tempo Traveller",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 527,
+    "vehicleType": "Tempo Traveller",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 528,
+    "vehicleType": "Tempo Traveller",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 529,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 530,
+    "vehicleType": "Tempo Traveller",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 531,
+    "vehicleType": "Tempo Traveller",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 532,
+    "vehicleType": "Tempo Traveller",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 533,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 534,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 535,
+    "vehicleType": "Tempo Traveller",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 536,
+    "vehicleType": "Tempo Traveller",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 537,
+    "vehicleType": "Tempo Traveller",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 538,
+    "vehicleType": "Tempo Traveller",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 539,
+    "vehicleType": "Tempo Traveller",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 27.0
+  },
+  {
+    "sNo": 540,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 541,
+    "vehicleType": "Tempo Traveller",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 22.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 542,
+    "vehicleType": "Tempo Traveller",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 543,
+    "vehicleType": "Tempo Traveller",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 544,
+    "vehicleType": "Tempo Traveller",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 545,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 546,
+    "vehicleType": "Tempo Traveller",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 547,
+    "vehicleType": "Tempo Traveller",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 548,
+    "vehicleType": "Tempo Traveller",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 549,
+    "vehicleType": "Tempo Traveller",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 550,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 551,
+    "vehicleType": "Tempo Traveller",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 552,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 553,
+    "vehicleType": "Tempo Traveller",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 554,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 555,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 556,
+    "vehicleType": "Tempo Traveller",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 557,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 558,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 559,
+    "vehicleType": "Tempo Traveller",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 560,
+    "vehicleType": "Tempo Traveller",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 561,
+    "vehicleType": "Tempo Traveller",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 28.0
+  },
+  {
+    "sNo": 562,
+    "vehicleType": "Tempo Traveller",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 25.0,
+    "outstationPerKm": 30.0
+  },
+  {
+    "sNo": 563,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 564,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 565,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 566,
+    "vehicleType": "Bus / Minibus",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 567,
+    "vehicleType": "Bus / Minibus",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 568,
+    "vehicleType": "Bus / Minibus",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 569,
+    "vehicleType": "Bus / Minibus",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 570,
+    "vehicleType": "Bus / Minibus",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 571,
+    "vehicleType": "Bus / Minibus",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 572,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 573,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 574,
+    "vehicleType": "Bus / Minibus",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 575,
+    "vehicleType": "Bus / Minibus",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 576,
+    "vehicleType": "Bus / Minibus",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 577,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 578,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 579,
+    "vehicleType": "Bus / Minibus",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 580,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 581,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 582,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 583,
+    "vehicleType": "Bus / Minibus",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 584,
+    "vehicleType": "Bus / Minibus",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 585,
+    "vehicleType": "Bus / Minibus",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 586,
+    "vehicleType": "Bus / Minibus",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 587,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 33.0,
+    "outstationPerKm": 33.0
+  },
+  {
+    "sNo": 588,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 589,
+    "vehicleType": "Bus / Minibus",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 590,
+    "vehicleType": "Bus / Minibus",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 591,
+    "vehicleType": "Bus / Minibus",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 592,
+    "vehicleType": "Bus / Minibus",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 593,
+    "vehicleType": "Bus / Minibus",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 594,
+    "vehicleType": "Bus / Minibus",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 595,
+    "vehicleType": "Bus / Minibus",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 596,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 597,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 598,
+    "vehicleType": "Bus / Minibus",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 599,
+    "vehicleType": "Bus / Minibus",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 600,
+    "vehicleType": "Bus / Minibus",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 601,
+    "vehicleType": "Bus / Minibus",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 602,
+    "vehicleType": "Bus / Minibus",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 603,
+    "vehicleType": "Bus / Minibus",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 604,
+    "vehicleType": "Bus / Minibus",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 605,
+    "vehicleType": "Bus / Minibus",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 606,
+    "vehicleType": "Bus / Minibus",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 607,
+    "vehicleType": "Bus / Minibus",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 608,
+    "vehicleType": "Bus / Minibus",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 609,
+    "vehicleType": "Bus / Minibus",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 610,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 611,
+    "vehicleType": "Bus / Minibus",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 612,
+    "vehicleType": "Bus / Minibus",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 613,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 614,
+    "vehicleType": "Bus / Minibus",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 615,
+    "vehicleType": "Bus / Minibus",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 616,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 617,
+    "vehicleType": "Bus / Minibus",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 618,
+    "vehicleType": "Bus / Minibus",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 619,
+    "vehicleType": "Bus / Minibus",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 620,
+    "vehicleType": "Bus / Minibus",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 621,
+    "vehicleType": "Bus / Minibus",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 622,
+    "vehicleType": "Bus / Minibus",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 623,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 624,
+    "vehicleType": "Bus / Minibus",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 625,
+    "vehicleType": "Bus / Minibus",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 626,
+    "vehicleType": "Bus / Minibus",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 627,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 628,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 629,
+    "vehicleType": "Bus / Minibus",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 630,
+    "vehicleType": "Bus / Minibus",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 631,
+    "vehicleType": "Bus / Minibus",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 632,
+    "vehicleType": "Bus / Minibus",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 633,
+    "vehicleType": "Bus / Minibus",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 35.0,
+    "outstationPerKm": 35.0
+  },
+  {
+    "sNo": 634,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 635,
+    "vehicleType": "Bus / Minibus",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 636,
+    "vehicleType": "Bus / Minibus",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 637,
+    "vehicleType": "Bus / Minibus",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 638,
+    "vehicleType": "Bus / Minibus",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 639,
+    "vehicleType": "Bus / Minibus",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 640,
+    "vehicleType": "Bus / Minibus",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 641,
+    "vehicleType": "Bus / Minibus",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 642,
+    "vehicleType": "Bus / Minibus",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 643,
+    "vehicleType": "Bus / Minibus",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 644,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 645,
+    "vehicleType": "Bus / Minibus",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 646,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 647,
+    "vehicleType": "Bus / Minibus",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 648,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 649,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 650,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 651,
+    "vehicleType": "Bus / Minibus",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 652,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 653,
+    "vehicleType": "Bus / Minibus",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 654,
+    "vehicleType": "Bus / Minibus",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 655,
+    "vehicleType": "Bus / Minibus",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 656,
+    "vehicleType": "Bus / Minibus",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 37.0,
+    "outstationPerKm": 37.0
+  },
+  {
+    "sNo": 657,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 658,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad / Prayagraj",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 659,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Bareilly",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 660,
+    "vehicleType": "Urbania",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 661,
+    "vehicleType": "Urbania",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 662,
+    "vehicleType": "Urbania",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 663,
+    "vehicleType": "Urbania",
+    "state": "Odisha",
+    "city": "Cuttack",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 664,
+    "vehicleType": "Urbania",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 665,
+    "vehicleType": "Urbania",
+    "state": "Bihar",
+    "city": "Gaya",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 666,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Ghaziabad",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 667,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Gorakhpur",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 668,
+    "vehicleType": "Urbania",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 669,
+    "vehicleType": "Urbania",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 670,
+    "vehicleType": "Urbania",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 671,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Jhansi",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 672,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 673,
+    "vehicleType": "Urbania",
+    "state": "Madhya Pradesh",
+    "city": "Khajuraho",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 674,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 675,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 676,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Meerut",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 677,
+    "vehicleType": "Urbania",
+    "state": "Bihar",
+    "city": "Patna",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 678,
+    "vehicleType": "Urbania",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 679,
+    "vehicleType": "Urbania",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 680,
+    "vehicleType": "Urbania",
+    "state": "Madhya Pradesh",
+    "city": "Ujjain",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 681,
+    "vehicleType": "Urbania",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "oneWayPerKm": 36.0,
+    "outstationPerKm": 38.0
+  },
+  {
+    "sNo": 682,
+    "vehicleType": "Urbania",
+    "state": "Tripura",
+    "city": "Agartala",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 683,
+    "vehicleType": "Urbania",
+    "state": "Gujarat",
+    "city": "Ahmedabad",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 684,
+    "vehicleType": "Urbania",
+    "state": "Rajasthan",
+    "city": "Ajmer",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 685,
+    "vehicleType": "Urbania",
+    "state": "Haryana",
+    "city": "Ambala",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 686,
+    "vehicleType": "Urbania",
+    "state": "Punjab",
+    "city": "Amritsar",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 687,
+    "vehicleType": "Urbania",
+    "state": "Punjab",
+    "city": "Bathinda",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 688,
+    "vehicleType": "Urbania",
+    "state": "Rajasthan",
+    "city": "Bikaner",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 689,
+    "vehicleType": "Urbania",
+    "state": "Chandigarh",
+    "city": "Chandigarh",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 690,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 691,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Coimbatore",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 692,
+    "vehicleType": "Urbania",
+    "state": "Assam",
+    "city": "Dibrugarh",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 693,
+    "vehicleType": "Urbania",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 694,
+    "vehicleType": "Urbania",
+    "state": "Haryana",
+    "city": "Faridabad",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 695,
+    "vehicleType": "Urbania",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 696,
+    "vehicleType": "Urbania",
+    "state": "Andhra Pradesh",
+    "city": "Guntur",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 697,
+    "vehicleType": "Urbania",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 698,
+    "vehicleType": "Urbania",
+    "state": "Assam",
+    "city": "Guwahati",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 699,
+    "vehicleType": "Urbania",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 700,
+    "vehicleType": "Urbania",
+    "state": "Rajasthan",
+    "city": "Jaisalmer",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 701,
+    "vehicleType": "Urbania",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 702,
+    "vehicleType": "Urbania",
+    "state": "Gujarat",
+    "city": "Jamnagar",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 703,
+    "vehicleType": "Urbania",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 704,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Kodaikanal",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 705,
+    "vehicleType": "Urbania",
+    "state": "West Bengal",
+    "city": "Kolkata",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 706,
+    "vehicleType": "Urbania",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 707,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Kumbakonam",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 708,
+    "vehicleType": "Urbania",
+    "state": "Gujarat",
+    "city": "Kutch / Bhuj",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 709,
+    "vehicleType": "Urbania",
+    "state": "Punjab",
+    "city": "Ludhiana",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 710,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Madurai",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 711,
+    "vehicleType": "Urbania",
+    "state": "Andhra Pradesh",
+    "city": "Nellore",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 712,
+    "vehicleType": "Urbania",
+    "state": "Punjab",
+    "city": "Pathankot",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 713,
+    "vehicleType": "Urbania",
+    "state": "Punjab",
+    "city": "Patiala",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 714,
+    "vehicleType": "Urbania",
+    "state": "Puducherry",
+    "city": "Pondicherry / Puducherry",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 715,
+    "vehicleType": "Urbania",
+    "state": "Andhra Pradesh",
+    "city": "Rajahmundry",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 716,
+    "vehicleType": "Urbania",
+    "state": "Gujarat",
+    "city": "Rajkot",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 717,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Rameshwaram",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 718,
+    "vehicleType": "Urbania",
+    "state": "West Bengal",
+    "city": "Siliguri",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 719,
+    "vehicleType": "Urbania",
+    "state": "Gujarat",
+    "city": "Surat",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 720,
+    "vehicleType": "Urbania",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 721,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Tiruppur",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 722,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Trichy / Tiruchirappalli",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 723,
+    "vehicleType": "Urbania",
+    "state": "Rajasthan",
+    "city": "Udaipur",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 724,
+    "vehicleType": "Urbania",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 725,
+    "vehicleType": "Urbania",
+    "state": "Tamil Nadu",
+    "city": "Vellore",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 726,
+    "vehicleType": "Urbania",
+    "state": "Andhra Pradesh",
+    "city": "Vijayawada",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 727,
+    "vehicleType": "Urbania",
+    "state": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "oneWayPerKm": 38.0,
+    "outstationPerKm": 40.0
+  },
+  {
+    "sNo": 728,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Aurangabad",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 729,
+    "vehicleType": "Urbania",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 730,
+    "vehicleType": "Urbania",
+    "state": "Karnataka",
+    "city": "Belgaum / Belagavi",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 731,
+    "vehicleType": "Urbania",
+    "state": "Kerala",
+    "city": "Calicut / Kozhikode",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 732,
+    "vehicleType": "Urbania",
+    "state": "Karnataka",
+    "city": "Coorg",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 733,
+    "vehicleType": "Urbania",
+    "state": "Uttarakhand",
+    "city": "Dehradun",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 734,
+    "vehicleType": "Urbania",
+    "state": "Delhi",
+    "city": "Delhi",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 735,
+    "vehicleType": "Urbania",
+    "state": "Goa",
+    "city": "Goa",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 736,
+    "vehicleType": "Urbania",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 737,
+    "vehicleType": "Urbania",
+    "state": "Kerala",
+    "city": "Kochi / Cochin",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 738,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Kolhapur",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 739,
+    "vehicleType": "Urbania",
+    "state": "Karnataka",
+    "city": "Mangalore / Mangaluru",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 740,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 741,
+    "vehicleType": "Urbania",
+    "state": "Karnataka",
+    "city": "Mysore / Mysuru",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 742,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 743,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Nashik",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 744,
+    "vehicleType": "Tempo Traveller",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 27.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 745,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 746,
+    "vehicleType": "Urbania",
+    "state": "Himachal Pradesh",
+    "city": "Shimla",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 747,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Shirdi",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 748,
+    "vehicleType": "Urbania",
+    "state": "Maharashtra",
+    "city": "Solapur",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 749,
+    "vehicleType": "Urbania",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 750,
+    "vehicleType": "Urbania",
+    "state": "Kerala",
+    "city": "Trivandrum / Thiruvananthapuram",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 751,
+    "vehicleType": "Urbania",
+    "state": "Karnataka",
+    "city": "Udupi",
+    "oneWayPerKm": 40.0,
+    "outstationPerKm": 42.0
+  },
+  {
+    "sNo": 752,
+    "vehicleType": "Tempo Traveller",
+    "state": "Haryana",
+    "city": "Gurugram / Gurgaon",
+    "oneWayPerKm": 26.0,
+    "outstationPerKm": 43.0
+  }
+]

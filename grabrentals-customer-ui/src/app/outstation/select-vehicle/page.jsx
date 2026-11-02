@@ -631,11 +631,11 @@ function SelectVehicleContent() {
 
       const minKmThreshold = isRoundTripBooking
         ? Math.max(effectiveTripDistance, car.includedKms || 250)
-        : ((!isLocalBooking && !isAirportBooking) ? (car.includedKms || 250) : 0);
+        : 0;
 
       const effectiveTripKm = (isLocalBooking || isAirportBooking)
         ? (activeDistance || car.includedKms || 0)
-        : Math.max(activeDistance || 0, minKmThreshold);
+        : (isRoundTripBooking ? Math.max(activeDistance || 0, minKmThreshold) : (activeDistance || 0));
 
       const standardRateFare = (isLocalBooking || isAirportBooking)
         ? (car.pricing?.originalPrice || car.dailyPrice || car.baseFare || 2000)
@@ -926,9 +926,9 @@ function SelectVehicleContent() {
     const isRoundTripBooking = !isLocalBooking && !isAirportBooking && (trip.tripType || "").toLowerCase().includes("round");
     const minKmFloor = isRoundTripBooking
       ? (tripDays * 250)
-      : ((!isLocalBooking && !isAirportBooking) ? (vehicle.includedKms || 250) : 0);
+      : 0;
     const chosenDistance = (!isLocalBooking && !isAirportBooking)
-      ? Math.max(activeDistance || 0, minKmFloor)
+      ? (isRoundTripBooking ? Math.max(activeDistance || 0, minKmFloor) : (activeDistance || 0))
       : (activeDistance || vehicle.includedKms || 0);
     if (typeof window !== "undefined") {
       const selectedData = {
@@ -987,24 +987,30 @@ function SelectVehicleContent() {
   };
 
   const handleSaveTrip = (newTrip) => {
+    const isRound = (newTrip.tripType || "").toLowerCase().includes("round");
+    const sanitizedTrip = {
+      ...newTrip,
+      dropDate: isRound ? newTrip.dropDate : undefined,
+      returnDate: isRound ? newTrip.returnDate : undefined,
+    };
     setBackendDistance(null);
     setGoogleRouteDetails(null);
-    setTrip(newTrip);
+    setTrip(sanitizedTrip);
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("grab_pending_trip", JSON.stringify(newTrip));
+      sessionStorage.setItem("grab_pending_trip", JSON.stringify(sanitizedTrip));
     }
     try {
       const params = new URLSearchParams();
-      if (newTrip.serviceType) params.set("serviceType", newTrip.serviceType);
-      if (newTrip.from) params.set("from", newTrip.from);
-      if (newTrip.to) params.set("to", newTrip.to);
-      if (newTrip.tripType) params.set("tripType", newTrip.tripType);
-      if (newTrip.fromCity) params.set("fromCity", newTrip.fromCity);
-      if (newTrip.toCity) params.set("toCity", newTrip.toCity);
-      if (newTrip.date) params.set("date", newTrip.date);
-      if (newTrip.time) params.set("time", newTrip.time);
-      if (newTrip.dropDate) params.set("dropDate", newTrip.dropDate);
-      if (newTrip.stops) params.set("stops", newTrip.stops);
+      if (sanitizedTrip.serviceType) params.set("serviceType", sanitizedTrip.serviceType);
+      if (sanitizedTrip.from) params.set("from", sanitizedTrip.from);
+      if (sanitizedTrip.to) params.set("to", sanitizedTrip.to);
+      if (sanitizedTrip.tripType) params.set("tripType", sanitizedTrip.tripType);
+      if (sanitizedTrip.fromCity) params.set("fromCity", sanitizedTrip.fromCity);
+      if (sanitizedTrip.toCity) params.set("toCity", sanitizedTrip.toCity);
+      if (sanitizedTrip.date) params.set("date", sanitizedTrip.date);
+      if (sanitizedTrip.time) params.set("time", sanitizedTrip.time);
+      if (isRound && sanitizedTrip.dropDate) params.set("dropDate", sanitizedTrip.dropDate);
+      if (sanitizedTrip.stops) params.set("stops", sanitizedTrip.stops);
       router.replace(`/outstation/select-vehicle?${params.toString()}`, { scroll: false });
     } catch (e) {
       console.warn("Could not sync URL in handleSaveTrip:", e);

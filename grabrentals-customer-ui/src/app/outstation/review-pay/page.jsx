@@ -558,7 +558,7 @@ export default function ReviewPayPage() {
   }, [isRoundTripBooking, bookingConfig?.trip?.date, bookingConfig?.trip?.dropDate, bookingConfig?.trip?.returnDate]);
 
   const minPackageKm = !isLocal && !isAirport
-    ? (isRoundTripBooking ? (tripDays * 250) : (car.includedKms || bookingConfig?.minPackageKm || 250))
+    ? (isRoundTripBooking ? (tripDays * 250) : 0)
     : 0;
 
   const actualRouteKm = useMemo(() => {

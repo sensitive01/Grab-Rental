@@ -49,6 +49,9 @@ app:
       email: ${DEFAULT_ADMIN_EMAIL:admin@grabrentals.com}
       password: ${DEFAULT_ADMIN_PASSWORD:}
       phone: ${DEFAULT_ADMIN_PHONE:}
+    tariff:
+      enabled: ${SEED_TARIFF_ENABLED:true}
+      force: ${SEED_TARIFF_FORCE:false}
   cloudinary:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:}
     api-key: ${CLOUDINARY_API_KEY:}

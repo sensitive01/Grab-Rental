@@ -133,8 +133,7 @@ public class PublicVehicleService {
             int minDailyKm = effectiveDays * 250;
             effectiveDistance = Math.max(distanceKm, minDailyKm);
         } else if (isOneWay) {
-            int minOneWayKm = 250;
-            effectiveDistance = Math.max(distanceKm, minOneWayKm);
+            effectiveDistance = Math.max(1, distanceKm);
         }
 
         long tDist = System.currentTimeMillis();
@@ -328,9 +327,14 @@ public class PublicVehicleService {
                 BigDecimal baseFare = (BigDecimal) rateContext.get("baseFare");
                 Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : 250;
                 if (baseKm == null || baseKm <= 0) baseKm = 250;
-                BigDecimal dailyPrice = (baseFare != null && baseFare.compareTo(BigDecimal.ZERO) > 0)
-                        ? baseFare
-                        : rate.multiply(BigDecimal.valueOf(baseKm)).setScale(0, RoundingMode.HALF_UP);
+                BigDecimal dailyPrice;
+                if (isOneWay) {
+                    dailyPrice = rate.multiply(BigDecimal.valueOf(effectiveDistance)).setScale(0, RoundingMode.HALF_UP);
+                } else {
+                    dailyPrice = (baseFare != null && baseFare.compareTo(BigDecimal.ZERO) > 0)
+                            ? baseFare
+                            : rate.multiply(BigDecimal.valueOf(baseKm)).setScale(0, RoundingMode.HALF_UP);
+                }
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                     BigDecimal hourlyFare = (BigDecimal) rateContext.get("hourlyCustomerFare");
@@ -419,7 +423,7 @@ public class PublicVehicleService {
                 card.setChauffeurRating(4.9);
                 card.setDescription(config.getDescription());
                 if (!"LOCAL".equalsIgnoreCase(resolvedServiceType) && !"AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
-                    card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : baseKm);
+                    card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : effectiveDistance);
                 }
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
@@ -538,9 +542,14 @@ public class PublicVehicleService {
                     String fuel = (v.getFuelType() != null && !v.getFuelType().isBlank()) ? v.getFuelType() : "Diesel";
                     String trans = (v.getTransmission() != null && !v.getTransmission().isBlank()) ? v.getTransmission() : "Manual";
                     int yr = v.getYear() != null ? v.getYear() : 2023;
-                    BigDecimal dailyPrice = (v.getDailyRate() != null && v.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
-                            ? v.getDailyRate()
-                            : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal dailyPrice;
+                    if (isOneWay) {
+                        dailyPrice = rate.multiply(BigDecimal.valueOf(effectiveDistance)).setScale(0, RoundingMode.HALF_UP);
+                    } else {
+                        dailyPrice = (v.getDailyRate() != null && v.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
+                                ? v.getDailyRate()
+                                : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
+                    }
                     if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                         BigDecimal hourlyFare = (BigDecimal) rateContext.get("hourlyCustomerFare");
                         Integer tariffPkgHours = (rateContext.get("packageHours") != null) ? (Integer) rateContext.get("packageHours") : 8;
@@ -637,8 +646,7 @@ public class PublicVehicleService {
                     card.setChauffeur(chauffeurName);
                     card.setChauffeurRating(4.9);
                     if (!"LOCAL".equalsIgnoreCase(resolvedServiceType) && !"AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
-                        Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : 250;
-                        card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : baseKm);
+                        card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : effectiveDistance);
                     }
 
                     if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {

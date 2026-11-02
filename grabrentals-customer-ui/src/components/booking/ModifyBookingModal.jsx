@@ -139,7 +139,7 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
       dropCoords: resolvedDropCoords,
       stopsCoords: stopsCoords,
       stops: (isLocal || isAirport) ? "" : validStops.join("|"),
-      tripType: isLocal ? "Hourly Package" : (currentTrip?.tripType || tripType),
+      tripType: isLocal ? "Hourly Package" : (tripType || "One way"),
       serviceType: isLocal ? "LOCAL" : isAirport ? "AIRPORT" : (currentTrip?.serviceType || "OUTSTATION"),
       date,
       time,
