@@ -114,6 +114,7 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
         executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_verified_at TIMESTAMP WITH TIME ZONE");
         executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_verified_by VARCHAR(150)");
         executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_rejection_reason TEXT");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS end_odometer_proof_url TEXT");
 
         // Fix corrupted LOCAL hourly weekend fares where extra-hourly rate (e.g. 20) was mistakenly stored as package weekend fare
         executeSafe("UPDATE vehicle_tariffs SET hourly_customer_weekend_fare = hourly_customer_fare WHERE service_type = 'LOCAL' AND (hourly_customer_weekend_fare IS NULL OR hourly_customer_weekend_fare < 100) AND hourly_customer_fare >= 100");

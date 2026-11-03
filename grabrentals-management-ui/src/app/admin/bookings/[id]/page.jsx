@@ -41,7 +41,14 @@ import {
   Info,
   DollarSign,
   TrendingUp,
-  Tag
+  Tag,
+  Camera,
+  Gauge,
+  ZoomIn,
+  X,
+  ExternalLink,
+  Banknote,
+  FileCheck
 } from "lucide-react";
 
 function formatDateTime(val) {
@@ -167,6 +174,7 @@ export default function AdminBookingDetailPage({ params }) {
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [previewProof, setPreviewProof] = useState(null);
 
   // Allocation Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -583,6 +591,299 @@ export default function AdminBookingDetailPage({ params }) {
           </select>
         </div>
       </div>
+
+      {/* Lightbox Modal for Photo Proofs */}
+      {previewProof && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPreviewProof(null)}
+        >
+          <div 
+            className="relative max-w-3xl w-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl p-4 sm:p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2 text-white">
+                <Camera className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-sm sm:text-base">{previewProof.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewProof(null)}
+                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[75vh] overflow-auto flex items-center justify-center rounded-2xl bg-black/60 p-2">
+              <img
+                src={previewProof.url}
+                alt={previewProof.title}
+                className="max-h-[70vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <span>Grab Rentals Driver Operational Audit Proof Document</span>
+              <a
+                href={previewProof.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                Open Full Resolution <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Driver Duty & Trip Closing Audit Sheet (Admin Review) */}
+      {(String(booking.status || "").toUpperCase() === "COMPLETED" || booking.endKm != null || booking.tripCompletedAt != null) && (
+        <div className="bg-white rounded-2xl border-2 border-emerald-500/30 p-5 shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 flex items-center justify-center shrink-0">
+                <FileCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  Chauffeur Duty & Trip Closing Audit Sheet
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    Verified Closed
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Duty finalized by <strong>{booking.tripClosedBy || booking.assignedDriverName || booking.driverName || "Chauffeur"}</strong>
+                  {booking.tripCompletedAt && ` on ${new Date(booking.tripCompletedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}`}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500">Invoice:</span>
+              <span className="font-mono font-bold text-xs bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                {booking.invoiceNumber || `INV-${String(booking.bookingReference || booking.id).replace(/[^A-Za-z0-9]/g, "")}`}
+              </span>
+            </div>
+          </div>
+
+          {/* Odometer Telemetry Grid */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Gauge className="w-4 h-4 text-slate-500" />
+              Vehicle Odometer & Distance Metrics
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Start Reading</span>
+                <p className="text-sm font-black text-slate-900 mt-0.5">
+                  {booking.startKm != null ? `${booking.startKm} KM` : "Recorded"}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">End Reading</span>
+                <p className="text-sm font-black text-slate-900 mt-0.5">
+                  {booking.endKm != null ? `${booking.endKm} KM` : "Recorded"}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Actual Traveled</span>
+                <p className="text-sm font-black text-emerald-700 mt-0.5">
+                  {booking.actualKm != null ? `${booking.actualKm} KM` : "Calculated"}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Package Included</span>
+                <p className="text-sm font-black text-slate-900 mt-0.5">
+                  {booking.packageKm || booking.distanceKm || "250"} KM
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 col-span-2 sm:col-span-1">
+                <span className="text-[10px] text-amber-800 font-bold uppercase block">Extra Distance</span>
+                <p className="text-sm font-black text-amber-950 mt-0.5">
+                  {booking.extraKm ? `${booking.extraKm} KM` : "0 KM"}
+                </p>
+                {booking.extraKmCharge && Number(booking.extraKmCharge) > 0 && (
+                  <span className="text-[10px] font-bold text-amber-800 block">
+                    (+{formatINR(booking.extraKmCharge)})
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Uploaded Proofs Gallery */}
+          <div className="space-y-3 pt-1">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Camera className="w-4 h-4 text-slate-500" />
+              Uploaded Chauffeur Proofs & Verification Photos
+            </h4>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Odometer Photo Card */}
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Gauge className="w-4 h-4 text-emerald-600" /> End Odometer Photo
+                  </span>
+                  {booking.endOdometerProofUrl ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                      Uploaded
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      No Photo Attached
+                    </span>
+                  )}
+                </div>
+
+                {booking.endOdometerProofUrl ? (
+                  <div 
+                    className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
+                    onClick={() => setPreviewProof({ url: booking.endOdometerProofUrl, title: `End Odometer Proof - Booking #${booking.bookingReference || booking.id}` })}
+                  >
+                    <img
+                      src={booking.endOdometerProofUrl}
+                      alt="End Odometer Reading"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-1.5 text-xs font-bold">
+                      <ZoomIn className="w-4 h-4" /> Click to Zoom
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-28 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 text-xs">
+                    <Camera className="w-5 h-5 mb-1 text-slate-300" />
+                    <span>No digital odometer photo attached</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Receipt / UPI Screenshot Card */}
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Receipt className="w-4 h-4 text-blue-600" /> Payment Collection Proof
+                  </span>
+                  {booking.paymentProofUrl ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                      Uploaded ({booking.paymentMethod || "UPI/Online"})
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      Cash or Settled
+                    </span>
+                  )}
+                </div>
+
+                {booking.paymentProofUrl ? (
+                  <div 
+                    className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
+                    onClick={() => setPreviewProof({ url: booking.paymentProofUrl, title: `Payment Receipt Proof - Booking #${booking.bookingReference || booking.id}` })}
+                  >
+                    <img
+                      src={booking.paymentProofUrl}
+                      alt="Payment Collection Proof"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-1.5 text-xs font-bold">
+                      <ZoomIn className="w-4 h-4" /> Click to Zoom
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-28 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 text-xs">
+                    <Banknote className="w-5 h-5 mb-1 text-slate-300" />
+                    <span>Paid in {booking.paymentMethod || "Cash"} or Settled directly</span>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+
+          {/* Itemized Extra Expenses Breakdown */}
+          <div className="space-y-2 pt-1">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Chauffeur Extra Duty & Toll Expenses Breakdown
+            </h4>
+            
+            <div className="rounded-xl border border-slate-200 overflow-hidden text-xs">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 text-[11px] uppercase">
+                  <tr>
+                    <th className="py-2 px-3">Expense Item</th>
+                    <th className="py-2 px-3 text-center">Duty Remarks</th>
+                    <th className="py-2 px-3 text-right">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {booking.extraKm > 0 && (
+                    <tr>
+                      <td className="py-2 px-3 font-semibold text-slate-800">
+                        Extra Distance ({booking.extraKm} KM)
+                      </td>
+                      <td className="py-2 px-3 text-center text-slate-500">
+                        @ ₹{booking.extraKmRate || 14}/km
+                      </td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-900">
+                        {formatINR(booking.extraKmCharge || 0)}
+                      </td>
+                    </tr>
+                  )}
+                  {Number(booking.tollCharges) > 0 && (
+                    <tr>
+                      <td className="py-2 px-3 font-semibold text-slate-800">FASTag Highway Tolls</td>
+                      <td className="py-2 px-3 text-center text-slate-500">National/State Highway Plaza</td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-900">{formatINR(booking.tollCharges)}</td>
+                    </tr>
+                  )}
+                  {Number(booking.permitCharges) > 0 && (
+                    <tr>
+                      <td className="py-2 px-3 font-semibold text-slate-800">State Entry Permit / Tax</td>
+                      <td className="py-2 px-3 text-center text-slate-500">Interstate Border Tax</td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-900">{formatINR(booking.permitCharges)}</td>
+                    </tr>
+                  )}
+                  {Number(booking.parkingCharges) > 0 && (
+                    <tr>
+                      <td className="py-2 px-3 font-semibold text-slate-800">Airport / Commercial Parking</td>
+                      <td className="py-2 px-3 text-center text-slate-500">Actual Parking Fees</td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-900">{formatINR(booking.parkingCharges)}</td>
+                    </tr>
+                  )}
+                  {Number(booking.driverAllowanceCharges) > 0 && (
+                    <tr>
+                      <td className="py-2 px-3 font-semibold text-slate-800">Driver Allowance / Night Batta</td>
+                      <td className="py-2 px-3 text-center text-slate-500">Chauffeur Overnight Duty</td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-900">{formatINR(booking.driverAllowanceCharges)}</td>
+                    </tr>
+                  )}
+                  {Number(booking.otherCharges) > 0 && (
+                    <tr>
+                      <td className="py-2 px-3 font-semibold text-slate-800">Other Incidental Charges</td>
+                      <td className="py-2 px-3 text-center text-slate-500">{booking.otherChargesNotes || "Miscellaneous expenses"}</td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-900">{formatINR(booking.otherCharges)}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Driver Closing Notes */}
+          {booking.tripClosingNotes && (
+            <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/80 text-xs space-y-1">
+              <span className="text-[10px] font-bold uppercase text-amber-900 tracking-wider block">
+                Chauffeur Closing Log & Remarks
+              </span>
+              <p className="text-slate-800 italic">"{booking.tripClosingNotes}"</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Dossier Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

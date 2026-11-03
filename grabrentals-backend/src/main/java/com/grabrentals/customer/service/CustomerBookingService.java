@@ -836,6 +836,10 @@ public class CustomerBookingService {
             booking.setPaymentProofUrl(request.getPaymentProofUrl());
         }
 
+        if (request.getEndOdometerProofUrl() != null && !request.getEndOdometerProofUrl().isBlank()) {
+            booking.setEndOdometerProofUrl(request.getEndOdometerProofUrl());
+        }
+
         // Mark COMPLETED
         booking.setStatus(BookingStatus.COMPLETED);
 
