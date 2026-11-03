@@ -113,6 +113,7 @@ public class BookingResponse {
     private Instant tripCompletedAt;
     private String tripClosedBy;
     private String endOdometerProofUrl;
+    private String startOdometerProofUrl;
 
     // Customer Booked Route Distance
     private Integer distanceKm;
@@ -214,6 +215,7 @@ public class BookingResponse {
                 .tripCompletedAt(b.getTripCompletedAt())
                 .tripClosedBy(b.getTripClosedBy())
                 .endOdometerProofUrl(b.getEndOdometerProofUrl())
+                .startOdometerProofUrl(b.getStartOdometerProofUrl())
                 .createdAt(b.getCreatedAt())
                 .updatedAt(b.getUpdatedAt());
 

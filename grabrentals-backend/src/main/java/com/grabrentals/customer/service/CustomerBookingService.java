@@ -664,21 +664,26 @@ public class CustomerBookingService {
         }
 
         BookingStatus current = booking.getStatus();
-        if (current == BookingStatus.COMPLETED || current == BookingStatus.CANCELLED) {
+        BookingStatus newStatus = request.getStatus();
+
+        if (newStatus != null && newStatus != current && (current == BookingStatus.COMPLETED || current == BookingStatus.CANCELLED)) {
             throw new BadRequestException("Cannot change status of a " + current + " booking");
         }
 
-        BookingStatus newStatus = request.getStatus();
-
-        // Enforce: Vehicle must be assigned by vendor before starting the ride
-        if ((newStatus == BookingStatus.IN_TRANSIT || newStatus == BookingStatus.ON_THE_WAY) && booking.getAssignedVehicle() == null) {
-            throw new BadRequestException("Cannot start ride: A vehicle must be assigned before starting the trip.");
+        if (newStatus != null && newStatus != current) {
+            // Enforce: Vehicle must be assigned by vendor before starting the ride
+            if ((newStatus == BookingStatus.IN_TRANSIT || newStatus == BookingStatus.ON_THE_WAY) && booking.getAssignedVehicle() == null) {
+                throw new BadRequestException("Cannot start ride: A vehicle must be assigned before starting the trip.");
+            }
+            booking.setStatus(newStatus);
         }
-
-        booking.setStatus(newStatus);
 
         if (request.getStartKm() != null && request.getStartKm() > 0) {
             booking.setStartKm(request.getStartKm());
+        }
+
+        if (request.getStartOdometerProofUrl() != null && !request.getStartOdometerProofUrl().isBlank()) {
+            booking.setStartOdometerProofUrl(request.getStartOdometerProofUrl());
         }
 
         // If completed, release vehicle and driver
@@ -838,6 +843,10 @@ public class CustomerBookingService {
 
         if (request.getEndOdometerProofUrl() != null && !request.getEndOdometerProofUrl().isBlank()) {
             booking.setEndOdometerProofUrl(request.getEndOdometerProofUrl());
+        }
+
+        if (request.getStartOdometerProofUrl() != null && !request.getStartOdometerProofUrl().isBlank()) {
+            booking.setStartOdometerProofUrl(request.getStartOdometerProofUrl());
         }
 
         // Mark COMPLETED

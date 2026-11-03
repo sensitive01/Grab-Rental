@@ -240,6 +240,9 @@ public class Booking {
     @Column(name = "trip_closed_by", length = 100)
     private String tripClosedBy;
 
+        @Column(name = "start_odometer_proof_url", columnDefinition = "TEXT")
+    private String startOdometerProofUrl;
+
     @Column(name = "end_odometer_proof_url", columnDefinition = "TEXT")
     private String endOdometerProofUrl;
 

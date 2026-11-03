@@ -341,6 +341,7 @@ export default function TripClosingModal({ isOpen, onClose, trip, onTripComplete
         closingNotes: closingNotes.trim() || null,
         paymentMethod: paymentMethod || "CASH",
         paymentProofUrl: upiProofPreview || null,
+        startOdometerProofUrl: trip.startOdometerProofUrl || trip.startOdometerProof || null,
         endOdometerProofUrl: endOdometerPreview || null
       };
 

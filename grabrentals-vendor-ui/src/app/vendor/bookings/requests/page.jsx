@@ -108,17 +108,17 @@ export default function VendorBookingRequestsPage() {
     },
     {
       key: "customer",
-      label: "Customer & Guests",
+      label: "Customer", // & Guests
       sortable: true,
       render: (req) => (
         <div>
           <p className="font-bold text-slate-900 text-xs sm:text-sm">
             {req.customer?.name || "Customer"}
           </p>
-          <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+          {/* <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
             <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span>{req.passengers || 2} Guests</span>
-          </p>
+          </p> */}
         </div>
       )
     },
@@ -232,7 +232,7 @@ export default function VendorBookingRequestsPage() {
             <span className="truncate">{req.drop}</span>
           </p>
           <p className="text-[11px] text-slate-500 pt-1">
-            📅 Reporting: <strong>{req.pickupDate}</strong> · {req.passengers || 2} Guests
+            📅 Reporting: <strong>{req.pickupDate}</strong>{/* · {req.passengers || 2} Guests */}
           </p>
         </div>
       </div>

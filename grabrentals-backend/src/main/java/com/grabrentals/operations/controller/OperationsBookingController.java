@@ -81,7 +81,7 @@ public class OperationsBookingController {
         log.info("[HTTP API] PATCH /api/operations/bookings/{}/status to {} by {}",
                 idOrRef, request.getStatus(), operationsUser.getEmail());
 
-        BookingResponse response = bookingService.updateTripStatus(idOrRef, request.getStatus(), operationsUser);
+        BookingResponse response = bookingService.updateTripStatus(idOrRef, request, operationsUser);
         return ResponseEntity.ok(ApiResponse.success("Trip status updated successfully to " + request.getStatus(), response));
     }
 

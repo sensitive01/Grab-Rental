@@ -27,4 +27,6 @@ public class TripClosingRequest {
     private String paymentMethod;
     private String paymentProofUrl;
     private String endOdometerProofUrl;
+    private String startOdometerProofUrl;
 }
+

@@ -214,7 +214,11 @@ export function normalizeBooking(b) {
     specialInstructions: b.specialInstructions,
     vendorDeclineReason: b.vendorDeclineReason,
     startKm: b.startKm != null ? Number(b.startKm) : (cachedStartData?.startKm ? Number(cachedStartData.startKm) : null),
-    startOdometerProof: cachedStartData?.odometerProof || null,
+    rawStartOdometerProofUrl: b.startOdometerProofUrl || null,
+    startOdometerProof: b.startOdometerProofUrl || cachedStartData?.odometerProof || null,
+    startOdometerProofUrl: b.startOdometerProofUrl || cachedStartData?.odometerProof || null,
+    endOdometerProofUrl: b.endOdometerProofUrl || null,
+    paymentProofUrl: b.paymentProofUrl || null,
     endKm: b.endKm != null ? Number(b.endKm) : null,
     actualKm: b.actualKm != null ? Number(b.actualKm) : null,
     extraKm: b.extraKm != null ? Number(b.extraKm) : 0,
@@ -466,10 +470,35 @@ export const vendorApi = {
     }
   },
 
+  syncStartProof: async (idOrRef, proofUrl, startKm, status) => {
+    if (!proofUrl) return;
+    try {
+      await axiosClient.patch(`/api/vendor/bookings/${idOrRef}/status`, {
+        status: status || undefined,
+        startKm: startKm ? Number(startKm) : undefined,
+        startOdometerProofUrl: proofUrl
+      });
+    } catch (e) {
+      console.warn("Could not sync start proof to server:", e);
+    }
+  },
+
   getBookingById: async (idOrRef) => {
     try {
       const res = await axiosClient.get(`/api/vendor/bookings/${idOrRef}`);
-      return normalizeBooking(res.data?.data);
+      const raw = res.data?.data;
+      const normalized = normalizeBooking(raw);
+
+      // Auto-sync start odometer proof from browser cache to server if missing in database
+      if (raw && !raw.startOdometerProofUrl && normalized?.startOdometerProof) {
+        axiosClient.patch(`/api/vendor/bookings/${idOrRef}/status`, {
+          status: raw.status,
+          startKm: normalized.startKm,
+          startOdometerProofUrl: normalized.startOdometerProof
+        }).catch(e => console.warn("Auto-syncing start odometer proof to server:", e));
+      }
+
+      return normalized;
     } catch (err) {
       logApiError(`vendorApi.getBookingById(${idOrRef}) error:`, err);
       // Fallback: look up in list
@@ -528,6 +557,7 @@ export const vendorApi = {
       const res = await axiosClient.patch(`/api/vendor/bookings/${idOrRef}/status`, {
         status: "IN_TRANSIT",
         startKm: Number(startKm),
+        startOdometerProofUrl: odometerProof || null,
         milestoneText: `Ride started at Odometer ${startKm} KM`
       });
       return normalizeBooking(res.data?.data);

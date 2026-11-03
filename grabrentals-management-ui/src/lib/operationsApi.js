@@ -134,8 +134,22 @@ export const operationsApi = {
         }
         const fareAmount = b.totalFare != null ? Number(b.totalFare) : (b.fare != null ? Number(b.fare) : 0);
 
+        let localStartProof = null;
+        if (typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("grab_trip_start_readings");
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const key = b.bookingReference || b.id;
+              localStartProof = parsed[key]?.odometerProof || (b.id ? parsed[b.id]?.odometerProof : null) || (b.bookingReference ? parsed[b.bookingReference]?.odometerProof : null);
+            }
+          } catch {}
+        }
+
         return createApiResponse({
           ...b,
+          startOdometerProofUrl: b.startOdometerProofUrl || localStartProof || null,
+          startOdometerProof: b.startOdometerProofUrl || localStartProof || null,
           id: b.bookingReference || b.id,
           rawId: b.id,
           customerName: b.customerName || b.passengerName,

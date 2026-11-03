@@ -286,9 +286,48 @@ export default function BookingDetailsPage({ params }) {
               Uploaded Proofs & Verification Photos
             </h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               
-              {/* Odometer Photo Card */}
+              {/* Start Odometer Photo Card */}
+              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Gauge className="w-4 h-4 text-sky-600" /> Start Odometer Photo
+                  </span>
+                  {(booking.startOdometerProofUrl || booking.startOdometerProof) ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-100 text-sky-800">
+                      Uploaded
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      No Photo Attached
+                    </span>
+                  )}
+                </div>
+
+                {(booking.startOdometerProofUrl || booking.startOdometerProof) ? (
+                  <div 
+                    className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
+                    onClick={() => setPreviewImage({ url: booking.startOdometerProofUrl || booking.startOdometerProof, title: `Start Odometer Proof - Trip #${booking.bookingReference || booking.id}` })}
+                  >
+                    <img
+                      src={booking.startOdometerProofUrl || booking.startOdometerProof}
+                      alt="Start Odometer Reading"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-1.5 text-xs font-bold">
+                      <ZoomIn className="w-4 h-4" /> Click to Zoom
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-32 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 text-xs">
+                    <Camera className="w-6 h-6 mb-1 text-slate-300" />
+                    <span>No digital odometer photo attached</span>
+                  </div>
+                )}
+              </div>
+
+                            {/* Odometer Photo Card */}
               <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -507,10 +546,10 @@ export default function BookingDetailsPage({ params }) {
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Vehicle Class</span>
                 <p className="font-bold text-slate-800 mt-0.5">{booking.vehicleType}</p>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              {/* <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Passengers</span>
                 <p className="font-bold text-slate-800 mt-0.5">{booking.passengers} Guests</p>
-              </div>
+              </div> */}
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 col-span-2 sm:col-span-1">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Trip Mode</span>
                 <p className="font-bold text-slate-800 mt-0.5">{booking.tripType}</p>
