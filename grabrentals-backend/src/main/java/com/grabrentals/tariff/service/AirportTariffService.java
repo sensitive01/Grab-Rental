@@ -1,5 +1,6 @@
 package com.grabrentals.tariff.service;
 
+import com.grabrentals.common.exception.BadRequestException;
 import com.grabrentals.common.exception.ResourceNotFoundException;
 import com.grabrentals.tariff.dto.AirportTariffRequest;
 import com.grabrentals.tariff.dto.AirportTariffResponse;
@@ -86,6 +87,14 @@ public class AirportTariffService {
         entity.setEndDate(req.getEndDate());
         entity.setStatus(req.getStatus() != null ? req.getStatus().trim().toUpperCase() : "ACTIVE");
         entity.setTollIncluded(Boolean.TRUE.equals(req.getTollIncluded()));
+        if (req.getDiscountPercentage() != null) {
+            if (req.getDiscountPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new BadRequestException("Discount percentage cannot exceed 100%");
+            }
+            if (req.getDiscountPercentage().compareTo(BigDecimal.ZERO) < 0) {
+                throw new BadRequestException("Discount percentage cannot be negative");
+            }
+        }
         entity.setDiscountPercentage(req.getDiscountPercentage() != null ? req.getDiscountPercentage() : BigDecimal.ZERO);
         entity.setPetCharge(req.getPetCharge() != null ? req.getPetCharge() : BigDecimal.ZERO);
         entity.setVendorPetCharge(req.getVendorPetCharge() != null ? req.getVendorPetCharge() : BigDecimal.ZERO);

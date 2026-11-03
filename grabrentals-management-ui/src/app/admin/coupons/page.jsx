@@ -180,6 +180,10 @@ export default function AdminCouponsPage() {
       setToast({ type: "error", message: "Valid discount value is required" });
       return;
     }
+    if (formData.discountType === "PERCENTAGE" && Number(formData.discountValue) > 100) {
+      setToast({ type: "error", message: "Percentage discount cannot exceed 100%" });
+      return;
+    }
 
     try {
       setSaving(true);
@@ -688,11 +692,17 @@ export default function AdminCouponsPage() {
                 type="number"
                 step="0.01"
                 min="0.01"
+                max={formData.discountType === "PERCENTAGE" ? 100 : undefined}
                 required
                 value={formData.discountValue}
-                onChange={(e) =>
-                  setFormData({ ...formData, discountValue: e.target.value })
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (formData.discountType === "PERCENTAGE" && Number(val) > 100) {
+                    setFormData({ ...formData, discountValue: "100" });
+                  } else {
+                    setFormData({ ...formData, discountValue: val });
+                  }
+                }}
                 placeholder={formData.discountType === "PERCENTAGE" ? "10" : "200"}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-600 outline-none"
               />

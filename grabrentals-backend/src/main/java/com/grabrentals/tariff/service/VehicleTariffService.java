@@ -1,5 +1,6 @@
 package com.grabrentals.tariff.service;
 
+import com.grabrentals.common.exception.BadRequestException;
 import com.grabrentals.common.exception.ResourceNotFoundException;
 import com.grabrentals.tariff.dto.*;
 import com.grabrentals.tariff.entity.VehicleCategoryPreset;
@@ -373,6 +374,14 @@ public class VehicleTariffService {
         entity.setAirportExtraKmRate(req.getAirportExtraKmRate());
         entity.setAirportVendorExtraKmRate(req.getAirportVendorExtraKmRate());
         entity.setTollIncluded(Boolean.TRUE.equals(req.getTollIncluded()));
+        if (req.getDiscountPercentage() != null) {
+            if (req.getDiscountPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new BadRequestException("Discount percentage cannot exceed 100%");
+            }
+            if (req.getDiscountPercentage().compareTo(BigDecimal.ZERO) < 0) {
+                throw new BadRequestException("Discount percentage cannot be negative");
+            }
+        }
         entity.setDiscountPercentage(req.getDiscountPercentage() != null ? req.getDiscountPercentage() : BigDecimal.ZERO);
         entity.setPetCharge(req.getPetCharge() != null ? req.getPetCharge() : BigDecimal.ZERO);
         entity.setVendorPetCharge(req.getVendorPetCharge() != null ? req.getVendorPetCharge() : BigDecimal.ZERO);

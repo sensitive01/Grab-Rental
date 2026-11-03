@@ -881,6 +881,15 @@ export default function AdminPricingPage() {
 
   async function handleSaveTariff(e) {
     e.preventDefault();
+    const discountNum = parseFloat(formData.discountPercentage);
+    if (!isNaN(discountNum) && discountNum > 100) {
+      setToast({ type: "error", message: "Discount percentage cannot be greater than 100%" });
+      return;
+    }
+    if (!isNaN(discountNum) && discountNum < 0) {
+      setToast({ type: "error", message: "Discount percentage cannot be negative" });
+      return;
+    }
     if (!formData.category || !formData.modelName || !formData.seatingCapacity) {
       setToast({ type: "error", message: "Please choose Category, Model, and Seater" });
       return;
@@ -2578,9 +2587,25 @@ export default function AdminPricingPage() {
                     </label>
                     <input
                       type="number"
+                      min="0"
+                      max="100"
                       placeholder="e.g. 5"
                       value={formData.discountPercentage ?? "0"}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "") {
+                          setFormData((prev) => ({ ...prev, discountPercentage: "" }));
+                          return;
+                        }
+                        const num = parseFloat(val);
+                        if (num > 100) {
+                          setFormData((prev) => ({ ...prev, discountPercentage: "100" }));
+                        } else if (num < 0) {
+                          setFormData((prev) => ({ ...prev, discountPercentage: "0" }));
+                        } else {
+                          setFormData((prev) => ({ ...prev, discountPercentage: val }));
+                        }
+                      }}
                       className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"
                     />
                   </div>
@@ -2875,9 +2900,25 @@ export default function AdminPricingPage() {
                     </label>
                     <input
                       type="number"
+                      min="0"
+                      max="100"
                       placeholder="e.g. 9"
                       value={formData.discountPercentage ?? ""}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "") {
+                          setFormData((prev) => ({ ...prev, discountPercentage: "" }));
+                          return;
+                        }
+                        const num = parseFloat(val);
+                        if (num > 100) {
+                          setFormData((prev) => ({ ...prev, discountPercentage: "100" }));
+                        } else if (num < 0) {
+                          setFormData((prev) => ({ ...prev, discountPercentage: "0" }));
+                        } else {
+                          setFormData((prev) => ({ ...prev, discountPercentage: val }));
+                        }
+                      }}
                       className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-md bg-amber-50/60 font-bold text-amber-900"
                     />
                   </div>
@@ -2989,9 +3030,25 @@ export default function AdminPricingPage() {
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    max="100"
                     placeholder="e.g. 9"
                     value={formData.discountPercentage ?? ""}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, discountPercentage: e.target.value }))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setFormData((prev) => ({ ...prev, discountPercentage: "" }));
+                        return;
+                      }
+                      const num = parseFloat(val);
+                      if (num > 100) {
+                        setFormData((prev) => ({ ...prev, discountPercentage: "100" }));
+                      } else if (num < 0) {
+                        setFormData((prev) => ({ ...prev, discountPercentage: "0" }));
+                      } else {
+                        setFormData((prev) => ({ ...prev, discountPercentage: val }));
+                      }
+                    }}
                     className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-md bg-amber-50/60 font-bold text-amber-900"
                   />
                 </div>
