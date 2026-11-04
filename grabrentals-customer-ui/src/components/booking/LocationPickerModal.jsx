@@ -13,6 +13,7 @@ import {
   Sparkles, 
   ChevronRight,
   ChevronLeft,
+  ArrowLeft,
   ExternalLink,
   Plus,
   Plane
@@ -1154,19 +1155,60 @@ export default function LocationPickerModal({
     };
   }, [isOpen]);
 
+  // Mobile browser & hardware back button / swipe back handling via History API
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const modalHistoryKey = `location_modal_${Date.now()}`;
+    window.history.pushState({ modalOpen: modalHistoryKey }, "");
+    let isPoppedByBrowser = false;
+
+    const handlePopState = () => {
+      isPoppedByBrowser = true;
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (!isPoppedByBrowser && window.history.state?.modalOpen === modalHistoryKey) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !isMounted) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div 
-        className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150"
+        className="w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 overflow-hidden flex flex-col h-[94vh] sm:h-auto sm:max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-150"
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Header */}
-        <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            {/* Prominent Mobile Back Arrow Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="sm:hidden p-2 -ml-1.5 rounded-xl text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+              aria-label="Back to booking"
+              title="Back"
+            >
+              <ArrowLeft className="w-5 h-5 text-slate-800" />
+            </button>
+
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border ${
               currentTarget === "airport"
                 ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
                 : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
@@ -1175,7 +1217,7 @@ export default function LocationPickerModal({
                   ? "bg-amber-500/10 text-amber-600 border-amber-500/20" 
                   : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
             }`}>
-              {currentTarget === "airport" ? <Plane className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
+              {currentTarget === "airport" ? <Plane className="w-4 h-4 sm:w-5 sm:h-5" /> : <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
             <div>
               <h3 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">
@@ -1639,46 +1681,61 @@ export default function LocationPickerModal({
               ) : null
             )}
 
-            {/* Action Buttons: Switch target & Confirm */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-1 border-t border-slate-200/80">
-              {allowTargetSwitch && (
-                currentTarget === "pickup" ? (
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchTarget(stopsState.length > 0 ? "stop-0" : "drop")}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-                  >
-                    <span>{stopsState.length > 0 ? "Next: Choose Stop 1" : (t("choose_to_location") || "Choose to Location")}</span>
-                    <ChevronRight className="w-4 h-4 text-amber-500" />
-                  </button>
-                ) : typeof currentTarget === "string" && currentTarget.startsWith("stop-") ? (
-                  (() => {
-                    const sIdx = parseInt(currentTarget.replace("stop-", ""), 10);
-                    const nextTarget = sIdx + 1 < stopsState.length ? `stop-${sIdx + 1}` : "drop";
-                    const nextLabel = sIdx + 1 < stopsState.length ? `Next: Stop ${sIdx + 2}` : (t("choose_to_location") || "Next: Drop Location");
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchTarget(nextTarget)}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-                      >
-                        <span>{nextLabel}</span>
-                        <ChevronRight className="w-4 h-4 text-amber-500" />
-                      </button>
-                    );
-                  })()
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchTarget(stopsState.length > 0 ? `stop-${stopsState.length - 1}` : "pickup")}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-emerald-500" />
-                    <span>{stopsState.length > 0 ? `Back: Stop ${stopsState.length}` : (t("choose_from_location") || "Choose from Location")}</span>
-                  </button>
-                )
-              )}
+            {/* Action Buttons: Cancel, Switch target & Confirm */}
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-200/80">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {/* Dedicated Cancel / Close Button */}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  title="Cancel and return to booking form"
+                >
+                  <X className="w-4 h-4 text-slate-500" />
+                  <span>{t("cancel") || "Cancel"}</span>
+                </button>
 
+                {/* Target Switch Button (Pickup <-> Stops <-> Drop) */}
+                {allowTargetSwitch && (
+                  currentTarget === "pickup" ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchTarget(stopsState.length > 0 ? "stop-0" : "drop")}
+                      className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <span>{stopsState.length > 0 ? "Go to Stop 1" : (t("choose_to_location") || "Set Drop Location")}</span>
+                      <ChevronRight className="w-4 h-4 text-amber-500" />
+                    </button>
+                  ) : typeof currentTarget === "string" && currentTarget.startsWith("stop-") ? (
+                    (() => {
+                      const sIdx = parseInt(currentTarget.replace("stop-", ""), 10);
+                      const nextTarget = sIdx + 1 < stopsState.length ? `stop-${sIdx + 1}` : "drop";
+                      const nextLabel = sIdx + 1 < stopsState.length ? `Go to Stop ${sIdx + 2}` : (t("choose_to_location") || "Set Drop Location");
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchTarget(nextTarget)}
+                          className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                        >
+                          <span>{nextLabel}</span>
+                          <ChevronRight className="w-4 h-4 text-purple-500" />
+                        </button>
+                      );
+                    })()
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchTarget(stopsState.length > 0 ? `stop-${stopsState.length - 1}` : "pickup")}
+                      className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{stopsState.length > 0 ? `Edit Stop ${stopsState.length}` : "Edit Pickup"}</span>
+                    </button>
+                  )
+                )}
+              </div>
+
+              {/* Confirm & Set Location */}
               <button
                 type="button"
                 onClick={handleConfirm}

@@ -340,7 +340,15 @@ export default function CityAutocompleteInput({
               <span>{googleResults.length > 0 ? "Google Places & Landmarks" : inputValue ? "Matching Locations" : "Popular Outstation Hubs"}</span>
               {isSearchingGoogle && <Loader2 className="w-3 h-3 animate-spin text-amber-600" />}
             </span>
-            <span className="text-[10px] lowercase font-normal text-slate-400">Click to select</span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="text-[11px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+              title="Close suggestions"
+            >
+              <span>Close</span>
+              <X className="w-3 h-3 text-slate-600" />
+            </button>
           </div>
 
           {/* List of Suggestions */}
