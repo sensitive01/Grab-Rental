@@ -16,7 +16,6 @@ import {
   Copy, 
   Check, 
   Sparkles,
-  Info,
   Loader2,
   KeyRound
 } from "lucide-react";
@@ -387,17 +386,6 @@ function BookingConfirmationContent() {
                 <span className="text-base text-amber-700 font-black">₹{dueAmount.toLocaleString()}</span>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Policy Notice */}
-        <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 flex gap-3 text-xs text-blue-900">
-          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-bold">What happens next?</p>
-            <p className="text-blue-800/90 leading-relaxed">
-              Our central operations engine allocates the best-rated vehicle and verified chauffeur. Your chauffeur details and car registration number will arrive via SMS and WhatsApp before your pickup time.
-            </p>
           </div>
         </div>
 

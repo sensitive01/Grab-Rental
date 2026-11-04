@@ -3172,15 +3172,10 @@ function VendorOnboardingFlow() {
 
               {/* Section 2: Vehicle Specs */}
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Car className="w-4 h-4 text-amber-600" />
-                    <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                      Vehicle Details
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                    Commercial Fleet Asset
+                <div className="flex items-center gap-2">
+                  <Car className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Vehicle Details
                   </span>
                 </div>
 
