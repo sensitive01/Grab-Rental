@@ -1135,6 +1135,35 @@ export default function LocationPickerModal({
     onClose();
   };
 
+  // Keep latest onClose callback in ref to prevent re-triggering history effects on parent renders
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Touch gesture state for swipe-down dismiss on mobile
+  const touchStartY = useRef(0);
+  const touchDeltaY = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchDeltaY.current = 0;
+  };
+
+  const handleTouchMove = (e) => {
+    touchDeltaY.current = e.touches[0].clientY - touchStartY.current;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchDeltaY.current > 60) {
+      if (onCloseRef.current) {
+        onCloseRef.current();
+      }
+    }
+    touchStartY.current = 0;
+    touchDeltaY.current = 0;
+  };
+
   // Close on ESC key and lock body scroll when open
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1155,28 +1184,34 @@ export default function LocationPickerModal({
     };
   }, [isOpen]);
 
-  // Mobile browser & hardware back button / swipe back handling via History API
+  // Mobile browser & hardware back button / swipe back handling via History & Hash API
   useEffect(() => {
     if (!isOpen) return;
 
-    const modalHistoryKey = `location_modal_${Date.now()}`;
-    window.history.pushState({ modalOpen: modalHistoryKey }, "");
-    let isPoppedByBrowser = false;
+    const modalHash = "#location-picker";
+    if (window.location.hash !== modalHash) {
+      window.history.pushState({ modalOpen: true }, "", modalHash);
+    }
+    let isClosedByBack = false;
 
-    const handlePopState = () => {
-      isPoppedByBrowser = true;
-      onClose();
+    const handleBackNavigation = () => {
+      isClosedByBack = true;
+      if (onCloseRef.current) {
+        onCloseRef.current();
+      }
     };
 
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handleBackNavigation);
+    window.addEventListener("hashchange", handleBackNavigation);
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
-      if (!isPoppedByBrowser && window.history.state?.modalOpen === modalHistoryKey) {
+      window.removeEventListener("popstate", handleBackNavigation);
+      window.removeEventListener("hashchange", handleBackNavigation);
+      if (!isClosedByBack && window.location.hash === modalHash) {
         window.history.back();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !isMounted) return null;
 
@@ -1190,13 +1225,28 @@ export default function LocationPickerModal({
       }}
     >
       <div 
-        className="w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 overflow-hidden flex flex-col h-[94vh] sm:h-auto sm:max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-150"
+        className="w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 overflow-hidden flex flex-col h-[88dvh] max-h-[calc(100dvh-3rem)] sm:h-auto sm:max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-150"
         role="dialog"
         aria-modal="true"
       >
+        {/* Mobile Sheet Drag Handle */}
+        <div 
+          onTouchStart={handleTouchStart} 
+          onTouchMove={handleTouchMove} 
+          onTouchEnd={handleTouchEnd} 
+          className="w-full pt-3 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0 bg-white"
+        >
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
+        </div>
+
         {/* Modal Header */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+        <div 
+          onTouchStart={handleTouchStart} 
+          onTouchMove={handleTouchMove} 
+          onTouchEnd={handleTouchEnd} 
+          className="px-4 sm:px-6 py-2.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0"
+        >
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
             {/* Prominent Mobile Back Arrow Button */}
             <button
               type="button"
@@ -1219,8 +1269,8 @@ export default function LocationPickerModal({
             }`}>
               {currentTarget === "airport" ? <Plane className="w-4 h-4 sm:w-5 sm:h-5" /> : <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">
+            <div className="min-w-0 flex-1 pr-1">
+              <h3 className="font-extrabold text-slate-900 text-sm sm:text-lg tracking-tight truncate leading-snug">
                 {currentTarget === "airport"
                   ? (title || "Choose Airport Location on Map")
                   : typeof currentTarget === "string" && currentTarget.startsWith("stop-")
@@ -1237,7 +1287,7 @@ export default function LocationPickerModal({
                       ))
                 }
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate leading-normal">
                 {subtitle || (
                   currentTarget === "airport"
                     ? "Search airport or terminal, pin on map, or select a popular airport hub"
