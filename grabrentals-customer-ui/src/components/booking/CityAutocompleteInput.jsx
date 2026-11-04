@@ -294,7 +294,7 @@ export default function CityAutocompleteInput({
     <div ref={containerRef} className={`relative w-full min-w-0 ${containerClassName}`}>
       <div className="relative flex items-center w-full min-w-0">
         {Icon && (
-          <Icon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none shrink-0 ${iconColor}`} />
+          <Icon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none shrink-0 ${iconColor}`} />
         )}
         <input
           ref={inputRef}
@@ -307,7 +307,7 @@ export default function CityAutocompleteInput({
           disabled={disabled}
           required={required}
           autoComplete="off"
-          className={`w-full min-w-0 pl-11 ${rightElement ? "pr-14" : "pr-8"} py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm ${inputClassName}`}
+          className={`w-full min-w-0 pl-10 sm:pl-11 ${rightElement ? "pr-14" : "pr-8"} h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm ${inputClassName}`}
         />
 
         {/* Clear content button */}

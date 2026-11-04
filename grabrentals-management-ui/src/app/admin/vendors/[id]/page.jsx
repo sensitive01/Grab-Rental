@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { Input } from "@/components/ui/Input";
+import { Input, Select, Textarea } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
 import { 
   Building2, 
@@ -31,7 +31,9 @@ import {
   Calendar,
   Sparkles,
   User,
-  ChevronRight
+  ChevronRight,
+  Pencil,
+  Save
 } from "lucide-react";
 
 export default function VendorDetailPage({ params }) {
@@ -51,6 +53,16 @@ export default function VendorDetailPage({ params }) {
 
   // Selected driver for full dossier modal
   const [selectedDriver, setSelectedDriver] = useState(null);
+
+  // Driver editing state
+  const [isEditingDriver, setIsEditingDriver] = useState(false);
+  const [editDriverForm, setEditDriverForm] = useState(null);
+  const [savingDriver, setSavingDriver] = useState(false);
+
+  // Vendor editing state
+  const [editVendorModalOpen, setEditVendorModalOpen] = useState(false);
+  const [editVendorForm, setEditVendorForm] = useState(null);
+  const [savingVendor, setSavingVendor] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -122,6 +134,121 @@ export default function VendorDetailPage({ params }) {
       });
     } finally {
       setApproving(false);
+    }
+  };
+
+  const openEditDriver = (driver) => {
+    setSelectedDriver(driver);
+    setEditDriverForm({
+      name: driver.name || "",
+      phone: driver.phone || "",
+      email: driver.email || "",
+      dob: driver.dob || "",
+      gender: driver.gender || "male",
+      bloodGroup: driver.bloodGroup || "",
+      languagesSpoken: driver.languagesSpoken || "English, Hindi, Kannada, Tamil, Telugu",
+      address: driver.address || "",
+      licenseNumber: driver.licenseNumber || "",
+      licenseClass: driver.licenseClass || "LMV-TR (Transport)",
+      licenseExpiry: driver.licenseExpiry || "",
+      experienceYears: driver.experienceYears || "",
+      drivingSince: driver.drivingSince || "",
+      emergencyContactName: driver.emergencyContactName || driver.emergencyContact?.split("(")[0]?.trim() || "",
+      emergencyContactPhone: driver.emergencyContactPhone || driver.emergencyContact?.replace(/[^0-9]/g, "") || "",
+      verificationStatus: driver.verificationStatus || "Verified",
+      idProofType: driver.idProofType || "Aadhaar Card",
+      idProofNumber: driver.idProofNumber || "",
+      addressProofType: driver.addressProofType || "Aadhaar Card",
+      addressProofNumber: driver.addressProofNumber || "",
+      status: driver.status || "AVAILABLE",
+      notes: driver.notes || "",
+    });
+    setIsEditingDriver(true);
+  };
+
+  const handleSaveDriver = async () => {
+    if (!selectedDriver || !editDriverForm) return;
+    setSavingDriver(true);
+    try {
+      const updated = {
+        ...selectedDriver,
+        ...editDriverForm,
+        experienceYears: editDriverForm.experienceYears ? Number(editDriverForm.experienceYears) : selectedDriver.experienceYears,
+      };
+
+      await adminApi.updateDriver(selectedDriver.id, updated);
+
+      setSelectedDriver(updated);
+      setVendor((prev) => {
+        if (!prev) return prev;
+        const drivers = (prev.drivers || []).map((d) => (d.id === selectedDriver.id ? updated : d));
+        return { ...prev, drivers };
+      });
+
+      setIsEditingDriver(false);
+      setToastMessage({
+        type: "success",
+        text: `Chauffeur profile for "${updated.name}" updated successfully!`,
+      });
+    } catch (err) {
+      setToastMessage({
+        type: "error",
+        text: "Failed to update driver: " + (err.message || "Unknown error"),
+      });
+    } finally {
+      setSavingDriver(false);
+    }
+  };
+
+  const openEditVendor = () => {
+    if (!vendor) return;
+    setEditVendorForm({
+      companyName: vendor.companyName || vendor.businessName || vendor.name || "",
+      ownerName: vendor.ownerName || vendor.contactPerson || vendor.name || "",
+      phone: vendor.phone === "—" ? "" : (vendor.phone || ""),
+      alternatePhone: vendor.alternatePhone === "—" ? "" : (vendor.alternatePhone || ""),
+      email: vendor.email || "",
+      address: vendor.address === "Hub Operations" ? "" : (vendor.address || ""),
+      city: vendor.city === "Primary Hub" ? "" : (vendor.city || ""),
+      gstNumber: vendor.gstNumber === "Pending Submission" ? "" : (vendor.gstNumber || ""),
+      panNumber: vendor.panNumber === "—" ? "" : (vendor.panNumber || ""),
+      bankName: vendor.bankName === "—" ? "" : (vendor.bankName || ""),
+      accountNumber: vendor.accountNumber === "—" ? "" : (vendor.accountNumber || ""),
+      ifsc: vendor.ifsc === "—" ? "" : (vendor.ifsc || ""),
+      branch: vendor.branch === "—" ? "" : (vendor.branch || ""),
+    });
+    setEditVendorModalOpen(true);
+  };
+
+  const handleSaveVendor = async () => {
+    if (!vendor || !editVendorForm) return;
+    setSavingVendor(true);
+    try {
+      const updatedVendor = {
+        ...vendor,
+        ...editVendorForm,
+        name: editVendorForm.companyName || vendor.name,
+        businessName: editVendorForm.companyName || vendor.businessName,
+        companyName: editVendorForm.companyName || vendor.companyName,
+        contactPerson: editVendorForm.ownerName || vendor.contactPerson,
+        ownerName: editVendorForm.ownerName || vendor.ownerName,
+      };
+
+      await adminApi.updateVendor(vendor.id, updatedVendor);
+
+      setVendor(updatedVendor);
+      setEditVendorModalOpen(false);
+      setToastMessage({
+        type: "success",
+        text: `Vendor "${updatedVendor.name}" profile updated successfully!`,
+      });
+    } catch (err) {
+      setToastMessage({
+        type: "error",
+        text: "Failed to update vendor: " + (err.message || "Unknown error"),
+      });
+    } finally {
+      setSavingVendor(false);
     }
   };
 
@@ -240,6 +367,14 @@ export default function VendorDetailPage({ params }) {
                 </Badge>
               </div>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Pencil}
+              onClick={openEditVendor}
+            >
+              Edit Vendor Info
+            </Button>
             <Link href="/admin/vendors">
               <Button variant="secondary" size="sm" icon={ArrowLeft}>
                 Back to Directory
@@ -670,9 +805,22 @@ export default function VendorDetailPage({ params }) {
                   ) : (
                     <span className="text-slate-400 italic">No license doc</span>
                   )}
-                  <span className="inline-flex items-center gap-1 font-bold text-blue-600 group-hover:text-blue-800 group-hover:translate-x-0.5 transition-transform">
-                    View All Details <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditDriver(d);
+                      }}
+                      className="inline-flex items-center gap-1 font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 transition-colors"
+                      title="Edit chauffeur details"
+                    >
+                      <Pencil className="w-3 h-3" /> Edit
+                    </button>
+                    <span className="inline-flex items-center gap-1 font-bold text-blue-600 group-hover:text-blue-800 group-hover:translate-x-0.5 transition-transform">
+                      View All Details <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -687,34 +835,303 @@ export default function VendorDetailPage({ params }) {
       </Card>
       </div>
 
-      {/* CHAUFFEUR COMPREHENSIVE DETAILS MODAL */}
+      {/* CHAUFFEUR COMPREHENSIVE DETAILS & EDIT MODAL */}
       <Modal
         isOpen={!!selectedDriver}
-        onClose={() => setSelectedDriver(null)}
-        title={selectedDriver ? `Chauffeur Dossier: ${selectedDriver.name}` : "Chauffeur Details"}
-        subtitle="Complete personal background, commercial license, compliance proofs & emergency contact"
+        onClose={() => {
+          setSelectedDriver(null);
+          setIsEditingDriver(false);
+        }}
+        title={
+          selectedDriver
+            ? isEditingDriver
+              ? `Edit Chauffeur: ${selectedDriver.name}`
+              : `Chauffeur Dossier: ${selectedDriver.name}`
+            : "Chauffeur Details"
+        }
+        subtitle={
+          isEditingDriver
+            ? "Update driver demographics, commercial license credentials, and identity proofs"
+            : "Complete personal background, commercial license, compliance proofs & emergency contact"
+        }
         size="xl"
         footer={
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
-              <Badge variant={selectedDriver?.status === "AVAILABLE" ? "success" : "warning"} size="sm" dot>
-                Status: {selectedDriver?.status || "AVAILABLE"}
-              </Badge>
-              <Badge variant={selectedDriver?.verificationStatus === "Verified" ? "success" : "neutral"} size="sm">
-                Verification: {selectedDriver?.verificationStatus || "Verified Active"}
-              </Badge>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setSelectedDriver(null)}
-            >
-              Close Dossier
-            </Button>
+            {isEditingDriver ? (
+              <>
+                <span className="text-xs text-slate-500">
+                  Editing profile for <strong className="text-slate-800">{selectedDriver?.name}</strong>
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsEditingDriver(false)}
+                    disabled={savingDriver}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={Save}
+                    isLoading={savingDriver}
+                    onClick={handleSaveDriver}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <Badge variant={selectedDriver?.status === "AVAILABLE" ? "success" : "warning"} size="sm" dot>
+                    Status: {selectedDriver?.status || "AVAILABLE"}
+                  </Badge>
+                  <Badge variant={selectedDriver?.verificationStatus === "Verified" ? "success" : "neutral"} size="sm">
+                    Verification: {selectedDriver?.verificationStatus || "Verified Active"}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={Pencil}
+                    onClick={() => openEditDriver(selectedDriver)}
+                  >
+                    Edit Driver Details
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDriver(null);
+                      setIsEditingDriver(false);
+                    }}
+                  >
+                    Close Dossier
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         }
       >
         {selectedDriver && (
+          isEditingDriver && editDriverForm ? (
+            <div className="space-y-5 text-xs">
+              {/* Alert info banner */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-blue-900">
+                <div className="flex items-center gap-2">
+                  <Pencil className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="font-semibold text-xs">Editing Chauffeur Profile & Credentials</span>
+                </div>
+                <span className="text-[11px] text-blue-700 font-mono">ID: {selectedDriver.id}</span>
+              </div>
+
+              {/* Section 1: Personal & Demographics */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <User className="w-4 h-4 text-blue-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">Personal & Demographics</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <Input
+                    label="Full Legal Name"
+                    value={editDriverForm.name}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, name: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label="Primary Phone Number"
+                    value={editDriverForm.phone}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, phone: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label="Email Address"
+                    type="email"
+                    value={editDriverForm.email}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, email: e.target.value })}
+                  />
+                  <Input
+                    label="Date of Birth"
+                    type="date"
+                    value={editDriverForm.dob}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, dob: e.target.value })}
+                  />
+                  <Select
+                    label="Gender"
+                    value={editDriverForm.gender}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, gender: e.target.value })}
+                    options={[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                      { value: "other", label: "Other" },
+                    ]}
+                  />
+                  <Select
+                    label="Blood Group"
+                    value={editDriverForm.bloodGroup}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, bloodGroup: e.target.value })}
+                    placeholder="Select Blood Group"
+                    options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]}
+                  />
+                  <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                    <Input
+                      label="Languages Spoken"
+                      value={editDriverForm.languagesSpoken}
+                      onChange={(e) => setEditDriverForm({ ...editDriverForm, languagesSpoken: e.target.value })}
+                      placeholder="e.g. English, Tamil, Hindi, Telugu, Kannada, Malayalam"
+                    />
+                  </div>
+                  <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                    <Textarea
+                      label="Residential Address"
+                      rows={2}
+                      value={editDriverForm.address}
+                      onChange={(e) => setEditDriverForm({ ...editDriverForm, address: e.target.value })}
+                      placeholder="Complete residential address"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: License & Credentials */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">License & Credentials</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <Input
+                    label="Commercial License Number"
+                    value={editDriverForm.licenseNumber}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, licenseNumber: e.target.value.toUpperCase() })}
+                    placeholder="e.g. KA0120220001234"
+                    required
+                  />
+                  <Select
+                    label="License Class"
+                    value={editDriverForm.licenseClass}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, licenseClass: e.target.value })}
+                    options={[
+                      { value: "LMV-TR (Transport)", label: "LMV-TR (Transport)" },
+                      { value: "LMV", label: "LMV (Light Motor Vehicle)" },
+                      { value: "HMV", label: "HMV (Heavy Motor Vehicle)" },
+                      { value: "Commercial All-India", label: "Commercial All-India" },
+                    ]}
+                  />
+                  <Input
+                    label="License Expiry Date"
+                    type="date"
+                    value={editDriverForm.licenseExpiry}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, licenseExpiry: e.target.value })}
+                  />
+                  <Input
+                    label="Experience (Years)"
+                    type="number"
+                    value={editDriverForm.experienceYears}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, experienceYears: e.target.value })}
+                    placeholder="e.g. 8"
+                  />
+                  <Input
+                    label="Driving Since Date"
+                    type="date"
+                    value={editDriverForm.drivingSince}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, drivingSince: e.target.value })}
+                  />
+                  <Select
+                    label="Duty Status"
+                    value={editDriverForm.status}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, status: e.target.value })}
+                    options={[
+                      { value: "AVAILABLE", label: "AVAILABLE" },
+                      { value: "ON_TRIP", label: "ON_TRIP" },
+                      { value: "OFF_DUTY", label: "OFF_DUTY" },
+                      { value: "SUSPENDED", label: "SUSPENDED" },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Section 3: Emergency Contact Details */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Phone className="w-4 h-4 text-amber-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">Emergency Contact Details</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <Input
+                    label="Contact Person"
+                    value={editDriverForm.emergencyContactName}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, emergencyContactName: e.target.value })}
+                    placeholder="e.g. Family member name"
+                  />
+                  <Input
+                    label="Emergency Phone"
+                    value={editDriverForm.emergencyContactPhone}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, emergencyContactPhone: e.target.value })}
+                    placeholder="e.g. 9876543210"
+                  />
+                  <Select
+                    label="Verification Status"
+                    value={editDriverForm.verificationStatus}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, verificationStatus: e.target.value })}
+                    options={[
+                      { value: "Verified", label: "Verified Active" },
+                      { value: "Pending Verification", label: "Pending Verification" },
+                      { value: "In Review", label: "In Review" },
+                      { value: "Rejected", label: "Rejected" },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Section 4: Government Proofs & Identity */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">Government Proofs & Identity</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Select
+                    label="ID Proof Type"
+                    value={editDriverForm.idProofType}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, idProofType: e.target.value })}
+                    options={["Aadhaar Card", "PAN Card", "Voter ID", "Passport"]}
+                  />
+                  <Input
+                    label="ID Proof Number"
+                    value={editDriverForm.idProofNumber}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, idProofNumber: e.target.value })}
+                    placeholder="e.g. 1234 5678 9012"
+                  />
+                  <Select
+                    label="Address Proof Type"
+                    value={editDriverForm.addressProofType}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, addressProofType: e.target.value })}
+                    options={["Aadhaar Card", "Voter ID", "Utility Bill", "Rent Agreement", "Passport"]}
+                  />
+                  <Input
+                    label="Address Proof Number"
+                    value={editDriverForm.addressProofNumber}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, addressProofNumber: e.target.value })}
+                    placeholder="e.g. Address Proof Number"
+                  />
+                  <div className="col-span-1 sm:col-span-2">
+                    <Textarea
+                      label="Administrative Notes"
+                      rows={2}
+                      value={editDriverForm.notes}
+                      onChange={(e) => setEditDriverForm({ ...editDriverForm, notes: e.target.value })}
+                      placeholder="Notes regarding chauffeur verification, background check, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-6 text-xs">
             {/* Top Header Card */}
             <div className="p-4 bg-gradient-to-r from-slate-50 via-blue-50/40 to-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
@@ -765,6 +1182,15 @@ export default function VendorDetailPage({ params }) {
                 <div className="text-right text-[11px] text-slate-500">
                   <span className="font-bold text-slate-800 text-xs">{selectedDriver.totalTrips || 0}</span> Completed Trips
                 </div>
+                <Button
+                  variant="primary"
+                  size="xs"
+                  icon={Pencil}
+                  onClick={() => openEditDriver(selectedDriver)}
+                  className="mt-1"
+                >
+                  Edit Profile
+                </Button>
               </div>
             </div>
 
@@ -1037,6 +1463,147 @@ export default function VendorDetailPage({ params }) {
                 <p className="text-slate-700">{selectedDriver.notes}</p>
               </div>
             )}
+          </div>
+          )
+        )}
+      </Modal>
+
+      {/* EDIT VENDOR MODAL */}
+      <Modal
+        isOpen={editVendorModalOpen}
+        onClose={() => setEditVendorModalOpen(false)}
+        title={vendor ? `Edit Vendor: ${vendor.name}` : "Edit Vendor"}
+        subtitle="Update registered business name, contact coordinates, tax credentials & banking info"
+        size="lg"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <span className="text-xs text-slate-500">
+              Partner ID: <strong className="font-mono text-slate-700">{vendor?.id}</strong>
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditVendorModalOpen(false)}
+                disabled={savingVendor}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Save}
+                isLoading={savingVendor}
+                onClick={handleSaveVendor}
+              >
+                Save Vendor Info
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        {editVendorForm && (
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-blue-900">
+              <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+              <span className="font-semibold text-xs">Edit Vendor Profile & Business Details</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <Input
+                label="Company / Fleet Name"
+                value={editVendorForm.companyName}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, companyName: e.target.value })}
+                placeholder="e.g. Uday Travels"
+                required
+              />
+              <Input
+                label="Owner / Contact Person"
+                value={editVendorForm.ownerName}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, ownerName: e.target.value })}
+                placeholder="e.g. Uday Kumar"
+                required
+              />
+              <Input
+                label="Primary Phone Number"
+                value={editVendorForm.phone}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, phone: e.target.value })}
+                placeholder="e.g. 9035020834"
+                required
+              />
+              <Input
+                label="Alternate Phone Number"
+                value={editVendorForm.alternatePhone}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, alternatePhone: e.target.value })}
+                placeholder="e.g. 9876543210"
+              />
+              <div className="col-span-1 sm:col-span-2">
+                <Input
+                  label="Email Address"
+                  type="email"
+                  value={editVendorForm.email}
+                  onChange={(e) => setEditVendorForm({ ...editVendorForm, email: e.target.value })}
+                  placeholder="e.g. uday@vendor.grabrentals.in"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-3 border-t border-slate-100">
+              <Input
+                label="Operating City / Hub"
+                value={editVendorForm.city}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, city: e.target.value })}
+                placeholder="e.g. Bangalore"
+              />
+              <Input
+                label="Full Office / Hub Address"
+                value={editVendorForm.address}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, address: e.target.value })}
+                placeholder="e.g. No. 12, Indiranagar, Bangalore"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-3 border-t border-slate-100">
+              <Input
+                label="GSTIN Number"
+                value={editVendorForm.gstNumber}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, gstNumber: e.target.value.toUpperCase() })}
+                placeholder="e.g. 29ABCDE1234F1Z5"
+              />
+              <Input
+                label="PAN Number"
+                value={editVendorForm.panNumber}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, panNumber: e.target.value.toUpperCase() })}
+                placeholder="e.g. ABCDE1234F"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-3 border-t border-slate-100">
+              <Input
+                label="Bank Name"
+                value={editVendorForm.bankName}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, bankName: e.target.value })}
+                placeholder="e.g. HDFC Bank"
+              />
+              <Input
+                label="Account Number"
+                value={editVendorForm.accountNumber}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, accountNumber: e.target.value })}
+                placeholder="e.g. 50100234567890"
+              />
+              <Input
+                label="IFSC Code"
+                value={editVendorForm.ifsc}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, ifsc: e.target.value.toUpperCase() })}
+                placeholder="e.g. HDFC0001234"
+              />
+              <Input
+                label="Branch"
+                value={editVendorForm.branch}
+                onChange={(e) => setEditVendorForm({ ...editVendorForm, branch: e.target.value })}
+                placeholder="e.g. Koramangala"
+              />
+            </div>
           </div>
         )}
       </Modal>

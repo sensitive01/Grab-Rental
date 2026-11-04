@@ -11,6 +11,7 @@ import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
 import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
 import TripTypeSelectDropdown from "@/components/booking/TripTypeSelectDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
+import { reverseGeocodeCoordinates } from "@/lib/googleMaps";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   formatLocalDate,
@@ -145,8 +146,48 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
     };
   }, []);
 
+  // Auto-detect user current location on initial mount and clear destination
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          if (!lat || !lng) return;
+
+          // Clear destination & route estimate immediately so no stale route is displayed
+          setDropCity("");
+          setDropCoords(null);
+          setDropDetails(null);
+          setGoogleRoute(null);
+
+          setPickupCoords({ lat, lng });
+
+          const resolved = await reverseGeocodeCoordinates(lat, lng);
+          if (resolved?.label) {
+            setPickupCity(resolved.label);
+            if (resolved.details) {
+              setPickupDetails(resolved.details);
+            }
+          }
+        } catch (err) {
+          console.warn("Location detection reverse geocode error:", err);
+        }
+      },
+      (err) => {
+        console.warn("Location access denied or dismissed:", err.message);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  }, []);
+
   const allowsStops = activeTab === "outstation";
-  const showSwap = allowsStops || activeTab === "airport";
+  const showSwap = allowsStops;
 
   // Tab scroll navigation for mobile view
   const tabsRef = useRef(null);
@@ -326,40 +367,55 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
     return dropCity;
   }, [activeTab, airportTripType, dropCity, selectedAirport]);
 
+  const hasValidRouteEndpoints = Boolean(
+    effectiveFrom && effectiveFrom.trim() &&
+    effectiveTo && effectiveTo.trim()
+  );
+
   // Automatic KM & Route Duration Detection (Instant synchronous fallback + Google Routes API async)
   const initialEstimate = useMemo(() => {
-    if (activeTab === "local") {
+    if (activeTab === "local" || !hasValidRouteEndpoints) {
       return { isDetected: false, distanceKm: 0, durationHours: 0, durationText: "" };
     }
     return detectRouteDistance(effectiveFrom, effectiveTo, allowsStops ? stops : [], tripType);
-  }, [effectiveFrom, effectiveTo, stops, tripType, activeTab, allowsStops]);
+  }, [effectiveFrom, effectiveTo, stops, tripType, activeTab, allowsStops, hasValidRouteEndpoints]);
 
   const [googleRoute, setGoogleRoute] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     async function loadGoogleRoute() {
-      if (!effectiveFrom || !effectiveTo || activeTab === "local" || activeTab === "package") return;
+      if (!hasValidRouteEndpoints || activeTab === "local" || activeTab === "package") {
+        setGoogleRoute(null);
+        return;
+      }
       try {
         const res = await fetchGoogleRouteDistance(effectiveFrom, effectiveTo, allowsStops ? stops : [], tripType, {
           originCoords: activeTab === "airport" && airportTripType === "pickup" ? airportCoords : pickupCoords,
           destinationCoords: activeTab === "airport" && airportTripType === "drop" ? airportCoords : dropCoords,
           stopsCoords: allowsStops ? stopsCoords : []
         });
-        if (!cancelled && res?.isDetected) {
-          setGoogleRoute(res);
+        if (!cancelled) {
+          if (res?.isDetected) {
+            setGoogleRoute(res);
+          } else {
+            setGoogleRoute(null);
+          }
         }
       } catch (err) {
         console.warn("Could not fetch Google Route:", err);
+        if (!cancelled) setGoogleRoute(null);
       }
     }
     loadGoogleRoute();
     return () => {
       cancelled = true;
     };
-  }, [effectiveFrom, effectiveTo, stops, tripType, pickupCoords, dropCoords, airportCoords, stopsCoords, activeTab, allowsStops, airportTripType]);
+  }, [effectiveFrom, effectiveTo, stops, tripType, pickupCoords, dropCoords, airportCoords, stopsCoords, activeTab, allowsStops, airportTripType, hasValidRouteEndpoints]);
 
-  const routeEstimate = googleRoute || initialEstimate;
+  const routeEstimate = hasValidRouteEndpoints
+    ? (googleRoute || initialEstimate)
+    : { isDetected: false, distanceKm: 0, durationHours: 0, durationText: "" };
 
   // Stop management
   const handleAddStop = (index) => {
@@ -442,10 +498,10 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       params.set("airport", selectedAirport);
       params.set("tripType", airportTripType === "drop" ? "Airport Drop" : "Airport Pickup");
     } else if (activeTab === "package") {
-      const fromLoc = pickupCity || "Bangalore, Karnataka";
-      const toLoc = dropCity || "Coimbatore, Tamil Nadu";
-      params.set("from", fromLoc);
-      params.set("to", toLoc);
+      const fromLoc = pickupCity;
+      const toLoc = dropCity;
+      if (fromLoc) params.set("from", fromLoc);
+      if (toLoc) params.set("to", toLoc);
       params.set("tripType", "round-trip");
     } else if (activeTab === "local") {
       if (pickupCity) params.set("from", pickupCity);
@@ -552,8 +608,21 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       toLoc = selectedPackage;
       pkgVal = selectedPackage;
     } else if (activeTab === "package") {
-      fromLoc = pickupCity || "Bangalore, Karnataka";
-      toLoc = dropCity || "Coimbatore, Tamil Nadu";
+      fromLoc = pickupCity;
+      toLoc = dropCity;
+    }
+
+    if ((activeTab === "outstation" || activeTab === "package") && (!toLoc || !toLoc.trim())) {
+      alert("Please choose a destination to search cabs.");
+      return;
+    }
+    if (activeTab === "airport" && airportTripType === "pickup" && (!toLoc || !toLoc.trim())) {
+      alert("Please choose a drop location / address to search cabs.");
+      return;
+    }
+    if (!fromLoc || !fromLoc.trim()) {
+      alert("Please enter a pickup location to search cabs.");
+      return;
     }
 
     const tripData = {
@@ -764,27 +833,27 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
           </div>
         </div>
       ) : allowsStops ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-5">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="mb-4 sm:mb-5">
+          <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             {[
-              { id: "round-trip", label: t("round_trip") },
-              { id: "one-way", label: t("one_way") },
-              { id: "multi-city-tour", label: t("multi_city_tour") || "Multi-City Tour" },
+              { id: "round-trip", label: t("round_trip") || "RoundTrip" },
+              { id: "one-way", label: t("one_way") || "OneWay" },
+              { id: "multi-city-tour", label: t("multi_city_tour") || "MultiCity" },
             ].map((item) => {
               const isSelected = tripType === item.id;
               return (
                 <label
                   key={item.id}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none ${isSelected
+                  className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none min-w-0 ${isSelected
                       ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
                       : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
                     }`}
                 >
                   <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-[#0082fe]" : "border-slate-300"
                       }`}
                   >
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#0082fe]" />}
+                    {isSelected && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#0082fe]" />}
                   </div>
                   <input
                     type="radio"
@@ -794,7 +863,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                     onChange={(e) => handleTripTypeChange(e.target.value)}
                     className="hidden"
                   />
-                  <span className="text-xs sm:text-sm capitalize whitespace-nowrap">
+                  <span className="text-[11px] sm:text-sm tracking-tight sm:tracking-normal whitespace-nowrap">
                     {item.label}
                   </span>
                 </label>
@@ -936,7 +1005,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   setDropCoords(coords || null);
                   if (details) setDropDetails(details);
                 }}
-                placeholder="e.g. Coimbatore, Tamil Nadu"
+                placeholder={t("choose_the_location") || "Choose the location"}
                 iconColor="text-brand-orange"
                 inputClassName="rounded-xl"
               />
@@ -973,7 +1042,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   min={minDateStr}
                   suppressHydrationWarning
                   onChange={(e) => handlePickupDateChange(e.target.value)}
-                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
+                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
                 />
               </div>
             </div>
@@ -992,7 +1061,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
 
             {/* DROP / RETURN DATE (for Round Trip) */}
             {isRoundTrip && (
-              <div className="col-span-2 sm:col-span-1 lg:col-span-3 min-w-0">
+              <div className="col-span-1 lg:col-span-3 min-w-0">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 truncate">
                   {t("return_date")}
                 </label>
@@ -1004,19 +1073,19 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                     min={pickupDate || minDateStr}
                     suppressHydrationWarning
                     onChange={(e) => setDropDate(e.target.value)}
-                    className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
+                    className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
                   />
                 </div>
               </div>
             )}
 
             {/* CTA Button: EXPLORE / SEARCH CABS */}
-            <div className={`col-span-2 sm:col-span-1 ${isRoundTrip ? "lg:col-span-3" : "lg:col-span-4"}`}>
+            <div className={`min-w-0 ${isRoundTrip ? "col-span-1 lg:col-span-3" : "col-span-2 lg:col-span-4"}`}>
               <button
                 type="button"
                 onClick={handleExploreClick}
                 suppressHydrationWarning
-                className="flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white py-3 sm:py-3.5 px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0 cursor-pointer"
+                className="flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 px-3 sm:px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0 cursor-pointer"
               >
                 {t("search_cabs")} <ArrowRight className="w-4 h-4" />
               </button>
@@ -1104,7 +1173,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               <button
                 type="button"
                 onClick={handleSwap}
-                title={activeTab === "airport" ? "Switch between Drop to Airport & Pickup from Airport" : "Swap Pickup & Destination"}
+                title="Swap Pickup & Destination"
                 className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:text-brand-amber hover:border-brand-amber hover:bg-blue-50 transition-all shadow-sm group cursor-pointer"
               >
                 <ArrowLeftRight className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -1118,7 +1187,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               <button
                 type="button"
                 onClick={handleSwap}
-                title={activeTab === "airport" ? "Switch between Drop to Airport & Pickup from Airport" : "Swap Pickup & Destination"}
+                title="Swap Pickup & Destination"
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-brand-amber hover:border-brand-amber shadow-sm cursor-pointer"
               >
                 <ArrowLeftRight className="w-3.5 h-3.5 rotate-90" />
@@ -1197,7 +1266,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   setMapTarget("drop");
                   setIsMapModalOpen(true);
                 }}
-                placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : "e.g. Coimbatore, Tamil Nadu"}
+                placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : (t("choose_the_location") || "Choose the location")}
                 iconColor="text-brand-orange"
                 inputClassName="rounded-xl"
               />
@@ -1235,7 +1304,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   min={minDateStr}
                   suppressHydrationWarning
                   onChange={(e) => handlePickupDateChange(e.target.value)}
-                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
+                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
                 />
               </div>
             </div>
@@ -1261,7 +1330,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               type="button"
               onClick={handleExploreClick}
               suppressHydrationWarning
-              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white py-3.5 rounded-xl font-extrabold text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
             >
               {t("search_cabs")} <ArrowRight className="w-4 h-4" />
             </button>
@@ -1270,7 +1339,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       )}
 
       {/* Automatic Route Distance & Driving Time Detection Banner */}
-      {routeEstimate.isDetected && routeEstimate.distanceKm > 0 && activeTab !== "local" && (
+      {hasValidRouteEndpoints && routeEstimate.isDetected && routeEstimate.distanceKm > 0 && activeTab !== "local" && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-blue-50/70 border border-blue-200/80 px-4 py-2.5 rounded-xl">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="flex h-2.5 w-2.5 relative">

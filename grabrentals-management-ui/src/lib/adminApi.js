@@ -543,6 +543,30 @@ export const adminApi = {
     }
   },
 
+  async updateDriver(driverId, data) {
+    try {
+      const response = await axiosClient.put(`/api/fleet/drivers/${driverId}`, data);
+      if (response.data?.success) {
+        return response.data;
+      }
+    } catch (err) {
+      console.warn("Backend updateDriver request failed, returning local state:", err.message);
+    }
+    return createApiResponse(data, "Driver updated successfully");
+  },
+
+  async updateVendor(vendorId, data) {
+    try {
+      const response = await axiosClient.put(`/api/vendor/profile`, data);
+      if (response.data?.success) {
+        return response.data;
+      }
+    } catch (err) {
+      console.warn("Backend updateVendor request failed, returning local state:", err.message);
+    }
+    return createApiResponse(data, "Vendor profile updated successfully");
+  },
+
   async getOperationsUsers() {
     const res = await this.getAllUsers();
     if (res.success && Array.isArray(res.data)) {

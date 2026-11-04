@@ -160,37 +160,33 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col justify-between bg-slate-950 text-white selection:bg-amber-500 selection:text-slate-950 overflow-hidden">
+    <div className="min-h-screen min-h-dvh relative flex flex-col justify-between bg-slate-950 text-white selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
       
       {/* Ambient background glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[540px] h-[540px] bg-amber-500/10 rounded-full blur-[130px] pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
 
       {/* Top Navigation Bar */}
-      <header className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-3.5 sm:py-5 flex items-center justify-between gap-3 relative z-50">
-        <Link href="/login" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+      <header className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-2.5 sm:py-5 flex items-center justify-between gap-2 sm:gap-3 relative z-50">
+        <Link href="/login" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-0">
           <img
             src="/images/brand-logo.png"
             alt="Grab Rentals"
-            className="h-8 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform"
+            className="h-7 sm:h-9 w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform shrink-0"
           />
-          <div>
-            <span className="font-extrabold text-xs sm:text-sm tracking-tight text-white block leading-tight">
-              GRAB RENTALS
-            </span>
-            <span className="text-[9px] sm:text-[10px] font-bold text-amber-400 tracking-wider uppercase block -mt-0.5">
-              Vendor Portal
-            </span>
-          </div>
+          <span className="font-black text-xs sm:text-sm tracking-wider uppercase text-amber-400 whitespace-nowrap">
+            Vendor Portal
+          </span>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <LanguageSelector variant="dark" />
           <Link
             href="/register"
-            className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 whitespace-nowrap"
+            className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 whitespace-nowrap shrink-0"
           >
-            {t("become_partner")}
+            <span className="sm:hidden">{t("partner_register_short") || "Register"}</span>
+            <span className="hidden sm:inline">{t("become_partner")}</span>
           </Link>
           <a
             href="https://grabrentals.in/"
@@ -205,15 +201,15 @@ function LoginContent() {
       </header>
 
       {/* Centered Sign-In Card */}
-      <main className="flex-1 flex items-center justify-center px-3.5 sm:px-4 py-4 sm:py-8 relative z-10 w-full">
-        <div className="w-full max-w-[420px] bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-9 shadow-2xl shadow-black/70 space-y-5 sm:space-y-6">
+      <main className="flex-1 flex items-center justify-center px-3 sm:px-4 py-3 sm:py-8 relative z-10 w-full">
+        <div className="w-full max-w-[420px] bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-9 shadow-2xl shadow-black/70 space-y-4 sm:space-y-6">
           
           {/* Header */}
-          <div className="space-y-1.5 sm:space-y-2 text-center">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-400 mx-auto flex items-center justify-center shadow-inner">
+          <div className="space-y-1 sm:space-y-2 text-center">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-400 mx-auto flex items-center justify-center shadow-inner">
               <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+            <h1 className="text-base sm:text-2xl font-black text-white tracking-tight">
               {t("sign_in_title")}
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
@@ -229,14 +225,14 @@ function LoginContent() {
                 setAuthMethod("PHONE");
                 setError("");
               }}
-              className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-2 px-1 rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-center ${
                 authMethod === "PHONE"
-                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <Phone className="w-3.5 h-3.5" />
-              <span>{t("mobile_tab")}</span>
+              <Phone className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{t("mobile_tab")}</span>
             </button>
             <button
               type="button"
@@ -244,14 +240,14 @@ function LoginContent() {
                 setAuthMethod("EMAIL");
                 setError("");
               }}
-              className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-2 px-1 rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-center ${
                 authMethod === "EMAIL"
-                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <Lock className="w-3.5 h-3.5" />
-              <span>{t("email_tab")}</span>
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{t("email_tab")}</span>
             </button>
           </div>
 
@@ -286,12 +282,14 @@ function LoginContent() {
                       </span>
                       <input
                         type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel"
                         maxLength={10}
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
                         placeholder="98765 43210"
-                        className="w-full pl-14 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs font-bold tracking-wider"
+                        className="w-full pl-14 pr-4 py-3 sm:py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-base sm:text-xs font-bold tracking-wider"
                       />
                     </div>
                   </div>
@@ -299,7 +297,7 @@ function LoginContent() {
                   <button
                     type="submit"
                     disabled={loading || phone.length < 10}
-                    className="w-full h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
+                    className="w-full h-12 sm:h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
                   >
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
@@ -340,12 +338,15 @@ function LoginContent() {
                     </div>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="one-time-code"
                       maxLength={6}
                       required
                       value={otp}
                       onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
                       placeholder="• • • • • •"
-                      className="w-full text-center text-xl tracking-widest font-black py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all"
+                      className="w-full text-center text-xl tracking-widest font-black py-3 sm:py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all"
                     />
                   </div>
 
@@ -367,7 +368,7 @@ function LoginContent() {
                   <button
                     type="submit"
                     disabled={loading || otp.length !== 6}
-                    className="w-full h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
+                    className="w-full h-12 sm:h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
                   >
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
@@ -396,12 +397,14 @@ function LoginContent() {
                   </span>
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
                     maxLength={10}
                     required
                     value={loginPhone}
                     onChange={(e) => setLoginPhone(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
                     placeholder="98765 43210"
-                    className="w-full pl-14 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs font-bold tracking-wider"
+                    className="w-full pl-14 pr-4 py-3 sm:py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-base sm:text-xs font-bold tracking-wider"
                   />
                 </div>
               </div>
@@ -422,11 +425,12 @@ function LoginContent() {
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-xs"
+                    className="w-full pl-10 pr-10 py-3 sm:py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-base sm:text-xs"
                   />
                   <button
                     type="button"
@@ -453,13 +457,13 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading || loginPhone.length < 10}
-                className="w-full h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
+                className="w-full h-12 sm:h-11 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] disabled:opacity-50 cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
                 ) : (
                   <>
-                    <span>{t("verify_otp")}</span>
+                    <span>{t("use_password") || "Sign In"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -471,7 +475,7 @@ function LoginContent() {
           <div className="pt-2 text-center">
             <Link
               href="/driver/login"
-              className="text-xs font-semibold text-slate-400 hover:text-amber-400 transition-colors hover:underline"
+              className="inline-block py-1 px-3 text-xs font-semibold text-slate-400 hover:text-amber-400 hover:bg-slate-800/40 rounded-lg transition-colors"
             >
               Login as driver
             </Link>

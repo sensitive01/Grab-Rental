@@ -123,7 +123,7 @@ export default function RootLayout({ children }) {
                 if (window.google && window.google.translate) {
                   new window.google.translate.TranslateElement({
                     pageLanguage: 'en',
-                    includedLanguages: 'en,kn,hi,ta,te',
+                    includedLanguages: 'en,kn,hi,ta,te,ml',
                     autoDisplay: false
                   }, 'google_translate_element');
                 }

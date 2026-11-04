@@ -9,6 +9,7 @@ export const GOOGLE_LANGUAGES = [
   { code: "ta", label: "தமிழ்", name: "Tamil" },
   { code: "te", label: "తెలుగు", name: "Telugu" },
   { code: "hi", label: "हिंदी", name: "Hindi" },
+  { code: "ml", label: "മലയാളം", name: "Malayalam" },
 ];
 
 const LanguageSelector = ({ variant = "links", className = "" }) => {
@@ -24,22 +25,27 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
 
   const [currentLang, setCurrentLang] = useState("en");
 
+  // On initial mount, sync with existing cookie once Google Translate widget is ready
   useEffect(() => {
-    setCurrentLang(getLanguageCookie());
-  }, []);
+    const savedLang = getLanguageCookie();
+    setCurrentLang(savedLang);
 
-  useEffect(() => {
-    const applyTranslation = () => {
-      const gtSelect = document.querySelector(".goog-te-combo");
-      if (gtSelect && currentLang !== "en") {
-        gtSelect.value = currentLang;
-        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    };
-    applyTranslation();
-    const timer = setTimeout(applyTranslation, 500);
-    return () => clearTimeout(timer);
-  }, [currentLang]);
+    if (savedLang !== "en") {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        const gtSelect = document.querySelector(".goog-te-combo");
+        if (gtSelect) {
+          gtSelect.value = savedLang;
+          gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+          clearInterval(interval);
+        } else if (attempts >= 20) {
+          clearInterval(interval);
+        }
+      }, 200);
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   const handleLanguageSelect = (lang) => {
     setCurrentLang(lang);
@@ -48,10 +54,20 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
     if (lang === "en") {
+      document.cookie = "googtrans=/en/en; path=/;";
       document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       if (!isLocalhost && hostname) {
         document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`;
       }
+
+      // Try Google Translate internal banner restore if present
+      try {
+        const iframe = document.querySelector("iframe.goog-te-banner-frame");
+        if (iframe && iframe.contentDocument) {
+          const restoreBtn = iframe.contentDocument.querySelector(".goog-te-button button");
+          if (restoreBtn) restoreBtn.click();
+        }
+      } catch {}
     } else {
       document.cookie = `googtrans=/en/${lang}; path=/;`;
       if (!isLocalhost && hostname) {
@@ -61,11 +77,21 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
 
     const gtSelect = document.querySelector(".goog-te-combo");
     if (gtSelect) {
-      gtSelect.value = lang === "en" ? "en" : lang;
-      gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
-    } else {
-      if (typeof window !== "undefined") {
-        window.location.reload();
+      if (lang === "en") {
+        const hasEnOption = Array.from(gtSelect.options).some((o) => o.value === "en");
+        gtSelect.value = hasEnOption ? "en" : "";
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      } else if (gtSelect.value !== lang) {
+        gtSelect.value = lang;
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      } else {
+        // Force re-trigger if already matching the target value
+        gtSelect.selectedIndex = 0;
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        setTimeout(() => {
+          gtSelect.value = lang;
+          gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }, 50);
       }
     }
   };

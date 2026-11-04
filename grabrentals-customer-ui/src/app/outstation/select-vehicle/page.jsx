@@ -1197,7 +1197,7 @@ function SelectVehicleContent() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 py-5 px-3 sm:px-6 lg:px-8 font-sans">
+    <main className="min-h-screen bg-slate-50 pt-1.5 sm:pt-5 pb-8 px-3 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-4">
         
         {/* Dynamic Route Header */}

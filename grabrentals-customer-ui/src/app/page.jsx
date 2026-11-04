@@ -214,7 +214,7 @@ export default function Home() {
         <InPageBanner page="HOME" />
       </div>
 
-      {/* 4. Have Custom Travel Requirements? (Quick Enquiry Section) */}
+      {/* 4. Have a Query Need Support? (Quick Enquiry Section) */}
       <QuickEnquirySection />
 
       {/* 

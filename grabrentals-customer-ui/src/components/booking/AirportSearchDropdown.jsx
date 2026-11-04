@@ -166,7 +166,7 @@ export default function AirportSearchDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full min-w-0 pl-10 sm:pl-11 pr-3 py-3 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm cursor-pointer flex items-center justify-between text-left group overflow-hidden"
+        className="w-full min-w-0 pl-10 sm:pl-11 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm cursor-pointer flex items-center justify-between text-left group overflow-hidden"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >

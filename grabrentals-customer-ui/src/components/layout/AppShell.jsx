@@ -126,6 +126,7 @@ export default function AppShell({ children }) {
   ];
 
   const mainNavLinks = [
+    { name: t("ev_cabs") || "⚡ EV Cabs", href: "/ev-cabs" },
     { name: t("urbania_tempo") || "Urbania / Tempo Traveller", href: "/vans" },
     { name: t("luxury_buses") || "Bus Hire", href: "/buses" },
     { name: t("packages") || "Tour Packages", href: "/packages" },
@@ -175,6 +176,7 @@ export default function AppShell({ children }) {
       "/packages",
       "/fleet",
       "/fleets",
+      "/ev-cabs",
       "/pet-friendly-cabs",
       "/corporate",
       "/cancellation-policy",
@@ -331,14 +333,14 @@ export default function AppShell({ children }) {
         {/* Header Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto whitespace-nowrap flex-shrink-0">
 
-          {/* Call 24/7 Helpline Icon (Visible sm and up) */}
+          {/* Call 24/7 Helpline Icon (Visible on all viewports) */}
           <a
             href="tel:+919071100200"
-            className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#0082fe] border border-slate-200/90 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            className="flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0082fe] border border-blue-200/80 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
             title="Call 24/7 Helpline (+91 90711 00200)"
             aria-label="Call 24/7 Helpline"
           >
-            <Phone className="w-4 h-4 text-slate-600 group-hover:text-[#0082fe] transition-colors" />
+            <Phone className="w-4 h-4 text-[#0082fe] group-hover:scale-110 transition-transform" />
           </a>
 
           {/* WhatsApp Support Icon */}

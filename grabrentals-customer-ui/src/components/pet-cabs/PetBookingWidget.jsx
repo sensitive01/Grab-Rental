@@ -25,6 +25,7 @@ import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
 import SearchVerificationModal from "@/components/booking/SearchVerificationModal";
 import { AIRPORT_LIST } from "@/components/home/BookingWidget";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
+import { reverseGeocodeCoordinates } from "@/lib/googleMaps";
 import { useLanguage } from "@/context/LanguageContext";
 import { isAuthenticated, getCurrentUser } from "@/lib/auth";
 import { logSearchHistory } from "@/lib/searchHistory";
@@ -89,6 +90,46 @@ export default function PetBookingWidget() {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  // Auto-detect user current location on initial mount and clear destination
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          if (!lat || !lng) return;
+
+          // Clear destination & route estimate immediately so no stale route is displayed
+          setDropCity("");
+          setDropCoords(null);
+          setDropDetails(null);
+          setGoogleRoute(null);
+
+          setPickupCoords({ lat, lng });
+
+          const resolved = await reverseGeocodeCoordinates(lat, lng);
+          if (resolved?.label) {
+            setPickupCity(resolved.label);
+            if (resolved.details) {
+              setPickupDetails(resolved.details);
+            }
+          }
+        } catch (err) {
+          console.warn("Location detection reverse geocode error:", err);
+        }
+      },
+      (err) => {
+        console.warn("Location access denied or dismissed:", err.message);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
   }, []);
 
   // Pet Selection States
@@ -188,18 +229,27 @@ export default function PetBookingWidget() {
     return dropCity;
   }, [tripMode, airportTripType, selectedAirport, dropCity, selectedPackage]);
 
+  const hasValidRouteEndpoints = Boolean(
+    tripMode === "local"
+      ? (effectiveFrom && effectiveFrom.trim() && selectedPackage)
+      : (effectiveFrom && effectiveFrom.trim() && effectiveTo && effectiveTo.trim())
+  );
+
   const initialEstimate = useMemo(() => {
-    if (tripMode === "local") {
+    if (tripMode === "local" || !hasValidRouteEndpoints) {
       return { isDetected: false, distanceKm: 0, durationHours: 0, durationText: "" };
     }
     const cleanStops = stops.filter((s) => s && s.trim());
     return detectRouteDistance(effectiveFrom, effectiveTo, cleanStops, tripMode);
-  }, [effectiveFrom, effectiveTo, stops, tripMode]);
+  }, [effectiveFrom, effectiveTo, stops, tripMode, hasValidRouteEndpoints]);
 
   useEffect(() => {
     let cancelled = false;
     async function loadGoogleRoute() {
-      if (!effectiveFrom || !effectiveTo || tripMode === "local") return;
+      if (!hasValidRouteEndpoints || tripMode === "local") {
+        setGoogleRoute(null);
+        return;
+      }
       try {
         const cleanStops = stops.filter((s) => s && s.trim());
         const res = await fetchGoogleRouteDistance(effectiveFrom, effectiveTo, cleanStops, tripMode, {
@@ -207,20 +257,27 @@ export default function PetBookingWidget() {
           destinationCoords: tripMode === "airport" && airportTripType === "drop" ? airportCoords : dropCoords,
           stopsCoords: stopsCoords,
         });
-        if (!cancelled && res?.isDetected) {
-          setGoogleRoute(res);
+        if (!cancelled) {
+          if (res?.isDetected) {
+            setGoogleRoute(res);
+          } else {
+            setGoogleRoute(null);
+          }
         }
       } catch (err) {
         console.warn("Could not fetch Google Route for Pet widget:", err);
+        if (!cancelled) setGoogleRoute(null);
       }
     }
     loadGoogleRoute();
     return () => {
       cancelled = true;
     };
-  }, [effectiveFrom, effectiveTo, stops, tripMode, pickupCoords, dropCoords, airportCoords, stopsCoords, airportTripType]);
+  }, [effectiveFrom, effectiveTo, stops, tripMode, pickupCoords, dropCoords, airportCoords, stopsCoords, airportTripType, hasValidRouteEndpoints]);
 
-  const routeEstimate = googleRoute || initialEstimate;
+  const routeEstimate = hasValidRouteEndpoints
+    ? (googleRoute || initialEstimate)
+    : { isDetected: false, distanceKm: 0, durationHours: 0, durationText: "" };
 
   // URL Building
   const buildExploreUrl = () => {
@@ -284,6 +341,19 @@ export default function PetBookingWidget() {
     } else if (tripMode === "local") {
       toLoc = selectedPackage;
       pkgVal = selectedPackage;
+    }
+
+    if ((tripMode === "one-way" || tripMode === "round-trip" || tripMode === "multicity") && (!toLoc || !toLoc.trim())) {
+      alert("Please choose a destination to search pet-friendly cabs.");
+      return;
+    }
+    if (tripMode === "airport" && airportTripType === "pickup" && (!toLoc || !toLoc.trim())) {
+      alert("Please choose a drop location / address to search pet-friendly cabs.");
+      return;
+    }
+    if (!fromLoc || !fromLoc.trim()) {
+      alert("Please enter a pickup location to search pet-friendly cabs.");
+      return;
     }
 
     const bookingConfig = {
@@ -497,7 +567,7 @@ export default function PetBookingWidget() {
                     setDropCoords(coords || null);
                     if (details) setDropDetails(details);
                   }}
-                  placeholder="Enter destination city (e.g. Coimbatore)"
+                  placeholder={t("choose_the_location") || "Choose the location"}
                 />
               </div>
 
@@ -515,7 +585,7 @@ export default function PetBookingWidget() {
                     value={pickupDate}
                     suppressHydrationWarning
                     onChange={(e) => handlePickupDateChange(e.target.value)}
-                    className="w-full min-w-0 block pl-10 pr-3 py-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
+                    className="w-full min-w-0 block pl-10 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
                   />
                 </div>
               </div>
@@ -580,7 +650,7 @@ export default function PetBookingWidget() {
                     setDropCoords(coords || null);
                     if (details) setDropDetails(details);
                   }}
-                  placeholder="Enter destination city (e.g. Coimbatore)"
+                  placeholder={t("choose_the_location") || "Choose the location"}
                 />
               </div>
             </div>
@@ -623,7 +693,7 @@ export default function PetBookingWidget() {
                     setDropCoords(coords || null);
                     if (details) setDropDetails(details);
                   }}
-                  placeholder="Enter final destination (e.g. Ooty)"
+                  placeholder={t("choose_the_location") || "Choose the location"}
                 />
               </div>
             </div>
@@ -676,7 +746,7 @@ export default function PetBookingWidget() {
                     value={pickupDate}
                     suppressHydrationWarning
                     onChange={(e) => handlePickupDateChange(e.target.value)}
-                    className="w-full min-w-0 block pl-10 pr-3 py-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
+                    className="w-full min-w-0 block pl-10 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
                   />
                 </div>
               </div>
@@ -736,7 +806,7 @@ export default function PetBookingWidget() {
                         setDropCoords(coords || null);
                         if (details) setDropDetails(details);
                       }}
-                      placeholder="Enter destination area (e.g. Indiranagar)"
+                      placeholder={t("choose_the_location") || "Choose the location"}
                     />
                   </div>
                 </>
@@ -797,7 +867,7 @@ export default function PetBookingWidget() {
                     value={pickupDate}
                     suppressHydrationWarning
                     onChange={(e) => handlePickupDateChange(e.target.value)}
-                    className="w-full min-w-0 block pl-10 pr-3 py-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
+                    className="w-full min-w-0 block pl-10 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
                   />
                 </div>
               </div>
@@ -872,7 +942,7 @@ export default function PetBookingWidget() {
                   value={pickupDate}
                   suppressHydrationWarning
                   onChange={(e) => handlePickupDateChange(e.target.value)}
-                  className="w-full min-w-0 block pl-10 pr-3 py-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
+                  className="w-full min-w-0 block pl-10 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
                 />
               </div>
             </div>
@@ -904,7 +974,7 @@ export default function PetBookingWidget() {
                   value={dropDate}
                   suppressHydrationWarning
                   onChange={(e) => setDropDate(e.target.value)}
-                  className="w-full min-w-0 block pl-10 pr-3 py-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
+                  className="w-full min-w-0 block pl-10 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
                 />
               </div>
             </div>
@@ -992,7 +1062,7 @@ export default function PetBookingWidget() {
         </div>
 
         {/* 4. Distance / Route Estimate Banner (if applicable) */}
-        {routeEstimate?.distanceKm > 0 && tripMode !== "local" && (
+        {hasValidRouteEndpoints && routeEstimate.isDetected && routeEstimate?.distanceKm > 0 && tripMode !== "local" && (
           <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50/70 border border-blue-200/80 px-4 py-2.5 rounded-xl text-xs">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="flex h-2.5 w-2.5 relative">

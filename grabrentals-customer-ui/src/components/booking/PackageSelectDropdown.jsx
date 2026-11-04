@@ -66,11 +66,11 @@ export default function PackageSelectDropdown({
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="w-full flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100/90 border border-slate-200 rounded-xl px-3.5 py-3 transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 group"
+        className="w-full flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100/90 border border-slate-200 rounded-xl px-3 sm:px-3.5 h-[44px] sm:h-[48px] py-2 sm:py-3 transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 group"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <Clock className="w-4 h-4 text-amber-600" />
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
           </div>
           <span className="text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
             {hours} Hours / {km} Kms

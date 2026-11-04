@@ -15,7 +15,6 @@ import {
   ArrowRight, 
   Copy, 
   Check, 
-  ShieldCheck, 
   Sparkles,
   Info,
   Loader2,
@@ -204,7 +203,7 @@ function BookingConfirmationContent() {
           <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 max-w-md mx-auto leading-relaxed">
             {isPaymentUnderReview
               ? "We received your UPI payment screenshot! Our central operations desk is verifying your transaction reference. Fleet and chauffeur allocation will be confirmed immediately upon verification."
-              : "Your outstation trip request is confirmed in our dispatch system. A verified chauffeur is being assigned."}
+              : "Your outstation trip booking at GrabRentals is confirmed."}
           </p>
 
           {/* Booking ID Pill */}
@@ -238,9 +237,9 @@ function BookingConfirmationContent() {
                 </div>
               )}
             </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide border ${isPaymentUnderReview ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}>
+            {/* <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide border ${isPaymentUnderReview ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}>
               {isPaymentUnderReview ? "Pending Payment Verification" : (booking?.status || "CONFIRMED")}
-            </span>
+            </span> */}
           </div>
 
           {/* Dynamic Route Section */}
@@ -289,8 +288,8 @@ function BookingConfirmationContent() {
             </div>
           </div>
 
-          {/* Dynamic Vehicle & Chauffeur Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+          {/* Vehicle Info Details */}
+          <div className="pt-4 border-t border-slate-100">
             <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
               <div className="relative w-16 h-12 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0 shadow-2xs">
                 <Image
@@ -301,23 +300,10 @@ function BookingConfirmationContent() {
                   className="object-cover"
                 />
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Reserved Vehicle</span>
-                <h4 className="text-xs font-extrabold text-slate-900 truncate">{modelName}</h4>
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Vehicle Info</span>
+                <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 truncate">{modelName}</h4>
                 <p className="text-[11px] text-slate-500 font-medium">{categoryLabel}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Chauffeur Dispatch</span>
-                <h4 className="text-xs font-extrabold text-slate-900">
-                  {booking?.driverName || booking?.assignedDriver?.name || "Allocating via Operations"}
-                </h4>
-                <p className="text-[11px] text-slate-500 font-medium">SMS & WhatsApp Alerts 2h Prior</p>
               </div>
             </div>
           </div>
