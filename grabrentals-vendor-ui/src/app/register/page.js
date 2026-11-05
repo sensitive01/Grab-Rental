@@ -40,6 +40,8 @@ import {
   Eye,
   CheckSquare,
   Award,
+  Scale,
+  X,
 } from "lucide-react";
 import {
   sendOtp,
@@ -82,6 +84,12 @@ function VendorOnboardingFlow() {
   // 3: Operating Model (I Drive My Own Fleet vs Multiple Fleet & Vehicles)
   // 4: Vehicle & Driver Setup (Proofs with Expiry Dates)
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Terms & Conditions / Declarations State
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [documentsDeclared, setDocumentsDeclared] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [termsError, setTermsError] = useState("");
 
   // Authentication & Phone OTP State
   const [phone, setPhone] = useState("");
@@ -726,6 +734,13 @@ function VendorOnboardingFlow() {
   const handleSaveSingleFleet = async (e) => {
     e?.preventDefault();
     setError("");
+    setTermsError("");
+
+    if (!termsAgreed || !documentsDeclared) {
+      setTermsError("Please review and accept both the Partner Terms & Conditions and Document Declaration to complete registration.");
+      setError("Please review and accept both the Partner Terms & Conditions and Document Declaration to complete registration.");
+      return;
+    }
 
     if (!vehicleNumber.trim()) {
       setError("Please enter the vehicle registration plate number.");
@@ -1262,6 +1277,15 @@ function VendorOnboardingFlow() {
 
   // Finish Multi-Fleet Setup
   const handleFinishMultiFleet = async () => {
+    setError("");
+    setTermsError("");
+
+    if (!termsAgreed || !documentsDeclared) {
+      setTermsError("Please review and accept both the Fleet Operator Agreement and Document Compliance Declaration to complete registration.");
+      setError("Please review and accept both the Fleet Operator Agreement and Document Compliance Declaration to complete registration.");
+      return;
+    }
+
     setLoading(true);
     for (const v of vehiclesList) {
       if (v.savedToBackend) continue;
@@ -3885,6 +3909,60 @@ function VendorOnboardingFlow() {
                 </div>
               </div>
 
+              {/* Partner Agreement & Regulatory Declarations (Single Line Checkbox) */}
+              <div className="space-y-2">
+                {termsError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{termsError}</span>
+                  </div>
+                )}
+
+                <label
+                  className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-3 select-none ${
+                    termsAgreed && documentsDeclared
+                      ? "border-amber-400 bg-amber-50/40 shadow-2xs"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={termsAgreed && documentsDeclared}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setTermsAgreed(checked);
+                      setDocumentsDeclared(checked);
+                      if (termsError) setTermsError("");
+                    }}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300 cursor-pointer shrink-0"
+                  />
+                  <span className="text-xs text-slate-700 flex-1 leading-snug">
+                    I agree to the{" "}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsTermsModalOpen(true);
+                      }}
+                      className="text-amber-700 font-bold hover:underline cursor-pointer"
+                    >
+                      Partner Fleet & Chauffeur Master Agreement
+                    </button>{" "}
+                    and declare all submitted vehicle and driver documents are authentic.
+                  </span>
+                  {termsAgreed && documentsDeclared ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md shrink-0">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" /> Agreed
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 shrink-0">
+                      Required
+                    </span>
+                  )}
+                </label>
+              </div>
+
               {/* Step 3 Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-slate-100">
                 <button
@@ -3899,14 +3977,22 @@ function VendorOnboardingFlow() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all"
+                    className={`flex-1 sm:flex-initial px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all ${
+                      termsAgreed && documentsDeclared
+                        ? "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-500/20"
+                        : "bg-amber-500/80 hover:bg-amber-500 text-slate-950"
+                    }`}
                   >
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
                         <span>Finish & Go to Dashboard</span>
-                        <Check className="w-4 h-4 stroke-[3]" />
+                        {termsAgreed && documentsDeclared ? (
+                          <Check className="w-4 h-4 stroke-[3]" />
+                        ) : (
+                          <ArrowRight className="w-4 h-4" />
+                        )}
                       </>
                     )}
                   </button>
@@ -5084,6 +5170,60 @@ function VendorOnboardingFlow() {
               )}
             </div>
 
+            {/* Fleet Operator Agreement & Compliance Checkbox (Single Line) */}
+            <div className="space-y-2">
+              {termsError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{termsError}</span>
+                </div>
+              )}
+
+              <label
+                className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-3 select-none ${
+                  termsAgreed && documentsDeclared
+                    ? "border-purple-400 bg-purple-50/40 shadow-2xs"
+                    : "border-slate-200 hover:border-slate-300 bg-white"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={termsAgreed && documentsDeclared}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setTermsAgreed(checked);
+                    setDocumentsDeclared(checked);
+                    if (termsError) setTermsError("");
+                  }}
+                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 cursor-pointer shrink-0"
+                />
+                <span className="text-xs text-slate-700 flex-1 leading-snug">
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsTermsModalOpen(true);
+                    }}
+                    className="text-purple-700 font-bold hover:underline cursor-pointer"
+                  >
+                    Fleet Operator Master Agreement & SLA
+                  </button>{" "}
+                  and certify roster compliance for all vehicles and chauffeurs.
+                </span>
+                {termsAgreed && documentsDeclared ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md shrink-0">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" /> Agreed
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 shrink-0">
+                    Required
+                  </span>
+                )}
+              </label>
+            </div>
+
             {/* Step 4B Actions */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-slate-100">
               <button
@@ -5099,14 +5239,22 @@ function VendorOnboardingFlow() {
                   type="button"
                   onClick={handleFinishMultiFleet}
                   disabled={loading}
-                  className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all"
+                  className={`flex-1 sm:flex-initial px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all ${
+                    termsAgreed && documentsDeclared
+                      ? "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-500/20"
+                      : "bg-amber-500/80 hover:bg-amber-500 text-slate-950"
+                  }`}
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
                       <span>Finish & Go to Dashboard</span>
-                      <Check className="w-4 h-4 stroke-[3]" />
+                      {termsAgreed && documentsDeclared ? (
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      ) : (
+                        <ArrowRight className="w-4 h-4" />
+                      )}
                     </>
                   )}
                 </button>
@@ -5128,9 +5276,146 @@ function VendorOnboardingFlow() {
         }}
       />
 
+      {/* Terms & Conditions Interactive Modal */}
+      {isTermsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-amber-100 rounded-xl text-amber-800">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    Partner Fleet & Chauffeur Master Agreement
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Version 2.4 • Regulatory Compliance under Motor Vehicles Act (1988)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-500 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: Scrollable terms */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs text-slate-700 leading-relaxed">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 font-medium">
+                Please review the standard operating terms, fare commission schedule, and chauffeur code of conduct. Accepting this agreement activates your fleet for direct booking allocations.
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-black text-slate-900 text-sm">1. Regulatory KYC & Licensing</h4>
+                <p>
+                  Every driver enrolled must hold a valid Commercial Transport License (LMV-TR, HMV, or PSV badge) with at least 2 years experience. All vehicles must maintain unexpired Commercial Registration (Yellow Board), Comprehensive Taxi Insurance, Fitness Certificate, State/All-India Tourist Permit, and PUC.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">2. Strict Sobriety & Chauffeur Code of Conduct</h4>
+                <p>
+                  Zero tolerance for alcohol or substance use on duty or within 12 hours prior to dispatch. Chauffeurs must maintain polite decorum, wear professional attire, ensure clean sanitized seat covers, and report 15 minutes before scheduled pickup.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">3. 100% Functional AC Guarantee</h4>
+                <p>
+                  Air conditioning must operate continuously for all local, outstation, or airport rides without demanding extra unauthorized AC charges.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">4. Highway Breakdown SOP (Passenger Safety First)</h4>
+                <p>
+                  In the event of vehicle breakdown, chauffeurs must prioritize passenger safety, seat them in a secure location, and call Grab Rentals Operations (+91 90711 00200) within 5 minutes for replacement dispatch.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">5. Fares, Driver Allowance & Cash Collection</h4>
+                <p>
+                  Platform commissions are automatically accounted for. Chauffeurs are authorized to collect only the exact &quot;Balance Payable to Chauffeur&quot; specified on the digital invoice. Outstation night driver allowance is included where applicable.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">6. FASTag Tolls & Airport Parking</h4>
+                <p>
+                  Highway toll deductions are logged via electronic FASTag. Excluded tolls and state border taxes are reimbursable with digital receipt upload.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">7. Cancellation Penalties</h4>
+                <p>
+                  Unjustified cancellations within 4 hours of departure or driver no-shows incur up to a 25% trip value deduction to cover customer reallocation.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">8. Independent Contractor Relationship</h4>
+                <p>
+                  Fleet partners and chauffeurs operate as independent transport providers and not as employees or agents of Grab Rentals Technologies Pvt. Ltd.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">9. Passenger Privacy Protection</h4>
+                <p>
+                  Customer phone numbers and locations are strictly confidential and must never be saved, shared, or contacted for personal reasons post-trip.
+                </p>
+
+                <h4 className="font-black text-slate-900 text-sm">10. Deactivation & Jurisdiction</h4>
+                <p>
+                  Accounts with ratings below 4.0 or involved in safety violations are subject to deactivation. All disputes are subject to the exclusive jurisdiction of courts in Bengaluru, Karnataka.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/70">
+              <Link
+                href="/terms"
+                target="_blank"
+                className="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1"
+              >
+                <span>Open Printable Version in New Tab</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsTermsModalOpen(false)}
+                  className="flex-1 sm:flex-initial px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTermsAgreed(true);
+                    setDocumentsDeclared(true);
+                    if (termsError) setTermsError("");
+                    setIsTermsModalOpen(false);
+                  }}
+                  className="flex-1 sm:flex-initial px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-xs transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>I Accept & Agree</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
-      <footer className="border-t border-amber-200/70 py-6 text-center text-xs text-slate-500">
-        Grab Rentals Partner Network &copy; {new Date().getFullYear()} · All rights reserved
+      <footer className="border-t border-amber-200/70 py-6 text-center text-xs text-slate-500 space-y-1.5">
+        <div className="flex items-center justify-center gap-4 text-xs font-semibold text-slate-600">
+          <Link href="/terms" target="_blank" className="hover:text-amber-700 hover:underline">
+            Partner Terms & Conditions
+          </Link>
+          <span>•</span>
+          <Link href="/terms#code-of-conduct" target="_blank" className="hover:text-amber-700 hover:underline">
+            Chauffeur Code of Conduct
+          </Link>
+          <span>•</span>
+          <a href="tel:+919071100200" className="hover:text-amber-700 hover:underline">
+            Fleet Desk (+91 90711 00200)
+          </a>
+        </div>
+        <div>Grab Rentals Partner Network &copy; {new Date().getFullYear()} · All rights reserved</div>
       </footer>
     </div>
   );

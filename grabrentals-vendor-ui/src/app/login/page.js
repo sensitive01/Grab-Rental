@@ -498,8 +498,17 @@ function LoginContent() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-center text-[10.5px] sm:text-[11px] text-slate-500 text-center relative z-10">
+      <footer className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10.5px] sm:text-[11px] text-slate-500 text-center relative z-10">
         <span>© {new Date().getFullYear()} Grab Rentals • Partner Fleet Network</span>
+        <div className="flex items-center gap-3 text-slate-400">
+          <Link href="/terms" className="hover:text-amber-400 hover:underline">
+            Partner Terms & Conditions
+          </Link>
+          <span>•</span>
+          <Link href="/terms#code-of-conduct" className="hover:text-amber-400 hover:underline">
+            Chauffeur Conduct
+          </Link>
+        </div>
       </footer>
 
     </div>

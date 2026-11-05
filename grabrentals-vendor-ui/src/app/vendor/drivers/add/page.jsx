@@ -18,7 +18,9 @@ import {
   User,
   FileCheck,
   Camera,
-  Star
+  Star,
+  Check,
+  Scale
 } from "lucide-react";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Toast from "@/components/ui/Toast";
@@ -44,6 +46,7 @@ export default function AddDriverPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [termsAgreed, setTermsAgreed] = useState(false);
 
   // File upload refs
   const photoInputRef = useRef(null);
@@ -220,6 +223,11 @@ export default function AddDriverPage() {
 
     if (!formData.emergencyContactName?.trim() || !formData.emergencyContactPhone?.trim()) {
       setToast({ message: "Please enter emergency contact name and phone number", type: "error" });
+      return;
+    }
+
+    if (!termsAgreed) {
+      setToast({ message: "Please certify the driver regulatory declaration and Chauffeur Code of Conduct agreement", type: "error" });
       return;
     }
 
@@ -870,6 +878,53 @@ export default function AddDriverPage() {
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
               Roster Controls
             </h3>
+
+            {/* Compliance Declaration Checkmark Card */}
+            <div
+              onClick={() => setTermsAgreed(!termsAgreed)}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-2.5 select-none ${
+                termsAgreed
+                  ? "border-amber-400 bg-amber-50/60 shadow-2xs"
+                  : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                  termsAgreed
+                    ? "bg-amber-500 text-slate-950 shadow-xs scale-105"
+                    : "border-2 border-slate-300 bg-white hover:border-amber-400"
+                }`}
+              >
+                {termsAgreed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-900">
+                    Chauffeur Declaration
+                  </span>
+                  {termsAgreed ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md">
+                      ✓ Certified
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-rose-500">
+                      Required
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10.5px] text-slate-500 leading-snug">
+                  I certify that this driver holds an authentic Commercial Transport Driving License, has passed police background clearance, and agrees to the{" "}
+                  <Link
+                    href="/terms#code-of-conduct"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-amber-700 font-bold hover:underline"
+                  >
+                    Chauffeur Code of Conduct
+                  </Link>.
+                </p>
+              </div>
+            </div>
 
             <div className="space-y-3">
               <button
