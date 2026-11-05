@@ -161,6 +161,24 @@ function matchesCabClass(car, cabSlug) {
         type.includes("bus") ||
         type.includes("coach")
       );
+    case "ev":
+    case "ev-cabs":
+    case "evcabs":
+    case "electric":
+      return (
+        (car.fuelType || "").toLowerCase().includes("electric") ||
+        (car.fuelType || "").toLowerCase() === "ev" ||
+        type.includes("electric") ||
+        type.includes("ev") ||
+        category.includes("electric") ||
+        category.includes("ev") ||
+        title.includes("ev") ||
+        title.includes("electric") ||
+        title.includes("nexon") ||
+        title.includes("tigor") ||
+        title.includes("zs ev") ||
+        title.includes("atto")
+      );
     default:
       return type.includes(slug) || category.includes(slug) || title.includes(slug);
   }
@@ -218,6 +236,9 @@ function cleanCityName(fullString, cityHint = "") {
   }
   return parts[0] || fullString;
 }
+
+
+
 
 function SelectVehicleContent() {
   const router = useRouter();
@@ -599,7 +620,15 @@ function SelectVehicleContent() {
 
   // Format and calculate live pricing for real backend vehicles
   const fleetWithPricing = useMemo(() => {
-    return backendVehicles.map((car) => {
+    const seen = new Set();
+    const uniqueVehicles = backendVehicles.filter((car) => {
+      const key = `${(car.title || car.model || car.name || "").trim().toLowerCase()}_${(car.category || "").trim().toLowerCase()}_${car.seatingCapacity || 4}_${(car.fuelType || "").trim().toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return uniqueVehicles.map((car) => {
       // Determine vehicle type
       let type = car.vehicleType;
       if (!type) {
@@ -1380,19 +1409,47 @@ function SelectVehicleContent() {
 
             {/* Dedicated Active Cab Type Banner */}
             {activeCabFilter && (
-              <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className={`rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs ${
+                activeCabFilter === "ev" || activeCabFilter === "ev-cabs" || activeCabFilter === "electric"
+                  ? "bg-gradient-to-r from-emerald-500/15 via-lime-50 to-emerald-50 border border-emerald-300"
+                  : "bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-300"
+              }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0"></div>
+                  <div className={`w-2.5 h-2.5 rounded-full animate-pulse shrink-0 ${
+                    activeCabFilter === "ev" || activeCabFilter === "ev-cabs" || activeCabFilter === "electric"
+                      ? "bg-emerald-500"
+                      : "bg-amber-500"
+                  }`}></div>
                   <span className="text-slate-800 font-bold">
-                    Showing exclusive <strong className="text-amber-900 font-black uppercase tracking-wide bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300/80">
-                      {activeCabFilter === "vans" || activeCabFilter === "van" || activeCabFilter === "urbania_tempo" ? "Urbania & Tempo Traveller" : (activeCabFilter === "urbania" ? "Force Urbania" : (activeCabFilter === "tempo" ? "Tempo Traveller" : (activeCabFilter === "crysta" ? "Innova Crysta" : (activeCabFilter === "innovahycross" ? "Innova Hycross" : (activeCabFilter === "bus" ? "Bus" : activeCabFilter)))))}
+                    Showing exclusive <strong className={`font-black uppercase tracking-wide px-2 py-0.5 rounded-md border ${
+                      activeCabFilter === "ev" || activeCabFilter === "ev-cabs" || activeCabFilter === "electric"
+                        ? "text-emerald-950 bg-emerald-100 border-emerald-300"
+                        : "text-amber-900 bg-amber-100 border-amber-300/80"
+                    }`}>
+                      {activeCabFilter === "ev" || activeCabFilter === "ev-cabs" || activeCabFilter === "electric"
+                        ? "⚡ 100% Electric EV Cabs"
+                        : (activeCabFilter === "vans" || activeCabFilter === "van" || activeCabFilter === "urbania_tempo"
+                          ? "Urbania & Tempo Traveller"
+                          : (activeCabFilter === "urbania"
+                            ? "Force Urbania"
+                            : (activeCabFilter === "tempo"
+                              ? "Tempo Traveller"
+                              : (activeCabFilter === "crysta"
+                                ? "Innova Crysta"
+                                : (activeCabFilter === "innovahycross"
+                                  ? "Innova Hycross"
+                                  : (activeCabFilter === "bus" ? "Bus" : activeCabFilter))))))}
                     </strong> fleet options for your journey.
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveCabFilter(null)}
-                  className="px-3 py-1 rounded-xl bg-white hover:bg-slate-900 hover:text-white border border-amber-300 text-amber-950 font-bold transition-all shadow-2xs cursor-pointer text-[11px]"
+                  className={`px-3 py-1 rounded-xl bg-white hover:bg-slate-900 hover:text-white font-bold transition-all shadow-2xs cursor-pointer text-[11px] border ${
+                    activeCabFilter === "ev" || activeCabFilter === "ev-cabs" || activeCabFilter === "electric"
+                      ? "border-emerald-300 text-emerald-950"
+                      : "border-amber-300 text-amber-950"
+                  }`}
                 >
                   Show All Cabs & Vehicles
                 </button>

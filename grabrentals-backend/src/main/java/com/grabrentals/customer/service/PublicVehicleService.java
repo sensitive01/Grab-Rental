@@ -202,9 +202,10 @@ public class PublicVehicleService {
         Set<String> existingModelKeys = new HashSet<>();
         for (VehicleModelConfigResponse c : activeConfigs) {
             String seats = (c.getSeatingCapacity() != null) ? c.getSeatingCapacity().trim() : "";
+            String fuel = (c.getFuelType() != null) ? c.getFuelType().trim().toLowerCase() : "";
             String k = (c.getModelName() != null ? c.getModelName().trim().toLowerCase() : "") + "_"
                     + (c.getCategory() != null ? c.getCategory().trim().toLowerCase() : "") + "_"
-                    + seats;
+                    + seats + "_" + fuel;
             existingModelKeys.add(k);
         }
 
@@ -221,9 +222,10 @@ public class PublicVehicleService {
                 }
 
                 String seats = (t.getSeatingCapacity() != null && !t.getSeatingCapacity().isBlank()) ? t.getSeatingCapacity().trim() : "4";
+                String tariffFuel = (t.getFuelType() != null && !t.getFuelType().isBlank()) ? t.getFuelType().trim().toLowerCase() : "diesel";
                 String modelKey = t.getModelName().trim().toLowerCase() + "_"
                         + (t.getCategory() != null ? t.getCategory().trim().toLowerCase() : "") + "_"
-                        + seats;
+                        + seats + "_" + tariffFuel;
                 if (!existingModelKeys.contains(modelKey)) {
                     existingModelKeys.add(modelKey);
                     VehicleModelConfigResponse synthetic = VehicleModelConfigResponse.builder()
@@ -272,6 +274,7 @@ public class PublicVehicleService {
         long tConfigs = System.currentTimeMillis();
 
         List<PublicVehicleCardDto> cards = new ArrayList<>();
+        Set<String> seenCardFingerprints = new HashSet<>();
 
         if (!activeConfigs.isEmpty()) {
             for (VehicleModelConfigResponse config : activeConfigs) {
@@ -325,9 +328,13 @@ public class PublicVehicleService {
                         : getVehicleBadge(model, category);
                 double rating = getVehicleRating(model, category);
                 int ratingCount = 500;
-                String cardId = config.getId() != null ? config.getId().toString() : (model.toLowerCase().replaceAll("[^a-z0-9]+", "_") + "_" + seats);
-
-                String fuel = (config.getFuelType() != null && !config.getFuelType().isBlank()) ? config.getFuelType() : "Diesel";
+                String tariffFuel = (rateContext.get("fuelType") != null) ? rateContext.get("fuelType").toString() : null;
+                String fuel = (tariffFuel != null && !tariffFuel.isBlank())
+                        ? tariffFuel
+                        : ((config.getFuelType() != null && !config.getFuelType().isBlank()) ? config.getFuelType() : "Diesel");
+                String cardId = config.getId() != null
+                        ? (config.getId().toString() + "_" + fuel.toLowerCase())
+                        : (model.toLowerCase().replaceAll("[^a-z0-9]+", "_") + "_" + seats + "_" + fuel.toLowerCase());
                 BigDecimal baseFare = (BigDecimal) rateContext.get("baseFare");
                 Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : 250;
                 if (baseKm == null || baseKm <= 0) baseKm = 250;
@@ -392,9 +399,20 @@ public class PublicVehicleService {
                 }
 
                 BigDecimal discPct = (rateContext.get("discountPercentage") != null) ? (BigDecimal) rateContext.get("discountPercentage") : BigDecimal.ZERO;
+                String displayModel = model;
+                if ("Electric".equalsIgnoreCase(fuel) && !model.toLowerCase().contains("electric") && !model.toLowerCase().contains("ev")) {
+                    displayModel = model + " (EV)";
+                }
+
+                String cardFingerprint = displayModel.trim().toLowerCase() + "_" + category.trim().toLowerCase() + "_" + seats + "_" + fuel.trim().toLowerCase();
+                if (seenCardFingerprints.contains(cardFingerprint)) {
+                    continue;
+                }
+                seenCardFingerprints.add(cardFingerprint);
+
                 PublicVehicleCardDto card = buildCategoryCard(
                         cardId,
-                        model,
+                        displayModel,
                         typeTitle + " • AC • " + seats + " Seats",
                         category,
                         rating,

@@ -81,6 +81,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
     if (pathname?.startsWith("/fleet/urbania")) return "urbania";
     if (pathname?.startsWith("/fleet/tempo")) return "tempo";
     if (pathname === "/buses" || pathname === "/bus" || pathname?.startsWith("/fleet/bus")) return "bus";
+    if (pathname === "/ev-cabs" || pathname?.startsWith("/ev-cabs")) return "ev";
     return "";
   });
 
@@ -107,8 +108,8 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Location inputs & exact GPS coordinates
-  const [pickupCity, setPickupCity] = useState("Bangalore, Karnataka");
-  const [dropCity, setDropCity] = useState("Coimbatore, Tamil Nadu");
+  const [pickupCity, setPickupCity] = useState("");
+  const [dropCity, setDropCity] = useState("");
   const [stops, setStops] = useState([]); // Array of optional intermediate stops
 
   const [pickupCoords, setPickupCoords] = useState(null);
@@ -247,6 +248,8 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       setSelectedCab("tempo");
     } else if (pathname === "/buses" || pathname === "/bus" || pathname?.startsWith("/fleet/bus")) {
       setSelectedCab("bus");
+    } else if (pathname === "/ev-cabs" || pathname?.startsWith("/ev-cabs")) {
+      setSelectedCab("ev");
     } else if (pathname === "/" || pathname === "/book") {
       if (!paramCab) setSelectedCab("");
     }
@@ -538,6 +541,9 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
     }
     if (selectedCab) {
       params.set("cabType", selectedCab);
+      if (selectedCab === "ev") {
+        params.set("fuel", "Electric");
+      }
     }
     return `/outstation/select-vehicle?${params.toString()}`;
   };
@@ -894,7 +900,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   setPickupCoords(coords || null);
                   if (details) setPickupDetails(details);
                 }}
-                placeholder="e.g. Bangalore (Bengaluru)"
+                placeholder={t("enter_pickup_city") || "Enter pickup city"}
                 iconColor="text-brand-emerald"
                 inputClassName="rounded-xl"
               />
@@ -1087,7 +1093,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                 suppressHydrationWarning
                 className="flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 px-3 sm:px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0 cursor-pointer"
               >
-                {t("search_cabs")} <ArrowRight className="w-4 h-4" />
+                {selectedCab === "ev" ? "SEARCH EV CABS" : t("search_cabs")} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
@@ -1149,7 +1155,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                     setMapTarget("pickup");
                     setIsMapModalOpen(true);
                   }}
-                  placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : "e.g. Bangalore (Bengaluru)"}
+                  placeholder={activeTab === "airport" ? (t("enter_pickup_location") || "Enter address / hotel / location") : (t("enter_pickup_city") || "Enter pickup city")}
                   iconColor="text-brand-emerald"
                 />
                 <button
@@ -1266,7 +1272,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   setMapTarget("drop");
                   setIsMapModalOpen(true);
                 }}
-                placeholder={activeTab === "airport" ? "e.g. Koramangala, Bangalore (Address / Hotel)" : (t("choose_the_location") || "Choose the location")}
+                placeholder={activeTab === "airport" ? (t("enter_drop_location") || "Enter address / hotel / location") : (t("choose_the_location") || "Choose the location")}
                 iconColor="text-brand-orange"
                 inputClassName="rounded-xl"
               />
@@ -1332,7 +1338,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               suppressHydrationWarning
               className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
             >
-              {t("search_cabs")} <ArrowRight className="w-4 h-4" />
+              {selectedCab === "ev" ? "SEARCH EV CABS" : t("search_cabs")} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1393,6 +1399,21 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                 <span className="font-bold text-white tracking-tight">🤝 Chauffeur Meet & Greet with Placard</span>
               </div>
             </>
+          ) : selectedCab === "ev" ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">⚡ 100% Zero-Emission Electric Fleet</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">Certified Green Chauffeurs</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="font-bold text-white tracking-tight">Highway Fast-Charging Hubs Mapped</span>
+              </div>
+            </>
           ) : activeTab === "package" ? (
             <>
               <div className="flex items-center gap-2">
@@ -1424,7 +1445,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
 
         {/* Promo Pill on Far Right */}
         <div className="bg-white text-[#0082fe] font-black text-xs px-3.5 py-1.5 rounded-lg shadow-xs whitespace-nowrap w-full sm:w-auto text-center">
-          {activeTab === "airport" ? "100% On-Time Guarantee" : (t("flat_discount_promo") || "Flat 10% Off First Outstation Ride")}
+          {selectedCab === "ev" ? "Zero Carbon • Green Rides" : (activeTab === "airport" ? "100% On-Time Guarantee" : (t("flat_discount_promo") || "Flat 10% Off First Outstation Ride"))}
         </div>
       </div>
 

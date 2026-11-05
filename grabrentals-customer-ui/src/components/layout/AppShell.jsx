@@ -126,12 +126,12 @@ export default function AppShell({ children }) {
   ];
 
   const mainNavLinks = [
-    { name: t("ev_cabs") || "⚡ EV Cabs", href: "/ev-cabs" },
-    { name: t("urbania_tempo") || "Urbania / Tempo Traveller", href: "/vans" },
-    { name: t("luxury_buses") || "Bus Hire", href: "/buses" },
-    { name: t("packages") || "Tour Packages", href: "/packages" },
-    { name: t("pet_friendly_cabs") || "🐶 Pet Friendly Cabs", href: "/pet-friendly-cabs" },
-    { name: t("corporate_events") || "Corporate & Events", href: "/corporate" },
+    { name: t("ev_cabs") || "⚡ EV Cabs", shortName: "⚡ EV Cabs", href: "/ev-cabs" },
+    { name: t("urbania_tempo") || "Urbania / Tempo Traveller", shortName: "Urbania / Tempo", href: "/vans" },
+    { name: t("luxury_buses") || "Bus Hire", shortName: "Bus Hire", href: "/buses" },
+    { name: t("packages") || "Tour Packages", shortName: "Packages", href: "/packages" },
+    { name: t("pet_friendly_cabs") || "🐶 Pet Friendly Cabs", shortName: "🐶 Pet Cabs", href: "/pet-friendly-cabs" },
+    { name: t("corporate_events") || "Corporate & Events", shortName: "Corporate", href: "/corporate" },
   ];
 
   const isNavActive = (href) => {
@@ -237,7 +237,7 @@ export default function AppShell({ children }) {
       </div>
 
         {/* B. Main Navigation Bar */}
-        <nav className="bg-white border-b border-slate-100 h-16 sm:h-20 px-3 sm:px-6 lg:px-8 flex items-center justify-between shadow-sm">
+        <nav className="bg-white border-b border-slate-100 h-16 sm:h-20 px-2.5 sm:px-4 lg:px-4 xl:px-6 2xl:px-8 flex items-center justify-between shadow-sm">
 
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
@@ -261,7 +261,7 @@ export default function AppShell({ children }) {
         </Link>
 
         {/* Service Tabs - Centered */}
-        <nav className="hidden lg:flex items-center justify-center h-full space-x-1 lg:space-x-1.5 whitespace-nowrap overflow-visible flex-1 px-4">
+        <nav className="hidden lg:flex items-center justify-center h-full space-x-0.5 xl:space-x-1 2xl:space-x-1.5 whitespace-nowrap overflow-visible flex-1 px-1 xl:px-2 min-w-0">
 
           {/* 1. Book Now Dropdown */}
           <div
@@ -273,7 +273,7 @@ export default function AppShell({ children }) {
             <button
               type="button"
               onClick={() => setBookNowOpen(!bookNowOpen)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs lg:text-sm font-bold rounded-full transition-all cursor-pointer ${isBookNowActive
+              className={`flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-bold rounded-full transition-all cursor-pointer shrink-0 ${isBookNowActive
                   ? "bg-brand-amber text-white shadow-sm"
                   : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
                 }`}
@@ -320,12 +320,13 @@ export default function AppShell({ children }) {
             <Link
               key={link.name}
               href={link.href}
-              className={`px-2.5 lg:px-3.5 py-2 text-xs lg:text-sm font-semibold transition-colors rounded-full ${isNavActive(link.href)
+              className={`px-2 xl:px-2.5 2xl:px-3.5 py-1.5 text-xs xl:text-sm font-semibold transition-colors rounded-full shrink-0 ${isNavActive(link.href)
                   ? "bg-brand-amber text-white font-bold shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                 }`}
             >
-              {link.name}
+              <span className="hidden 2xl:inline">{link.name}</span>
+              <span className="inline 2xl:hidden">{link.shortName || link.name}</span>
             </Link>
           ))}
         </nav>
@@ -358,19 +359,22 @@ export default function AppShell({ children }) {
           </a>
 
           {currentUser ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] hover:bg-[#006ed6] text-white p-1 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  className="flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] hover:bg-[#006ed6] text-white px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  title={currentUser.name && currentUser.name !== "Customer" ? currentUser.name : currentUser.phone || "Customer"}
                 >
-                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-white/20 text-white font-black flex items-center justify-center text-[11px] sm:text-[10px]">
+                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-white/20 text-white font-black flex items-center justify-center text-[11px] sm:text-[10px] shrink-0">
                     {(currentUser.name && currentUser.name !== "Customer" ? currentUser.name : t("customer_badge") || "Customer").charAt(0).toUpperCase()}
                   </div>
-                  <span className="hidden sm:inline max-w-[110px] truncate">
-                    {currentUser.name && currentUser.name !== "Customer" ? currentUser.name : currentUser.phone || t("customer_badge") || "Customer"}
+                  <span className="hidden sm:inline max-w-[85px] xl:max-w-[120px] 2xl:max-w-[150px] truncate">
+                    {currentUser.name && currentUser.name !== "Customer" 
+                      ? currentUser.name.split(" ")[0]
+                      : currentUser.phone || t("customer_badge") || "Customer"}
                   </span>
-                  <ChevronDown className={`hidden sm:block w-3 h-3 text-white/80 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`w-3 h-3 text-white/80 transition-transform shrink-0 ${userMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {userMenuOpen && (

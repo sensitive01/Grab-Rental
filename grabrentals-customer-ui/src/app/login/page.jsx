@@ -56,7 +56,7 @@ export default function LoginPage() {
     let timer;
     if (isAuthenticated()) {
       const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-      const redirectUrl = params?.get("redirect") || "/dashboard";
+      const redirectUrl = params?.get("redirect") || "/";
       timer = setTimeout(() => {
         router.replace(redirectUrl);
       }, 0);
@@ -179,7 +179,7 @@ export default function LoginPage() {
         } else if (redirectParam && redirectParam.startsWith("/")) {
           router.push(redirectParam);
         } else {
-          router.push("/dashboard");
+          router.push("/");
         }
       }, 700);
 
@@ -250,7 +250,7 @@ export default function LoginPage() {
         } else if (!user.name || user.name === "Customer") {
           router.push("/account/settings?welcome=true");
         } else {
-          router.push("/dashboard");
+          router.push("/");
         }
       }, 700);
 

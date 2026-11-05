@@ -589,7 +589,7 @@ public class VehicleTariffService {
                     && category.trim().equalsIgnoreCase(t.getCategory())
                     && modelName.trim().equalsIgnoreCase(t.getModelName())
                     && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
-                    && (fuelType == null || t.getFuelType() == null || fuelType.trim().equalsIgnoreCase(t.getFuelType()))
+                    && isFuelCompatible(fuelType, t.getFuelType())
             ).findFirst();
         }
 
@@ -607,7 +607,7 @@ public class VehicleTariffService {
                         && category.trim().equalsIgnoreCase(t.getCategory())
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
-                        && (fuelType == null || fuelType.isBlank() || (t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())))
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && t.getCity() != null && areCitiesEqual(city, t.getCity())
                         && t.getPackageHours() != null && t.getPackageHours().equals(packageHours)
                 ).findFirst().orElse(null);
@@ -631,6 +631,7 @@ public class VehicleTariffService {
                         && category.trim().equalsIgnoreCase(t.getCategory())
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && t.getCity() != null && areCitiesEqual(city, t.getCity())
                         && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
@@ -640,6 +641,7 @@ public class VehicleTariffService {
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && sType.equalsIgnoreCase(t.getServiceType())
                         && areCategoriesEqual(category, t.getCategory())
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && t.getCity() != null && areCitiesEqual(city, t.getCity())
                         && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
@@ -655,7 +657,7 @@ public class VehicleTariffService {
                         && category.trim().equalsIgnoreCase(t.getCategory())
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
-                        && (fuelType == null || fuelType.isBlank() || (t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())))
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && (t.getCity() == null || t.getCity().isBlank() || "all".equalsIgnoreCase(t.getCity().trim()))
                         && t.getState() != null && state.trim().equalsIgnoreCase(t.getState().trim())
                         && t.getPackageHours() != null && t.getPackageHours().equals(packageHours)
@@ -681,6 +683,7 @@ public class VehicleTariffService {
                         && category.trim().equalsIgnoreCase(t.getCategory())
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && (t.getCity() == null || t.getCity().isBlank() || "all".equalsIgnoreCase(t.getCity().trim()))
                         && t.getState() != null && state.trim().equalsIgnoreCase(t.getState().trim())
                         && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
@@ -697,7 +700,7 @@ public class VehicleTariffService {
                         && category.trim().equalsIgnoreCase(t.getCategory())
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
-                        && (fuelType == null || fuelType.isBlank() || (t.getFuelType() != null && fuelType.trim().equalsIgnoreCase(t.getFuelType())))
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && t.getPackageHours() != null && t.getPackageHours().equals(packageHours)
                 ).findFirst().orElse(null);
             }
@@ -719,6 +722,7 @@ public class VehicleTariffService {
                         && category.trim().equalsIgnoreCase(t.getCategory())
                         && modelName.trim().equalsIgnoreCase(t.getModelName())
                         && seatingCapacity.trim().equalsIgnoreCase(t.getSeatingCapacity())
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && (!isLocal || packageHours == null || t.getPackageHours() == null || t.getPackageHours().equals(packageHours))
                 ).findFirst().orElse(null);
             }
@@ -730,6 +734,7 @@ public class VehicleTariffService {
                     !Boolean.TRUE.equals(t.getSeasonal())
                     && sType.equalsIgnoreCase(t.getServiceType())
                     && category.trim().equalsIgnoreCase(t.getCategory())
+                    && isFuelCompatible(fuelType, t.getFuelType())
             ).findFirst().orElse(null);
         }
 
@@ -741,6 +746,7 @@ public class VehicleTariffService {
                         && isCompatibleServiceType(sType, t.getServiceType())
                         && (category == null || category.trim().equalsIgnoreCase(t.getCategory()))
                         && (modelName == null || modelName.trim().equalsIgnoreCase(t.getModelName()))
+                        && isFuelCompatible(fuelType, t.getFuelType())
                         && t.getCity() != null && areCitiesEqual(city, t.getCity())
                 ).findFirst().orElse(null);
             }
@@ -750,6 +756,7 @@ public class VehicleTariffService {
                         && isCompatibleServiceType(sType, t.getServiceType())
                         && (category == null || category.trim().equalsIgnoreCase(t.getCategory()))
                         && (modelName == null || modelName.trim().equalsIgnoreCase(t.getModelName()))
+                        && isFuelCompatible(fuelType, t.getFuelType())
                 ).findFirst().orElse(null);
             }
             if (activeTariff == null && category != null) {
@@ -757,6 +764,7 @@ public class VehicleTariffService {
                         !Boolean.TRUE.equals(t.getSeasonal())
                         && isCompatibleServiceType(sType, t.getServiceType())
                         && category.trim().equalsIgnoreCase(t.getCategory())
+                        && isFuelCompatible(fuelType, t.getFuelType())
                 ).findFirst().orElse(null);
             }
         }
@@ -852,6 +860,9 @@ public class VehicleTariffService {
                 : BigDecimal.ZERO;
         result.put("petCharge", petCharge);
         result.put("vendorPetCharge", vendorPetCharge);
+        if (activeTariff != null && activeTariff.getFuelType() != null && !activeTariff.getFuelType().isBlank()) {
+            result.put("fuelType", activeTariff.getFuelType());
+        }
 
         // Hourly package attributes if present
         if ("HOURLY".equalsIgnoreCase(sType) || "LOCAL".equalsIgnoreCase(sType)) {
@@ -1120,5 +1131,25 @@ public class VehicleTariffService {
                 || "ONE_WAY".equalsIgnoreCase(tariffType)
                 || "OUTSTATION".equalsIgnoreCase(tariffType);
         return targetIsOutstation && tariffIsOutstation;
+    }
+
+    public static boolean isElectricFuel(String fuel) {
+        if (fuel == null || fuel.isBlank()) return false;
+        String f = fuel.trim().toLowerCase();
+        return f.contains("electric") || f.contains("ev");
+    }
+
+    public static boolean isFuelCompatible(String configFuel, String tariffFuel) {
+        boolean configIsEv = isElectricFuel(configFuel);
+        boolean tariffIsEv = isElectricFuel(tariffFuel);
+        // An EV tariff cannot match a non-EV vehicle, and an EV vehicle cannot match a non-EV tariff
+        if (configIsEv != tariffIsEv) {
+            return false;
+        }
+        // If neither or both are EV:
+        if (configFuel == null || configFuel.isBlank() || tariffFuel == null || tariffFuel.isBlank() || "all".equalsIgnoreCase(tariffFuel.trim())) {
+            return true;
+        }
+        return configFuel.trim().equalsIgnoreCase(tariffFuel.trim());
     }
 }

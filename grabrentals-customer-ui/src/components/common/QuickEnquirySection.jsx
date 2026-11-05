@@ -28,6 +28,7 @@ export default function QuickEnquirySection() {
     "/packages",
     "/fleet",
     "/fleets",
+    "/ev-cabs",
     "/pet-friendly-cabs",
     "/corporate",
     "/cancellation-policy",

@@ -54,8 +54,8 @@ export default function PetBookingWidget() {
   const [selectedAirport, setSelectedAirport] = useState(AIRPORT_LIST[0].name);
 
   // Locations
-  const [pickupCity, setPickupCity] = useState("Bangalore, Karnataka");
-  const [dropCity, setDropCity] = useState("Coimbatore, Tamil Nadu");
+  const [pickupCity, setPickupCity] = useState("");
+  const [dropCity, setDropCity] = useState("");
   const [pickupDetails, setPickupDetails] = useState(null);
   const [dropDetails, setDropDetails] = useState(null);
   const [stops, setStops] = useState([]); // for multicity
@@ -538,7 +538,7 @@ export default function PetBookingWidget() {
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
                   }}
-                  placeholder="Enter pickup city (e.g. Bangalore)"
+                  placeholder="Enter pickup city"
                 />
               </div>
 
@@ -621,7 +621,7 @@ export default function PetBookingWidget() {
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
                   }}
-                  placeholder="Enter pickup city (e.g. Bangalore)"
+                  placeholder="Enter pickup city"
                 />
               </div>
 
@@ -671,7 +671,7 @@ export default function PetBookingWidget() {
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
                   }}
-                  placeholder="Enter starting city (e.g. Bangalore)"
+                  placeholder="Enter starting city"
                 />
               </div>
 
@@ -715,7 +715,7 @@ export default function PetBookingWidget() {
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
                   }}
-                  placeholder="Enter pickup city (e.g. Bangalore)"
+                  placeholder="Enter pickup city"
                 />
               </div>
 
