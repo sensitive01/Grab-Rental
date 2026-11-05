@@ -98,6 +98,12 @@ export async function login(email, password) {
         const redirectUrl = role === "ADMIN" ? "/admin/dashboard" : "/operations/dashboard";
         return { success: true, user: userObj, redirectUrl };
       }
+    } else {
+      const errData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errData?.message || "Invalid email or password.",
+      };
     }
   } catch (err) {
     // Backend offline or network issue, gracefully fallback to local demo accounts

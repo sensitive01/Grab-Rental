@@ -1074,6 +1074,27 @@ export const adminApi = {
     return response.data;
   },
 
+  // === HERO SECTIONS CMS (MULTI-IMAGE & COPY) ===
+  async getHeroSections() {
+    const response = await axiosClient.get("/api/admin/banners/hero");
+    return response.data;
+  },
+
+  async getHeroSectionByPageKey(pageKey) {
+    const response = await axiosClient.get(`/api/admin/banners/hero/${pageKey}`);
+    return response.data;
+  },
+
+  async updateHeroSection(pageKey, data) {
+    const response = await axiosClient.put(`/api/admin/banners/hero/${pageKey}`, data);
+    return response.data;
+  },
+
+  async clearHeroSection(pageKey) {
+    const response = await axiosClient.post(`/api/admin/banners/hero/${pageKey}/clear`);
+    return response.data;
+  },
+
   // === UPI PAYMENT CONFIGURATION ===
   async getUpiConfig() {
     const response = await axiosClient.get("/api/admin/upi/config");

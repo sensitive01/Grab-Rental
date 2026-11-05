@@ -28,6 +28,7 @@ import {
   Phone,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
+import HeroSectionManager from "@/components/banner/HeroSectionManager";
 
 const TARGET_PAGES = [
   { value: "ALL", label: "All Pages (Site-wide)" },
@@ -40,6 +41,7 @@ const TARGET_PAGES = [
 ];
 
 export default function BannersAdminPage() {
+  const [activeTab, setActiveTab] = useState("HERO");
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -255,7 +257,42 @@ export default function BannersAdminPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Toast Alert */}
+      {/* Top Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab("HERO")}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === "HERO"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 ring-2 ring-blue-500/20"
+              : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50"
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Hero Page Banners (Header CMS)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("PROMO")}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === "PROMO"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 ring-2 ring-blue-500/20"
+              : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50"
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Promotional Popups & Offers</span>
+          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px]">
+            {banners.length}
+          </span>
+        </button>
+      </div>
+
+      {activeTab === "HERO" ? (
+        <HeroSectionManager />
+      ) : (
+        <>
+          {/* Toast Alert */}
       {message.text && (
         <div
           className={`p-4 rounded-xl flex items-center justify-between shadow-sm transition-all animate-in fade-in slide-in-from-top-2 ${
@@ -1080,6 +1117,8 @@ export default function BannersAdminPage() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

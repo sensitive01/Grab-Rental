@@ -281,34 +281,7 @@ public class ChargesTariffSeeder implements CommandLineRunner {
                             .vendorDriverBattaNight(vendorBattaNight)
                             .build());
 
-                    // 2. OUTSTATION Tariff
-                    tariffsToSave.add(VehicleTariff.builder()
-                            .id(UUID.randomUUID())
-                            .serviceType("OUTSTATION")
-                            .state(r.getState())
-                            .city(r.getCity())
-                            .category(mapping.category)
-                            .modelName(mapping.modelName)
-                            .seatingCapacity(mapping.seatingCapacity)
-                            .fuelType(mapping.fuelType)
-                            .weekdayDayRate(outstationRate)
-                            .weekdayNightRate(outstationRate)
-                            .weekendDayRate(outstationRate)
-                            .weekendNightRate(outstationRate)
-                            .vendorWeekdayDayRate(outstationVendorRate)
-                            .vendorWeekdayNightRate(outstationVendorRate)
-                            .vendorWeekendDayRate(outstationVendorRate)
-                            .vendorWeekendNightRate(outstationVendorRate)
-                            .baseIncludedKm(baseKm)
-                            .baseFare(outstationBaseFare)
-                            .vendorBaseFare(outstationVendorBaseFare)
-                            .driverBattaDay(mapping.driverBattaDay)
-                            .driverBattaNight(mapping.driverBattaNight)
-                            .vendorDriverBattaDay(vendorBattaDay)
-                            .vendorDriverBattaNight(vendorBattaNight)
-                            .build());
-
-                    // 3. ROUND_TRIP Tariff
+                    // 2. ROUND_TRIP Tariff
                     tariffsToSave.add(VehicleTariff.builder()
                             .id(UUID.randomUUID())
                             .serviceType("ROUND_TRIP")

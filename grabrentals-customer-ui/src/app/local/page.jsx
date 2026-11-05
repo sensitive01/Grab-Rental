@@ -1,6 +1,7 @@
 "use client";
 
 import BookingWidget from "@/components/home/BookingWidget";
+import PageHeroSection from "@/components/common/PageHeroSection";
 import { Star, Clock, MapPin, CheckCircle, CarFront } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -9,25 +10,14 @@ export default function LocalRentalsPage() {
 
   return (
     <main className="flex flex-col bg-slate-50">
-      {/* Hero Section */}
-      <section className="text-white pt-6 sm:pt-8 md:pt-12 pb-28 sm:pb-36 md:pb-44 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
-        <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
-          <div className="inline-flex items-center gap-2 bg-[#0082fe] border border-blue-400/40 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white mb-3 sm:mb-5 shadow-lg shadow-blue-900/30">
-            <Clock className="w-3 h-3 text-white" /> {t("local_hero_badge") || "Flexible Hourly Packages"}
-          </div>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            {t("local_hero_title") || "Local Hourly Premium Car Rentals"}
-          </h1>
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
-            {t("local_hero_subtitle") || "Book a chauffeur-driven car for 4 hrs, 8 hrs, or 12 hrs. Perfect for city tours, shopping, and back-to-back meetings."}
-          </p>
-        </div>
-      </section>
+      {/* Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="LOCAL"
+        defaultBadge={t("local_hero_badge") || "Flexible Hourly Packages"}
+        defaultTitle1={t("local_hero_title") || "Local Hourly Premium Car Rentals"}
+        defaultSubtitle={t("local_hero_subtitle") || "Book a chauffeur-driven car for 4 hrs, 8 hrs, or 12 hrs. Perfect for city tours, shopping, and back-to-back meetings."}
+        badgeIcon={<Clock className="w-3 h-3 text-white" />}
+      />
 
       {/* Booking Widget */}
       <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">

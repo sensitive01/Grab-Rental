@@ -13,6 +13,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import PageHeroSection from "@/components/common/PageHeroSection";
 import PetBookingWidget from "@/components/pet-cabs/PetBookingWidget";
 
 export default function PetFriendlyCabsPage() {
@@ -44,36 +45,24 @@ export default function PetFriendlyCabsPage() {
 
   return (
     <main className="flex flex-col bg-slate-50 min-h-screen">
-      {/* 1. Hero Section */}
-      <section className="relative text-white pt-14 pb-24 sm:pt-20 sm:pb-32 md:pt-24 md:pb-40 px-4 sm:px-6 overflow-hidden bg-slate-950">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 scale-105"
-          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-900/70 to-slate-950" />
-
-        <div className="max-w-5xl mx-auto relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-400/30 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-amber-400 mb-4 shadow-lg">
-            <span>🐶</span>
-            <span>Grab Rentals Pet Mobility</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4 drop-shadow-xl text-white">
-            Travel Anywhere with Your <span className="text-amber-400">Furry Best Friend</span>
-          </h1>
-
-          <p className="text-sm sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto font-medium leading-relaxed drop-shadow-md mb-4">
-            Verified pet-loving chauffeurs, spacious AC cabs, and zero refusal. Travel outstation, local, or airport transfers comfortably together.
-          </p>
-
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
-            <span>Questions? Call our Pet Travel Desk:</span>
-            <a href="tel:+919071100200" className="text-amber-400 font-bold hover:underline flex items-center gap-1">
-              <Phone className="w-3 h-3" /> +91 90711 00200
-            </a>
-          </div>
+      {/* 1. Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="PET_FRIENDLY"
+        defaultBadge="Grab Rentals Pet Mobility"
+        defaultTitle1="Travel Anywhere with Your"
+        defaultTitle2="Furry Best Friend"
+        defaultSubtitle="Verified pet-loving chauffeurs, spacious AC cabs, and zero refusal. Travel outstation, local, or airport transfers comfortably together."
+        badgeIcon={<span>🐶</span>}
+        accentColorClass="text-amber-400"
+        badgeClass="bg-amber-500/10 border border-amber-400/30 text-amber-400"
+      >
+        <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+          <span>Questions? Call our Pet Travel Desk:</span>
+          <a href="tel:+919071100200" className="text-amber-400 font-bold hover:underline flex items-center gap-1">
+            <Phone className="w-3 h-3" /> +91 90711 00200
+          </a>
         </div>
-      </section>
+      </PageHeroSection>
 
       {/* 2. Floating Interactive Pet Booking Widget */}
       <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-16 sm:-mt-20 md:-mt-28 lg:-mt-32">

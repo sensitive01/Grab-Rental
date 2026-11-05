@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import PageHeroSection from "@/components/common/PageHeroSection";
 import { FLEET_CATEGORIES } from "@/lib/fleetData";
 import { 
   Users, 
@@ -23,28 +24,14 @@ export default function FleetIndexPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* 1. Hero Header with Image */}
-      <section className="relative bg-slate-900 text-white py-16 px-6 overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <Image 
-            src="/images/customer-hero-banner.png" 
-            alt="Grab Rentals Premium Fleet" 
-            fill 
-            priority
-            className="object-cover" 
-          />
-        </div>
-        <div className="relative max-w-7xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border border-amber-400/30">
-            <Sparkles className="w-3.5 h-3.5" />
-            {t("hero_badge")}
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">{t("choose_travel_class")}</h1>
-          <p className="text-slate-300 font-medium max-w-2xl mx-auto text-base">
-            {t("choose_travel_class_sub")}
-          </p>
-        </div>
-      </section>
+      {/* 1. Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="FLEET"
+        defaultBadge={t("hero_badge") || "Sanitized & Inspected Fleet"}
+        defaultTitle1={t("choose_travel_class") || "Our Premium Vehicle Fleet"}
+        defaultSubtitle={t("choose_travel_class_sub") || "Choose from our meticulously maintained fleet of executive sedans, rugged SUVs, and luxury coaches."}
+        badgeIcon={<Sparkles className="w-3.5 h-3.5" />}
+      />
 
       {/* 2. Fleet Grid */}
       <section className="max-w-7xl mx-auto px-6 py-16 space-y-12">

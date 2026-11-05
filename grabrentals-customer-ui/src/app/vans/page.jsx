@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import BookingWidget from "@/components/home/BookingWidget";
+import PageHeroSection from "@/components/common/PageHeroSection";
 import { Users, CheckCircle, Shield, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -45,21 +46,14 @@ export default function VansPage() {
 
   return (
     <main className="flex flex-col bg-slate-50">
-      {/* Hero Section */}
-      <section className="text-white pt-6 sm:pt-8 md:pt-12 pb-28 sm:pb-36 md:pb-44 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
-        <Suspense fallback={
-          <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4 text-white">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold">Tempo Traveller & Van Rentals</h1>
-          </div>
-        }>
-          <VansHeroContent />
-        </Suspense>
-      </section>
+      {/* Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="VANS"
+        defaultBadge={t("vans_hero_badge") || "9 to 26 Seater Vehicles"}
+        defaultTitle1={t("vans_hero_title") || "Tempo Traveller & Van Rentals"}
+        defaultSubtitle={t("vans_hero_subtitle") || "Travel together. Rent premium Force Urbania and luxury Tempo Travellers for outstation family trips and group tours."}
+        badgeIcon={<Users className="w-3 h-3 text-white" />}
+      />
 
       {/* Booking Widget */}
       <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">

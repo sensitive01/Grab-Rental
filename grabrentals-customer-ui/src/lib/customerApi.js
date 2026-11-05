@@ -189,6 +189,20 @@ export const customerApi = {
     const res = await axiosClient.post("/api/enquiries", data);
     return res.data;
   },
+
+  /**
+   * Get dynamic hero section content (multi-image carousel + texts) for a page route
+   * @param {string} pageKey - e.g. "HOME", "AIRPORT", "VANS", etc.
+   */
+  async getHeroSection(pageKey) {
+    const res = await axiosClient.get(`/api/banners/hero/${pageKey}`);
+    return res.data;
+  },
+
+  async getAllHeroSections() {
+    const res = await axiosClient.get("/api/banners/hero");
+    return res.data;
+  },
 };
 
 export default customerApi;

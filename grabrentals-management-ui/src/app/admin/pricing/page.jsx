@@ -1128,11 +1128,22 @@ export default function AdminPricingPage() {
   const filteredAndSortedTariffs = useMemo(() => {
     const filtered = tariffs.filter((t) => {
       const sType = (t.serviceType || "OUTSTATION").toUpperCase();
-      const isOutstation = sType === "OUTSTATION" || sType === "ONE_WAY" || sType === "ROUND_TRIP";
-      const matchService =
-        serviceFilter === "ALL" ||
-        (serviceFilter === "OUTSTATION" && isOutstation) ||
-        sType === serviceFilter.toUpperCase();
+      const isOneWay = sType === "ONE_WAY" || sType === "OUTSTATION";
+      const isRoundTrip = sType === "ROUND_TRIP";
+      const isOutstation = isOneWay || isRoundTrip;
+
+      let matchService = false;
+      if (serviceFilter === "ALL") {
+        matchService = true;
+      } else if (serviceFilter === "ONE_WAY") {
+        matchService = isOneWay;
+      } else if (serviceFilter === "ROUND_TRIP") {
+        matchService = isRoundTrip;
+      } else if (serviceFilter === "OUTSTATION") {
+        matchService = isOutstation;
+      } else {
+        matchService = sType === serviceFilter.toUpperCase();
+      }
 
       const isSeasonal = Boolean(t.seasonal || t.tariffType === "SEASONAL");
       const matchType =
@@ -1309,7 +1320,7 @@ export default function AdminPricingPage() {
           { id: "AIRPORT", label: "Airport Transfer", icon: Plane, count: airportTariffsCount, desc: "Distance Slabs & Transfer Rates" },
         ].map((tab) => {
           const Icon = tab.icon;
-          const isActive = serviceFilter === tab.id;
+          const isActive = serviceFilter === tab.id || (tab.id === "OUTSTATION" && (serviceFilter === "ONE_WAY" || serviceFilter === "ROUND_TRIP"));
           return (
             <button
               key={tab.id}
@@ -1557,8 +1568,9 @@ export default function AdminPricingPage() {
               className="px-2.5 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="ALL">All Services</option>
-              <option value="OUTSTATION">One Way / Outstation</option>
+              <option value="ONE_WAY">One Way</option>
               <option value="ROUND_TRIP">Round Trip</option>
+              <option value="OUTSTATION">All Outstation (One Way + Round Trip)</option>
               <option value="LOCAL">Local Rental</option>
               <option value="AIRPORT">Airport Transfer</option>
             </select>
@@ -1820,19 +1832,22 @@ export default function AdminPricingPage() {
                     {/* Service */}
                     <TableCell>
                       <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                        sType === "ONE_WAY" || sType === "OUTSTATION"
+                        sType === "ONE_WAY"
                           ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : sType === "OUTSTATION"
+                          ? "bg-sky-50 text-sky-700 border-sky-200"
                           : sType === "ROUND_TRIP"
                           ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                           : sType === "LOCAL"
                           ? "bg-amber-50 text-amber-700 border-amber-200"
                           : "bg-purple-50 text-purple-700 border-purple-200"
                       }`}>
-                        {(sType === "ONE_WAY" || sType === "OUTSTATION") && <Navigation className="w-3 h-3" />}
+                        {sType === "ONE_WAY" && <Navigation className="w-3 h-3" />}
+                        {sType === "OUTSTATION" && <Car className="w-3 h-3" />}
                         {sType === "ROUND_TRIP" && <ArrowLeftRight className="w-3 h-3" />}
                         {sType === "LOCAL" && <MapPin className="w-3 h-3" />}
                         {sType === "AIRPORT" && <Plane className="w-3 h-3" />}
-                        {sType === "ROUND_TRIP" ? "Round Trip" : (sType === "ONE_WAY" || sType === "OUTSTATION") ? "One Way" : sType === "LOCAL" ? "Local" : "Airport"}
+                        {sType === "ROUND_TRIP" ? "Round Trip" : sType === "ONE_WAY" ? "One Way" : sType === "OUTSTATION" ? "Outstation" : sType === "LOCAL" ? "Local" : "Airport"}
                       </span>
                     </TableCell>
 

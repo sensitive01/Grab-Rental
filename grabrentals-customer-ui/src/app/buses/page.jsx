@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import BookingWidget from "@/components/home/BookingWidget";
+import PageHeroSection from "@/components/common/PageHeroSection";
 import { Star, Shield, Bus, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -10,25 +11,14 @@ export default function BusesPage() {
 
   return (
     <main className="flex flex-col bg-slate-50">
-      {/* Hero Section */}
-      <section className="text-white pt-6 sm:pt-8 md:pt-12 pb-28 sm:pb-36 md:pb-44 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
-        <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
-          <div className="inline-flex items-center gap-2 bg-[#0082fe] border border-blue-400/40 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white mb-3 sm:mb-5 shadow-lg shadow-blue-900/30">
-            <Bus className="w-3 h-3 text-white" /> {t("buses_hero_badge") || "35 to 55 Seater Luxury Coaches"}
-          </div>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            {t("buses_hero_title") || "Luxury Bus Rentals"}
-          </h1>
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
-            {t("buses_hero_subtitle") || "Volvo, Scania, and Mercedes coaches for weddings, corporate offsites, and large group travel across India."}
-          </p>
-        </div>
-      </section>
+      {/* Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="BUSES"
+        defaultBadge={t("buses_hero_badge") || "35 to 55 Seater Luxury Coaches"}
+        defaultTitle1={t("buses_hero_title") || "Luxury Bus Rentals"}
+        defaultSubtitle={t("buses_hero_subtitle") || "Volvo, Scania, and Mercedes coaches for weddings, corporate offsites, and large group travel across India."}
+        badgeIcon={<Bus className="w-3 h-3 text-white" />}
+      />
 
       {/* Booking Widget */}
       <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">

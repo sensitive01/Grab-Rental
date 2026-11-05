@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BookingWidget from "@/components/home/BookingWidget";
+import PageHeroSection from "@/components/common/PageHeroSection";
 import { getDefaultPickupDateTime } from "@/lib/dateTimeUtils";
 import {
   MapPin,
@@ -118,25 +119,15 @@ export default function PackagesPage() {
 
   return (
     <main className="flex flex-col bg-slate-50 min-h-screen">
-      {/* Hero Section */}
-      <section className="text-white pt-6 sm:pt-8 md:pt-12 pb-28 sm:pb-36 md:pb-44 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-900/50 to-slate-950/90"></div>
-        <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
-          <div className="inline-flex items-center gap-2 bg-brand-navy-dark/80 backdrop-blur-md border border-amber-500/30 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-brand-amber mb-3 sm:mb-5 shadow-xl">
-            <Sparkles className="w-3.5 h-3.5 text-brand-amber" /> Special Roadtrip & Tour Packages
-          </div>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            Outstation Tourist Packages
-          </h1>
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
-            Multi-day scenic highway expeditions and curated roadtrips — Goa, Ladakh, Ooty, Coorg, and beyond. Fixed all-inclusive fares with seasoned highway chauffeurs and premium SUVs.
-          </p>
-        </div>
-      </section>
+      {/* Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="PACKAGES"
+        defaultBadge="Special Roadtrip & Tour Packages"
+        defaultTitle1="Outstation Tourist Packages"
+        defaultSubtitle="Multi-day scenic highway expeditions and curated roadtrips — Goa, Ladakh, Ooty, Coorg, and beyond. Fixed all-inclusive fares with seasoned highway chauffeurs and premium SUVs."
+        badgeIcon={<Sparkles className="w-3.5 h-3.5 text-brand-amber" />}
+        badgeClass="bg-brand-navy-dark/80 backdrop-blur-md border border-amber-500/30 text-brand-amber"
+      />
 
       {/* Booking Widget (Pre-selected with Packages Tab) */}
       <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">

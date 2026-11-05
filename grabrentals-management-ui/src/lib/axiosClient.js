@@ -43,6 +43,12 @@ axiosClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401 && typeof window !== "undefined") {
+        const token = getAuthToken();
+        // Prevent redirect loop for demo/offline accounts
+        if (token && token.startsWith("demo-")) {
+          return Promise.reject(error);
+        }
+
         if (!window.location.pathname.startsWith("/login") && !isRedirectingToLogin) {
           isRedirectingToLogin = true;
           console.warn("Session expired or unauthorized (401). Redirecting to login...");
@@ -50,6 +56,9 @@ axiosClient.interceptors.response.use(
           localStorage.removeItem("grabrentals_mgmt_session");
           const target = window.location.pathname;
           window.location.href = `/login?redirect=${encodeURIComponent(target)}`;
+          setTimeout(() => {
+            isRedirectingToLogin = false;
+          }, 3000);
         }
       }
     } else if (error.request) {

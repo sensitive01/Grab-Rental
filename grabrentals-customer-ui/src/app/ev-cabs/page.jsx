@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import BookingWidget from "@/components/home/BookingWidget";
+import PageHeroSection from "@/components/common/PageHeroSection";
 
 export default function EvCabsPage() {
   const { t } = useLanguage();
@@ -180,56 +181,42 @@ export default function EvCabsPage() {
 
   return (
     <main className="flex flex-col bg-slate-50 min-h-screen">
-      {/* 1. Hero Section */}
-      <section className="relative text-white pt-14 pb-28 sm:pt-20 sm:pb-36 md:pt-24 md:pb-44 px-4 sm:px-6 overflow-hidden bg-slate-950">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-25 scale-105"
-          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
-        />
-        {/* Subtle emerald and cyan ambient gradient overlays for eco look */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-emerald-950/20 to-slate-950" />
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-emerald-500/15 blur-[120px] rounded-full pointer-events-none" />
-
-        <div className="max-w-5xl mx-auto relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-400/40 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-emerald-400 mb-4 shadow-lg shadow-emerald-950/40">
-            <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-            <span>100% Electric & Zero Emission Fleet</span>
+      {/* 1. Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="EV_CABS"
+        defaultBadge="100% Electric & Zero Emission Fleet"
+        defaultTitle1="Whisper-Quiet, Clean & Sustainable"
+        defaultTitle2="EV Cabs"
+        defaultSubtitle="Zero engine vibrations, zero tailpipe emissions, and ultra-smooth highway comfort. Book modern electric cabs for Outstation trips, Local hourly rentals, and guaranteed Airport transfers."
+        badgeIcon={<Leaf className="w-3.5 h-3.5 text-emerald-400" />}
+        accentColorClass="text-emerald-400"
+        badgeClass="bg-emerald-500/15 border border-emerald-400/40 text-emerald-400"
+      >
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-300">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Pre-Planned 60kW+ DC Fast Charging</span>
           </div>
-
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4 drop-shadow-xl text-white">
-            Whisper-Quiet, Clean & Sustainable <span className="text-emerald-400">EV Cabs</span>
-          </h1>
-
-          <p className="text-sm sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto font-medium leading-relaxed drop-shadow-md mb-6">
-            Zero engine vibrations, zero tailpipe emissions, and ultra-smooth highway comfort. Book modern electric cabs for Outstation trips, Local hourly rentals, and guaranteed Airport transfers.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-300">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Pre-Planned 60kW+ DC Fast Charging</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Certified Green Chauffeurs</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Transparent All-Inclusive Fares</span>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Certified Green Chauffeurs</span>
           </div>
-
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400">
-            <span>Corporate EV Enquiries & Bulk Bookings:</span>
-            <a
-              href="tel:+919071100200"
-              className="text-emerald-400 font-bold hover:underline flex items-center gap-1 ml-1"
-            >
-              <Phone className="w-3 h-3" /> +91 90711 00200
-            </a>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Transparent All-Inclusive Fares</span>
           </div>
         </div>
-      </section>
+
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
+          <span>Corporate EV Enquiries & Bulk Bookings:</span>
+          <a
+            href="tel:+919071100200"
+            className="text-emerald-400 font-bold hover:underline flex items-center gap-1 ml-1"
+          >
+            <Phone className="w-3 h-3" /> +91 90711 00200
+          </a>
+        </div>
+      </PageHeroSection>
 
       {/* 2. Floating Interactive Booking Widget */}
       <section id="ev-booking-widget" className="px-3 sm:px-4 md:px-6 relative z-20 -mt-16 sm:-mt-20 md:-mt-28 lg:-mt-32">

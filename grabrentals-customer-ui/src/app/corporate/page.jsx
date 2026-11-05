@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Building, TrendingUp, CheckCircle, Headphones } from "lucide-react";
 import Link from "next/link";
+import PageHeroSection from "@/components/common/PageHeroSection";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function CorporatePage() {
@@ -24,25 +25,14 @@ export default function CorporatePage() {
 
   return (
     <main className="flex flex-col bg-slate-50">
-      {/* Hero Section */}
-      <section className="text-white py-16 sm:py-20 md:py-24 px-4 sm:px-6 relative overflow-hidden flex flex-col items-center bg-slate-900">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/images/customer-hero-banner.png")' }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80"></div>
-        <div className="max-w-6xl mx-auto relative z-10 text-center mb-4 sm:mb-8 mt-1 sm:mt-2 md:mt-4">
-          <div className="inline-flex items-center gap-2 bg-[#0082fe] border border-blue-400/40 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-white mb-3 sm:mb-5 shadow-lg shadow-blue-900/30">
-            <Building className="w-3 h-3 text-white" /> {t("corporate_hero_badge")}
-          </div>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-            {t("corporate_hero_title")}
-          </h1>
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
-            {t("corporate_hero_subtitle")}
-          </p>
-        </div>
-      </section>
+      {/* Dynamic Hero Section */}
+      <PageHeroSection
+        pageKey="CORPORATE"
+        defaultBadge={t("corporate_hero_badge") || "Corporate Mobility Solutions"}
+        defaultTitle1={t("corporate_hero_title") || "Corporate Cab & Coach Rentals"}
+        defaultSubtitle={t("corporate_hero_subtitle") || "Streamlined corporate travel, employee transit, and executive airport transfers with automated GST invoicing and dedicated account manager."}
+        badgeIcon={<Building className="w-3 h-3 text-white" />}
+      />
 
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">

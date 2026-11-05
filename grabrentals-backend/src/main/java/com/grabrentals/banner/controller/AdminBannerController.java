@@ -2,7 +2,9 @@ package com.grabrentals.banner.controller;
 
 import com.grabrentals.banner.dto.BannerRequestDto;
 import com.grabrentals.banner.dto.BannerResponseDto;
+import com.grabrentals.banner.dto.HeroSectionDto;
 import com.grabrentals.banner.service.BannerService;
+import com.grabrentals.banner.service.HeroSectionService;
 import com.grabrentals.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -19,6 +21,38 @@ import java.util.Map;
 public class AdminBannerController {
 
     private final BannerService bannerService;
+    private final HeroSectionService heroSectionService;
+
+    // === HERO SECTIONS CMS ===
+
+    @GetMapping("/hero")
+    public ResponseEntity<ApiResponse<List<HeroSectionDto>>> getAllHeroSections() {
+        List<HeroSectionDto> list = heroSectionService.getAllHeroSections();
+        return ResponseEntity.ok(ApiResponse.success("Hero sections retrieved successfully", list));
+    }
+
+    @GetMapping("/hero/{pageKey}")
+    public ResponseEntity<ApiResponse<HeroSectionDto>> getHeroSectionByPageKey(@PathVariable String pageKey) {
+        HeroSectionDto dto = heroSectionService.getHeroSectionByPageKey(pageKey);
+        return ResponseEntity.ok(ApiResponse.success("Hero section retrieved successfully", dto));
+    }
+
+    @PutMapping("/hero/{pageKey}")
+    public ResponseEntity<ApiResponse<HeroSectionDto>> updateHeroSection(
+            @PathVariable String pageKey,
+            @RequestBody HeroSectionDto request
+    ) {
+        HeroSectionDto updated = heroSectionService.updateHeroSection(pageKey, request);
+        return ResponseEntity.ok(ApiResponse.success("Hero section updated successfully", updated));
+    }
+
+    @PostMapping("/hero/{pageKey}/clear")
+    public ResponseEntity<ApiResponse<HeroSectionDto>> clearHeroSection(@PathVariable String pageKey) {
+        HeroSectionDto cleared = heroSectionService.clearHeroSection(pageKey);
+        return ResponseEntity.ok(ApiResponse.success("Hero section cleared (now white screen)", cleared));
+    }
+
+    // === PROMOTIONAL BANNERS & POPUPS ===
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<BannerResponseDto>>> getAllBanners() {

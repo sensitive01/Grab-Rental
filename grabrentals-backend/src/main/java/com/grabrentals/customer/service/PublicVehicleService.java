@@ -201,8 +201,10 @@ public class PublicVehicleService {
         // Auto-include any models configured in active tariffs for this service that are not yet in vehicle_model_configs
         Set<String> existingModelKeys = new HashSet<>();
         for (VehicleModelConfigResponse c : activeConfigs) {
+            String seats = (c.getSeatingCapacity() != null) ? c.getSeatingCapacity().trim() : "";
             String k = (c.getModelName() != null ? c.getModelName().trim().toLowerCase() : "") + "_"
-                    + (c.getCategory() != null ? c.getCategory().trim().toLowerCase() : "");
+                    + (c.getCategory() != null ? c.getCategory().trim().toLowerCase() : "") + "_"
+                    + seats;
             existingModelKeys.add(k);
         }
 
@@ -218,17 +220,19 @@ public class PublicVehicleService {
                     continue;
                 }
 
+                String seats = (t.getSeatingCapacity() != null && !t.getSeatingCapacity().isBlank()) ? t.getSeatingCapacity().trim() : "4";
                 String modelKey = t.getModelName().trim().toLowerCase() + "_"
-                        + (t.getCategory() != null ? t.getCategory().trim().toLowerCase() : "");
+                        + (t.getCategory() != null ? t.getCategory().trim().toLowerCase() : "") + "_"
+                        + seats;
                 if (!existingModelKeys.contains(modelKey)) {
                     existingModelKeys.add(modelKey);
                     VehicleModelConfigResponse synthetic = VehicleModelConfigResponse.builder()
                             .modelName(t.getModelName().trim())
                             .category(t.getCategory() != null ? t.getCategory().trim() : "Hatchback")
-                            .seatingCapacity(t.getSeatingCapacity() != null ? t.getSeatingCapacity().trim() : "4")
+                            .seatingCapacity(seats)
                             .fuelType(t.getFuelType() != null ? t.getFuelType().trim() : "Diesel")
                             .active(true)
-                            .commonPhotoUrl(vehicleTariffService.resolveCommonPhoto(t.getCategory(), t.getModelName(), t.getSeatingCapacity()))
+                            .commonPhotoUrl(vehicleTariffService.resolveCommonPhoto(t.getCategory(), t.getModelName(), seats))
                             .build();
                     activeConfigs.add(synthetic);
                 }
@@ -243,12 +247,12 @@ public class PublicVehicleService {
                 String model = (at.getModelName() != null && !at.getModelName().isBlank() && !"ALL".equalsIgnoreCase(at.getModelName()))
                         ? at.getModelName().trim()
                         : getDefaultModelNameForCategory(cat);
-                String modelKey = model.trim().toLowerCase() + "_" + cat.trim().toLowerCase();
-                if (!existingModelKeys.contains(modelKey)) {
-                    existingModelKeys.add(modelKey);
-                    String seats = (at.getSeatingCapacity() != null && !at.getSeatingCapacity().isBlank())
+                String seats = (at.getSeatingCapacity() != null && !at.getSeatingCapacity().isBlank())
                             ? at.getSeatingCapacity().trim()
                             : getDefaultSeatsForCategory(cat);
+                String modelKey = model.trim().toLowerCase() + "_" + cat.trim().toLowerCase() + "_" + seats;
+                if (!existingModelKeys.contains(modelKey)) {
+                    existingModelKeys.add(modelKey);
                     String fuel = (at.getFuelType() != null && !at.getFuelType().isBlank() && !"ALL".equalsIgnoreCase(at.getFuelType()))
                             ? at.getFuelType().trim()
                             : "Diesel";
@@ -321,7 +325,7 @@ public class PublicVehicleService {
                         : getVehicleBadge(model, category);
                 double rating = getVehicleRating(model, category);
                 int ratingCount = 500;
-                String cardId = config.getId() != null ? config.getId().toString() : model.toLowerCase().replaceAll("[^a-z0-9]+", "_");
+                String cardId = config.getId() != null ? config.getId().toString() : (model.toLowerCase().replaceAll("[^a-z0-9]+", "_") + "_" + seats);
 
                 String fuel = (config.getFuelType() != null && !config.getFuelType().isBlank()) ? config.getFuelType() : "Diesel";
                 BigDecimal baseFare = (BigDecimal) rateContext.get("baseFare");
