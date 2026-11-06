@@ -25,7 +25,8 @@ import {
   Clock,
   Plane,
   ChevronRight,
-  Globe
+    Globe,
+  Mail
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import BannerPopupManager from "@/components/banner/BannerPopupManager";
@@ -144,7 +145,7 @@ export default function AppShell({ children }) {
 
   const mainNavLinks = [
     { name: t("ev_cabs") || "⚡ EV Cabs", shortName: "⚡ EV Cabs", href: "/ev-cabs" },
-    { name: t("urbania_tempo") || "Urbania / Tempo Traveller", shortName: "Urbania / Tempo", href: "/vans" },
+    { name: t("urbania_tempo") || "Urbania", shortName: "Urbania", href: "/vans" },
     { name: t("luxury_buses") || "Bus Hire", shortName: "Bus Hire", href: "/buses" },
     { name: t("packages") || "Tour Packages", shortName: "Packages", href: "/packages" },
     { name: t("pet_friendly_cabs") || "🐶 Pet Friendly Cabs", shortName: "🐶 Pet Cabs", href: "/pet-friendly-cabs" },
@@ -254,7 +255,7 @@ export default function AppShell({ children }) {
       </div>
 
         {/* B. Main Navigation Bar */}
-        <nav className="bg-white border-b border-slate-100 h-16 sm:h-20 px-2.5 sm:px-4 lg:px-4 xl:px-6 2xl:px-8 flex items-center justify-between shadow-sm">
+        <nav className="relative bg-white border-b border-slate-100 h-16 sm:h-20 px-2.5 sm:px-4 lg:px-4 xl:px-6 2xl:px-8 flex items-center justify-between shadow-sm">
 
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
@@ -263,7 +264,7 @@ export default function AppShell({ children }) {
             alt="Grab Rentals"
             className="h-9 sm:h-12 w-auto object-contain drop-shadow-sm shrink-0"
           />
-          <div className="flex flex-col w-fit min-w-0">
+          <div className="hidden md:flex flex-col w-fit min-w-0">
             <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight whitespace-nowrap">
               GRAB RENTALS
             </span>
@@ -276,6 +277,21 @@ export default function AppShell({ children }) {
             </span>
           </div>
         </Link>
+
+        {/* Centered Mobile Phone Helpline */}
+        <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
+          <a
+            href="tel:+919071100200"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 text-[#0082fe] active:scale-95 transition-all shadow-2xs group"
+            title="Call 24/7 Helpline (+91 90711 00200)"
+            aria-label="Call 24/7 Helpline"
+          >
+            <Phone className="w-3.5 h-3.5 text-[#0082fe] shrink-0 group-hover:scale-110 transition-transform" />
+            <span className="whitespace-nowrap font-black text-[11.5px] sm:text-xs tracking-wider text-slate-800 group-hover:text-[#0082fe]">
+              +91 90711 00200
+            </span>
+          </a>
+        </div>
 
         {/* Service Tabs - Centered */}
         <nav className="hidden lg:flex items-center justify-center h-full space-x-0.5 xl:space-x-1 2xl:space-x-1.5 whitespace-nowrap overflow-visible flex-1 px-1 xl:px-2 min-w-0">
@@ -351,22 +367,22 @@ export default function AppShell({ children }) {
         {/* Header Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto whitespace-nowrap flex-shrink-0">
 
-          {/* Call 24/7 Helpline Icon (Visible on all viewports) */}
+          {/* Call 24/7 Helpline Icon (Visible on desktop/tablet only, moved to bottom-left on mobile) */}
           <a
             href="tel:+919071100200"
-            className="flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0082fe] border border-blue-200/80 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            className="hidden md:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0082fe] border border-blue-200/80 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
             title="Call 24/7 Helpline (+91 90711 00200)"
             aria-label="Call 24/7 Helpline"
           >
             <Phone className="w-4 h-4 text-[#0082fe] group-hover:scale-110 transition-transform" />
           </a>
 
-          {/* WhatsApp Support Icon */}
+          {/* WhatsApp Support Icon (Visible on desktop/tablet only, moved to bottom-left on mobile) */}
           <a
             href="https://wa.me/919071100200?text=Hi%20Grab%20Rentals,%20I%20have%20an%20enquiry%20regarding%20booking%20a%20cab%20or%20bus."
             target="_blank"
             rel="noopener noreferrer"
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            className="hidden md:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
             title="Chat on WhatsApp (+91 90711 00200)"
             aria-label="Chat on WhatsApp"
           >
@@ -755,7 +771,39 @@ export default function AppShell({ children }) {
 
       {/* Mobile View Floating Edge Dock: Attach Cabs, Pet Friendly Cabs, WhatsApp & Call */}
       {!pathname?.includes("/review-pay") && !pathname?.includes("/payment") && (
-        <MobileFloatingSideTabs />
+        <>
+          <MobileFloatingSideTabs />
+
+          {/* Mobile View Floating Bottom-Left Contact Buttons (WhatsApp & Call in a single row attached to screen edge) */}
+          <div className="fixed bottom-6 left-0 z-40 md:hidden flex flex-row items-center pointer-events-auto select-none shadow-2xl rounded-r-2xl overflow-hidden border-y border-r border-white/40">
+            {/* WhatsApp Floating Button */}
+            <a
+              href="https://wa.me/919071100200?text=Hi%20Grab%20Rentals,%20I%20have%20an%20enquiry%20regarding%20booking%20a%20cab%20or%20bus."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-11 h-11 bg-[#25D366] hover:bg-emerald-600 text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+              title="Chat on WhatsApp (+91 90711 00200)"
+              aria-label="Chat on WhatsApp"
+            >
+              <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+            </a>
+
+            {/* Subtle Divider */}
+            <div className="w-[1px] h-6 bg-white/30" />
+
+            {/* Call 24/7 Helpline Floating Button */}
+            <a
+              href="tel:+919071100200"
+              className="w-11 h-11 bg-[#0082fe] hover:bg-blue-600 text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+              title="Call 24/7 Helpline (+91 90711 00200)"
+              aria-label="Call 24/7 Helpline"
+            >
+              <Phone className="w-5 h-5 text-white" />
+            </a>
+          </div>
+        </>
       )}
 
       {/* Quick Enquiry Section across public pages (hidden on home page since it is embedded in section 4, and hidden on 404, account, etc.) */}
@@ -765,13 +813,13 @@ export default function AppShell({ children }) {
       <footer className="bg-[#0082fe] text-white pt-10 sm:pt-16 pb-8 sm:pb-10 px-4 sm:px-8 lg:px-10 border-t border-blue-500">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
 
-          {/* Column 1 */}
+          {/* Column 1: Brand Info */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <img
                 src="/images/brand-logo.png"
                 alt="Grab Rentals"
-                className="h-10 w-auto object-contain drop-shadow-sm bg-white/10 p-1 rounded-lg"
+                className="h-10 w-auto object-contain drop-shadow-sm bg-white p-1.5 rounded-lg shadow-sm"
               />
               <div className="flex flex-col w-fit">
                 <span className="font-black text-lg text-white leading-tight whitespace-nowrap">GRAB RENTALS</span>
@@ -785,7 +833,7 @@ export default function AppShell({ children }) {
               </div>
             </div>
             <p className="text-sm leading-relaxed mt-2 text-white/90">
-              {t("footer_tagline") || "Grab Rentals — India's dedicated premier outstation, local, and group mobility chauffeur network with guaranteed fixed rates and sanitized fleet."}
+              Grab Rentals is a Bangalore based vehicle rental service focused on making personal, family, business, and group travel convenient through chauffeur-driven transportation solutions. The brand caters to outstation journeys, local travel, airport transfers, corporate transportation, and group mobility requirements.
             </p>
             <div className="inline-flex items-center gap-2 mt-2 border border-white/30 bg-white/15 px-3 py-1.5 rounded w-max text-white">
               <ShieldCheck className="w-4 h-4 text-emerald-300" />
@@ -793,20 +841,21 @@ export default function AppShell({ children }) {
             </div>
           </div>
 
-          {/* Column 2 */}
+          {/* Column 2: Book Now */}
           <div>
-            <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("top_routes") || "Intercity Routes"}</h3>
+            <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("book_now") || "Book Now"}</h3>
             <ul className="space-y-2.5 text-sm text-white/90">
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Delhi to Agra</Link></li>
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Bangalore to Ooty</Link></li>
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Mumbai to Pune</Link></li>
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chennai to Pondicherry</Link></li>
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Chandigarh to Manali</Link></li>
-              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Hyderabad to Vijayawada</Link></li>
+              <li><Link href="/" className="hover:text-yellow-300 hover:underline transition-colors">Outstation Roundtrips</Link></li>
+              <li><Link href="/?tripType=ONE_WAY" className="hover:text-yellow-300 hover:underline transition-colors">Outstation Oneway</Link></li>
+              <li><Link href="/local" className="hover:text-yellow-300 hover:underline transition-colors">Local Hourly Rentals</Link></li>
+              <li><Link href="/airport" className="hover:text-yellow-300 hover:underline transition-colors">Airport Transfers</Link></li>
+              <li><Link href="/vans" className="hover:text-yellow-300 hover:underline transition-colors">Urbania</Link></li>
+              <li><Link href="/tempo" className="hover:text-yellow-300 hover:underline transition-colors">Tempo Traveller</Link></li>
+              <li><Link href="/buses" className="hover:text-yellow-300 hover:underline transition-colors">Bus Hire</Link></li>
             </ul>
           </div>
 
-          {/* Column 3 */}
+          {/* Column 3: Our Fleet */}
           <div>
             <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("our_fleet") || "Fleet Portfolio"}</h3>
             <ul className="space-y-2.5 text-sm text-white/90">
@@ -819,7 +868,7 @@ export default function AppShell({ children }) {
             </ul>
           </div>
 
-          {/* Column 4 */}
+          {/* Column 4: Corporate & Events */}
           <div>
             <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("corporate_events") || "For Partners & B2B"}</h3>
             <ul className="space-y-2.5 text-sm text-white/90">
@@ -832,19 +881,20 @@ export default function AppShell({ children }) {
             </ul>
           </div>
 
-          {/* Column 5 */}
+          {/* Column 5: 24/7 Helpline & Support */}
           <div>
             <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("helpline_support") || "Contact & Trust"}</h3>
             <ul className="space-y-3 text-sm text-white/90">
               <li>
                 <a href="tel:+919071100200" className="flex items-center gap-2 text-white font-bold hover:text-yellow-300 transition-colors">
-                  <Phone className="w-4 h-4 text-yellow-300" /> +91 90711 00200
+                  <Phone className="w-4 h-4 text-yellow-300 shrink-0" /> +91 90711 00200
                 </a>
                 <span className="block text-xs text-blue-100 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span>
               </li>
               <li>
-                <a href="mailto:grabrentals2016@gmail.com" className="hover:text-yellow-300 hover:underline transition-colors ml-6">
-                  grabrentals2016@gmail.com
+                <a href="mailto:grabrentals2016@gmail.com" className="flex items-center gap-2 hover:text-yellow-300 hover:underline transition-colors">
+                  <Mail className="w-4 h-4 text-yellow-300 shrink-0" />
+                  <span>grabrentals2016@gmail.com</span>
                 </a>
               </li>
               <li className="flex items-start gap-2 mt-4 text-white/90">
@@ -855,17 +905,18 @@ export default function AppShell({ children }) {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="max-w-7xl mx-auto pt-6 border-t border-blue-400/40 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-white/85 flex flex-wrap items-center gap-3">
-            <span>Copyright © 2014 Grab Rentals. All rights reserved.</span>
-            <span className="hidden md:inline">|</span>
+        {/* Bottom Bar: Copyright on Left, Legal/Policy Links Right Aligned */}
+        <div className="max-w-7xl mx-auto pt-6 border-t border-blue-400/40 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/85">
+          <p className="text-center md:text-left">
+            Copyright © 2014 - 2026 Grab Rentals. All rights reserved.
+          </p>
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5 sm:gap-3 text-right">
             <Link href="/privacy-policy" className="hover:text-yellow-300 hover:underline transition-colors">Privacy Policy</Link>
-            <span className="hidden md:inline">|</span>
+            <span className="text-white/40">|</span>
             <Link href="/terms" className="hover:text-yellow-300 hover:underline transition-colors">Terms of Service</Link>
-            <span className="hidden md:inline">|</span>
+            <span className="text-white/40">|</span>
             <Link href="/refund-policy" className="hover:text-yellow-300 hover:underline transition-colors">Cancellation & Refund Policy</Link>
-            <span className="hidden md:inline">|</span>
+            <span className="text-white/40">|</span>
             <Link href="/support" className="hover:text-yellow-300 hover:underline transition-colors">Customer Support</Link>
           </div>
         </div>

@@ -24,7 +24,7 @@ export const translations = {
     airport_transfers: "Airport Transfers",
     urbania: "Force Urbania",
     tempo_traveller: "Tempo Traveller",
-    urbania_tempo: "Urbania / Tempo Traveller",
+    urbania_tempo: "Urbania",
     luxury_buses: "Bus Hire",
     package: "Tour Packages",
     packages: "Tour Packages",

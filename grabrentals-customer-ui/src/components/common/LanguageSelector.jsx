@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Globe } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export const GOOGLE_LANGUAGES = [
   { code: "en", label: "English", name: "English" },
@@ -13,6 +14,9 @@ export const GOOGLE_LANGUAGES = [
 ];
 
 const LanguageSelector = ({ variant = "links", className = "" }) => {
+  const { startTranslating, stopTranslating, setLanguage: setContextLang } = useLanguage();
+  const observerRef = useRef(null);
+
   const getLanguageCookie = () => {
     if (typeof document === "undefined") return "en";
     const match = document.cookie.match(new RegExp("(^| )googtrans=([^;]+)"));
@@ -31,6 +35,9 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
     setCurrentLang(savedLang);
 
     if (savedLang !== "en") {
+      const langInfo = GOOGLE_LANGUAGES.find((l) => l.code === savedLang) || { code: savedLang, label: savedLang, name: savedLang };
+      startTranslating(savedLang, langInfo);
+
       let attempts = 0;
       const interval = setInterval(() => {
         attempts++;
@@ -39,15 +46,26 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
           gtSelect.value = savedLang;
           gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
           clearInterval(interval);
+          setTimeout(() => {
+            stopTranslating();
+          }, 400);
         } else if (attempts >= 20) {
           clearInterval(interval);
+          stopTranslating();
         }
-      }, 200);
-      return () => clearInterval(interval);
+      }, 150);
+      return () => {
+        clearInterval(interval);
+      };
     }
-  }, []);
+  }, [startTranslating, stopTranslating]);
 
   const handleLanguageSelect = (lang) => {
+    if (lang === currentLang) return;
+
+    const langInfo = GOOGLE_LANGUAGES.find((l) => l.code === lang) || { code: lang, label: lang, name: lang };
+    startTranslating(lang, langInfo);
+    setContextLang(lang);
     setCurrentLang(lang);
 
     const hostname = typeof window !== "undefined" ? window.location.hostname : "";
@@ -59,33 +77,29 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
       if (!isLocalhost && hostname) {
         document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`;
       }
-
-      // Try Google Translate internal banner restore if present
       try {
-        const iframe = document.querySelector("iframe.goog-te-banner-frame");
-        if (iframe && iframe.contentDocument) {
-          const restoreBtn = iframe.contentDocument.querySelector(".goog-te-button button");
-          if (restoreBtn) restoreBtn.click();
-        }
+        localStorage.removeItem("grab_selected_language");
       } catch {}
-    } else {
-      document.cookie = `googtrans=/en/${lang}; path=/;`;
-      if (!isLocalhost && hostname) {
-        document.cookie = `googtrans=/en/${lang}; path=/; domain=.${hostname};`;
-      }
+
+      // Clean reload to restore pristine English DOM without Google Translate tags
+      setTimeout(() => {
+        window.location.reload();
+      }, 250);
+      return;
+    }
+
+    // Set translation cookie for target language
+    document.cookie = `googtrans=/en/${lang}; path=/;`;
+    if (!isLocalhost && hostname) {
+      document.cookie = `googtrans=/en/${lang}; path=/; domain=.${hostname};`;
     }
 
     const gtSelect = document.querySelector(".goog-te-combo");
     if (gtSelect) {
-      if (lang === "en") {
-        const hasEnOption = Array.from(gtSelect.options).some((o) => o.value === "en");
-        gtSelect.value = hasEnOption ? "en" : "";
-        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      } else if (gtSelect.value !== lang) {
+      if (gtSelect.value !== lang) {
         gtSelect.value = lang;
         gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
       } else {
-        // Force re-trigger if already matching the target value
         gtSelect.selectedIndex = 0;
         gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
         setTimeout(() => {
@@ -94,6 +108,45 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
         }, 50);
       }
     }
+
+    // Set up MutationObserver to detect when translation DOM updates finish
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    let settleTimer = null;
+    const cleanup = () => {
+      if (settleTimer) clearTimeout(settleTimer);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      setTimeout(() => {
+        stopTranslating();
+      }, 250);
+    };
+
+    if (typeof MutationObserver !== "undefined") {
+      observerRef.current = new MutationObserver(() => {
+        const isTranslated =
+          document.documentElement.classList.contains("translated-ltr") ||
+          document.documentElement.classList.contains("translated-rtl");
+        if (isTranslated) {
+          if (settleTimer) clearTimeout(settleTimer);
+          settleTimer = setTimeout(cleanup, 250);
+        }
+      });
+
+      observerRef.current.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class"],
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    // Safety fallback: always dismiss after 1200ms
+    setTimeout(cleanup, 1200);
   };
 
   // 1. Classic Horizontal Text Links separated by "|" (like as before in top blue bar)

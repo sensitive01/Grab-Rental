@@ -5,7 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Globe, ChevronDown, Check } from "lucide-react";
 
 export function LanguageSelector({ variant = "default" }) {
-  const { language, setLanguage, supportedLanguages } = useLanguage();
+  const { language, setLanguage, supportedLanguages, startTranslating, stopTranslating } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -22,7 +22,7 @@ export function LanguageSelector({ variant = "default" }) {
   const currentLang = supportedLanguages.find((l) => l.code === language) || supportedLanguages[0];
 
   return (
-    <div className="relative inline-block text-left z-50" ref={dropdownRef}>
+    <div className="relative inline-block text-left z-50 notranslate" translate="no" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -37,7 +37,7 @@ export function LanguageSelector({ variant = "default" }) {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-white border border-slate-200 shadow-xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Select Language / மொழியைத் தேர்ந்தெடுக்கவும்
+            Select Language
           </div>
           {supportedLanguages.map((lang) => {
             const isSelected = lang.code === language;
@@ -46,8 +46,27 @@ export function LanguageSelector({ variant = "default" }) {
                 key={lang.code}
                 type="button"
                 onClick={() => {
-                  setLanguage(lang.code);
                   setIsOpen(false);
+                  if (lang.code === language) return;
+                  startTranslating(lang.code, { code: lang.code, label: lang.nativeName, name: lang.name });
+                  setLanguage(lang.code);
+
+                  if (lang.code === "en") {
+                    document.cookie = "googtrans=/en/en; path=/;";
+                    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                    setTimeout(() => window.location.reload(), 250);
+                    return;
+                  }
+
+                  document.cookie = `googtrans=/en/${lang.code}; path=/;`;
+                  const gtSelect = document.querySelector(".goog-te-combo");
+                  if (gtSelect) {
+                    gtSelect.value = lang.code;
+                    gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                  }
+                  setTimeout(() => {
+                    stopTranslating();
+                  }, 800);
                 }}
                 className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between transition-colors ${
                   isSelected

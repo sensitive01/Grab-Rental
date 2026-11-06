@@ -4,6 +4,7 @@ import Script from "next/script";
 import AppShell from "@/components/layout/AppShell";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { ToastProvider } from "@/context/ToastContext";
+import LanguageLoadingOverlay from "@/components/common/LanguageLoadingOverlay";
 
 export const metadata = {
   metadataBase: new URL("https://grabrentals.in"),
@@ -105,6 +106,21 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
+        {/* Anti-FOUC Language Preloader Script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var m = document.cookie.match(/(^| )googtrans=([^;]+)/);
+                  if (m && m[2] && m[2] !== '/en/en' && m[2] !== 'en') {
+                    document.documentElement.classList.add('lang-preloading');
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -138,6 +154,7 @@ export default function RootLayout({ children }) {
         />
 
         <LanguageProvider>
+          <LanguageLoadingOverlay />
           <ToastProvider>
             <AppShell>
               {children}

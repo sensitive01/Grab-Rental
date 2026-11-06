@@ -12,7 +12,6 @@ import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
 import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
 import TripTypeSelectDropdown from "@/components/booking/TripTypeSelectDropdown";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
-import { reverseGeocodeCoordinates } from "@/lib/googleMaps";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   formatLocalDate,
@@ -67,12 +66,13 @@ const getPathFromTab = (tabId) => {
   }
 };
 
-function BookingWidgetInner({ isDropdownMode = false } = {}) {
+function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
 
+  const isEvCabsPage = pathname === "/ev-cabs" || pathname?.startsWith("/ev-cabs") || hideOutstationTab;
   const isNewBookingPage = pathname?.startsWith("/book") || isDropdownMode;
 
   const paramCab = searchParams?.get("cab") || searchParams?.get("cabType") || searchParams?.get("fleet") || "";
@@ -92,8 +92,11 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       const s = serviceParam.toLowerCase();
       if (s.includes("local")) return "local";
       if (s.includes("airport")) return "airport";
-      return "outstation";
+      if (s.includes("package")) return "package";
+      if (!isEvCabsPage) return "outstation";
+      return "local";
     }
+    if (isEvCabsPage) return "local";
     return getTabFromPath(pathname);
   });
   const [tripType, setTripType] = useState(() => {
@@ -156,46 +159,6 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
     return () => {
       isMounted = false;
     };
-  }, []);
-
-  // Auto-detect user current location on initial mount and clear destination
-  useEffect(() => {
-    if (typeof window === "undefined" || !navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude: lat, longitude: lng } = pos.coords;
-          if (!lat || !lng) return;
-
-          // Clear destination & route estimate immediately so no stale route is displayed
-          setDropCity("");
-          setDropCoords(null);
-          setDropDetails(null);
-          setGoogleRoute(null);
-
-          setPickupCoords({ lat, lng });
-
-          const resolved = await reverseGeocodeCoordinates(lat, lng);
-          if (resolved?.label) {
-            setPickupCity(resolved.label);
-            if (resolved.details) {
-              setPickupDetails(resolved.details);
-            }
-          }
-        } catch (err) {
-          console.warn("Location detection reverse geocode error:", err);
-        }
-      },
-      (err) => {
-        console.warn("Location access denied or dismissed:", err.message);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000,
-      }
-    );
   }, []);
 
   const allowsStops = activeTab === "outstation";
@@ -347,7 +310,7 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
     const targetPath = getPathFromTab(tabId);
-    if (pathname !== targetPath) {
+    if (!isEvCabsPage && pathname !== targetPath) {
       router.push(targetPath, { scroll: false });
     }
   };
@@ -844,7 +807,9 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               { id: "local", label: t("local_rental") },
               { id: "airport", label: t("airport") },
               { id: "package", label: t("packages") || "Packages" },
-            ].map((tab) => (
+            ]
+              .filter((tab) => !isEvCabsPage || tab.id !== "outstation")
+              .map((tab) => (
               <button
                 key={tab.id}
                 data-tab-id={tab.id}

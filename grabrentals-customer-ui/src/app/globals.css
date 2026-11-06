@@ -150,6 +150,13 @@ body {
   box-shadow: none !important;
 }
 
+/* Language Preloading state to prevent English Flash before hydration */
+html.lang-preloading #language-loading-overlay {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 @keyframes vehicleFadeIn {
   from {
     opacity: 0;

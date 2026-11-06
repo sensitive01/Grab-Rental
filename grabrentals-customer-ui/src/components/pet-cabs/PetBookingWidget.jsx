@@ -27,7 +27,6 @@ import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
 import SearchVerificationModal from "@/components/booking/SearchVerificationModal";
 import { AIRPORT_LIST } from "@/components/home/BookingWidget";
 import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
-import { reverseGeocodeCoordinates } from "@/lib/googleMaps";
 import { useLanguage } from "@/context/LanguageContext";
 import { isAuthenticated, getCurrentUser } from "@/lib/auth";
 import { logSearchHistory } from "@/lib/searchHistory";
@@ -102,46 +101,6 @@ export default function PetBookingWidget() {
     return () => {
       isMounted = false;
     };
-  }, []);
-
-  // Auto-detect user current location on initial mount and clear destination
-  useEffect(() => {
-    if (typeof window === "undefined" || !navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude: lat, longitude: lng } = pos.coords;
-          if (!lat || !lng) return;
-
-          // Clear destination & route estimate immediately so no stale route is displayed
-          setDropCity("");
-          setDropCoords(null);
-          setDropDetails(null);
-          setGoogleRoute(null);
-
-          setPickupCoords({ lat, lng });
-
-          const resolved = await reverseGeocodeCoordinates(lat, lng);
-          if (resolved?.label) {
-            setPickupCity(resolved.label);
-            if (resolved.details) {
-              setPickupDetails(resolved.details);
-            }
-          }
-        } catch (err) {
-          console.warn("Location detection reverse geocode error:", err);
-        }
-      },
-      (err) => {
-        console.warn("Location access denied or dismissed:", err.message);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000,
-      }
-    );
   }, []);
 
   // Pet Selection States

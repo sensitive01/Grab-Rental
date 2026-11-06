@@ -18,10 +18,10 @@ spring:
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:10}
-      minimum-idle: 3
-      idle-timeout: 120000
-      max-lifetime: 300000
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      minimum-idle: 1
+      idle-timeout: 60000
+      max-lifetime: 180000
       connection-timeout: 10000
       keepalive-time: 30000
       leak-detection-threshold: 30000

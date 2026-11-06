@@ -1230,7 +1230,7 @@ function SelectVehicleContent() {
 
   return (
     <main className="min-h-screen bg-slate-50 pt-0 sm:pt-5 pb-8 px-2 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-4">
+      <div className="max-w-7xl mx-auto space-y-2 sm:space-y-4">
         
         {/* Dynamic Route Header */}
         <VehicleTripHeader
@@ -1249,7 +1249,7 @@ function SelectVehicleContent() {
         />
 
         {/* Layout: Vehicle Catalog (Filter sidebar commented out) */}
-        <div className="w-full pt-2">
+        <div className="w-full pt-0 sm:pt-2">
           
           {/* ===================== LEFT SIDEBAR: SEARCH & FILTERS (COMMENTED OUT) ===================== */}
           {/*

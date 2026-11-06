@@ -96,7 +96,7 @@ export default function EvCabsPage() {
 
       {/* 2. Floating Interactive Booking Widget */}
       <section id="ev-booking-widget" className="px-3 sm:px-4 md:px-6 relative z-20 -mt-16 sm:-mt-20 md:-mt-28 lg:-mt-32">
-        <BookingWidget />
+        <BookingWidget hideOutstationTab={true} />
       </section>
 
       {/* 3. Eco Metrics Highlight Bar */}

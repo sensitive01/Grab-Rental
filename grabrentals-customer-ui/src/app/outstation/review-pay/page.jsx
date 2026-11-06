@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -41,6 +41,7 @@ import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import MapView from "@/components/booking/MapView";
 import { padZero, formatLocalDateTime, isNightPickup } from "@/lib/dateTimeUtils";
 import { fetchGoogleRouteDistance, findCityCoordinates, detectRouteDistance } from "@/lib/cities";
+import { reverseGeocodeCoordinates } from "@/lib/googleMaps";
 
 function resolveCarImage(title, category, rawImage) {
   if (rawImage && typeof rawImage === "string" && !rawImage.includes("blob:")) {
@@ -167,6 +168,7 @@ export default function ReviewPayPage() {
   const [pickupCityName, setPickupCityName] = useState("");
   const [pickupStateName, setPickupStateName] = useState("");
   const [pickupPincode, setPickupPincode] = useState("");
+  const hasUserEditedAddressRef = useRef(false);
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
   const [dropAddress, setDropAddress] = useState("");
@@ -498,7 +500,46 @@ export default function ReviewPayPage() {
     }
   }, []);
 
+  // Auto-detect user current location on Review page mount and populate Area, City, State, Pincode
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          if (!lat || !lng) return;
+
+          setPickupCoords({ lat, lng });
+
+          const resolved = await reverseGeocodeCoordinates(lat, lng);
+          if (resolved?.details && !hasUserEditedAddressRef.current) {
+            const d = resolved.details;
+            if (d.area) setPickupArea(d.area);
+            if (d.city) setPickupCityName(d.city);
+            if (d.state) setPickupStateName(d.state);
+            if (d.pincode) setPickupPincode(d.pincode);
+            if (d.fullAddress) {
+              setPickupAddress(d.fullAddress);
+            }
+          }
+        } catch (err) {
+          console.warn("[ReviewPay] Error reverse geocoding current location with Google Maps:", err);
+        }
+      },
+      (err) => {
+        console.warn("[ReviewPay] Location access denied or dismissed:", err.message);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000,
+      }
+    );
+  }, []);
+
   const handleSelectSavedAddress = (addressId) => {
+    hasUserEditedAddressRef.current = true;
     if (!addressId) {
       setSelectedSavedAddressId("");
       return;
@@ -1584,6 +1625,7 @@ export default function ReviewPayPage() {
                         required
                         value={pickupDoorNo}
                         onChange={(e) => {
+                          hasUserEditedAddressRef.current = true;
                           setPickupDoorNo(e.target.value);
                           if (errorMsg) setErrorMsg(null);
                         }}
@@ -1602,7 +1644,10 @@ export default function ReviewPayPage() {
                           type="text"
                           required
                           value={pickupArea}
-                          onChange={(e) => setPickupArea(e.target.value)}
+                          onChange={(e) => {
+                            hasUserEditedAddressRef.current = true;
+                            setPickupArea(e.target.value);
+                          }}
                           placeholder="e.g. Indiranagar"
                           className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
                         />
@@ -1616,7 +1661,10 @@ export default function ReviewPayPage() {
                           type="text"
                           required
                           value={pickupCityName}
-                          onChange={(e) => setPickupCityName(e.target.value)}
+                          onChange={(e) => {
+                            hasUserEditedAddressRef.current = true;
+                            setPickupCityName(e.target.value);
+                          }}
                           placeholder="e.g. Bengaluru"
                           className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
                         />
@@ -1630,7 +1678,10 @@ export default function ReviewPayPage() {
                           type="text"
                           required
                           value={pickupStateName}
-                          onChange={(e) => setPickupStateName(e.target.value)}
+                          onChange={(e) => {
+                            hasUserEditedAddressRef.current = true;
+                            setPickupStateName(e.target.value);
+                          }}
                           placeholder="e.g. Karnataka"
                           className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
                         />
@@ -1645,7 +1696,10 @@ export default function ReviewPayPage() {
                           required
                           maxLength={6}
                           value={pickupPincode}
-                          onChange={(e) => setPickupPincode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                          onChange={(e) => {
+                            hasUserEditedAddressRef.current = true;
+                            setPickupPincode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6));
+                          }}
                           placeholder="e.g. 560038"
                           className="w-full px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all font-mono"
                         />
@@ -2759,6 +2813,7 @@ export default function ReviewPayPage() {
               setDropAddress(selectedLocation);
               if (coords) setDropCoords(coords);
             } else {
+              hasUserEditedAddressRef.current = true;
               setPickupAddress(selectedLocation);
               if (coords) setPickupCoords(coords);
               if (details) {
