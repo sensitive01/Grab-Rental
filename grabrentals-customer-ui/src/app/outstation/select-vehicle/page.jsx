@@ -657,6 +657,7 @@ function SelectVehicleContent() {
       const year = car.year || 2024;
       const reg = car.regNumber || car.vehicleNumber || "Commercial Fleet";
       const perKmRate = car.perKmRate || (type === "SUV" ? 19.5 : type === "Hatchback" ? 11.5 : 13.0);
+      const extraKmRate = car.extraKmRate || perKmRate;
 
       const minKmThreshold = isRoundTripBooking
         ? Math.max(effectiveTripDistance, car.includedKms || 250)
@@ -770,6 +771,7 @@ function SelectVehicleContent() {
         dailyPrice,
         tripFare: displayFare,
         perKmRate,
+        extraKmRate,
         location: car.location || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city) || "Bangalore",
         chauffeur: car.chauffeur || "Assigned Commercial Chauffeur",
         chauffeurRating: car.chauffeurRating || 4.85,
@@ -984,6 +986,7 @@ function SelectVehicleContent() {
           withLuggageCarrier: false,
           seating: vehicle.seatingCapacity,
           perKmRate: vehicle.perKmRate ?? 0,
+          extraKmRate: vehicle.extraKmRate ?? vehicle.perKmRate ?? 0,
           discountPercentage: vehicle.pricing?.discountPercentage ?? vehicle.discountPercentage ?? 0,
           originalPrice: vehicle.pricing?.originalPrice ?? (chosenDistance > 0 ? Math.round(chosenDistance * (vehicle.perKmRate || 12)) : (vehicle.fare || 0)),
           fare: vehicle.pricing?.displayFare ?? vehicle.pricing?.baseFare ?? vehicle.pricing?.discountedPrice ?? (vehicle.dailyPrice * 1.2),
@@ -1618,15 +1621,15 @@ function SelectVehicleContent() {
                           )}
                           {isLocalBooking ? (
                             <p className="text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight mt-0.5">
-                              Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                              Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.extraKmRate || car.perKmRate || 14).toFixed(0)}/km
                             </p>
                           ) : isAirportBooking ? (
                             <p className="text-[10px] sm:text-[11px] font-medium text-slate-600 leading-tight mt-0.5">
-                              {car.includedKms || 35} KM Included | Additional Rs.{Math.round(car.perKmRate || 14)} / KM
+                              {car.includedKms || 35} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 14)} / KM
                             </p>
                           ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                             <p className="text-[10px] sm:text-[11px] font-medium text-slate-600 leading-tight mt-0.5">
-                              {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.perKmRate || 10)} / KM
+                              {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 10)} / KM
                             </p>
                           ) : null}
                         </div>
@@ -1728,15 +1731,15 @@ function SelectVehicleContent() {
                         )}
                         {isLocalBooking ? (
                           <p className="text-[11px] font-bold text-slate-700">
-                            Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.perKmRate || 14).toFixed(0)}/km
+                            Included: <strong className="text-[#0082fe]">{packageLabel}</strong> • Extra: ₹{parseFloat(car.extraKmRate || car.perKmRate || 14).toFixed(0)}/km
                           </p>
                         ) : isAirportBooking ? (
                           <p className="text-[11px] font-medium text-slate-600">
-                            {car.includedKms || 35} KM Included | Additional Rs.{Math.round(car.perKmRate || 14)} / KM
+                            {car.includedKms || 35} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 14)} / KM
                           </p>
                         ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                           <p className="text-[11px] font-medium text-slate-600">
-                            {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.perKmRate || 10)} / KM
+                            {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 10)} / KM
                           </p>
                         ) : null}
                       </div>

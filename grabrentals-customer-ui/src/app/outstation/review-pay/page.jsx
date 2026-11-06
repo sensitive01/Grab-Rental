@@ -399,6 +399,7 @@ export default function ReviewPayPage() {
                       const freshVendPet = match.pricing.vendorPetCharge != null ? Number(match.pricing.vendorPetCharge) : prev.petDetails?.vendorPetCharge;
                       const freshDiscPct = match.pricing.discountPercentage != null ? Number(match.pricing.discountPercentage) : prev.car?.discountPercentage;
                       const freshPerKm = match.perKmRate != null ? Number(match.perKmRate) : prev.car?.perKmRate;
+                      const freshExtraKm = match.extraKmRate != null ? Number(match.extraKmRate) : (match.perKmRate != null ? Number(match.perKmRate) : prev.car?.extraKmRate);
                       const freshOrigPrice = match.pricing.originalPrice != null ? Number(match.pricing.originalPrice) : prev.car?.originalPrice;
                       const updated = {
                         ...prev,
@@ -413,6 +414,7 @@ export default function ReviewPayPage() {
                           vendorPetCharge: freshVendPet,
                           discountPercentage: freshDiscPct,
                           perKmRate: freshPerKm,
+                          extraKmRate: freshExtraKm,
                           originalPrice: freshOrigPrice,
                           pricing: {
                             ...(prev.car?.pricing || {}),
@@ -601,6 +603,7 @@ export default function ReviewPayPage() {
   }, [isLocal, isAirport, actualRouteKm, minPackageKm]);
 
   const perKmRate = Number(car.perKmRate) || 0;
+  const extraKmRate = Number(car.extraKmRate || car.perKmRate) || perKmRate;
 
   // Additional KMs logic: Only apply for round trip packages where actual route distance exceeds the multi-day package allowance
   const hasAdditionalKm = isRoundTripBooking && minPackageKm > 0 && actualRouteKm > minPackageKm;
@@ -1261,7 +1264,7 @@ export default function ReviewPayPage() {
         petCount: isPetFriendly ? petCount : null,
         petCharge: isPetFriendly ? petCharge : 0,
         vendorPetPayout: isPetFriendly ? vendorPetPayout : 0,
-        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${isPetFriendly ? `🐾 Pet Friendly Cab (${petType} × ${petCount}, Pet Fee: ₹${petCharge}) | ` : ""}${isLocal ? "Package: " + packageLabel + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Image: ${bookingConfig?.car?.image || ""} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km${tariffDiscountAmount > 0 ? ` | Standard Rate: ₹${standardBaseFare} | Route Discount: ₹${tariffDiscountAmount} (${discountPercentage}% OFF)` : ""} | BaseFare: ₹${baseFare} | DriverAllowance: ₹${driverAllowance} (${driverAllowanceLabel}) | Taxes: ₹${taxes} (${gstLabel})${selectedAddons.expressway ? ` | Expressway Fastag Included (₹${expresswayFee})` : ""}${selectedAddons.languageChauffeur ? ` | Language Chauffeur (${chauffeurLanguage}) (₹${languageChauffeurFee})` : ""}${selectedAddons.luggageCarrier ? ` | Luggage Carrier Added (₹${luggageCarrierFee})` : ""}${selectedAddons.lessThan3Years ? ` | Less than 3 years Old Vehicle (₹${lessThan3YearsFee})` : ""}${appliedCouponData ? ` | Coupon Applied: ${appliedCouponData.code} (Saved ₹${couponDiscount})` : ""}`,
+        specialInstructions: `${specialInstructions ? specialInstructions.trim() + " | " : ""}${isPetFriendly ? `🐾 Pet Friendly Cab (${petType} × ${petCount}, Pet Fee: ₹${petCharge}) | ` : ""}${isLocal ? "Package: " + packageLabel + " | " : ""}${stopsVal ? "Intermediate Stops: " + stopsVal.replace(/\|/g, ", ") + " | " : ""}Vehicle: ${bookingConfig?.car?.title || "Fleet"} | Image: ${bookingConfig?.car?.image || ""} | Fuel: ${bookingConfig?.car?.fuel || "CNG"} | Distance: ${distanceKm} km${tollPrice > 0 ? " | FASTag Toll: ₹" + tollPrice : ""}${duration ? " | Est. Duration: " + duration : ""} | Rate: ₹${perKmRate}/km | ExtraKM: ₹${extraKmRate}/km${tariffDiscountAmount > 0 ? ` | Standard Rate: ₹${standardBaseFare} | Route Discount: ₹${tariffDiscountAmount} (${discountPercentage}% OFF)` : ""} | BaseFare: ₹${baseFare} | DriverAllowance: ₹${driverAllowance} (${driverAllowanceLabel}) | Taxes: ₹${taxes} (${gstLabel})${selectedAddons.expressway ? ` | Expressway Fastag Included (₹${expresswayFee})` : ""}${selectedAddons.languageChauffeur ? ` | Language Chauffeur (${chauffeurLanguage}) (₹${languageChauffeurFee})` : ""}${selectedAddons.luggageCarrier ? ` | Luggage Carrier Added (₹${luggageCarrierFee})` : ""}${selectedAddons.lessThan3Years ? ` | Less than 3 years Old Vehicle (₹${lessThan3YearsFee})` : ""}${appliedCouponData ? ` | Coupon Applied: ${appliedCouponData.code} (Saved ₹${couponDiscount})` : ""}`,
       };
 
       const res = await customerApi.createBooking(bookingPayload);
@@ -1957,7 +1960,7 @@ export default function ReviewPayPage() {
                           : "Driver Night Allowance (Between 10:00 PM – 6:00 AM)"}
                       </span>
                     </li>
-                    <li className="flex items-start gap-2.5 text-rose-600">✕ <span className="text-slate-700">Beyond package km charged at ₹{perKmRate || 25}/km after {distanceKm > 0 ? `${distanceKm} km` : "package limit"}</span></li>
+                    <li className="flex items-start gap-2.5 text-rose-600">✕ <span className="text-slate-700">Beyond package km charged at ₹{extraKmRate || perKmRate || 25}/km after {distanceKm > 0 ? `${distanceKm} km` : "package limit"}</span></li>
                     <li className="flex items-start gap-2.5 text-rose-600">✕ <span className="text-slate-700">Multiple pickups/drops</span></li>
                   </ul>
                 </div>

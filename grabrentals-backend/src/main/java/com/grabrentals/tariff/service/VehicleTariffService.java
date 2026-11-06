@@ -864,6 +864,15 @@ public class VehicleTariffService {
             result.put("fuelType", activeTariff.getFuelType());
         }
 
+        BigDecimal generalExtraKm = (activeTariff != null && activeTariff.getExtraKmRate() != null)
+                ? activeTariff.getExtraKmRate()
+                : (chosenRate != null ? chosenRate : new BigDecimal("14.00"));
+        BigDecimal generalVendorExtraKm = (activeTariff != null && activeTariff.getVendorExtraKmRate() != null)
+                ? activeTariff.getVendorExtraKmRate()
+                : (vendorRate != null ? vendorRate : generalExtraKm.multiply(new BigDecimal("0.80")).setScale(2, java.math.RoundingMode.HALF_UP));
+        result.put("extraKmRate", generalExtraKm);
+        result.put("vendorExtraKmRate", generalVendorExtraKm);
+
         // Hourly package attributes if present
         if ("HOURLY".equalsIgnoreCase(sType) || "LOCAL".equalsIgnoreCase(sType)) {
             BigDecimal hCust = null;

@@ -38,6 +38,7 @@ public class PublicVehicleCardDto {
     private Integer year;
     private BigDecimal dailyPrice;
     private BigDecimal perKmRate;
+    private BigDecimal extraKmRate;
     private String location;
     private String chauffeur;
     private Double chauffeurRating;

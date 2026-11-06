@@ -312,7 +312,8 @@ public class PublicVehicleService {
                 if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
                     rate = getDefaultRateForType(config.getCategory(), seats);
                 }
-                BigDecimal postRate = rate.add(new BigDecimal("1.00"));
+                BigDecimal extraKmRateVal = (rateContext.get("extraKmRate") != null) ? (BigDecimal) rateContext.get("extraKmRate") : rate;
+                BigDecimal postRate = extraKmRateVal;
 
                 String category = mapVehicleCategory(config.getCategory(), seats);
                 String typeTitle = (config.getCategory() != null && !config.getCategory().isBlank())
@@ -439,6 +440,7 @@ public class PublicVehicleService {
                 card.setYear(2024);
                 card.setDailyPrice(dailyPrice);
                 card.setPerKmRate(rate);
+                card.setExtraKmRate(extraKmRateVal);
                 card.setLocation(cleanFrom);
                 card.setStatus("AVAILABLE");
                 card.setChauffeur("Verified Commercial Chauffeur");
@@ -545,7 +547,8 @@ public class PublicVehicleService {
                                 ? v.getPerKmRate()
                                 : getDefaultRateForType(v.getVehicleType(), seats);
                     }
-                    BigDecimal postRate = rate.add(new BigDecimal("1.00"));
+                    BigDecimal extraKmRateVal = (rateContext.get("extraKmRate") != null) ? (BigDecimal) rateContext.get("extraKmRate") : rate;
+                    BigDecimal postRate = extraKmRateVal;
 
                     String category = mapVehicleCategory(v.getVehicleType(), seats);
                     String typeTitle = (v.getVehicleType() != null && !v.getVehicleType().isBlank())
@@ -663,6 +666,7 @@ public class PublicVehicleService {
                     card.setYear(yr);
                     card.setDailyPrice(dailyPrice);
                     card.setPerKmRate(rate);
+                    card.setExtraKmRate(extraKmRateVal);
                     card.setLocation(loc);
                     card.setStatus(v.getStatus() != null ? v.getStatus().name() : "AVAILABLE");
                     card.setChauffeur(chauffeurName);
@@ -968,6 +972,7 @@ public class PublicVehicleService {
                 .image(image)
                 .includedKms(distanceKm)
                 .postLimitRate("₹" + postLimitRate + "/km")
+                .extraKmRate(postLimitRate)
                 .pricing(PublicVehicleCardDto.PublicPricingDto.builder()
                         .originalPrice(original)
                         .discountedPrice(discounted)
