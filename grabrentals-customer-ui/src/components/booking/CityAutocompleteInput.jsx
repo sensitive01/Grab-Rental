@@ -16,7 +16,9 @@ export default function CityAutocompleteInput({
   rightElement = null,
   disabled = false,
   required = false,
-  onOpenMap = null
+  onOpenMap = null,
+  hasError = false,
+  inputRef: externalInputRef = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value || "");
@@ -297,7 +299,13 @@ export default function CityAutocompleteInput({
           <Icon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none shrink-0 ${iconColor}`} />
         )}
         <input
-          ref={inputRef}
+          ref={(node) => {
+            inputRef.current = node;
+            if (externalInputRef) {
+              if (typeof externalInputRef === "function") externalInputRef(node);
+              else externalInputRef.current = node;
+            }
+          }}
           type="text"
           value={inputValue}
           onChange={handleInputChange}
@@ -307,7 +315,11 @@ export default function CityAutocompleteInput({
           disabled={disabled}
           required={required}
           autoComplete="off"
-          className={`w-full min-w-0 pl-10 sm:pl-11 ${rightElement ? "pr-14" : "pr-8"} h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm ${inputClassName}`}
+          className={`w-full min-w-0 pl-10 sm:pl-11 ${rightElement ? "pr-14" : "pr-8"} h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all shadow-sm ${
+            hasError
+              ? "border-2 border-rose-500 bg-rose-50/25 ring-2 ring-rose-200/60 focus:border-rose-600 focus:ring-rose-300"
+              : "border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+          } ${inputClassName}`}
         />
 
         {/* Clear content button */}

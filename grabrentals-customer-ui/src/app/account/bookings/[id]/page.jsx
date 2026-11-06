@@ -474,7 +474,7 @@ export default function TripDetailsTrackingPage({ params }) {
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                alert("Trip tracking link copied to clipboard!");
+                showNotification("success", "Trip tracking link copied to clipboard!");
               }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
             >

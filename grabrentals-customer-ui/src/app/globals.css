@@ -44,8 +44,20 @@
   --color-orange-950: #07274a;
 }
 
+:root {
+  --app-header-height: 93px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --app-header-height: 112px;
+  }
+}
+
 @layer base {
+  html,
   body {
+    overscroll-behavior-y: none;
     @apply font-sans bg-slate-50 text-slate-900;
   }
 }

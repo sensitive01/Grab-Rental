@@ -10,6 +10,8 @@ export default function PackageSelectDropdown({
   packages = [],
   placeholder = "Select Hourly Package",
   className = "",
+  hasError = false,
+  buttonRef = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -62,11 +64,16 @@ export default function PackageSelectDropdown({
     <div ref={containerRef} className={`relative w-full ${className}`}>
       {/* Trigger Button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="w-full flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100/90 border border-slate-200 rounded-xl px-3 sm:px-3.5 h-[44px] sm:h-[48px] py-2 sm:py-3 transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 group"
+        className={`w-full flex items-center justify-between text-left rounded-xl px-3 sm:px-3.5 h-[44px] sm:h-[48px] py-2 sm:py-3 transition-all shadow-2xs cursor-pointer focus:outline-none group ${
+          hasError
+            ? "border-2 border-rose-500 bg-rose-50/25 ring-2 ring-rose-200/60"
+            : "bg-slate-50 hover:bg-slate-100/90 border border-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+        }`}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">

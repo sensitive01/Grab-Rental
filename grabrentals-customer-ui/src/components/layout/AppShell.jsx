@@ -41,6 +41,23 @@ export default function AppShell({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bookNowOpen, setBookNowOpen] = useState(false);
   const bookNowRef = useRef(null);
+  const headerRef = useRef(null);
+
+  // Dynamically measure sticky header height to guarantee 100% pixel-perfect subheader docking
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        const height = headerRef.current.offsetHeight;
+        if (height > 0) {
+          document.documentElement.style.setProperty("--app-header-height", `${height}px`);
+        }
+      }
+    };
+    updateHeaderHeight();
+    window.addEventListener("resize", updateHeaderHeight);
+    return () => window.removeEventListener("resize", updateHeaderHeight);
+  }, []);
 
   useEffect(() => {
     const checkUser = () => {
@@ -200,8 +217,8 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-slate-50">
 
-      {/* Sticky Combined Header Group (Top Trust Bar + Main Navigation) */}
-      <header className="sticky top-0 z-50 w-full shadow-xs">
+      {/* Fixed on Mobile, Sticky on Desktop Combined Header Group */}
+      <header ref={headerRef} className="fixed sm:sticky top-0 left-0 right-0 z-50 w-full shadow-xs transform-gpu">
         {/* A. Top Trust & Guarantee Ticker with Language Options */}
         <div className="bg-[#0082fe] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-blue-600/70 shadow-xs">
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
@@ -728,8 +745,8 @@ export default function AppShell({ children }) {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1">
+      {/* Main Content (with dynamic top padding on mobile to offset fixed header) */}
+      <div className="flex-1 pt-[var(--app-header-height,93px)] sm:pt-0">
         {children}
       </div>
 

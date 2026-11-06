@@ -12,7 +12,9 @@ export default function AirportSearchDropdown({
   placeholder = "Select or search airport...",
   iconColor = "text-brand-emerald",
   tripType = "pickup", // "pickup" | "drop"
-  className = ""
+  className = "",
+  hasError = false,
+  buttonRef = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -164,9 +166,14 @@ export default function AirportSearchDropdown({
     <div ref={containerRef} className={`relative w-full min-w-0 ${className}`}>
       {/* Trigger Button Field */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full min-w-0 pl-10 sm:pl-11 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm cursor-pointer flex items-center justify-between text-left group overflow-hidden"
+        className={`w-full min-w-0 pl-10 sm:pl-11 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none transition-all shadow-sm cursor-pointer flex items-center justify-between text-left group overflow-hidden ${
+          hasError
+            ? "border-2 border-rose-500 bg-rose-50/25 ring-2 ring-rose-200/60"
+            : "bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+        }`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >

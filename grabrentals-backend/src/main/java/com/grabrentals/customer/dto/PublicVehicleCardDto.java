@@ -20,6 +20,7 @@ public class PublicVehicleCardDto {
     private Double rating;
     private Integer ratingCount;
     private Integer seating;
+    private Integer seatingCapacity;
     private String image;
     private Integer includedKms;
     private String postLimitRate;
@@ -42,6 +43,14 @@ public class PublicVehicleCardDto {
     private Double chauffeurRating;
     private String status;
     private String description;
+
+    public Integer getSeatingCapacity() {
+        return seatingCapacity != null ? seatingCapacity : seating;
+    }
+
+    public Integer getSeating() {
+        return seating != null ? seating : seatingCapacity;
+    }
 
     @Data
     @Builder

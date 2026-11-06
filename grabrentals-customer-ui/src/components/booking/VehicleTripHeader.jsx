@@ -38,7 +38,7 @@ export default function VehicleTripHeader({
 
   const packageLabel = formatPackageLabel(to);
 
-  const [headerHeight, setHeaderHeight] = useState(120);
+  const [headerHeight, setHeaderHeight] = useState(140);
   const cardRef = useRef(null);
 
   useEffect(() => {
@@ -54,31 +54,32 @@ export default function VehicleTripHeader({
   }, [from, to, stops, tripType, date, time]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-0 sm:space-y-2">
       {/* Breadcrumb - desktop only */}
-      <div className="hidden sm:block text-[11px] text-slate-500 font-medium px-0.5">
+      <div className="hidden sm:block text-[11px] text-slate-500 font-medium px-0.5 mb-2">
         <Link href="/" className="hover:text-amber-600 transition-colors">Home</Link>
         <span className="mx-1.5 text-slate-400">&gt;</span>
         <span className="text-slate-800 font-bold">{t("select_vehicle")}</span>
       </div>
 
-      {/* Mobile Spacer to match fixed header height */}
+      {/* Mobile Spacer so vehicle cards start directly below the fixed route header */}
       <div
         className="block sm:hidden w-full shrink-0"
         style={{ height: `${headerHeight}px` }}
         aria-hidden="true"
       />
 
-      {/* Confirmed Route Section: Fixed on Mobile, Static in normal flow on Desktop */}
+      {/* Confirmed Route Section: Fixed on Mobile under navbar, Static on Desktop */}
       <div
         ref={cardRef}
-        className="fixed top-[93px] left-0 right-0 z-30 px-3 py-1.5 bg-slate-50 shadow-xs sm:static sm:p-0 sm:bg-transparent sm:z-auto sm:shadow-none"
+        className="fixed left-0 right-0 z-30 pt-0 px-2 sm:px-0 pb-1 sm:pb-0 bg-transparent sm:static sm:z-auto transform-gpu"
+        style={{ top: "var(--app-header-height, 93px)" }}
       >
         <div className="max-w-7xl mx-auto">
-          <div className="bg-[#0082fe] rounded-2xl p-3 sm:p-5 shadow-md sm:shadow-sm text-white space-y-2.5 sm:space-y-0 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+          <div className="bg-[#0082fe] rounded-b-2xl rounded-t-none sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-md sm:shadow-sm text-white space-y-2.5 lg:space-y-0 flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-4">
           
-          {/* Top Row / Left Column: Route Title & Modify Button on Mobile */}
-          <div className="flex items-start justify-between gap-2.5 min-w-0">
+          {/* Top Row / Left Column: Route Title & Modify Button on Mobile/Tablet */}
+          <div className="flex items-start justify-between gap-2.5 min-w-0 flex-1">
             <div className="min-w-0 flex-1">
               <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-900 bg-white/25 border border-white/30 px-2.5 py-0.5 rounded-full inline-block mb-1">
                 {isLocal ? "Local Hourly Rental" : isAirport ? "Airport Transfer" : t("confirmed_route")}
@@ -116,24 +117,24 @@ export default function VehicleTripHeader({
               </h1>
             </div>
 
-            {/* Mobile Modify Trip Button (Compact top-right button on mobile) */}
+            {/* Mobile/Tablet Modify Trip Button */}
             <button
               type="button"
               onClick={onModifyClick}
-              className="md:hidden px-2.5 py-1.5 rounded-xl bg-white hover:bg-blue-50 text-[#0082fe] font-extrabold text-xs transition-all flex items-center gap-1 shrink-0 cursor-pointer shadow-xs active:scale-95"
+              className="lg:hidden px-2.5 py-1.5 rounded-xl bg-white hover:bg-blue-50 text-[#0082fe] font-extrabold text-xs transition-all flex items-center gap-1 shrink-0 cursor-pointer shadow-xs active:scale-95"
             >
               <Edit3 className="w-3 h-3 text-[#0082fe]" />
               <span>{t("modify_trip")}</span>
             </button>
           </div>
 
-          {/* Bottom Row / Right Column: Trip Badges (Equal-width responsive flex on mobile, flex on desktop) */}
-          <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-7 text-xs sm:text-sm w-full sm:w-auto py-0.5">
+          {/* Bottom Row / Right Column: Trip Badges + Desktop Modify Button */}
+          <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-2.5 md:gap-3.5 lg:gap-3 xl:gap-4 text-xs sm:text-sm w-full lg:w-auto py-0.5 pr-9 sm:pr-0 shrink-0">
             <div className="flex-1 sm:flex-none min-w-0 bg-white/15 sm:bg-transparent px-1.5 sm:px-0 py-1 sm:py-0 rounded-lg sm:rounded-none text-center sm:text-left">
-              <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">
+              <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">
                 {isLocal ? "Service" : isAirport ? "Airport Trip" : (tripType.toLowerCase().includes("round") ? t("round_trip") : t("one_way"))}
               </span>
-              <span className="font-extrabold text-white text-[11px] sm:text-sm block truncate">
+              <span className="font-extrabold text-white text-[11px] sm:text-xs lg:text-sm block truncate">
                 {isLocal ? "Hourly" : isAirport ? (tripType || "Transfer") : (tripType.toLowerCase().includes("round") ? "RoundTrip" : "OneWay")}
               </span>
             </div>
@@ -141,23 +142,23 @@ export default function VehicleTripHeader({
             <div className="hidden sm:block h-6 sm:h-7 w-px bg-white/25 shrink-0"></div>
 
             <div className="flex-1 sm:flex-none min-w-0 bg-white/15 sm:bg-transparent px-1.5 sm:px-0 py-1 sm:py-0 rounded-lg sm:rounded-none text-center sm:text-left">
-              <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">{t("pickup_date")}</span>
-              <span className="font-extrabold text-white text-[11px] sm:text-sm block truncate" suppressHydrationWarning>{date}</span>
+              <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">{t("pickup_date")}</span>
+              <span className="font-extrabold text-white text-[11px] sm:text-xs lg:text-sm block truncate" suppressHydrationWarning>{date}</span>
             </div>
 
             <div className="hidden sm:block h-6 sm:h-7 w-px bg-white/25 shrink-0"></div>
 
             <div className="flex-1 sm:flex-none min-w-0 bg-white/15 sm:bg-transparent px-1.5 sm:px-0 py-1 sm:py-0 rounded-lg sm:rounded-none text-center sm:text-left">
-              <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">{t("pickup_time")}</span>
-              <span className="font-extrabold text-white text-[11px] sm:text-sm block truncate" suppressHydrationWarning>{time}</span>
+              <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">{t("pickup_time")}</span>
+              <span className="font-extrabold text-white text-[11px] sm:text-xs lg:text-sm block truncate" suppressHydrationWarning>{time}</span>
             </div>
 
             {!isLocal && tripType.toLowerCase().includes("round") && returnDate ? (
               <>
                 <div className="hidden sm:block h-6 sm:h-7 w-px bg-white/25 shrink-0"></div>
                 <div className="flex-1 sm:flex-none min-w-0 bg-white/15 sm:bg-transparent px-1.5 sm:px-0 py-1 sm:py-0 rounded-lg sm:rounded-none text-center sm:text-left">
-                  <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">{t("return_date") || "Return Date"}</span>
-                  <span className="font-extrabold text-white text-[11px] sm:text-sm block truncate" suppressHydrationWarning>
+                  <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">{t("return_date") || "Return Date"}</span>
+                  <span className="font-extrabold text-white text-[11px] sm:text-xs lg:text-sm block truncate" suppressHydrationWarning>
                     {returnDate}
                   </span>
                 </div>
@@ -168,24 +169,24 @@ export default function VehicleTripHeader({
               <>
                 <div className="hidden sm:block h-6 sm:h-7 w-px bg-white/25 shrink-0"></div>
                 <div className="flex-1 sm:flex-none min-w-0 bg-white/15 sm:bg-transparent px-1.5 sm:px-0 py-1 sm:py-0 rounded-lg sm:rounded-none text-center sm:text-left">
-                  <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">Coverage</span>
-                  <span className="font-extrabold text-white text-[11px] sm:text-sm block truncate">{packageLabel}</span>
+                  <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">Coverage</span>
+                  <span className="font-extrabold text-white text-[11px] sm:text-xs lg:text-sm block truncate">{packageLabel}</span>
                 </div>
               </>
             ) : isAirport ? (
               <>
                 <div className="hidden sm:block h-6 sm:h-7 w-px bg-white/25 shrink-0"></div>
                 <div className="flex-1 sm:flex-none min-w-0 bg-white/15 sm:bg-transparent px-1.5 sm:px-0 py-1 sm:py-0 rounded-lg sm:rounded-none text-center sm:text-left">
-                  <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">Flight</span>
-                  <span className="font-extrabold text-white text-[11px] sm:text-sm block truncate">Tracking</span>
+                  <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">Flight</span>
+                  <span className="font-extrabold text-white text-[11px] sm:text-xs lg:text-sm block truncate">Tracking</span>
                 </div>
               </>
             ) : distanceKm > 0 ? (
               <>
                 <div className="hidden sm:block h-6 sm:h-7 w-px bg-white/25 shrink-0"></div>
                 <div className="flex-1 sm:flex-none min-w-0 bg-white/15 sm:bg-transparent px-1.5 sm:px-0 py-1 sm:py-0 rounded-lg sm:rounded-none text-center sm:text-left">
-                  <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">Distance</span>
-                  <span className="font-extrabold text-white text-[11px] sm:text-sm block truncate">{distanceKm} km</span>
+                  <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] uppercase font-bold text-white/80 block leading-tight truncate">Distance</span>
+                  <span className="font-extrabold text-white text-[11px] sm:text-xs lg:text-sm block truncate">{distanceKm} km</span>
                 </div>
               </>
             ) : null}
@@ -194,7 +195,7 @@ export default function VehicleTripHeader({
             <button
               type="button"
               onClick={onModifyClick}
-              className="hidden md:flex px-4 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#0082fe] font-extrabold text-xs transition-all items-center gap-1.5 cursor-pointer shadow-sm ml-auto shrink-0"
+              className="hidden lg:flex px-3.5 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#0082fe] font-extrabold text-xs transition-all items-center gap-1.5 cursor-pointer shadow-sm ml-2 xl:ml-3 shrink-0 active:scale-95"
             >
               <Edit3 className="w-3.5 h-3.5 text-[#0082fe]" /> {t("modify_trip")}
             </button>

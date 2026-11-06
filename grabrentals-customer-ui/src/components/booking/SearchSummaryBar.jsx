@@ -116,7 +116,10 @@ function SearchSummaryContent({
   const displayTo = overrideTo || tripInfo.to;
 
   return (
-    <div className="bg-[#0082fe] text-white border-b border-blue-600 sticky top-[92px] sm:top-[112px] z-40 shadow-sm">
+    <div 
+      className="bg-[#0082fe] text-white border-b border-blue-600 sticky z-40 shadow-sm transform-gpu"
+      style={{ top: "var(--app-header-height, 93px)" }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         
         <div className="flex flex-col gap-1">

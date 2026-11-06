@@ -15,9 +15,11 @@ import {
   Check,
   Sparkles,
   ChevronDown,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
@@ -78,6 +80,16 @@ export default function PetBookingWidget() {
   const [selectedPackage, setSelectedPackage] = useState(() => {
     const cached = getCachedLocalPackages();
     return cached && cached.length > 0 ? cached[0].value : (DEFAULT_LOCAL_PACKAGES[0]?.value || "4hr-40km");
+  });
+
+  const toast = useToast();
+  const [validationErrors, setValidationErrors] = useState({
+    pickup: false,
+    drop: false,
+    date: false,
+    returnDate: false,
+    airport: false,
+    package: false,
   });
 
   useEffect(() => {
@@ -343,18 +355,81 @@ export default function PetBookingWidget() {
       pkgVal = selectedPackage;
     }
 
-    if ((tripMode === "one-way" || tripMode === "round-trip" || tripMode === "multicity") && (!toLoc || !toLoc.trim())) {
-      alert("Please choose a destination to search pet-friendly cabs.");
-      return;
-    }
-    if (tripMode === "airport" && airportTripType === "pickup" && (!toLoc || !toLoc.trim())) {
-      alert("Please choose a drop location / address to search pet-friendly cabs.");
-      return;
-    }
+    const newErrors = { pickup: false, drop: false, date: false, returnDate: false, airport: false, package: false };
+
+    // 1. Pickup location check
     if (!fromLoc || !fromLoc.trim()) {
-      alert("Please enter a pickup location to search pet-friendly cabs.");
+      newErrors.pickup = true;
+      if (tripMode === "airport" && airportTripType === "pickup") {
+        newErrors.airport = true;
+      }
+      setValidationErrors(newErrors);
+      toast.error(
+        tripMode === "airport" && airportTripType === "pickup"
+          ? "Please select your departure airport."
+          : "Please enter your pickup city or address.",
+        "Pickup Location Required"
+      );
       return;
     }
+
+    // 2. Drop location / Destination check
+    if (tripMode === "one-way" || tripMode === "round-trip" || tripMode === "multicity") {
+      if (!toLoc || !toLoc.trim()) {
+        newErrors.drop = true;
+        setValidationErrors(newErrors);
+        toast.error("Please choose a destination to search pet-friendly cabs.", "Destination Required");
+        return;
+      }
+    } else if (tripMode === "airport") {
+      if (!toLoc || !toLoc.trim()) {
+        if (airportTripType === "drop") {
+          newErrors.airport = true;
+        } else {
+          newErrors.drop = true;
+        }
+        setValidationErrors(newErrors);
+        toast.error(
+          airportTripType === "drop"
+            ? "Please select your destination airport."
+            : "Please choose your drop location / address.",
+          "Destination Required"
+        );
+        return;
+      }
+    } else if (tripMode === "local") {
+      if (!selectedPackage || !selectedPackage.trim()) {
+        newErrors.package = true;
+        setValidationErrors(newErrors);
+        toast.error("Please select an hourly rental package.", "Package Required");
+        return;
+      }
+    }
+
+    // 3. Date validation check
+    if (!pickupDate) {
+      newErrors.date = true;
+      setValidationErrors(newErrors);
+      toast.error("Please select a pickup date.", "Pickup Date Required");
+      return;
+    }
+
+    if ((tripMode === "round-trip" || tripMode === "multicity")) {
+      if (!dropDate) {
+        newErrors.returnDate = true;
+        setValidationErrors(newErrors);
+        toast.error("Please select a return date for round trip.", "Return Date Required");
+        return;
+      }
+      if (dropDate < pickupDate) {
+        newErrors.returnDate = true;
+        setValidationErrors(newErrors);
+        toast.error("Return date cannot be earlier than your pickup date.", "Invalid Return Date");
+        return;
+      }
+    }
+
+    setValidationErrors({ pickup: false, drop: false, date: false, returnDate: false, airport: false, package: false });
 
     const bookingConfig = {
       trip: {
@@ -533,13 +608,21 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
+                  hasError={validationErrors.pickup}
                   onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
+                    if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                   }}
                   placeholder="Enter pickup city"
                 />
+                {validationErrors.pickup && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please enter pickup location</span>
+                  </p>
+                )}
               </div>
 
               {/* Swap Button */}
@@ -562,13 +645,21 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={dropCity}
+                  hasError={validationErrors.drop}
                   onChange={(val, coords, details) => {
                     setDropCity(val);
                     setDropCoords(coords || null);
                     if (details) setDropDetails(details);
+                    if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                   }}
                   placeholder={t("choose_the_location") || "Choose the location"}
                 />
+                {validationErrors.drop && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please choose destination</span>
+                  </p>
+                )}
               </div>
 
               {/* Pickup Date */}
@@ -616,13 +707,21 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
+                  hasError={validationErrors.pickup}
                   onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
+                    if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                   }}
                   placeholder="Enter pickup city"
                 />
+                {validationErrors.pickup && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please enter pickup location</span>
+                  </p>
+                )}
               </div>
 
               {/* Swap Button */}
@@ -645,13 +744,21 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={dropCity}
+                  hasError={validationErrors.drop}
                   onChange={(val, coords, details) => {
                     setDropCity(val);
                     setDropCoords(coords || null);
                     if (details) setDropDetails(details);
+                    if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                   }}
                   placeholder={t("choose_the_location") || "Choose the location"}
                 />
+                {validationErrors.drop && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please choose destination</span>
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -666,13 +773,21 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
+                  hasError={validationErrors.pickup}
                   onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
+                    if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                   }}
                   placeholder="Enter starting city"
                 />
+                {validationErrors.pickup && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please enter starting location</span>
+                  </p>
+                )}
               </div>
 
               <div className="hidden md:flex justify-center items-center pt-5 md:col-span-1">
@@ -688,13 +803,21 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={dropCity}
+                  hasError={validationErrors.drop}
                   onChange={(val, coords, details) => {
                     setDropCity(val);
                     setDropCoords(coords || null);
                     if (details) setDropDetails(details);
+                    if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                   }}
                   placeholder={t("choose_the_location") || "Choose the location"}
                 />
+                {validationErrors.drop && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please choose destination</span>
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -710,13 +833,21 @@ export default function PetBookingWidget() {
                 </label>
                 <CityAutocompleteInput
                   value={pickupCity}
+                  hasError={validationErrors.pickup}
                   onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
+                    if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                   }}
                   placeholder="Enter pickup city"
                 />
+                {validationErrors.pickup && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please enter pickup location</span>
+                  </p>
+                )}
               </div>
 
               {/* Package Select */}
@@ -727,9 +858,19 @@ export default function PetBookingWidget() {
                 </label>
                 <PackageSelectDropdown
                   value={selectedPackage}
-                  onChange={setSelectedPackage}
+                  hasError={validationErrors.package}
+                  onChange={(val) => {
+                    setSelectedPackage(val);
+                    if (validationErrors.package) setValidationErrors((prev) => ({ ...prev, package: false }));
+                  }}
                   packages={localPackages}
                 />
+                {validationErrors.package && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please select an hourly package</span>
+                  </p>
+                )}
               </div>
 
               {/* Pickup Date */}
@@ -778,11 +919,19 @@ export default function PetBookingWidget() {
                     </label>
                     <AirportSearchDropdown
                       value={selectedAirport}
+                      hasError={validationErrors.airport}
                       onChange={(val, coords) => {
                         setSelectedAirport(val);
                         if (coords) setAirportCoords(coords);
+                        if (validationErrors.airport) setValidationErrors((prev) => ({ ...prev, airport: false }));
                       }}
                     />
+                    {validationErrors.airport && (
+                      <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Please select pickup airport</span>
+                      </p>
+                    )}
                   </div>
                   <div className="hidden lg:flex items-center justify-center pb-2 shrink-0">
                     <button
@@ -801,13 +950,21 @@ export default function PetBookingWidget() {
                     </label>
                     <CityAutocompleteInput
                       value={dropCity}
+                      hasError={validationErrors.drop}
                       onChange={(val, coords, details) => {
                         setDropCity(val);
                         setDropCoords(coords || null);
                         if (details) setDropDetails(details);
+                        if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                       }}
                       placeholder={t("choose_the_location") || "Choose the location"}
                     />
+                    {validationErrors.drop && (
+                      <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Please choose destination</span>
+                      </p>
+                    )}
                   </div>
                 </>
               ) : (
@@ -819,13 +976,21 @@ export default function PetBookingWidget() {
                     </label>
                     <CityAutocompleteInput
                       value={pickupCity}
+                      hasError={validationErrors.pickup}
                       onChange={(val, coords, details) => {
                         setPickupCity(val);
                         setPickupCoords(coords || null);
                         if (details) setPickupDetails(details);
+                        if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                       }}
                       placeholder="Enter pickup area (e.g. Koramangala)"
                     />
+                    {validationErrors.pickup && (
+                      <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Please enter pickup location</span>
+                      </p>
+                    )}
                   </div>
                   <div className="hidden lg:flex items-center justify-center pb-2 shrink-0">
                     <button
@@ -844,11 +1009,19 @@ export default function PetBookingWidget() {
                     </label>
                     <AirportSearchDropdown
                       value={selectedAirport}
+                      hasError={validationErrors.airport}
                       onChange={(val, coords) => {
                         setSelectedAirport(val);
                         if (coords) setAirportCoords(coords);
+                        if (validationErrors.airport) setValidationErrors((prev) => ({ ...prev, airport: false }));
                       }}
                     />
+                    {validationErrors.airport && (
+                      <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Please select destination airport</span>
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -973,10 +1146,23 @@ export default function PetBookingWidget() {
                   min={pickupDate || minDateStr}
                   value={dropDate}
                   suppressHydrationWarning
-                  onChange={(e) => setDropDate(e.target.value)}
-                  className="w-full min-w-0 block pl-10 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe] transition-all shadow-2xs cursor-pointer box-border"
+                  onChange={(e) => {
+                    setDropDate(e.target.value);
+                    if (validationErrors.returnDate) setValidationErrors((prev) => ({ ...prev, returnDate: false }));
+                  }}
+                  className={`w-full min-w-0 block pl-10 pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none transition-all shadow-2xs cursor-pointer box-border ${
+                    validationErrors.returnDate
+                      ? "border-2 border-rose-500 bg-rose-50/25 ring-2 ring-rose-200/60"
+                      : "bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:ring-2 focus:ring-[#0082fe]/20 focus:border-[#0082fe]"
+                  }`}
                 />
               </div>
+              {validationErrors.returnDate && (
+                <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Select valid return date</span>
+                </p>
+              )}
             </div>
           </div>
         )}

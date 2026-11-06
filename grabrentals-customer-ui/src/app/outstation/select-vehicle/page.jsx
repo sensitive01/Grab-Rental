@@ -622,7 +622,7 @@ function SelectVehicleContent() {
   const fleetWithPricing = useMemo(() => {
     const seen = new Set();
     const uniqueVehicles = backendVehicles.filter((car) => {
-      const key = `${(car.title || car.model || car.name || "").trim().toLowerCase()}_${(car.category || "").trim().toLowerCase()}_${car.seatingCapacity || 4}_${(car.fuelType || "").trim().toLowerCase()}`;
+      const key = `${(car.title || car.model || car.name || "").trim().toLowerCase()}_${(car.category || "").trim().toLowerCase()}_${car.seatingCapacity || car.seating || 4}_${(car.fuelType || "").trim().toLowerCase()}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1226,7 +1226,7 @@ function SelectVehicleContent() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 pt-1.5 sm:pt-5 pb-8 px-3 sm:px-6 lg:px-8 font-sans">
+    <main className="min-h-screen bg-slate-50 pt-0 sm:pt-5 pb-8 px-2 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-4">
         
         {/* Dynamic Route Header */}

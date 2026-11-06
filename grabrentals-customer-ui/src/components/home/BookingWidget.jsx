@@ -1,9 +1,10 @@
-"use client";
+ "use client";
 
 import { useState, useMemo, useEffect, useRef, Suspense } from "react";
-import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight, ChevronDown, Plane } from "lucide-react";
+import { ArrowLeftRight, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, Navigation, ChevronLeft, ChevronRight, ChevronDown, Plane, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
@@ -132,6 +133,16 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
   const [selectedPackage, setSelectedPackage] = useState(() => {
     const cached = getCachedLocalPackages();
     return cached && cached.length > 0 ? cached[0].value : "4hr-40km";
+  });
+
+  const toast = useToast();
+  const [validationErrors, setValidationErrors] = useState({
+    pickup: false,
+    drop: false,
+    date: false,
+    returnDate: false,
+    airport: false,
+    package: false,
   });
 
   useEffect(() => {
@@ -618,18 +629,83 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
       toLoc = dropCity;
     }
 
-    if ((activeTab === "outstation" || activeTab === "package") && (!toLoc || !toLoc.trim())) {
-      alert("Please choose a destination to search cabs.");
-      return;
-    }
-    if (activeTab === "airport" && airportTripType === "pickup" && (!toLoc || !toLoc.trim())) {
-      alert("Please choose a drop location / address to search cabs.");
-      return;
-    }
+    // Validation Checks
+    const newErrors = { pickup: false, drop: false, date: false, returnDate: false, airport: false, package: false };
+
+    // 1. Pickup location check
     if (!fromLoc || !fromLoc.trim()) {
-      alert("Please enter a pickup location to search cabs.");
+      newErrors.pickup = true;
+      if (activeTab === "airport" && airportTripType === "pickup") {
+        newErrors.airport = true;
+      }
+      setValidationErrors(newErrors);
+      toast.error(
+        activeTab === "airport" && airportTripType === "pickup"
+          ? "Please select your departure airport."
+          : "Please enter your pickup city or address.",
+        "Pickup Location Required"
+      );
       return;
     }
+
+    // 2. Drop location / Destination check
+    if (activeTab === "outstation" || activeTab === "package") {
+      if (!toLoc || !toLoc.trim()) {
+        newErrors.drop = true;
+        setValidationErrors(newErrors);
+        toast.error("Please choose a destination to search cabs.", "Destination Required");
+        return;
+      }
+    } else if (activeTab === "airport") {
+      if (!toLoc || !toLoc.trim()) {
+        if (airportTripType === "drop") {
+          newErrors.airport = true;
+        } else {
+          newErrors.drop = true;
+        }
+        setValidationErrors(newErrors);
+        toast.error(
+          airportTripType === "drop"
+            ? "Please select your destination airport."
+            : "Please choose your drop location / address.",
+          "Destination Required"
+        );
+        return;
+      }
+    } else if (activeTab === "local") {
+      if (!selectedPackage || !selectedPackage.trim()) {
+        newErrors.package = true;
+        setValidationErrors(newErrors);
+        toast.error("Please select an hourly rental package.", "Package Required");
+        return;
+      }
+    }
+
+    // 3. Date validation check
+    if (!pickupDate) {
+      newErrors.date = true;
+      setValidationErrors(newErrors);
+      toast.error("Please select a pickup date.", "Pickup Date Required");
+      return;
+    }
+
+    if (isRoundTrip && (activeTab === "outstation" || activeTab === "package")) {
+      if (!dropDate) {
+        newErrors.returnDate = true;
+        setValidationErrors(newErrors);
+        toast.error("Please select a return date for round trip.", "Return Date Required");
+        return;
+      }
+      if (dropDate < pickupDate) {
+        newErrors.returnDate = true;
+        setValidationErrors(newErrors);
+        toast.error("Return date cannot be earlier than your pickup date.", "Invalid Return Date");
+        return;
+      }
+    }
+
+    // Clear all errors on successful validation
+    setValidationErrors({ pickup: false, drop: false, date: false, returnDate: false, airport: false, package: false });
 
     const tripData = {
       from: fromLoc,
@@ -895,15 +971,23 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               </div>
               <CityAutocompleteInput
                 value={pickupCity}
+                hasError={validationErrors.pickup}
                 onChange={(val, coords, details) => {
                   setPickupCity(val);
                   setPickupCoords(coords || null);
                   if (details) setPickupDetails(details);
+                  if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                 }}
                 placeholder={t("enter_pickup_city") || "Enter pickup city"}
                 iconColor="text-brand-emerald"
                 inputClassName="rounded-xl"
               />
+              {validationErrors.pickup && (
+                <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Please enter pickup location</span>
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -1006,15 +1090,23 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               </div>
               <CityAutocompleteInput
                 value={dropCity}
+                hasError={validationErrors.drop}
                 onChange={(val, coords, details) => {
                   setDropCity(val);
                   setDropCoords(coords || null);
                   if (details) setDropDetails(details);
+                  if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                 }}
                 placeholder={t("choose_the_location") || "Choose the location"}
                 iconColor="text-brand-orange"
                 inputClassName="rounded-xl"
               />
+              {validationErrors.drop && (
+                <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Please choose destination</span>
+                </p>
+              )}
 
               {/* Action triggers below field */}
               <button
@@ -1047,10 +1139,23 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   value={pickupDate}
                   min={minDateStr}
                   suppressHydrationWarning
-                  onChange={(e) => handlePickupDateChange(e.target.value)}
-                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
+                  onChange={(e) => {
+                    handlePickupDateChange(e.target.value);
+                    if (validationErrors.date) setValidationErrors((prev) => ({ ...prev, date: false }));
+                  }}
+                  className={`w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none transition-all shadow-2xs cursor-pointer box-border appearance-none ${
+                    validationErrors.date
+                      ? "border-2 border-rose-500 bg-rose-50/25 ring-2 ring-rose-200/60"
+                      : "bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber"
+                  }`}
                 />
               </div>
+              {validationErrors.date && (
+                <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Please select pickup date</span>
+                </p>
+              )}
             </div>
 
             {/* SEPARATE PICKUP TIME (Custom Controlled Dropdown) */}
@@ -1078,10 +1183,23 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                     value={dropDate}
                     min={pickupDate || minDateStr}
                     suppressHydrationWarning
-                    onChange={(e) => setDropDate(e.target.value)}
-                    className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
+                    onChange={(e) => {
+                      setDropDate(e.target.value);
+                      if (validationErrors.returnDate) setValidationErrors((prev) => ({ ...prev, returnDate: false }));
+                    }}
+                    className={`w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none transition-all shadow-2xs cursor-pointer box-border appearance-none ${
+                      validationErrors.returnDate
+                        ? "border-2 border-rose-500 bg-rose-50/25 ring-2 ring-rose-200/60"
+                        : "bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber"
+                    }`}
                   />
                 </div>
+                {validationErrors.returnDate && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Select valid return date</span>
+                  </p>
+                )}
               </div>
             )}
 
@@ -1119,9 +1237,11 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               <>
                 <AirportSearchDropdown
                   value={selectedAirport}
+                  hasError={validationErrors.airport}
                   onChange={(val, coords) => {
                     setSelectedAirport(val);
                     if (coords) setAirportCoords(coords);
+                    if (validationErrors.airport) setValidationErrors((prev) => ({ ...prev, airport: false }));
                   }}
                   onOpenMap={() => {
                     setMapTarget("airport");
@@ -1130,6 +1250,12 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   tripType="pickup"
                   iconColor="text-brand-emerald"
                 />
+                {validationErrors.airport && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please select pickup airport</span>
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -1146,10 +1272,12 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               <>
                 <CityAutocompleteInput
                   value={pickupCity}
+                  hasError={validationErrors.pickup}
                   onChange={(val, coords, details) => {
                     setPickupCity(val);
                     setPickupCoords(coords || null);
                     if (details) setPickupDetails(details);
+                    if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                   }}
                   onOpenMap={() => {
                     setMapTarget("pickup");
@@ -1158,6 +1286,12 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   placeholder={activeTab === "airport" ? (t("enter_pickup_location") || "Enter address / hotel / location") : (t("enter_pickup_city") || "Enter pickup city")}
                   iconColor="text-brand-emerald"
                 />
+                {validationErrors.pickup && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please enter pickup location</span>
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -1231,9 +1365,11 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
               <>
                 <AirportSearchDropdown
                   value={selectedAirport}
+                  hasError={validationErrors.airport}
                   onChange={(val, coords) => {
                     setSelectedAirport(val);
                     if (coords) setAirportCoords(coords);
+                    if (validationErrors.airport) setValidationErrors((prev) => ({ ...prev, airport: false }));
                   }}
                   onOpenMap={() => {
                     setMapTarget("airport");
@@ -1242,6 +1378,12 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   tripType="drop"
                   iconColor="text-brand-orange"
                 />
+                {validationErrors.airport && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please select destination airport</span>
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -1255,27 +1397,49 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                 </button>
               </>
             ) : activeTab === "local" ? (
-              <PackageSelectDropdown
-                value={selectedPackage.includes("hr") ? selectedPackage : (localPackages[0]?.value || "4hr-40km")}
-                onChange={(val) => setSelectedPackage(val)}
-                packages={localPackages}
-              />
+              <>
+                <PackageSelectDropdown
+                  value={selectedPackage.includes("hr") ? selectedPackage : (localPackages[0]?.value || "4hr-40km")}
+                  hasError={validationErrors.package}
+                  onChange={(val) => {
+                    setSelectedPackage(val);
+                    if (validationErrors.package) setValidationErrors((prev) => ({ ...prev, package: false }));
+                  }}
+                  packages={localPackages}
+                />
+                {validationErrors.package && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please select an hourly package</span>
+                  </p>
+                )}
+              </>
             ) : (
-              <CityAutocompleteInput
-                value={dropCity}
-                onChange={(val, coords, details) => {
-                  setDropCity(val);
-                  setDropCoords(coords || null);
-                  if (details) setDropDetails(details);
-                }}
-                onOpenMap={() => {
-                  setMapTarget("drop");
-                  setIsMapModalOpen(true);
-                }}
-                placeholder={activeTab === "airport" ? (t("enter_drop_location") || "Enter address / hotel / location") : (t("choose_the_location") || "Choose the location")}
-                iconColor="text-brand-orange"
-                inputClassName="rounded-xl"
-              />
+              <>
+                <CityAutocompleteInput
+                  value={dropCity}
+                  hasError={validationErrors.drop}
+                  onChange={(val, coords, details) => {
+                    setDropCity(val);
+                    setDropCoords(coords || null);
+                    if (details) setDropDetails(details);
+                    if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
+                  }}
+                  onOpenMap={() => {
+                    setMapTarget("drop");
+                    setIsMapModalOpen(true);
+                  }}
+                  placeholder={activeTab === "airport" ? (t("enter_drop_location") || "Enter address / hotel / location") : (t("choose_the_location") || "Choose the location")}
+                  iconColor="text-brand-orange"
+                  inputClassName="rounded-xl"
+                />
+                {validationErrors.drop && (
+                  <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Please choose destination</span>
+                  </p>
+                )}
+              </>
             )}
 
             {activeTab !== "local" && activeTab !== "package" && !(activeTab === "airport" && airportTripType === "drop") && (
@@ -1309,10 +1473,23 @@ function BookingWidgetInner({ isDropdownMode = false } = {}) {
                   value={pickupDate}
                   min={minDateStr}
                   suppressHydrationWarning
-                  onChange={(e) => handlePickupDateChange(e.target.value)}
-                  className="w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber transition-all shadow-2xs cursor-pointer box-border appearance-none"
+                  onChange={(e) => {
+                    handlePickupDateChange(e.target.value);
+                    if (validationErrors.date) setValidationErrors((prev) => ({ ...prev, date: false }));
+                  }}
+                  className={`w-full min-w-0 max-w-full block pl-8 sm:pl-10 pr-2 sm:pr-3 h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none transition-all shadow-2xs cursor-pointer box-border appearance-none ${
+                    validationErrors.date
+                      ? "border-2 border-rose-500 bg-rose-50/25 ring-2 ring-rose-200/60"
+                      : "bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber"
+                  }`}
                 />
               </div>
+              {validationErrors.date && (
+                <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Please select pickup date</span>
+                </p>
+              )}
             </div>
 
             {/* SEPARATE PICKUP TIME (Custom Controlled Dropdown) */}

@@ -120,6 +120,7 @@ public class ChargesTariffSeeder implements CommandLineRunner {
             new VehicleTypeMapping("Innovacrysta", "Innova Crysta", "7", "Diesel", "/images/cars/innova.jpg", new BigDecimal("500.00"), new BigDecimal("400.00")),
             new VehicleTypeMapping("innovahycross", "Innova Hycross", "7", "Hybrid", "/images/cars/innova.jpg", new BigDecimal("500.00"), new BigDecimal("400.00")),
             new VehicleTypeMapping("Tempo", "Tempo Traveller", "12", "Diesel", "/images/cars/tempo.jpg", new BigDecimal("600.00"), new BigDecimal("450.00")),
+            new VehicleTypeMapping("Bus", "Luxury Bus", "26", "Diesel", "/images/cars/bus.jpg", new BigDecimal("700.00"), new BigDecimal("550.00")),
             new VehicleTypeMapping("Bus", "Luxury Bus", "35", "Diesel", "/images/cars/bus.jpg", new BigDecimal("800.00"), new BigDecimal("600.00")),
             new VehicleTypeMapping("urbania", "Force Urbania", "12", "Diesel", "/images/cars/urbania.jpg", new BigDecimal("650.00"), new BigDecimal("500.00"))
     );

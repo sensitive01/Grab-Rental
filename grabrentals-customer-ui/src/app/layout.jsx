@@ -3,6 +3,7 @@ import "@/lib/patchDOM";
 import Script from "next/script";
 import AppShell from "@/components/layout/AppShell";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { ToastProvider } from "@/context/ToastContext";
 
 export const metadata = {
   metadataBase: new URL("https://grabrentals.in"),
@@ -137,9 +138,11 @@ export default function RootLayout({ children }) {
         />
 
         <LanguageProvider>
-          <AppShell>
-            {children}
-          </AppShell>
+          <ToastProvider>
+            <AppShell>
+              {children}
+            </AppShell>
+          </ToastProvider>
         </LanguageProvider>
       </body>
     </html>

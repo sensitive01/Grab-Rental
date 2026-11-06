@@ -523,6 +523,8 @@ export default function AdminPricingPage() {
     packageHours: "", // Minimum / Included Hours for Local (e.g. 8)
     driverBattaDay: "",
     driverBattaNight: "",
+    extraKmRate: "",
+    vendorExtraKmRate: "",
 
     // Vendor Per-KM Rates (Used for One Way, Round Trip, Local)
     vendorWeekdayDayRate: "",
@@ -677,6 +679,8 @@ export default function AdminPricingPage() {
       packageHours: "",
       driverBattaDay: "",
       driverBattaNight: "",
+      extraKmRate: "",
+      vendorExtraKmRate: "",
 
       vendorWeekdayDayRate: "",
       vendorWeekdayNightRate: "",
@@ -799,6 +803,8 @@ export default function AdminPricingPage() {
       packageHours: item.packageHours != null ? String(item.packageHours) : (sType === "LOCAL" ? "8" : ""),
       driverBattaDay: item.driverBattaDay != null ? String(item.driverBattaDay) : "400",
       driverBattaNight: item.driverBattaNight != null ? String(item.driverBattaNight) : "300",
+      extraKmRate: item.extraKmRate != null ? String(item.extraKmRate) : (item.weekdayDayRate != null ? String(item.weekdayDayRate) : ""),
+      vendorExtraKmRate: item.vendorExtraKmRate != null ? String(item.vendorExtraKmRate) : (item.vendorWeekdayDayRate != null ? String(item.vendorWeekdayDayRate) : ""),
 
       vendorWeekdayDayRate: vendWdDay,
       vendorWeekdayNightRate: vendWdNight,
@@ -1028,8 +1034,8 @@ export default function AdminPricingPage() {
         hourlyVendorWeekendFare: parseFloat(formData.hourlyVendorWeekendFare || formData.hourlyVendorFare || formData.vendorBaseFare || 0),
         extraHourRate: parseFloat(formData.hourlyWeekdayDayRate || 0),
         vendorExtraHourRate: parseFloat(formData.hourlyVendorWeekdayDayRate || 0),
-        extraKmRate: parseFloat(formData.weekdayDayRate || 0),
-        vendorExtraKmRate: parseFloat(formData.vendorWeekdayDayRate || 0),
+        extraKmRate: parseFloat(formData.extraKmRate || formData.weekdayDayRate || 0),
+        vendorExtraKmRate: parseFloat(formData.vendorExtraKmRate || formData.vendorWeekdayDayRate || (parseFloat(formData.extraKmRate || formData.weekdayDayRate || 0) * 0.8)),
 
         airportCustomerFare: parseFloat(formData.baseFare || formData.airportCustomerFare || 0),
         airportVendorFare: parseFloat(formData.vendorBaseFare || formData.airportVendorFare || 0),
@@ -1878,6 +1884,11 @@ export default function AdminPricingPage() {
                         <span className="text-[10px] text-slate-400 block">
                           Vendor: <strong className="text-emerald-700">{vendWd}</strong>
                         </span>
+                        {t.extraKmRate != null && Number(t.extraKmRate) > 0 && (
+                          <span className="text-[9.5px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 inline-block mt-0.5">
+                            Extra: ₹{parseFloat(t.extraKmRate).toFixed(1)}/km
+                          </span>
+                        )}
                       </div>
                     </TableCell>
 
@@ -3427,6 +3438,16 @@ export default function AdminPricingPage() {
                 </>
               ) : (
                 <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                      <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                      Distance / Extra KM Rates (₹/KM) — {formData.serviceType === "AIRPORT" ? "Airport Transfer" : formData.serviceType === "ROUND_TRIP" ? "Round Trip" : "One Way"} Rates
+                    </span>
+                    <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      Per-KM Rates
+                    </span>
+                  </div>
+
                   {/* Weekday Rates */}
                   <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
                     <div className="flex items-center justify-between border-b border-blue-200/60 pb-1">
@@ -3547,6 +3568,54 @@ export default function AdminPricingPage() {
                           className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
                           required
                         />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dedicated Extra KM Charges Card */}
+                  <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between border-b border-emerald-200/60 pb-1">
+                      <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                        ⚡ Extra KM Charges (Beyond Included Min KM)
+                      </span>
+                      <span className="text-[10px] text-emerald-800 font-bold uppercase bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-200">
+                        Extra Distance Rate
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-blue-950 mb-1">
+                          👤 Customer Extra KM Rate (₹/KM)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.10"
+                          min="0"
+                          placeholder={formData.weekdayDayRate ? `Defaults to ₹${formData.weekdayDayRate}/KM` : "e.g. 14"}
+                          value={formData.extraKmRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, extraKmRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-slate-300 rounded-md bg-white text-slate-900"
+                        />
+                        <span className="text-[10px] text-slate-500 mt-0.5 block">
+                          Billed to customer for distance driven beyond daily included KM
+                        </span>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-950 mb-1">
+                          🤝 Vendor Extra KM Payout (₹/KM)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.10"
+                          min="0"
+                          placeholder={formData.vendorWeekdayDayRate ? `Defaults to ₹${formData.vendorWeekdayDayRate}/KM` : "e.g. 11.20"}
+                          value={formData.vendorExtraKmRate}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, vendorExtraKmRate: e.target.value }))}
+                          className="w-full px-2 py-1 text-xs font-bold border border-emerald-300 rounded-md bg-emerald-50/60 text-emerald-900"
+                        />
+                        <span className="text-[10px] text-emerald-700 mt-0.5 block">
+                          Disbursed to vendor per extra KM beyond included KM
+                        </span>
                       </div>
                     </div>
                   </div>

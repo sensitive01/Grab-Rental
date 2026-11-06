@@ -333,7 +333,7 @@ public class PublicVehicleService {
                         ? tariffFuel
                         : ((config.getFuelType() != null && !config.getFuelType().isBlank()) ? config.getFuelType() : "Diesel");
                 String cardId = config.getId() != null
-                        ? (config.getId().toString() + "_" + fuel.toLowerCase())
+                        ? (config.getId().toString() + "_" + seats + "_" + fuel.toLowerCase())
                         : (model.toLowerCase().replaceAll("[^a-z0-9]+", "_") + "_" + seats + "_" + fuel.toLowerCase());
                 BigDecimal baseFare = (BigDecimal) rateContext.get("baseFare");
                 Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : 250;
@@ -964,6 +964,7 @@ public class PublicVehicleService {
                 .rating(rating)
                 .ratingCount(ratingCount)
                 .seating(seating)
+                .seatingCapacity(seating)
                 .image(image)
                 .includedKms(distanceKm)
                 .postLimitRate("₹" + postLimitRate + "/km")

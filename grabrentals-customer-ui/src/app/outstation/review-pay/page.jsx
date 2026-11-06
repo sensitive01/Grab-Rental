@@ -36,6 +36,7 @@ import SearchSummaryBar from "@/components/booking/SearchSummaryBar";
 import { customerApi } from "@/lib/customerApi";
 import { isAuthenticated, getCurrentUser, setAuthSession, logout } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
+import { useToast } from "@/context/ToastContext";
 import LocationPickerModal from "@/components/booking/LocationPickerModal";
 import MapView from "@/components/booking/MapView";
 import { padZero, formatLocalDateTime, isNightPickup } from "@/lib/dateTimeUtils";
@@ -106,6 +107,7 @@ function parseDateToMidnight(rawDate) {
 export default function ReviewPayPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const toast = useToast();
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
   const [paymentPlan, setPaymentPlan] = useState("advance");
@@ -880,15 +882,21 @@ export default function ReviewPayPage() {
       if (data?.success && data?.data?.valid) {
         setAppliedCouponData(data.data);
         setCouponApplied(true);
-        setCouponSuccess(data.message || `Coupon "${data.data.code}" applied! You saved ₹${Number(data.data.discountAmount).toLocaleString()}`);
+        const succMsg = data.message || `Coupon "${data.data.code}" applied! You saved ₹${Number(data.data.discountAmount).toLocaleString()}`;
+        setCouponSuccess(succMsg);
+        toast.success(succMsg, "Coupon Applied");
       } else {
         setCouponApplied(false);
         setAppliedCouponData(null);
-        setCouponError(data?.message || data?.data?.message || "Invalid coupon code");
+        const errMsg = data?.message || data?.data?.message || "Invalid coupon code";
+        setCouponError(errMsg);
+        toast.error(errMsg, "Coupon Error");
       }
     } catch (err) {
       console.error("Coupon validation error:", err);
-      setCouponError("Could not validate coupon. Please try again.");
+      const errMsg = "Could not validate coupon. Please try again.";
+      setCouponError(errMsg);
+      toast.error(errMsg, "Coupon Error");
     } finally {
       setCouponLoading(false);
     }
@@ -1098,6 +1106,7 @@ export default function ReviewPayPage() {
     try {
       navigator.clipboard.writeText(text);
       setCopiedUpi(true);
+      toast.success("UPI ID copied to clipboard!", "Copied");
       setTimeout(() => setCopiedUpi(false), 2000);
     } catch {
       // ignore
@@ -1110,11 +1119,13 @@ export default function ReviewPayPage() {
 
     if (!file.type.startsWith("image/")) {
       setErrorMsg("Please upload an image file (JPG, PNG, WEBP).");
+      toast.error("Please upload an image file (JPG, PNG, WEBP).", "Invalid File");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
       setErrorMsg("Receipt image must be smaller than 10MB.");
+      toast.error("Receipt image must be smaller than 10MB.", "File Too Large");
       return;
     }
 
@@ -1125,12 +1136,15 @@ export default function ReviewPayPage() {
       const res = await customerApi.uploadPaymentProof(file);
       if (res?.data?.url) {
         setPaymentProofUrl(res.data.url);
+        toast.success("Receipt uploaded successfully!", "Upload Complete");
       } else {
         throw new Error("Could not obtain receipt URL from upload.");
       }
     } catch (err) {
       console.error("Payment proof upload failed:", err);
-      setErrorMsg(err.response?.data?.message || err.message || "Failed to upload payment proof. Please try again.");
+      const upErr = err.response?.data?.message || err.message || "Failed to upload payment proof. Please try again.";
+      setErrorMsg(upErr);
+      toast.error(upErr, "Upload Failed");
     } finally {
       setUploadingProof(false);
     }
@@ -1321,6 +1335,7 @@ export default function ReviewPayPage() {
         const errorText = err.response?.data?.message || err.message || "Failed to confirm booking. Please verify your connection.";
         setErrorMsg(errorText);
         setUpiModalError(errorText);
+        toast.error(errorText, "Booking Error");
       }
     } finally {
       setSubmitting(false);
@@ -1330,10 +1345,12 @@ export default function ReviewPayPage() {
   const handleConfirmUpiPayment = async () => {
     if (!paymentProofUrl) {
       setUpiModalError("Please upload your UPI payment screenshot / receipt.");
+      toast.error("Please upload your UPI payment screenshot / receipt.", "Receipt Required");
       return;
     }
     if (!paymentUtrNumber.trim() || paymentUtrNumber.trim().length < 6) {
       setUpiModalError("Please enter your 12-digit UPI UTR / Transaction Reference Number.");
+      toast.error("Please enter your 12-digit UPI UTR / Transaction Reference Number.", "UTR Required");
       return;
     }
     setUpiModalError("");
@@ -1345,11 +1362,19 @@ export default function ReviewPayPage() {
 
     if (!pickupAddress.trim()) {
       setErrorMsg("Please enter your exact pickup address or landmark.");
+      toast.error("Please enter your exact pickup address or landmark.", "Pickup Address Required");
+      const el = document.getElementById("pickup-door-no") || document.getElementById("saved-pickup-address-dropdown");
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus?.();
       return;
     }
 
     if (!passengerName.trim() || !passengerPhone.trim()) {
       setErrorMsg("Please provide passenger name and mobile number.");
+      toast.error("Please provide passenger name and mobile number.", "Passenger Details Required");
+      const el = !passengerName.trim() ? document.getElementById("passenger-name-input") : document.getElementById("passenger-phone-input");
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus?.();
       return;
     }
 
@@ -1454,10 +1479,14 @@ export default function ReviewPayPage() {
                     <div className="relative">
                       <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
+                        id="passenger-name-input"
                         type="text"
                         required
                         value={passengerName}
-                        onChange={(e) => setPassengerName(e.target.value)}
+                        onChange={(e) => {
+                          setPassengerName(e.target.value);
+                          if (errorMsg) setErrorMsg(null);
+                        }}
                         placeholder="E.g. Rajesh Kumar"
                         className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
                       />
@@ -1471,6 +1500,7 @@ export default function ReviewPayPage() {
                     <div className="relative">
                       <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
+                        id="passenger-phone-input"
                         type="tel"
                         required
                         maxLength={10}
@@ -1478,6 +1508,7 @@ export default function ReviewPayPage() {
                         onChange={(e) => {
                           const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
                           setPassengerPhone(digits);
+                          if (errorMsg) setErrorMsg(null);
                         }}
                         placeholder="98765 43210"
                         className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
@@ -1545,10 +1576,14 @@ export default function ReviewPayPage() {
                         Building number / street name *
                       </label>
                       <input
+                        id="pickup-door-no"
                         type="text"
                         required
                         value={pickupDoorNo}
-                        onChange={(e) => setPickupDoorNo(e.target.value)}
+                        onChange={(e) => {
+                          setPickupDoorNo(e.target.value);
+                          if (errorMsg) setErrorMsg(null);
+                        }}
                         placeholder="e.g. Flat 402, Green Heights / House #24, 10th Main Road"
                         className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0082fe] outline-none transition-all"
                       />

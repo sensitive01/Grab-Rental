@@ -19,6 +19,7 @@ import {
   Plane
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useToast } from "@/context/ToastContext";
 import { saveCustomCity, findCityCoordinates, fetchGoogleRouteDistance } from "@/lib/cities";
 
 // Quick shortcut hubs across South India & major metros
@@ -78,6 +79,7 @@ export default function LocationPickerModal({
   initialStopsCoords = null
 }) {
   const { t } = useLanguage();
+  const toast = useToast();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
   const hasGoogleMapsKey = Boolean(apiKey && apiKey.trim().length > 5);
 
@@ -774,7 +776,7 @@ export default function LocationPickerModal({
   // Handle GPS Locate Me
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      toast.warning("Geolocation is not supported by your browser.", "Device Geolocation");
       return;
     }
 
@@ -796,7 +798,7 @@ export default function LocationPickerModal({
       (err) => {
         setIsLocating(false);
         console.warn("Geolocation error:", err);
-        alert("Unable to retrieve your location. Please check your browser location permissions.");
+        toast.error("Unable to retrieve your location. Please check your browser location permissions.", "Location Access");
       },
       { timeout: 10000, enableHighAccuracy: true }
     );
@@ -1181,35 +1183,6 @@ export default function LocationPickerModal({
     }
     return () => {
       document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  // Mobile browser & hardware back button / swipe back handling via History & Hash API
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const modalHash = "#location-picker";
-    if (window.location.hash !== modalHash) {
-      window.history.pushState({ modalOpen: true }, "", modalHash);
-    }
-    let isClosedByBack = false;
-
-    const handleBackNavigation = () => {
-      isClosedByBack = true;
-      if (onCloseRef.current) {
-        onCloseRef.current();
-      }
-    };
-
-    window.addEventListener("popstate", handleBackNavigation);
-    window.addEventListener("hashchange", handleBackNavigation);
-
-    return () => {
-      window.removeEventListener("popstate", handleBackNavigation);
-      window.removeEventListener("hashchange", handleBackNavigation);
-      if (!isClosedByBack && window.location.hash === modalHash) {
-        window.history.back();
-      }
     };
   }, [isOpen]);
 
