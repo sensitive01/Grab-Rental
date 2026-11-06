@@ -89,7 +89,7 @@ export default function EvCabsPage() {
             href="tel:+919071100200"
             className="text-emerald-400 font-bold hover:underline flex items-center gap-1 ml-1"
           >
-            <Phone className="w-3 h-3" /> +91 90711 00200
+            <Phone className="w-3 h-3" /> +91 9071 100 200
           </a>
         </div>
       </PageHeroSection>

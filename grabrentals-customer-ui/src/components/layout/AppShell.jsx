@@ -283,12 +283,12 @@ export default function AppShell({ children }) {
           <a
             href="tel:+919071100200"
             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 text-[#0082fe] active:scale-95 transition-all shadow-2xs group"
-            title="Call 24/7 Helpline (+91 90711 00200)"
+            title="Call 24/7 Helpline (+91 9071 100 200)"
             aria-label="Call 24/7 Helpline"
           >
             <Phone className="w-3.5 h-3.5 text-[#0082fe] shrink-0 group-hover:scale-110 transition-transform" />
             <span className="whitespace-nowrap font-black text-[11.5px] sm:text-xs tracking-wider text-slate-800 group-hover:text-[#0082fe]">
-              +91 90711 00200
+              +91 9071 100 200
             </span>
           </a>
         </div>
@@ -371,7 +371,7 @@ export default function AppShell({ children }) {
           <a
             href="tel:+919071100200"
             className="hidden md:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0082fe] border border-blue-200/80 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
-            title="Call 24/7 Helpline (+91 90711 00200)"
+            title="Call 24/7 Helpline (+91 9071 100 200)"
             aria-label="Call 24/7 Helpline"
           >
             <Phone className="w-4 h-4 text-[#0082fe] group-hover:scale-110 transition-transform" />
@@ -383,7 +383,7 @@ export default function AppShell({ children }) {
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
-            title="Chat on WhatsApp (+91 90711 00200)"
+            title="Chat on WhatsApp (+91 9071 100 200)"
             aria-label="Chat on WhatsApp"
           >
             <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
@@ -782,7 +782,7 @@ export default function AppShell({ children }) {
               target="_blank"
               rel="noopener noreferrer"
               className="w-11 h-11 bg-[#25D366] hover:bg-emerald-600 text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer"
-              title="Chat on WhatsApp (+91 90711 00200)"
+              title="Chat on WhatsApp (+91 9071 100 200)"
               aria-label="Chat on WhatsApp"
             >
               <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
@@ -797,7 +797,7 @@ export default function AppShell({ children }) {
             <a
               href="tel:+919071100200"
               className="w-11 h-11 bg-[#0082fe] hover:bg-blue-600 text-white flex items-center justify-center active:scale-95 transition-all cursor-pointer"
-              title="Call 24/7 Helpline (+91 90711 00200)"
+              title="Call 24/7 Helpline (+91 9071 100 200)"
               aria-label="Call 24/7 Helpline"
             >
               <Phone className="w-5 h-5 text-white" />
@@ -887,7 +887,7 @@ export default function AppShell({ children }) {
             <ul className="space-y-3 text-sm text-white/90">
               <li>
                 <a href="tel:+919071100200" className="flex items-center gap-2 text-white font-bold hover:text-yellow-300 transition-colors">
-                  <Phone className="w-4 h-4 text-yellow-300 shrink-0" /> +91 90711 00200
+                  <Phone className="w-4 h-4 text-yellow-300 shrink-0" /> +91 9071 100 200
                 </a>
                 <span className="block text-xs text-blue-100 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span>
               </li>
@@ -899,7 +899,7 @@ export default function AppShell({ children }) {
               </li>
               <li className="flex items-start gap-2 mt-4 text-white/90">
                 <Navigation className="w-4 h-4 text-yellow-300 mt-1 shrink-0" />
-                <span>Anjananagar, Bangalore, Karnataka</span>
+                <span>Bangalore, Karnataka</span>
               </li>
             </ul>
           </div>

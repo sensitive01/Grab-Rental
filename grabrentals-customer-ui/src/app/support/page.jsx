@@ -103,7 +103,7 @@ export default function SupportHelpPage() {
                 href="tel:+919071100200"
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs"
               >
-                Call +91 90711 00200
+                Call +91 9071 100 200
               </a>
             </div>
           </div>

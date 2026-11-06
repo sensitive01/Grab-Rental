@@ -94,7 +94,7 @@ export default function InPageBanner({ page = "HOME", className = "" }) {
                     href="tel:+919071100200"
                     className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer backdrop-blur-sm"
                   >
-                    Call: +91 90711 00200
+                    Call: +91 9071 100 200
                   </a>
                 </div>
               </div>

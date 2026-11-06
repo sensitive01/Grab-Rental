@@ -395,7 +395,7 @@ export default function FleetDetailPage({ params }) {
                     className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-amber transition-colors"
                   >
                     <PhoneCall className="w-3.5 h-3.5 text-brand-amber" />
-                    Need custom booking? Call 24/7 Helpline: +91 90711 00200
+                    Need custom booking? Call 24/7 Helpline: +91 9071 100 200
                   </a>
                 </div>
 

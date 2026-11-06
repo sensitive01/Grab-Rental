@@ -57,7 +57,7 @@ import { cn } from "@/lib/utils";
 import InteractiveMapPicker from "@/components/ui/InteractiveMapPicker";
 import MultipleVehiclePhotoUploader from "@/components/ui/MultipleVehiclePhotoUploader";
 import CitySelectorModal from "@/components/ui/CitySelectorModal";
-import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { LanguageSelector, TopLanguageBar } from "@/components/ui/LanguageSelector";
 
 const VEHICLE_SUB_CATEGORIES = {
   Sedan: ["Dzire", "Etios", "Aura"],
@@ -1378,6 +1378,9 @@ function VendorOnboardingFlow() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FAF4E5] via-[#F6EED8] to-[#FAF4E5] text-slate-900 flex flex-col justify-between relative">
+      {/* Top Language Bar */}
+      <TopLanguageBar theme="slate" />
+
       {/* Top Navigation Bar with Skip to Dashboard */}
       <header className="border-b border-amber-200/70 bg-white/85 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
@@ -1396,8 +1399,6 @@ function VendorOnboardingFlow() {
 
           {/* Right section: Enquiries Contact + Skip to Dashboard / Sign In */}
           <div className="flex items-center gap-3 sm:gap-4">
-            <LanguageSelector />
-
             {/* For enquiries: WhatsApp + Phone */}
             <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 px-2 sm:px-3 py-1.5 rounded-full transition-all shadow-2xs shrink-0">
               <span className="text-slate-500 text-xs font-semibold hidden md:inline">For enquiries</span>
@@ -1406,7 +1407,7 @@ function VendorOnboardingFlow() {
                   href="https://wa.me/919071100200?text=Hi,%20I%20have%20an%20enquiry%20regarding%20Grab%20Rentals%20Fleet%20Partner%20onboarding."
                   target="_blank"
                   rel="noreferrer"
-                  title="Chat on WhatsApp (9071100200)"
+                  title="Chat on WhatsApp (9071 100 200)"
                   className="w-6 h-6 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all shadow-2xs hover:scale-105"
                 >
                   <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
@@ -1415,7 +1416,7 @@ function VendorOnboardingFlow() {
                 </a>
                 <a
                   href="tel:9071100200"
-                  title="Call 9071100200"
+                  title="Call 9071 100 200"
                   className="w-6 h-6 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center justify-center transition-all shadow-2xs hover:scale-105"
                 >
                   <Phone className="w-3.5 h-3.5" />
@@ -1425,7 +1426,7 @@ function VendorOnboardingFlow() {
                 href="tel:9071100200"
                 className="font-black text-xs text-slate-900 hover:text-amber-600 transition-colors tracking-tight hidden sm:inline"
               >
-                9071100200
+                9071 100 200
               </a>
             </div>
 
@@ -5328,7 +5329,7 @@ function VendorOnboardingFlow() {
 
                 <h4 className="font-black text-slate-900 text-sm">4. Highway Breakdown SOP (Passenger Safety First)</h4>
                 <p>
-                  In the event of vehicle breakdown, chauffeurs must prioritize passenger safety, seat them in a secure location, and call Grab Rentals Operations (+91 90711 00200) within 5 minutes for replacement dispatch.
+                  In the event of vehicle breakdown, chauffeurs must prioritize passenger safety, seat them in a secure location, and call Grab Rentals Operations (+91 9071 100 200) within 5 minutes for replacement dispatch.
                 </p>
 
                 <h4 className="font-black text-slate-900 text-sm">5. Fares, Driver Allowance & Cash Collection</h4>
@@ -5412,7 +5413,7 @@ function VendorOnboardingFlow() {
           </Link>
           <span>•</span>
           <a href="tel:+919071100200" className="hover:text-amber-700 hover:underline">
-            Fleet Desk (+91 90711 00200)
+            Fleet Desk (+91 9071 100 200)
           </a>
         </div>
         <div>Grab Rentals Partner Network &copy; {new Date().getFullYear()} · All rights reserved</div>

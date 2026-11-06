@@ -10,7 +10,57 @@ export const TOP_LANGUAGES = [
   { code: "ta", label: "தமிழ்", name: "Tamil" },
   { code: "te", label: "తెలుగు", name: "Telugu" },
   { code: "hi", label: "हिंदी", name: "Hindi" },
+  { code: "ml", label: "മലയാളം", name: "Malayalam" },
 ];
+
+export function TopLanguageBar({ theme = "slate", className = "" }) {
+  const { language, setLanguage } = useLanguage();
+
+  return (
+    <div
+      className={`w-full py-1.5 sm:py-2 px-3 sm:px-6 flex items-center justify-center sm:justify-end border-b transition-colors relative z-50 ${
+        theme === "amber"
+          ? "bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 text-slate-950 border-amber-600/80 shadow-xs"
+          : "bg-slate-900/95 backdrop-blur-md text-white border-slate-800/80 shadow-xs"
+      } ${className}`}
+    >
+      <div className="flex items-center justify-center w-full sm:w-auto gap-1.5 text-[11px] sm:text-xs font-semibold whitespace-nowrap overflow-x-auto hide-scrollbar">
+        {TOP_LANGUAGES.map((lang, idx) => {
+          const isActive = language === lang.code;
+          return (
+            <span key={lang.code} className="inline-flex items-center gap-1 sm:gap-1.5">
+              <button
+                type="button"
+                onClick={() => setLanguage(lang.code)}
+                className={`transition-all cursor-pointer ${
+                  isActive
+                    ? theme === "amber"
+                      ? "text-slate-950 font-black underline underline-offset-4 decoration-2"
+                      : "text-amber-400 font-extrabold underline underline-offset-4 decoration-2"
+                    : theme === "amber"
+                      ? "text-slate-900/80 hover:text-slate-950 font-semibold"
+                      : "text-slate-300 hover:text-amber-300 font-semibold"
+                }`}
+                title={lang.name}
+              >
+                {lang.label}
+              </button>
+              {idx < TOP_LANGUAGES.length - 1 && (
+                <span
+                  className={`${
+                    theme === "amber" ? "text-amber-900/40" : "text-slate-600"
+                  } font-bold select-none text-[10px]`}
+                >
+                  |
+                </span>
+              )}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function LanguageSelector({ variant = "header" }) {
   const { language, setLanguage, supportedLanguages } = useLanguage();

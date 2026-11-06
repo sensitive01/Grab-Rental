@@ -144,7 +144,7 @@ export default function NotFound() {
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-colors"
               >
                 <PhoneCall className="w-3.5 h-3.5 text-sky-400" />
-                <span>+91 90711 00200</span>
+                <span>+91 9071 100 200</span>
               </a>
 
               <a

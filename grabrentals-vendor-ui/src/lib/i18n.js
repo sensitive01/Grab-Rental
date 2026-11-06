@@ -1,9 +1,10 @@
 export const SUPPORTED_LANGUAGES = [
   { code: "en", name: "English", nativeName: "English", flag: "🇬🇧" },
-  { code: "ta", name: "Tamil", nativeName: "தமிழ்", flag: "🇮🇳" },
   { code: "kn", name: "Kannada", nativeName: "ಕನ್ನಡ", flag: "🇮🇳" },
+  { code: "ta", name: "Tamil", nativeName: "தமிழ்", flag: "🇮🇳" },
   { code: "te", name: "Telugu", nativeName: "తెలుగు", flag: "🇮🇳" },
   { code: "hi", name: "Hindi", nativeName: "हिन्दी", flag: "🇮🇳" },
+  { code: "ml", name: "Malayalam", nativeName: "മലയാളം", flag: "🇮🇳" },
 ];
 
 export const translations = {
@@ -386,5 +387,8 @@ export const translations = {
     forgot_password: "पासवर्ड भूल गए?",
     remember_session: "मेरा सत्र याद रखें",
     vendor_email: "पंजीकृत मोबाइल नंबर",
+  },
+  ml: {
+    // Malayalam translations fallback
   },
 };

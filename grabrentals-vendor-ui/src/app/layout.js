@@ -3,7 +3,7 @@ import Script from "next/script";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 export const metadata = {
-  title: "Grab Rentals | B2B Management Portal",
+  title: "Grab Rentals",
   description: "Enterprise Vehicle Rental & Booking Management System for Vendors, Operations, and Administrators",
   manifest: "/manifest.json",
   appleWebApp: {

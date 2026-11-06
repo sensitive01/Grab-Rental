@@ -30,7 +30,7 @@ function BookingPageContent() {
               className="hidden sm:flex items-center gap-1.5 font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-full transition-colors"
             >
               <PhoneCall className="w-3.5 h-3.5 text-[#0082fe]" />
-              <span>24/7 Helpline: +91 90711 00200</span>
+              <span>24/7 Helpline: +91 9071 100 200</span>
             </a>
           </div>
         </div>

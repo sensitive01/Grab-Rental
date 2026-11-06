@@ -97,7 +97,7 @@ export default function VendorTermsPage() {
               <strong>Breakdown Protocol (Passenger Safety First):</strong> In the rare event of mechanical failure or highway breakdown:
               <ol className="list-decimal pl-5 mt-1 space-y-1 text-slate-500">
                 <li>Immediately ensure passengers are seated safely away from highway traffic in a secure location.</li>
-                <li>Call Grab Rentals 24/7 Operations Desk (+91 90711 00200) within 5 minutes of the incident.</li>
+                <li>Call Grab Rentals 24/7 Operations Desk (+91 9071 100 200) within 5 minutes of the incident.</li>
                 <li>Grab Rentals Operations will dispatch a nearby replacement vehicle immediately. Chauffeurs must stay with passengers until the replacement arrives.</li>
               </ol>
             </li>
@@ -356,7 +356,7 @@ export default function VendorTermsPage() {
             className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shrink-0 shadow-xs"
           >
             <Phone className="w-4 h-4" />
-            <span>Call Fleet Desk (+91 90711 00200)</span>
+            <span>Call Fleet Desk (+91 9071 100 200)</span>
           </a>
         </div>
 

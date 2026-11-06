@@ -47,7 +47,7 @@ export default function VehicleTripHeader({
   const packageLabel = formatPackageLabel(to);
 
   return (
-    <div className="space-y-0 sm:space-y-2">
+    <>
       {/* Breadcrumb - desktop only */}
       <div className="hidden sm:block text-[11px] text-slate-500 font-medium px-0.5 mb-2">
         <Link href="/" className="hover:text-amber-600 transition-colors">Home</Link>
@@ -55,13 +55,13 @@ export default function VehicleTripHeader({
         <span className="text-slate-800 font-bold">{t("select_vehicle")}</span>
       </div>
 
-      {/* Confirmed Route Section: Sticky on Mobile under navbar, Static on Desktop */}
+      {/* Confirmed Route Section: Fixed/Sticky on both Mobile & Desktop while scrolling */}
       <div
-        className="sticky left-0 right-0 z-30 pt-0 px-2 sm:px-0 pb-1 sm:pb-0 bg-slate-50/90 sm:bg-transparent backdrop-blur-xs sm:backdrop-blur-none sm:static sm:z-auto transform-gpu"
+        className="sticky left-0 right-0 z-30 pt-0 sm:pt-1 pb-1.5 sm:pb-2 -mx-2 sm:mx-0 px-2 sm:px-0 bg-slate-50/95 backdrop-blur-md transform-gpu transition-all"
         style={{ top: "var(--app-header-height, 93px)" }}
       >
         <div className="max-w-7xl mx-auto">
-          <div className="bg-[#0082fe] rounded-b-2xl rounded-t-none sm:rounded-2xl p-2.5 sm:p-4 lg:p-5 shadow-md sm:shadow-sm text-white flex flex-col lg:flex-row lg:items-center justify-between gap-1 sm:gap-2 lg:gap-4">
+          <div className="bg-[#0082fe] rounded-b-2xl rounded-t-none sm:rounded-2xl p-2.5 sm:p-4 lg:p-5 shadow-md text-white flex flex-col lg:flex-row lg:items-center justify-between gap-1 sm:gap-2 lg:gap-4">
           
           {/* Top Row / Left Column: Route Title & Modify Button on Mobile/Tablet */}
           <div className="min-w-0 flex-1">
@@ -154,6 +154,6 @@ export default function VehicleTripHeader({
         </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

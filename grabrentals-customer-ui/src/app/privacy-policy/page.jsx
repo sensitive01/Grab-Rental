@@ -117,8 +117,8 @@ export default function PrivacyPolicyPage() {
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold space-y-1">
               <p className="font-bold text-slate-900">Grab Rental Technologies Pvt. Ltd. — Data Protection Desk</p>
               <p>Email: <a href="mailto:grabrentals2016@gmail.com" className="text-amber-700 underline">grabrentals2016@gmail.com</a></p>
-              <p>Helpline: +91 90711 00200</p>
-              <p>Address: Anjananagar, Bangalore, Karnataka</p>
+              <p>Helpline: +91 9071 100 200</p>
+              <p>Address: Bangalore, Karnataka</p>
             </div>
           </section>
 

@@ -138,7 +138,7 @@ export default function BookingInvoicePage({ params }) {
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-2 font-medium">Grab Rental Technologies Pvt. Ltd.</p>
-              <p className="text-xs text-slate-500">Anjananagar, Bangalore, Karnataka</p>
+              <p className="text-xs text-slate-500">Bangalore, Karnataka</p>
               <p className="text-xs text-slate-500">GSTIN: <span className="font-mono font-bold text-slate-700">29AABCG7890F1Z2</span></p>
               <p className="text-xs text-slate-500">Email: grabrentals2016@gmail.com • Web: grabrentals.in</p>
             </div>
@@ -332,7 +332,7 @@ export default function BookingInvoicePage({ params }) {
           {/* Footer Terms */}
           <div className="pt-6 border-t border-slate-100 text-[11px] text-slate-400 text-center space-y-1">
             <p className="font-bold text-slate-600">Thank you for choosing Grab-Rental!</p>
-            <p>For any billing inquiries, call our 24/7 helpline at +91 90711 00200 or email grabrentals2016@gmail.com</p>
+            <p>For any billing inquiries, call our 24/7 helpline at +91 9071 100 200 or email grabrentals2016@gmail.com</p>
           </div>
 
         </div>
