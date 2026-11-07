@@ -614,8 +614,10 @@ export default function ReviewPayPage() {
     return 1;
   }, [isRoundTripBooking, bookingConfig?.trip?.date, bookingConfig?.trip?.dropDate, bookingConfig?.trip?.returnDate]);
 
+  const isBus = ((bookingConfig?.car?.category || bookingConfig?.car?.vehicleType || bookingConfig?.car?.title || "").toLowerCase().includes("bus"));
+  const vehicleBaseDailyKm = Number(bookingConfig?.car?.pricing?.baseIncludedKm || bookingConfig?.car?.baseIncludedKm) || (isBus ? 300 : 250);
   const minPackageKm = !isLocal && !isAirport
-    ? (isRoundTripBooking ? (tripDays * 250) : 0)
+    ? (isRoundTripBooking ? Math.max(bookingConfig?.minPackageKm || 0, tripDays * vehicleBaseDailyKm) : 0)
     : 0;
 
   const actualRouteKm = useMemo(() => {

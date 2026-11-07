@@ -337,15 +337,21 @@ public class PublicVehicleService {
                         ? (config.getId().toString() + "_" + seats + "_" + fuel.toLowerCase())
                         : (model.toLowerCase().replaceAll("[^a-z0-9]+", "_") + "_" + seats + "_" + fuel.toLowerCase());
                 BigDecimal baseFare = (BigDecimal) rateContext.get("baseFare");
-                Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : 250;
-                if (baseKm == null || baseKm <= 0) baseKm = 250;
+                Integer baseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : null;
+                if (baseKm == null || baseKm <= 0) {
+                    boolean isBus = (category != null && category.toUpperCase().contains("BUS"))
+                            || (model != null && model.toUpperCase().contains("BUS"));
+                    baseKm = isBus ? 300 : 250;
+                }
+                int cardDailyKm = baseKm;
+                int cardEffectiveDist = isRoundTrip ? Math.max(distanceKm, effectiveDays * cardDailyKm) : effectiveDistance;
                 BigDecimal dailyPrice;
                 if (isOneWay) {
                     dailyPrice = rate.multiply(BigDecimal.valueOf(effectiveDistance)).setScale(0, RoundingMode.HALF_UP);
                 } else {
                     dailyPrice = (baseFare != null && baseFare.compareTo(BigDecimal.ZERO) > 0)
                             ? baseFare
-                            : rate.multiply(BigDecimal.valueOf(baseKm)).setScale(0, RoundingMode.HALF_UP);
+                            : rate.multiply(BigDecimal.valueOf(cardDailyKm)).setScale(0, RoundingMode.HALF_UP);
                 }
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
@@ -420,7 +426,7 @@ public class PublicVehicleService {
                         ratingCount,
                         seats,
                         image,
-                        effectiveDistance,
+                        cardEffectiveDist,
                         rate,
                         postRate,
                         List.of(fuel),
@@ -447,7 +453,10 @@ public class PublicVehicleService {
                 card.setChauffeurRating(4.9);
                 card.setDescription(config.getDescription());
                 if (!"LOCAL".equalsIgnoreCase(resolvedServiceType) && !"AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
-                    card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : effectiveDistance);
+                    card.setIncludedKms(isRoundTrip ? (effectiveDays * cardDailyKm) : cardEffectiveDist);
+                }
+                if (card.getPricing() != null) {
+                    card.getPricing().setBaseIncludedKm(cardDailyKm);
                 }
 
                 if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
@@ -567,13 +576,21 @@ public class PublicVehicleService {
                     String fuel = (v.getFuelType() != null && !v.getFuelType().isBlank()) ? v.getFuelType() : "Diesel";
                     String trans = (v.getTransmission() != null && !v.getTransmission().isBlank()) ? v.getTransmission() : "Manual";
                     int yr = v.getYear() != null ? v.getYear() : 2023;
+                    Integer vBaseKm = (rateContext.get("baseIncludedKm") != null) ? (Integer) rateContext.get("baseIncludedKm") : null;
+                    if (vBaseKm == null || vBaseKm <= 0) {
+                        boolean isBus = (category != null && category.toUpperCase().contains("BUS"))
+                                || (model != null && model.toUpperCase().contains("BUS"));
+                        vBaseKm = isBus ? 300 : 250;
+                    }
+                    int vCardDailyKm = vBaseKm;
+                    int vCardEffectiveDist = isRoundTrip ? Math.max(distanceKm, effectiveDays * vCardDailyKm) : effectiveDistance;
                     BigDecimal dailyPrice;
                     if (isOneWay) {
                         dailyPrice = rate.multiply(BigDecimal.valueOf(effectiveDistance)).setScale(0, RoundingMode.HALF_UP);
                     } else {
                         dailyPrice = (v.getDailyRate() != null && v.getDailyRate().compareTo(BigDecimal.ZERO) > 0)
                                 ? v.getDailyRate()
-                                : rate.multiply(BigDecimal.valueOf(250)).setScale(0, RoundingMode.HALF_UP);
+                                : rate.multiply(BigDecimal.valueOf(vCardDailyKm)).setScale(0, RoundingMode.HALF_UP);
                     }
                     if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {
                         BigDecimal hourlyFare = (BigDecimal) rateContext.get("hourlyCustomerFare");
@@ -644,7 +661,7 @@ public class PublicVehicleService {
                             ratingCount,
                             seats,
                             image,
-                            effectiveDistance,
+                            vCardEffectiveDist,
                             rate,
                             postRate,
                             List.of(fuel),
@@ -672,7 +689,10 @@ public class PublicVehicleService {
                     card.setChauffeur(chauffeurName);
                     card.setChauffeurRating(4.9);
                     if (!"LOCAL".equalsIgnoreCase(resolvedServiceType) && !"AIRPORT".equalsIgnoreCase(resolvedServiceType)) {
-                        card.setIncludedKms(isRoundTrip ? (effectiveDays * 250) : effectiveDistance);
+                        card.setIncludedKms(isRoundTrip ? (effectiveDays * vCardDailyKm) : vCardEffectiveDist);
+                    }
+                    if (card.getPricing() != null) {
+                        card.getPricing().setBaseIncludedKm(vCardDailyKm);
                     }
 
                     if ("LOCAL".equalsIgnoreCase(resolvedServiceType)) {

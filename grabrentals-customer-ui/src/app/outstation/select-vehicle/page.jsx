@@ -659,13 +659,21 @@ function SelectVehicleContent() {
       const perKmRate = car.perKmRate || (type === "SUV" ? 19.5 : type === "Hatchback" ? 11.5 : 13.0);
       const extraKmRate = car.extraKmRate || perKmRate;
 
+      const isBus = (type === "Bus" || type === "BUS" || (car.category || car.vehicleType || car.title || "").toLowerCase().includes("bus"));
+      const vehicleBaseDailyKm = Number(car.pricing?.baseIncludedKm || car.baseIncludedKm) || (isBus ? 300 : 250);
+      const vehicleMinKm = isRoundTripBooking ? (tripDays * vehicleBaseDailyKm) : 0;
       const minKmThreshold = isRoundTripBooking
-        ? Math.max(effectiveTripDistance, car.includedKms || 250)
+        ? Math.max(activeDistance || 0, car.includedKms || vehicleMinKm)
         : 0;
 
       const effectiveTripKm = (isLocalBooking || isAirportBooking)
         ? (activeDistance || car.includedKms || 0)
         : (isRoundTripBooking ? Math.max(activeDistance || 0, minKmThreshold) : (activeDistance || 0));
+
+      car.distanceKm = effectiveTripKm;
+      if (isRoundTripBooking && (!car.includedKms || car.includedKms < effectiveTripKm)) {
+        car.includedKms = effectiveTripKm;
+      }
 
       const standardRateFare = (isLocalBooking || isAirportBooking)
         ? (car.pricing?.originalPrice || car.dailyPrice || car.baseFare || 2000)
@@ -952,8 +960,10 @@ function SelectVehicleContent() {
 
   const handleCarSelect = (vehicle) => {
     const isRoundTripBooking = !isLocalBooking && !isAirportBooking && (trip.tripType || "").toLowerCase().includes("round");
+    const isBus = ((vehicle.category || vehicle.vehicleType || vehicle.title || "").toLowerCase().includes("bus"));
+    const vehicleBaseDailyKm = Number(vehicle.pricing?.baseIncludedKm || vehicle.baseIncludedKm) || (isBus ? 300 : 250);
     const minKmFloor = isRoundTripBooking
-      ? (tripDays * 250)
+      ? Math.max(vehicle.includedKms || 0, tripDays * vehicleBaseDailyKm)
       : 0;
     const chosenDistance = (!isLocalBooking && !isAirportBooking)
       ? (isRoundTripBooking ? Math.max(activeDistance || 0, minKmFloor) : (activeDistance || 0))
@@ -1629,7 +1639,7 @@ function SelectVehicleContent() {
                             </p>
                           ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                             <p className="text-[10px] sm:text-[11px] font-medium text-slate-600 leading-tight mt-0.5">
-                              {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 10)} / KM
+                              {car.includedKms || car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 10)} / KM
                             </p>
                           ) : null}
                         </div>
@@ -1739,7 +1749,7 @@ function SelectVehicleContent() {
                           </p>
                         ) : (isRoundTripBooking ? effectiveTripDistance : activeDistance) > 0 ? (
                           <p className="text-[11px] font-medium text-slate-600">
-                            {car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 10)} / KM
+                            {car.includedKms || car.distanceKm || (isRoundTripBooking ? effectiveTripDistance : activeDistance)} KM Included | Additional Rs.{Math.round(car.extraKmRate || car.perKmRate || 10)} / KM
                           </p>
                         ) : null}
                       </div>

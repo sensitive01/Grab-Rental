@@ -72,5 +72,6 @@ public class PublicVehicleCardDto {
         private BigDecimal discountPercentage;
         private BigDecimal petCharge;
         private BigDecimal vendorPetCharge;
+        private Integer baseIncludedKm;
     }
 }
