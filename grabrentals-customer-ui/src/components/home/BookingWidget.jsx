@@ -44,11 +44,12 @@ export const AIRPORT_LIST = [
   { id: "DEL", name: "Indira Gandhi International Airport (DEL), New Delhi", city: "Delhi, Delhi", lat: 28.5562, lng: 77.1000 },
 ];
 
-const getTabFromPath = (path) => {
-  if (!path) return "outstation";
+const getTabFromPath = (path, isEvCabsPage = false) => {
+  if (!path) return isEvCabsPage ? "local" : "outstation";
   if (path.startsWith("/airport")) return "airport";
   if (path.startsWith("/local")) return "local";
   if (path.startsWith("/packages") || path.startsWith("/package")) return "package";
+  if (path.startsWith("/ev-cabs") || isEvCabsPage) return "local";
   // if (path.startsWith("/vans")) return "van";
   // if (path.startsWith("/buses")) return "bus";
   return "outstation";
@@ -97,7 +98,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
       return "local";
     }
     if (isEvCabsPage) return "local";
-    return getTabFromPath(pathname);
+    return getTabFromPath(pathname, isEvCabsPage);
   });
   const [tripType, setTripType] = useState(() => {
     const serviceParam = searchParams?.get("service") || searchParams?.get("tripType");
@@ -192,7 +193,10 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
 
   // Synchronize active tab with URL path changes (e.g. when user clicks a service in top navbar)
   useEffect(() => {
-    const matchedTab = getTabFromPath(pathname);
+    let matchedTab = getTabFromPath(pathname, isEvCabsPage);
+    if (isEvCabsPage && matchedTab === "outstation") {
+      matchedTab = "local";
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab(matchedTab);
     if (matchedTab === "package" || matchedTab === "outstation") {
@@ -207,7 +211,15 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
         activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       }
     }
-  }, [pathname]);
+  }, [pathname, isEvCabsPage]);
+
+  // Enforce safety guard: if outstation is hidden, never allow activeTab to remain outstation
+  useEffect(() => {
+    if (isEvCabsPage && activeTab === "outstation") {
+      setActiveTab("local");
+      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : (localPackages[0]?.value || "4hr-40km")));
+    }
+  }, [isEvCabsPage, activeTab]);
 
   // Synchronize cab and trip type when searchParams or pathname change (e.g. from /book?cab=urbania or /vans)
   useEffect(() => {
@@ -234,12 +246,18 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
         setActiveTab("local");
       } else if (s.includes("airport")) {
         setActiveTab("airport");
+      } else if (s.includes("package")) {
+        setActiveTab("package");
       } else {
-        setActiveTab("outstation");
-        if (s.includes("one")) {
-          setTripType("one-way");
+        if (!isEvCabsPage) {
+          setActiveTab("outstation");
+          if (s.includes("one")) {
+            setTripType("one-way");
+          } else {
+            setTripType("round-trip");
+          }
         } else {
-          setTripType("round-trip");
+          setActiveTab("local");
         }
       }
     }
@@ -300,6 +318,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
   };
 
   const handleTabClick = (tabId, e) => {
+    if (isEvCabsPage && tabId === "outstation") return;
     setActiveTab(tabId);
     if (tabId === "outstation" || tabId === "package") {
       setTripType("round-trip");
