@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { translations, SUPPORTED_LANGUAGES } from "@/lib/i18n";
 
 const LanguageContext = createContext({
@@ -14,7 +15,20 @@ const LanguageContext = createContext({
   stopTranslating: () => {},
 });
 
+const setGoogTransCookie = (lang) => {
+  if (typeof document === "undefined") return;
+
+  // Strictly host-isolated: NO domain wildcard so customer UI and vendor UI never cross-share
+  if (lang === "en" || !lang) {
+    document.cookie = "googtrans=/en/en; path=/; SameSite=Lax";
+    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  } else {
+    document.cookie = `googtrans=/en/${lang}; path=/; max-age=31536000; SameSite=Lax`;
+  }
+};
+
 export function LanguageProvider({ children }) {
+  const pathname = usePathname();
   const [language, setLanguageState] = useState("en");
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLangInfo, setTargetLangInfo] = useState(null);
@@ -45,12 +59,16 @@ export function LanguageProvider({ children }) {
     }, 1800);
   }, [stopTranslating]);
 
-  // On mount: check if a non-English language was preloaded from cookie
+  // On mount: check if a non-English language was preloaded from cookie or localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem("grab_selected_language");
       if (stored && translations[stored]) {
         setLanguageState(stored);
+        if (typeof document !== "undefined") {
+          document.documentElement.setAttribute("data-lang", stored);
+          document.documentElement.setAttribute("lang", stored);
+        }
       }
 
       // Check googtrans cookie on client mount
@@ -59,6 +77,11 @@ export function LanguageProvider({ children }) {
         if (match && match[2] && match[2] !== "/en/en" && match[2] !== "en") {
           const langPart = match[2].split("/")[2] || match[2];
           if (langPart && langPart !== "en") {
+            document.documentElement.setAttribute("data-lang", langPart);
+            document.documentElement.setAttribute("lang", langPart);
+            if (translations[langPart]) {
+              setLanguageState(langPart);
+            }
             setIsTranslating(true);
             const foundLang = SUPPORTED_LANGUAGES.find((l) => l.code === langPart);
             setTargetLangInfo(foundLang || { code: langPart, label: langPart, name: langPart });
@@ -84,12 +107,55 @@ export function LanguageProvider({ children }) {
     } catch {}
   }, [stopTranslating]);
 
-  const setLanguage = (langCode) => {
-    if (translations[langCode]) {
-      setLanguageState(langCode);
+  // Route change synchronization: whenever pathname changes in Next.js SPA navigation,
+  // re-apply active non-English translation to the newly mounted route's DOM!
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    let activeLang = language;
+    if (!activeLang || activeLang === "en") {
       try {
-        localStorage.setItem("grab_selected_language", langCode);
+        const stored = localStorage.getItem("grab_selected_language");
+        if (stored && translations[stored]) {
+          activeLang = stored;
+        }
       } catch {}
+    }
+
+    if (activeLang && activeLang !== "en") {
+      document.documentElement.setAttribute("data-lang", activeLang);
+      document.documentElement.setAttribute("lang", activeLang);
+
+      // Give Next.js a short moment (120ms) to mount new page DOM before triggering Google Translate
+      const timer = setTimeout(() => {
+        const gtSelect = document.querySelector(".goog-te-combo");
+        if (gtSelect) {
+          if (gtSelect.value !== activeLang) {
+            gtSelect.value = activeLang;
+          }
+          gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }, 120);
+
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, language]);
+
+  const setLanguage = (langCode) => {
+    const validLang = translations[langCode] ? langCode : "en";
+    setLanguageState(validLang);
+    try {
+      if (validLang === "en") {
+        localStorage.removeItem("grab_selected_language");
+      } else {
+        localStorage.setItem("grab_selected_language", validLang);
+      }
+    } catch {}
+
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-lang", validLang);
+      document.documentElement.setAttribute("lang", validLang);
+      setGoogTransCookie(validLang);
     }
   };
 

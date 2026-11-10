@@ -2198,25 +2198,25 @@ export default function ReviewPayPage() {
                   {tariffDiscountAmount > 0 && (
                     <div className="flex justify-between items-center text-xs font-bold text-slate-800 bg-slate-50/90 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
                       <span className="text-slate-700">Net Base Fare (After Discount)</span>
-                      <span className="text-[#0082fe] font-black">₹{baseFare.toLocaleString()}</span>
+                      <span className="notranslate text-[#0082fe] font-black" translate="no">₹{baseFare.toLocaleString()}</span>
                     </div>
                   )}
 
                   <div className="flex justify-between items-center">
                     <span>Driver Allowance</span>
-                    <span className={isNightTrip ? "text-[#0082fe] font-bold" : "text-slate-900 font-bold"}>
+                    <span className={`notranslate ${isNightTrip ? "text-[#0082fe] font-bold" : "text-slate-900 font-bold"}`} translate="no">
                       {isNightTrip ? "Excluded (Pay to driver)" : `₹${driverAllowance.toLocaleString()}`}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span>{gstLabel}</span>
-                    <span className="text-slate-900 font-bold">₹{taxes.toLocaleString()}</span>
+                    <span className="notranslate text-slate-900 font-bold" translate="no">₹{taxes.toLocaleString()}</span>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span>{isRoundTrip ? "Toll & State Tax" : "FASTag Highway Toll"}</span>
-                    <span className={isRoundTrip ? "text-[#0082fe] font-bold" : (tollPrice > 0 ? "text-slate-900 font-bold" : "text-emerald-700 font-extrabold")}>
+                    <span className={`notranslate ${isRoundTrip ? "text-[#0082fe] font-bold" : (tollPrice > 0 ? "text-slate-900 font-bold" : "text-emerald-700 font-extrabold")}`} translate="no">
                       {isRoundTrip ? "Pay at actuals (Excluded)" : (tollPrice > 0 ? `+ ₹${tollPrice.toLocaleString()}` : "Included (₹0)")}
                     </span>
                   </div>
@@ -2322,12 +2322,12 @@ export default function ReviewPayPage() {
               <div className="p-5 bg-blue-50/40 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black text-slate-900 uppercase tracking-wide">Total Ride Value</span>
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">₹{totalAmount.toLocaleString()}</span>
+                  <span className="notranslate text-2xl font-black text-slate-900 tracking-tight" translate="no">₹{totalAmount.toLocaleString()}</span>
                 </div>
 
                 <div className="p-3 rounded-xl bg-white border border-blue-200/80 flex justify-between items-center text-xs">
                   <span className="font-bold text-blue-900">Paying Now:</span>
-                  <span className="font-black text-[#0082fe] text-sm">
+                  <span className="notranslate font-black text-[#0082fe] text-sm" translate="no">
                     ₹{paymentPlan === "zero" ? "0" : paymentPlan === "advance" ? advanceAmount.toLocaleString() : totalAmount.toLocaleString()}
                   </span>
                 </div>
@@ -2344,9 +2344,10 @@ export default function ReviewPayPage() {
                   ) : (
                     <>
                       <ShieldCheck className="w-4 h-4" />
-                      {paymentPlan === "zero"
-                        ? `${t("confirm_and_book") || "Confirm & Book"} • ₹0`
-                        : `Proceed to Pay • ₹${(paymentPlan === "advance" ? advanceAmount : totalAmount).toLocaleString()}`}
+                      <span>{paymentPlan === "zero" ? (t("confirm_and_book") || "Confirm & Book") : "Proceed to Pay"}</span>
+                      <span className="notranslate" translate="no">
+                        • ₹{paymentPlan === "zero" ? "0" : (paymentPlan === "advance" ? advanceAmount : totalAmount).toLocaleString()}
+                      </span>
                     </>
                   )}
                 </button>

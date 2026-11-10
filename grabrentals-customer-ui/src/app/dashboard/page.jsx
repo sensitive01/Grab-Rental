@@ -269,7 +269,7 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 hide-scrollbar">
           {[
             { id: "all", label: t("all_trips"), count: bookings.length },
             { id: "ongoing", label: t("ongoing_trips"), count: bookings.filter(b => b.status === "ongoing").length },
@@ -280,7 +280,7 @@ export default function CustomerDashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 ${
                 activeTab === tab.id
                   ? "bg-slate-900 text-white shadow-sm"
                   : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
@@ -332,7 +332,7 @@ export default function CustomerDashboard() {
                 {/* Header Bar */}
                 <div className="px-6 py-3.5 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="text-xs font-mono font-black text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                    <span className="text-xs font-mono font-black text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs notranslate" translate="no">
                       {booking.id}
                     </span>
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{booking.tripType}</span>
@@ -443,11 +443,11 @@ export default function CustomerDashboard() {
                           <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
                             <UserCheck className="w-3.5 h-3.5 text-emerald-600" /> {booking.driver.name}
                           </span>
-                          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded notranslate" translate="no">
                             ★ {booking.driver.rating}
                           </span>
                         </div>
-                        <p className="text-[10px] font-mono text-slate-500">{booking.driver.plate}</p>
+                        <p className="text-[10px] font-mono text-slate-500 notranslate" translate="no">{booking.driver.plate}</p>
                       </div>
                     ) : (
                       <div className="p-2.5 rounded-xl bg-slate-50/60 border border-dashed border-slate-200 text-[11px] font-medium text-slate-500">
@@ -459,7 +459,7 @@ export default function CustomerDashboard() {
                       <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg">
                         <KeyRound className="w-3.5 h-3.5 text-amber-600" />
                         <span className="text-[11px] font-bold text-slate-600">Ride OTP:</span>
-                        <span className="text-xs font-mono font-black text-amber-700">{booking.otp}</span>
+                        <span className="text-xs font-mono font-black text-amber-700 notranslate" translate="no">{booking.otp}</span>
                       </div>
                     )}
                   </div>
@@ -468,10 +468,10 @@ export default function CustomerDashboard() {
                   <div className="lg:col-span-3 border-t lg:border-t-0 lg:border-l border-slate-100 lg:pl-6 space-y-3 flex flex-col justify-between">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Fare</span>
-                      <div className="text-xl font-black text-slate-900">{booking.totalFare}</div>
+                      <div className="text-xl font-black text-slate-900 notranslate" translate="no">{booking.totalFare}</div>
                       <span className="text-[11px] font-bold text-emerald-600">{booking.paymentStatus}</span>
                       {booking.dueAmount !== "₹0" && (
-                        <p className="text-[11px] text-slate-500 mt-0.5">{booking.dueAmount} due to driver</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5 notranslate" translate="no">{booking.dueAmount} due to driver</p>
                       )}
                     </div>
 

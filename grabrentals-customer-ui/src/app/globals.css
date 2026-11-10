@@ -126,7 +126,7 @@ body:has([data-page="404"]) #quick-enquiry-section {
 }
 
 /* ==========================================================================
-   Google Translate Clean Native Overrides
+   Google Translate Clean Native Overrides & Multilingual Typography
    Hides default top banner frame, tooltips, popups, and highlight styles
    ========================================================================== */
 body {
@@ -138,16 +138,62 @@ body {
 .skiptranslate > iframe.goog-te-banner-frame,
 #goog-gt-tt,
 .goog-te-balloon-frame,
+.goog-tooltip,
+.goog-tooltip:hover,
 .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
 .VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-xl07Ob-OEVmcd,
+.VIpgJd-ZVi9od-vH1Gmf-ibnC6b,
 #google_translate_element {
   display: none !important;
   visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
-.goog-text-highlight {
-  background: none !important;
+/* High-specificity complete neutralization of Google Translate highlight & background colors */
+font,
+font[style],
+font[style*="background"],
+.goog-text-highlight,
+font.goog-text-highlight,
+html body font.goog-text-highlight {
+  background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
+  border: none !important;
+  text-shadow: inherit !important;
+  color: inherit !important;
+}
+
+/* Universal notranslate enforcement */
+.notranslate,
+[translate="no"] {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Multilingual Typography Tuning for Indic Scripts */
+html.translated-ltr,
+html[data-lang="kn"],
+html[data-lang="ta"],
+html[data-lang="te"],
+html[data-lang="hi"],
+html[data-lang="ml"] {
+  line-height: 1.45;
+}
+
+html.translated-ltr h1,
+html.translated-ltr h2,
+html.translated-ltr h3,
+html[data-lang="kn"] h1,
+html[data-lang="ta"] h1,
+html[data-lang="te"] h1,
+html[data-lang="hi"] h1,
+html[data-lang="ml"] h1 {
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: 1.25;
 }
 
 /* Language Preloading state to prevent English Flash before hydration */
@@ -171,4 +217,23 @@ html.lang-preloading #language-loading-overlay {
 .animate-vehicle-card {
   animation: vehicleFadeIn 0.35s ease-out both;
 }
+
+/* Calibrated font size exclusively for Tamil and Malayalam on Desktop Hero */
+html[data-lang="ta"] .hero-title,
+html[data-lang="ml"] .hero-title,
+html[lang="ta"] .hero-title,
+html[lang="ml"] .hero-title {
+  font-size: clamp(1.25rem, 2.35vw, 2.15rem) !important;
+  line-height: 1.25 !important;
+}
+
+html[data-lang="ta"] .hero-subtitle,
+html[data-lang="ml"] .hero-subtitle,
+html[lang="ta"] .hero-subtitle,
+html[lang="ml"] .hero-subtitle {
+  font-size: clamp(0.85rem, 1.15vw, 1.05rem) !important;
+  line-height: 1.5 !important;
+  max-width: 52rem !important;
+}
+
 

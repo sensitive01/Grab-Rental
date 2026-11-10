@@ -268,7 +268,7 @@ export default function QuickEnquirySection() {
                         Phone Number <span className="text-yellow-300 font-extrabold">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-600 select-none">
+                        <span className="notranslate absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-600 select-none" translate="no">
                           +91
                         </span>
                         <input

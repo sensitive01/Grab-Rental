@@ -261,7 +261,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
                   Mobile Number
                 </label>
                 <div className="relative flex">
-                  <span className="inline-flex items-center px-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 text-slate-700 font-bold text-sm">
+                  <span className="notranslate inline-flex items-center px-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 text-slate-700 font-bold text-sm" translate="no">
                     +91
                   </span>
                   <div className="relative flex-1">
@@ -332,7 +332,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
               )}
 
               {/* 6 Digit Input Boxes */}
-              <div className="flex justify-between gap-2 sm:gap-2.5">
+              <div className="notranslate flex justify-between gap-2 sm:gap-2.5" translate="no">
                 {otp.map((digit, idx) => (
                   <input
                     key={idx}
@@ -358,7 +358,7 @@ export default function SearchVerificationModal({ isOpen, onClose, onVerified, o
                 </button>
 
                 {countdown > 0 ? (
-                  <span>Resend in {countdown}s</span>
+                  <span className="notranslate" translate="no">Resend in {countdown}s</span>
                 ) : (
                   <button
                     type="button"

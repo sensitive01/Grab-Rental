@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import { vendorApi } from "@/lib/vendorApi";
 import { getCurrentUser, getAuthToken, logout } from "@/lib/auth";
-import { LanguageSelector } from "@/components/ui/LanguageSelector";
-import { useLanguage } from "@/context/LanguageContext";
 import GlobalSearch from "@/components/layout/GlobalSearch";
 
 export default function TopNavbar({ onMenuClick }) {
@@ -122,10 +120,6 @@ export default function TopNavbar({ onMenuClick }) {
         >
           <Search className="w-4.5 h-4.5" />
         </button>
-
-
-        {/* Multi-Language Switcher */}
-        <LanguageSelector />
 
         {/* Notifications Popover */}
         <div className="relative">

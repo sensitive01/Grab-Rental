@@ -137,12 +137,12 @@ export default function Home() {
       />
 
       {/* Floating Booking Widget */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-16 sm:-mt-20 md:-mt-24 lg:-mt-28">
         <BookingWidget />
       </section>
 
       {/* 2. Key Metric Cards */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 sm:mt-24 md:mt-28 mb-12 sm:mb-16 w-full">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-12 sm:mt-16 md:mt-20 mb-12 sm:mb-16 w-full">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {[
             {

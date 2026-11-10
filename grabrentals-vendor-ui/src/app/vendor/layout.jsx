@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import TopNavbar from "@/components/layout/TopNavbar";
+import { TopLanguageBar } from "@/components/ui/LanguageSelector";
 import { 
   isAuthenticated, 
   getCurrentUser, 
@@ -78,6 +79,7 @@ export default function VendorLayout({ children }) {
 
       {/* Main Content Area */}
       <div className="lg:pl-72 flex flex-col flex-1 min-w-0 max-w-full overflow-x-hidden">
+        <TopLanguageBar theme="slate" />
         <TopNavbar onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Global Pending Admin Approval Notice Banner */}

@@ -1606,7 +1606,7 @@ function SelectVehicleContent() {
                         </div>
 
                         {/* Price Block (Moved up next to car image) */}
-                        <div className="pt-1.5">
+                        <div className="pt-1.5 notranslate" translate="no">
                           {car.pricing?.discountPercentage > 0 && (
                             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                               <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md tracking-tight">
@@ -1716,7 +1716,7 @@ function SelectVehicleContent() {
 
                     {/* Price & Action */}
                     <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 gap-2 shrink-0">
-                      <div className="text-left md:text-right">
+                      <div className="text-left md:text-right notranslate" translate="no">
                         {car.pricing?.discountPercentage > 0 && (
                           <div className="flex items-center gap-1.5 mb-1 justify-start md:justify-end flex-wrap">
                             <span className="text-[10px] sm:text-[11px] font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md tracking-tight">

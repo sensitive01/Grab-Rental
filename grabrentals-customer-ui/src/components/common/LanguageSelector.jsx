@@ -14,7 +14,7 @@ export const GOOGLE_LANGUAGES = [
 ];
 
 const LanguageSelector = ({ variant = "links", className = "" }) => {
-  const { startTranslating, stopTranslating, setLanguage: setContextLang } = useLanguage();
+  const { language, startTranslating, stopTranslating, setLanguage: setContextLang } = useLanguage();
   const observerRef = useRef(null);
 
   const getLanguageCookie = () => {
@@ -27,56 +27,29 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
     return "en";
   };
 
-  const [currentLang, setCurrentLang] = useState("en");
+  const [currentLang, setCurrentLang] = useState(() => language || getLanguageCookie());
 
-  // On initial mount, sync with existing cookie once Google Translate widget is ready
+  // On mount and whenever language changes, sync currentLang
   useEffect(() => {
-    const savedLang = getLanguageCookie();
+    const savedLang = language || getLanguageCookie();
     setCurrentLang(savedLang);
-
-    if (savedLang !== "en") {
-      const langInfo = GOOGLE_LANGUAGES.find((l) => l.code === savedLang) || { code: savedLang, label: savedLang, name: savedLang };
-      startTranslating(savedLang, langInfo);
-
-      let attempts = 0;
-      const interval = setInterval(() => {
-        attempts++;
-        const gtSelect = document.querySelector(".goog-te-combo");
-        if (gtSelect) {
-          gtSelect.value = savedLang;
-          gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
-          clearInterval(interval);
-          setTimeout(() => {
-            stopTranslating();
-          }, 400);
-        } else if (attempts >= 20) {
-          clearInterval(interval);
-          stopTranslating();
-        }
-      }, 150);
-      return () => {
-        clearInterval(interval);
-      };
-    }
-  }, [startTranslating, stopTranslating]);
+  }, [language]);
 
   const handleLanguageSelect = (lang) => {
     if (lang === currentLang) return;
 
     const langInfo = GOOGLE_LANGUAGES.find((l) => l.code === lang) || { code: lang, label: lang, name: lang };
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-lang", lang);
+    }
     startTranslating(lang, langInfo);
     setContextLang(lang);
     setCurrentLang(lang);
 
-    const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
-
+    // Strictly host-isolated: NO domain wildcard so customer UI and vendor UI never cross-share
     if (lang === "en") {
-      document.cookie = "googtrans=/en/en; path=/;";
+      document.cookie = "googtrans=/en/en; path=/; SameSite=Lax";
       document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      if (!isLocalhost && hostname) {
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`;
-      }
       try {
         localStorage.removeItem("grab_selected_language");
       } catch {}
@@ -88,11 +61,8 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
       return;
     }
 
-    // Set translation cookie for target language
-    document.cookie = `googtrans=/en/${lang}; path=/;`;
-    if (!isLocalhost && hostname) {
-      document.cookie = `googtrans=/en/${lang}; path=/; domain=.${hostname};`;
-    }
+    // Set isolated translation cookie for target language
+    document.cookie = `googtrans=/en/${lang}; path=/; max-age=31536000; SameSite=Lax`;
 
     const gtSelect = document.querySelector(".goog-te-combo");
     if (gtSelect) {
@@ -215,7 +185,7 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
       translate="no"
     >
       <Globe className="w-3.5 h-3.5 shrink-0 text-slate-500" />
-      <span className="text-[11px] sm:text-xs font-bold text-slate-600">
+      <span className="hidden sm:inline text-[11px] sm:text-xs font-bold text-slate-600">
         Language:
       </span>
       <select

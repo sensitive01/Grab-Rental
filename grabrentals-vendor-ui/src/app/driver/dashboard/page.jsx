@@ -32,6 +32,7 @@ import DataTable from "@/components/ui/DataTable";
 import { driverApi } from "@/lib/vendorApi";
 import { getCurrentUser, isAuthenticated, logout } from "@/lib/auth";
 import { formatINR } from "@/lib/utils";
+import { TopLanguageBar } from "@/components/ui/LanguageSelector";
 
 export default function DriverDashboardPage() {
   const router = useRouter();
@@ -481,6 +482,9 @@ export default function DriverDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
       
+      {/* Multi-Language Bar for Chauffeur Portal */}
+      <TopLanguageBar theme="slate" />
+
       {/* Top Header Bar */}
       <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 px-4 py-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">

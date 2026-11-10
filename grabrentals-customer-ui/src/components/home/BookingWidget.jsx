@@ -71,7 +71,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const isEvCabsPage = pathname === "/ev-cabs" || pathname?.startsWith("/ev-cabs") || hideOutstationTab;
   const isNewBookingPage = pathname?.startsWith("/book") || isDropdownMode;
@@ -772,11 +772,11 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
   const isRoundTrip = tripType === "round-trip";
 
   return (
-    <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-4 sm:p-6 max-w-6xl mx-auto border border-black">
+    <div className="bg-white text-slate-900 rounded-2xl shadow-2xl p-3.5 sm:p-5 md:p-5 max-w-6xl mx-auto border border-black">
 
       {/* Top Controls: Dropdowns for New Booking Page, or Segmented Tabs for Homepage */}
       {isNewBookingPage ? (
-        <div className="mb-4 sm:mb-6 pb-4 border-b border-slate-200">
+        <div className="mb-3 sm:mb-4 pb-3 border-b border-slate-200">
           <div className="max-w-xs">
             {/* Trip Type Dropdown */}
             <div>
@@ -800,7 +800,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
         </div>
       ) : (
         /* Top Segmented Tabs (Normal Homepage View) */
-        <div className="relative mb-4 sm:mb-6">
+        <div className="relative mb-3 sm:mb-4">
           {/* Left Arrow (Mobile View) */}
           {canScrollLeft && (
             <div className="absolute left-0 top-0 bottom-[1px] flex items-center pr-3 bg-gradient-to-r from-white via-white/95 to-transparent z-10 sm:hidden">
@@ -819,7 +819,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
           <div
             ref={tabsRef}
             onScroll={checkScroll}
-            className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 sm:gap-2 scroll-smooth justify-center items-center w-full"
+            className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar pb-1 gap-1 sm:gap-2 scroll-smooth justify-start sm:justify-center items-center w-full px-1"
           >
             {[
               { id: "outstation", label: t("outstation") || "Outstation" },
@@ -833,7 +833,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
                 key={tab.id}
                 data-tab-id={tab.id}
                 onClick={(e) => handleTabClick(tab.id, e)}
-                className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap ${activeTab === tab.id
+                className={`flex-1 sm:flex-none text-center px-3 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-colors border-b-[3px] cursor-pointer whitespace-nowrap shrink-0 ${activeTab === tab.id
                     ? "text-brand-amber border-brand-amber bg-blue-50/50 rounded-t-lg"
                     : "text-slate-500 border-transparent hover:text-slate-800"
                   }`}
@@ -899,8 +899,8 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
           </div>
         </div>
       ) : allowsStops ? (
-        <div className="mb-4 sm:mb-5">
-          <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="mb-3 sm:mb-3.5">
+          <div className="grid grid-cols-3 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             {[
               { id: "round-trip", label: t("round_trip") || "RoundTrip" },
               { id: "one-way", label: t("one_way") || "OneWay" },
@@ -910,7 +910,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
               return (
                 <label
                   key={item.id}
-                  className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border transition-all cursor-pointer select-none min-w-0 ${isSelected
+                  className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer select-none min-w-0 ${isSelected
                       ? "bg-blue-50/70 border-[#0082fe] text-blue-950 shadow-xs ring-1 ring-[#0082fe]/30 font-bold"
                       : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-semibold"
                     }`}
@@ -929,7 +929,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
                     onChange={(e) => handleTripTypeChange(e.target.value)}
                     className="hidden"
                   />
-                  <span className="text-[11px] sm:text-sm tracking-tight sm:tracking-normal whitespace-nowrap">
+                  <span className="text-[10.5px] sm:text-xs md:text-sm tracking-tight sm:tracking-normal whitespace-nowrap truncate">
                     {item.label}
                   </span>
                 </label>
@@ -942,7 +942,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
       {/* ===================== INPUT SECTION ===================== */}
       {/* If stops or round-trip: 2-row multi-column grid like Savaari */}
       {(hasStops || isRoundTrip) && (activeTab === "outstation" || activeTab === "package") ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-3.5">
           {/* ROW 1: Locations (FROM -> STOP 1 -> STOP 2 -> TO) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
 
@@ -1190,12 +1190,17 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
             {/* CTA Button: EXPLORE / SEARCH CABS */}
             <div className={`min-w-0 ${isRoundTrip ? "col-span-1 lg:col-span-3" : "col-span-2 lg:col-span-4"}`}>
               <button
+                key={`search-cta-${language || "en"}`}
                 type="button"
                 onClick={handleExploreClick}
                 suppressHydrationWarning
-                className="flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 px-3 sm:px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0 cursor-pointer"
+                className="notranslate flex items-center justify-center gap-2 w-full bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 px-3 sm:px-6 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-md shadow-[#0082fe]/25 hover:shadow-lg whitespace-nowrap shrink-0 cursor-pointer"
+                translate="no"
               >
-                {selectedCab === "ev" ? "SEARCH EV CABS" : t("search_cabs")} <ArrowRight className="w-4 h-4" />
+                <span className="notranslate" translate="no">
+                  {selectedCab === "ev" ? "SEARCH EV CABS" : (t("search_cabs") || "Search")}
+                </span>
+                <ArrowRight className="w-4 h-4 shrink-0" />
               </button>
             </div>
 
@@ -1494,12 +1499,17 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
           {/* CTA Button */}
           <div className="w-full lg:w-auto mt-2 sm:mt-4 lg:mt-[23px] shrink-0">
             <button
+              key={`search-cta-single-${language || "en"}`}
               type="button"
               onClick={handleExploreClick}
               suppressHydrationWarning
-              className="flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+              className="notranslate flex items-center justify-center gap-2 w-full lg:w-auto lg:min-w-[130px] px-6 bg-[#0082fe] hover:bg-[#006ed6] text-white h-[44px] sm:h-[48px] py-2.5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wide transition-all shadow-md shadow-[#0082fe]/25 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+              translate="no"
             >
-              {selectedCab === "ev" ? "SEARCH EV CABS" : t("search_cabs")} <ArrowRight className="w-4 h-4" />
+              <span className="notranslate" translate="no">
+                {selectedCab === "ev" ? "SEARCH EV CABS" : (t("search_cabs") || "Search")}
+              </span>
+              <ArrowRight className="w-4 h-4 shrink-0" />
             </button>
           </div>
         </div>
@@ -1605,7 +1615,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
         </div>
 
         {/* Promo Pill on Far Right */}
-        <div className="bg-white text-[#0082fe] font-black text-xs px-3.5 py-1.5 rounded-lg shadow-xs whitespace-nowrap w-full sm:w-auto text-center">
+        <div className="bg-white text-[#0082fe] font-black text-xs px-3 py-1.5 rounded-lg shadow-xs sm:whitespace-nowrap w-full sm:w-auto text-center break-words leading-tight shrink-0">
           {selectedCab === "ev" ? "Zero Carbon • Green Rides" : (activeTab === "airport" ? "100% On-Time Guarantee" : (t("flat_discount_promo") || "Flat 10% Off First Outstation Ride"))}
         </div>
       </div>

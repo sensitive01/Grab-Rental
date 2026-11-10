@@ -116,7 +116,7 @@ export default function VehicleTripHeader({
 
           {/* Bottom Row / Right Column: Single-Line Trip Schedule + Desktop Modify Button */}
           <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 text-xs sm:text-sm w-full lg:w-auto shrink-0">
-            <div className="flex items-center flex-wrap sm:flex-nowrap gap-1.5 sm:gap-2 text-[11px] sm:text-xs lg:text-sm font-extrabold text-white whitespace-nowrap" suppressHydrationWarning>
+            <div className="notranslate flex items-center flex-wrap sm:flex-nowrap gap-1.5 sm:gap-2 text-[11px] sm:text-xs lg:text-sm font-extrabold text-white whitespace-nowrap" translate="no" suppressHydrationWarning>
               <span>
                 {!isLocal && tripType.toLowerCase().includes("round") && returnDate
                   ? `${date} ${time} at ${returnDate}`

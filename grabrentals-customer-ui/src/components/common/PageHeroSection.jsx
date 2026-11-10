@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import customerApi from "@/lib/customerApi";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function PageHeroSection({
   pageKey = "HOME",
@@ -17,6 +18,9 @@ export default function PageHeroSection({
   children,
   autoSlideIntervalMs = 4500,
 }) {
+  const { language } = useLanguage();
+  const isLongScript = language === "ta" || language === "ml";
+
   // Check memory cache to avoid flicker on route changes
   const initialCache = typeof window !== "undefined" && window.__GRAB_HERO_CACHE__?.[pageKey];
 
@@ -94,7 +98,7 @@ export default function PageHeroSection({
   const subtitle = heroData?.subtitle || defaultSubtitle;
 
   return (
-    <section className="text-white pt-6 sm:pt-8 md:pt-12 pb-28 sm:pb-36 md:pb-44 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900 select-none">
+    <section className="text-white pt-5 sm:pt-7 md:pt-8 pb-20 sm:pb-24 md:pb-28 lg:pb-32 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900 select-none">
       {/* Background Image(s) with Smooth Transition */}
       {images.length > 0 ? (
         images.map((imgUrl, i) => (
@@ -117,22 +121,32 @@ export default function PageHeroSection({
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80 pointer-events-none" />
 
       {/* Content Container */}
-      <div className="max-w-7xl w-full relative z-10 flex flex-col items-center text-center mt-1 sm:mt-2 md:mt-4">
+      <div className="max-w-7xl w-full relative z-10 flex flex-col items-center text-center mt-0.5 sm:mt-1 md:mt-1.5">
         {/* Pill Badge */}
         {badgeText && (
           <div
-            className={`inline-flex items-center gap-1.5 sm:gap-2 ${badgeClass} px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-3 sm:mb-5 shadow-lg shadow-blue-900/30`}
+            className={`inline-flex items-center gap-1.5 sm:gap-2 ${badgeClass} px-4 py-1.5 rounded-full text-xs sm:text-[13px] font-extrabold uppercase tracking-widest mb-2.5 sm:mb-3 shadow-lg shadow-blue-900/30`}
           >
-            {badgeIcon || <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />}
+            {badgeIcon || <Star className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" />}
             <span>{badgeText}</span>
           </div>
         )}
 
         {/* Headings */}
-        <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-3 sm:mb-5 drop-shadow-2xl">
-          {title1 && <span className="block md:whitespace-nowrap">{title1}</span>}
+        <h1
+          className={`font-extrabold tracking-tight mb-2.5 sm:mb-3 drop-shadow-2xl w-full max-w-7xl mx-auto px-2 sm:px-4 leading-snug sm:leading-snug md:leading-tight hero-title ${
+            isLongScript
+              ? "text-xl sm:text-2xl md:text-[28px] lg:text-[30px] xl:text-[34px] 2xl:text-[38px]"
+              : "text-2xl sm:text-3xl md:text-4xl lg:text-[38px] xl:text-[42px] 2xl:text-[46px]"
+          }`}
+        >
+          {title1 && (
+            <span className={`block ${isLongScript ? "lg:whitespace-normal xl:whitespace-nowrap" : "lg:whitespace-nowrap"}`}>
+              {title1}
+            </span>
+          )}
           {title2 && (
-            <span className={`${accentColorClass} drop-shadow-lg block mt-1 sm:mt-2`}>
+            <span className={`${accentColorClass} drop-shadow-lg block mt-0.5 sm:mt-1 lg:whitespace-nowrap`}>
               {title2}
             </span>
           )}
@@ -140,13 +154,19 @@ export default function PageHeroSection({
 
         {/* Subtitle */}
         {subtitle && (
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-slate-200 max-w-3xl mx-auto font-medium drop-shadow-md px-2">
+          <p
+            className={`font-medium drop-shadow-md px-2 leading-relaxed hero-subtitle ${
+              isLongScript
+                ? "text-xs sm:text-sm md:text-base lg:text-[17px] text-slate-200/95 max-w-3xl mx-auto"
+                : "text-sm sm:text-base md:text-lg lg:text-xl text-slate-200/95 max-w-4xl mx-auto"
+            }`}
+          >
             {subtitle}
           </p>
         )}
 
         {/* Optional Page-Specific Sub-content */}
-        {children && <div className="mt-3">{children}</div>}
+        {children && <div className="mt-2">{children}</div>}
 
         {/* Bottom Carousel Navigation Dots (When multiple images exist) */}
         {images.length > 1 && (

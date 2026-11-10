@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { setAuthSession, isAuthenticated } from "@/lib/auth";
 import { useLanguage } from "@/context/LanguageContext";
-import LanguageSelector from "@/components/ui/LanguageSelector";
+import LanguageSelector from "@/components/LanguageSelector";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -265,25 +265,34 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between selection:bg-[#0082fe] selection:text-white font-sans">
       
       {/* Top Brand Bar */}
-      <header className="w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 lg:px-12 py-3 sm:py-3.5 flex items-center justify-between shadow-2xs">
-        <Link href="/" className="flex items-center gap-2.5 group">
+      <header className="w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-50 px-3 sm:px-6 lg:px-12 py-2 sm:py-3 flex items-center justify-between shadow-2xs gap-2">
+        <Link href="/" className="notranslate flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-0" translate="no">
           <img
             src="/images/brand-logo.png"
             alt="Grab Rentals"
-            className="h-9 sm:h-10 w-auto object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0"
+            className="h-8 sm:h-9 w-auto object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0 notranslate"
+            translate="no"
           />
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 whitespace-nowrap">GRAB RENTALS</span>
-            <span className="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#0082fe]">
+          <div className="flex items-center gap-2 min-w-0 notranslate" translate="no">
+            <span className="notranslate hidden sm:inline-block font-extrabold text-sm sm:text-base tracking-tight text-slate-900 whitespace-nowrap" translate="no">
+              GRAB RENTALS
+            </span>
+            <span className="hidden md:inline-flex text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#0082fe]">
               Customer Sign In
             </span>
           </div>
         </Link>
 
-        <div className="flex items-center gap-4 text-xs font-semibold text-slate-600">
-          <LanguageSelector />
-          <Link href="/" className="hover:text-[#0082fe] transition-colors flex items-center gap-1.5 whitespace-nowrap">
-            ← Back to Home
+        <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-slate-600 shrink-0">
+          <LanguageSelector variant="dropdown" />
+          <Link
+            href="/"
+            className="hover:text-[#0082fe] transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 whitespace-nowrap text-xs font-bold text-slate-700 shrink-0"
+            title="Back to Home"
+          >
+            <span className="notranslate" translate="no">←</span>
+            <span className="hidden sm:inline">{t("back_to_home") || "Back to Home"}</span>
+            <span className="sm:hidden">{t("home") || "Home"}</span>
           </Link>
         </div>
       </header>

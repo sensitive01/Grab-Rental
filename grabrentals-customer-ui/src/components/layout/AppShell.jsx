@@ -127,29 +127,29 @@ export default function AppShell({ children }) {
       name: t("outstation_cabs") || "Outstation Cabs",
       href: "/",
       icon: Car,
-      desc: "One-way & round-trip car rentals"
+      desc: t("outstation_desc") || "One-way & round-trip car rentals"
     },
     {
       name: t("hourly_local") || "Hourly Rental",
       href: "/local",
       icon: Clock,
-      desc: "Flexible local city rental packages"
+      desc: t("hourly_local_desc") || "Flexible local city rental packages"
     },
     {
       name: t("airport_transfers") || "Airport Transfers",
       href: "/airport",
       icon: Plane,
-      desc: "Guaranteed on-time airport pickup & drop"
+      desc: t("airport_transfers_desc") || "Guaranteed on-time airport pickup & drop"
     },
   ];
 
   const mainNavLinks = [
-    { name: t("ev_cabs") || "⚡ EV Cabs", shortName: "⚡ EV Cabs", href: "/ev-cabs" },
-    { name: t("urbania_tempo") || "Urbania", shortName: "Urbania", href: "/vans" },
-    { name: t("luxury_buses") || "Bus Hire", shortName: "Bus Hire", href: "/buses" },
-    { name: t("packages") || "Tour Packages", shortName: "Packages", href: "/packages" },
-    { name: t("pet_friendly_cabs") || "🐶 Pet Friendly Cabs", shortName: "🐶 Pet Cabs", href: "/pet-friendly-cabs" },
-    { name: t("corporate_events") || "Corporate & Events", shortName: "Corporate", href: "/corporate" },
+    { name: t("ev_cabs") || "⚡ EV Cabs", href: "/ev-cabs" },
+    { name: t("urbania") || "Force Urbania", href: "/vans" },
+    { name: t("luxury_buses") || "Bus Hire", href: "/buses" },
+    { name: t("packages") || "Tour Packages", href: "/packages" },
+    { name: t("pet_friendly_cabs") || "🐶 Pet Friendly Cabs", href: "/pet-friendly-cabs" },
+    { name: t("corporate_events") || "Corporate & Events", href: "/corporate" },
   ];
 
   const isNavActive = (href) => {
@@ -224,32 +224,26 @@ export default function AppShell({ children }) {
         <div className="bg-[#0082fe] text-white text-xs py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 flex items-center justify-between border-b border-blue-600/70 shadow-xs">
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
 
-          {/* Trust Guarantees (Desktop Only) */}
-          <div className="hidden md:flex items-center gap-3.5 lg:gap-5 whitespace-nowrap text-[11px] lg:text-xs min-w-0 select-none text-white/95">
+          {/* Trust Guarantees (Desktop Only) - Bound inside flex-1 overflow-hidden */}
+          <div className="hidden md:flex items-center gap-3 lg:gap-4 whitespace-nowrap text-[11px] lg:text-xs min-w-0 overflow-hidden flex-1 select-none text-white/95 mr-2">
             <div className="flex items-center gap-1.5 shrink-0">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-              <span>{t("zero_cancellation")}</span>
+              <span className="truncate max-w-[150px] sm:max-w-[180px]">{t("zero_cancellation")}</span>
             </div>
-            <div className="hidden md:flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               <Star className="w-3.5 h-3.5 text-yellow-300 shrink-0 fill-yellow-300" />
-              <span>{t("expert_chauffeurs")}</span>
-            </div>
-            <div className="hidden lg:flex items-center gap-1.5 shrink-0">
-              <BadgeCheck className="w-3.5 h-3.5 text-sky-200 shrink-0" />
-              <span>{t("all_inclusive")}</span>
-            </div>
-            <div className="hidden xl:flex items-center gap-1.5 shrink-0">
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-              <span>{t("sanitized_fleet")}</span>
+              <span className="truncate max-w-[150px] sm:max-w-[180px]">{t("expert_chauffeurs")}</span>
             </div>
             <div className="hidden 2xl:flex items-center gap-1.5 shrink-0">
-              <Shield className="w-3.5 h-3.5 text-yellow-300 shrink-0" />
-              <span>{t("executive_standards")}</span>
+              <BadgeCheck className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+              <span className="truncate max-w-[180px]">{t("all_inclusive")}</span>
             </div>
           </div>
 
           {/* Top Bar Language Selector (Centered on Mobile, Right-aligned on Desktop) */}
-          <LanguageSelector variant="links" />
+          <div className="w-full md:w-auto md:ml-auto flex justify-center md:justify-end min-w-0">
+            <LanguageSelector variant="links" />
+          </div>
 
         </div>
       </div>
@@ -257,14 +251,14 @@ export default function AppShell({ children }) {
         {/* B. Main Navigation Bar */}
         <nav className="relative bg-white border-b border-slate-100 h-16 sm:h-20 px-2.5 sm:px-4 lg:px-4 xl:px-6 2xl:px-8 flex items-center justify-between shadow-sm">
 
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-shrink-0 min-w-0">
+        {/* Brand Logo - Protected from Machine Translation */}
+        <Link href="/" className="notranslate flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0 min-w-0 z-10 mr-1 sm:mr-2 xl:mr-3" translate="no">
           <img
             src="/images/brand-logo.png"
             alt="Grab Rentals"
             className="h-9 sm:h-12 w-auto object-contain drop-shadow-sm shrink-0"
           />
-          <div className="hidden md:flex flex-col w-fit min-w-0">
+          <div className="hidden md:flex flex-col w-fit min-w-0 notranslate" translate="no">
             <span className="font-black text-sm sm:text-lg lg:text-xl tracking-tight text-brand-navy leading-tight whitespace-nowrap">
               GRAB RENTALS
             </span>
@@ -278,46 +272,46 @@ export default function AppShell({ children }) {
           </div>
         </Link>
 
-        {/* Centered Mobile Phone Helpline */}
-        <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
+        {/* Centered Mobile Phone Helpline - Protected */}
+        <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto notranslate z-10" translate="no">
           <a
             href="tel:+919071100200"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 text-[#0082fe] active:scale-95 transition-all shadow-2xs group"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 text-[#0082fe] active:scale-95 transition-all shadow-2xs group max-w-[155px] sm:max-w-none"
             title="Call 24/7 Helpline (+91 9071 100 200)"
             aria-label="Call 24/7 Helpline"
           >
             <Phone className="w-3.5 h-3.5 text-[#0082fe] shrink-0 group-hover:scale-110 transition-transform" />
-            <span className="whitespace-nowrap font-black text-[11.5px] sm:text-xs tracking-wider text-slate-800 group-hover:text-[#0082fe]">
+            <span className="whitespace-nowrap font-black text-[10px] min-[360px]:text-[11px] sm:text-xs tracking-wider text-slate-800 group-hover:text-[#0082fe]">
               +91 9071 100 200
             </span>
           </a>
         </div>
 
-        {/* Service Tabs - Centered */}
-        <nav className="hidden lg:flex items-center justify-center h-full space-x-0.5 xl:space-x-1 2xl:space-x-1.5 whitespace-nowrap overflow-visible flex-1 px-1 xl:px-2 min-w-0">
+        {/* Service Tabs - Centered Desktop Navigation */}
+        <div className="hidden lg:flex items-center justify-center h-full gap-0.5 xl:gap-1 2xl:gap-1.5 whitespace-nowrap flex-1 px-1 xl:px-2 mx-2 xl:mx-4 min-w-0 overflow-visible">
 
           {/* 1. Book Now Dropdown */}
           <div
             ref={bookNowRef}
-            className="relative h-full flex items-center"
+            className="relative h-full flex items-center shrink-0"
             onMouseEnter={() => setBookNowOpen(true)}
             onMouseLeave={() => setBookNowOpen(false)}
           >
             <button
               type="button"
               onClick={() => setBookNowOpen(!bookNowOpen)}
-              className={`flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-bold rounded-full transition-all cursor-pointer shrink-0 ${isBookNowActive
+              className={`flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-1.5 text-xs xl:text-xs 2xl:text-sm font-bold rounded-full transition-all cursor-pointer shrink-0 ${isBookNowActive
                   ? "bg-brand-amber text-white shadow-sm"
                   : "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
                 }`}
             >
-              <span>{t("book_now") || "Book Now"}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${bookNowOpen ? "rotate-180" : ""}`} />
+              <span className="notranslate whitespace-nowrap shrink-0" translate="no">{t("book_now") || "Book Now"}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 shrink-0 ${bookNowOpen ? "rotate-180" : ""}`} />
             </button>
 
             {/* Dropdown Menu */}
             {bookNowOpen && (
-              <div className="absolute top-[80%] left-0 pt-2 z-50 w-72 animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute top-[80%] left-0 pt-2 z-50 w-72 sm:w-80 animate-in fade-in zoom-in-95 duration-150 notranslate" translate="no">
                 <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-2 space-y-1">
                   {bookNowItems.map((item) => {
                     const Icon = item.icon;
@@ -327,7 +321,7 @@ export default function AppShell({ children }) {
                         key={item.name}
                         href={item.href}
                         onClick={() => setBookNowOpen(false)}
-                        className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${active
+                        className={`flex items-start gap-3 p-2.5 rounded-xl transition-all whitespace-normal ${active
                             ? "bg-blue-50 text-blue-950 font-bold"
                             : "text-slate-700 hover:bg-slate-50 hover:text-slate-950"
                           }`}
@@ -336,9 +330,9 @@ export default function AppShell({ children }) {
                           }`}>
                           <Icon className="w-4 h-4" />
                         </div>
-                        <div>
-                          <div className="text-xs font-bold leading-tight">{item.name}</div>
-                          <div className="text-[11px] text-slate-500 font-normal leading-tight mt-0.5">{item.desc}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold leading-tight break-words">{item.name}</div>
+                          <div className="text-[11px] text-slate-500 font-normal leading-snug mt-0.5 break-words">{item.desc}</div>
                         </div>
                       </Link>
                     );
@@ -348,29 +342,30 @@ export default function AppShell({ children }) {
             )}
           </div>
 
-          {/* 2. Main Navigation Links */}
+          {/* 2. Main Navigation Links - Full English names & concise regional translations */}
           {mainNavLinks.map((link) => (
             <Link
-              key={link.name}
+              key={link.href}
               href={link.href}
-              className={`px-2 xl:px-2.5 2xl:px-3.5 py-1.5 text-xs xl:text-sm font-semibold transition-colors rounded-full shrink-0 ${isNavActive(link.href)
+              className={`px-1.5 xl:px-2 2xl:px-2.5 py-1.5 text-xs xl:text-xs 2xl:text-sm font-semibold transition-colors rounded-full shrink-0 notranslate ${isNavActive(link.href)
                   ? "bg-brand-amber text-white font-bold shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                 }`}
+              translate="no"
             >
-              <span className="hidden 2xl:inline">{link.name}</span>
-              <span className="inline 2xl:hidden">{link.shortName || link.name}</span>
+              <span className="whitespace-nowrap">{link.name}</span>
             </Link>
           ))}
-        </nav>
+        </div>
 
         {/* Header Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto whitespace-nowrap flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto whitespace-nowrap shrink-0 z-10 pl-1 sm:pl-2 xl:pl-3">
 
           {/* Call 24/7 Helpline Icon (Visible on desktop/tablet only, moved to bottom-left on mobile) */}
           <a
             href="tel:+919071100200"
-            className="hidden md:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0082fe] border border-blue-200/80 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            className="notranslate hidden md:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0082fe] border border-blue-200/80 items-center justify-center transition-all shadow-2xs hover:scale-105 shrink-0 group cursor-pointer"
+            translate="no"
             title="Call 24/7 Helpline (+91 9071 100 200)"
             aria-label="Call 24/7 Helpline"
           >
@@ -399,10 +394,10 @@ export default function AppShell({ children }) {
                   className="flex items-center gap-1.5 sm:gap-2 bg-[#0082fe] hover:bg-[#006ed6] text-white px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
                   title={currentUser.name && currentUser.name !== "Customer" ? currentUser.name : currentUser.phone || "Customer"}
                 >
-                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-white/20 text-white font-black flex items-center justify-center text-[11px] sm:text-[10px] shrink-0">
+                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-white/20 text-white font-black flex items-center justify-center text-[11px] sm:text-[10px] shrink-0 notranslate" translate="no">
                     {(currentUser.name && currentUser.name !== "Customer" ? currentUser.name : t("customer_badge") || "Customer").charAt(0).toUpperCase()}
                   </div>
-                  <span className="hidden sm:inline max-w-[85px] xl:max-w-[120px] 2xl:max-w-[150px] truncate">
+                  <span className="hidden sm:inline max-w-[85px] xl:max-w-[120px] 2xl:max-w-[150px] truncate notranslate" translate="no">
                     {currentUser.name && currentUser.name !== "Customer" 
                       ? currentUser.name.split(" ")[0]
                       : currentUser.phone || t("customer_badge") || "Customer"}
@@ -416,51 +411,51 @@ export default function AppShell({ children }) {
                       className="fixed inset-0 z-40"
                       onClick={() => setUserMenuOpen(false)}
                     />
-                    <div className="absolute right-0 mt-2 w-56 bg-[#0B0F17] border border-slate-800 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-200 divide-y divide-slate-800/80">
+                    <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-24px)] bg-[#0B0F17] border border-slate-800 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-200 divide-y divide-slate-800/80 whitespace-normal">
                       <div className="px-3.5 py-2.5 text-[11px] text-slate-400">
-                        Signed in as <strong className="text-white block text-xs truncate mt-0.5">{currentUser.phone || currentUser.name}</strong>
+                        {t("signed_in_as") || "Signed in as"} <strong className="text-white block text-xs truncate mt-0.5">{currentUser.phone || currentUser.name}</strong>
                       </div>
                       <div className="py-1">
                         <Link
                           href="/account/settings"
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
+                          className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <Settings className="w-4 h-4 text-sky-400" />
-                          <span>{t("my_account") || "Account Settings"}</span>
+                          <Settings className="w-4 h-4 text-sky-400 shrink-0" />
+                          <span className="truncate">{t("my_account") || "Account Settings"}</span>
                         </Link>
                         <Link
                           href="/dashboard"
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
+                          className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <User className="w-4 h-4 text-sky-400" />
-                          <span>{t("my_bookings") || "My Trips"}</span>
+                          <User className="w-4 h-4 text-sky-400 shrink-0" />
+                          <span className="truncate">{t("my_bookings") || "My Trips"}</span>
                         </Link>
                         <Link
                           href="/account/notifications"
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
+                          className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <Bell className="w-4 h-4 text-sky-400" />
-                          <span>Notifications</span>
+                          <Bell className="w-4 h-4 text-sky-400 shrink-0" />
+                          <span className="truncate">{t("notifications") || "Notifications"}</span>
                         </Link>
                         <Link
                           href="/account/reviews"
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-800/80 text-slate-200 transition-colors"
+                          className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 transition-colors"
                         >
-                          <Star className="w-4 h-4 text-sky-400" />
-                          <span>Reviews & Ratings</span>
+                          <Star className="w-4 h-4 text-sky-400 shrink-0" />
+                          <span className="truncate">{t("reviews_ratings") || "Reviews & Ratings"}</span>
                         </Link>
                       </div>
                       <div className="pt-1">
                         <button
                           onClick={handleLogout}
-                          className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-red-950/40 text-red-400 transition-colors cursor-pointer font-semibold"
+                          className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 hover:bg-red-950/40 text-red-400 transition-colors cursor-pointer font-semibold"
                         >
-                          <LogOut className="w-4 h-4 text-red-400" />
-                          <span>{t("log_out") || "Log Out"}</span>
+                          <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+                          <span className="truncate">{t("log_out") || "Log Out"}</span>
                         </button>
                       </div>
                     </div>
@@ -514,14 +509,15 @@ export default function AppShell({ children }) {
               <Link
                 href="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2.5"
+                className="notranslate flex items-center gap-2.5"
+                translate="no"
               >
                 <img
                   src="/images/brand-logo.png"
                   alt="Grab Rentals"
                   className="h-8 w-auto object-contain"
                 />
-                <div className="flex flex-col w-fit">
+                <div className="flex flex-col w-fit notranslate" translate="no">
                   <span className="font-black text-sm text-brand-navy leading-tight whitespace-nowrap">
                     GRAB RENTALS
                   </span>
@@ -618,14 +614,14 @@ export default function AppShell({ children }) {
                             : "bg-white hover:bg-slate-50 border border-slate-100 text-slate-800"
                           }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-[#0082fe] text-white shadow-xs" : "bg-blue-50 text-[#0082fe]"
                             }`}>
                             <Icon className="w-4 h-4" />
                           </div>
-                          <div>
-                            <div className="text-xs font-bold leading-tight">{item.name}</div>
-                            <div className="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">{item.desc}</div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold leading-tight break-words">{item.name}</div>
+                            <div className="text-[10px] text-slate-500 font-normal leading-tight mt-0.5 break-words">{item.desc}</div>
                           </div>
                         </div>
                         <ChevronRight className={`w-4 h-4 shrink-0 ${active ? "text-[#0082fe]" : "text-slate-400"}`} />
@@ -685,8 +681,8 @@ export default function AppShell({ children }) {
                     className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
                   >
                     <span className="flex items-center gap-2.5 text-xs font-bold">
-                      <Bell className="w-4 h-4 text-[#0082fe]" />
-                      <span>Activity & Alerts</span>
+                      <Bell className="w-4 h-4 text-[#0082fe] shrink-0" />
+                      <span>{t("notifications") || "Notifications"}</span>
                     </span>
                     <span className="px-1.5 py-0.5 rounded-full bg-[#0082fe] text-white font-black text-[10px]">
                       2
@@ -699,10 +695,10 @@ export default function AppShell({ children }) {
                     className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-100 text-slate-800 transition-all"
                   >
                     <span className="flex items-center gap-2.5 text-xs font-bold">
-                      <Star className="w-4 h-4 text-[#0082fe]" />
-                      <span>Reviews & Ratings</span>
+                      <Star className="w-4 h-4 text-[#0082fe] shrink-0" />
+                      <span>{t("reviews_ratings") || "Reviews & Ratings"}</span>
                     </span>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                   </Link>
 
                   <Link
@@ -815,13 +811,13 @@ export default function AppShell({ children }) {
 
           {/* Column 1: Brand Info */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 notranslate" translate="no">
               <img
                 src="/images/brand-logo.png"
                 alt="Grab Rentals"
                 className="h-10 w-auto object-contain drop-shadow-sm bg-white p-1.5 rounded-lg shadow-sm"
               />
-              <div className="flex flex-col w-fit">
+              <div className="flex flex-col w-fit notranslate" translate="no">
                 <span className="font-black text-lg text-white leading-tight whitespace-nowrap">GRAB RENTALS</span>
                 <span className="flex justify-between w-full text-[8px] font-bold text-yellow-300 tracking-wider uppercase select-none">
                   <span>GRAB</span>
@@ -886,13 +882,13 @@ export default function AppShell({ children }) {
             <h3 className="text-white font-extrabold mb-4 tracking-wide text-base">{t("helpline_support") || "Contact & Trust"}</h3>
             <ul className="space-y-3 text-sm text-white/90">
               <li>
-                <a href="tel:+919071100200" className="flex items-center gap-2 text-white font-bold hover:text-yellow-300 transition-colors">
+                <a href="tel:+919071100200" className="notranslate flex items-center gap-2 text-white font-bold hover:text-yellow-300 transition-colors" translate="no">
                   <Phone className="w-4 h-4 text-yellow-300 shrink-0" /> +91 9071 100 200
                 </a>
                 <span className="block text-xs text-blue-100 mt-1 ml-6">(24x7 / 365 Days Toll-Free)</span>
               </li>
               <li>
-                <a href="mailto:grabrentals2016@gmail.com" className="flex items-center gap-2 hover:text-yellow-300 hover:underline transition-colors">
+                <a href="mailto:grabrentals2016@gmail.com" className="notranslate flex items-center gap-2 hover:text-yellow-300 hover:underline transition-colors" translate="no">
                   <Mail className="w-4 h-4 text-yellow-300 shrink-0" />
                   <span>grabrentals2016@gmail.com</span>
                 </a>
@@ -907,10 +903,10 @@ export default function AppShell({ children }) {
 
         {/* Bottom Bar: Copyright on Left, Legal/Policy Links Right Aligned */}
         <div className="max-w-7xl mx-auto pt-6 border-t border-blue-400/40 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/85">
-          <p className="text-center md:text-left">
+          <p className="text-center md:text-left notranslate" translate="no">
             Copyright © 2014 - 2026 Grab Rentals. All rights reserved.
           </p>
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5 sm:gap-3 text-right">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5 sm:gap-3 text-center md:text-right">
             <Link href="/privacy-policy" className="hover:text-yellow-300 hover:underline transition-colors">Privacy Policy</Link>
             <span className="text-white/40">|</span>
             <Link href="/terms" className="hover:text-yellow-300 hover:underline transition-colors">Terms of Service</Link>

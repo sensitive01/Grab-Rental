@@ -7,7 +7,7 @@ export default function MobileFloatingSideTabs() {
   const vendorUrl = process.env.NEXT_PUBLIC_VENDOR_PORTAL_URL || "https://vendor.grabrentals.in/";
 
   return (
-    <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 md:hidden flex flex-col items-end gap-2.5 pointer-events-auto select-none">
+    <div className="notranslate fixed right-0 top-1/2 -translate-y-1/2 z-40 md:hidden flex flex-col items-end gap-2.5 pointer-events-auto select-none" translate="no">
       
       {/* 1. Attach My Cabs Tab (Leads to Vendor Portal) */}
       <a

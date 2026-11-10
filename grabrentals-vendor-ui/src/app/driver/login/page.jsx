@@ -13,6 +13,7 @@ import {
   KeyRound
 } from "lucide-react";
 import { sendOtp, verifyDriverOtp, isAuthenticated, getCurrentUser } from "@/lib/auth";
+import { TopLanguageBar } from "@/components/ui/LanguageSelector";
 
 export default function DriverLoginPage() {
   const router = useRouter();
@@ -107,6 +108,9 @@ export default function DriverLoginPage() {
     <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950 relative overflow-hidden">
       {/* Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Top Language Bar */}
+      <TopLanguageBar theme="slate" />
 
       {/* Header */}
       <header className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-800/60 relative z-10 max-w-xl mx-auto w-full">

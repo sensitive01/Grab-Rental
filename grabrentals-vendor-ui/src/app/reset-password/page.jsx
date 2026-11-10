@@ -19,6 +19,7 @@ import {
   Check
 } from "lucide-react";
 import { axiosClient } from "@/lib/axiosClient";
+import { TopLanguageBar } from "@/components/ui/LanguageSelector";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -168,6 +169,9 @@ function ResetPasswordContent() {
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
         <div className="absolute top-1/2 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       </div>
+
+      {/* Top Language Bar */}
+      <TopLanguageBar theme="slate" />
 
       {/* Header */}
       <header className="w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between relative z-10">
