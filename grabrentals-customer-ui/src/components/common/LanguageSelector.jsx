@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Globe } from "lucide-react";
-import { useLanguage } from "@/context/LanguageContext";
+import { useLanguage, clearAllGoogTransCookies } from "@/context/LanguageContext";
 
 export const GOOGLE_LANGUAGES = [
   { code: "en", label: "English", name: "English" },
@@ -19,6 +19,10 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
 
   const getLanguageCookie = () => {
     if (typeof document === "undefined") return "en";
+    try {
+      const stored = localStorage.getItem("grab_selected_language");
+      if (stored) return stored;
+    } catch {}
     const match = document.cookie.match(new RegExp("(^| )googtrans=([^;]+)"));
     if (match && match[2]) {
       const parts = match[2].split("/");
@@ -48,21 +52,31 @@ const LanguageSelector = ({ variant = "links", className = "" }) => {
 
     // Strictly host-isolated: NO domain wildcard so customer UI and vendor UI never cross-share
     if (lang === "en") {
-      document.cookie = "googtrans=/en/en; path=/; SameSite=Lax";
-      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      clearAllGoogTransCookies();
       try {
-        localStorage.removeItem("grab_selected_language");
+        localStorage.setItem("grab_selected_language", "en");
       } catch {}
+
+      const gtSelect = document.querySelector(".goog-te-combo");
+      if (gtSelect) {
+        gtSelect.value = "en";
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        gtSelect.selectedIndex = 0;
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
 
       // Clean reload to restore pristine English DOM without Google Translate tags
       setTimeout(() => {
         window.location.reload();
-      }, 250);
+      }, 200);
       return;
     }
 
     // Set isolated translation cookie for target language
     document.cookie = `googtrans=/en/${lang}; path=/; max-age=31536000; SameSite=Lax`;
+    try {
+      localStorage.setItem("grab_selected_language", lang);
+    } catch {}
 
     const gtSelect = document.querySelector(".goog-te-combo");
     if (gtSelect) {

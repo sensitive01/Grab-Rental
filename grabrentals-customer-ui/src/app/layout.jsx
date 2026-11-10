@@ -112,6 +112,12 @@ export default function RootLayout({ children }) {
             __html: `
               (function() {
                 try {
+                  var stored = localStorage.getItem('grab_selected_language');
+                  if (stored === 'en') return;
+                  if (stored && stored !== 'en') {
+                    document.documentElement.classList.add('lang-preloading');
+                    return;
+                  }
                   var m = document.cookie.match(/(^| )googtrans=([^;]+)/);
                   if (m && m[2] && m[2] !== '/en/en' && m[2] !== 'en') {
                     document.documentElement.classList.add('lang-preloading');

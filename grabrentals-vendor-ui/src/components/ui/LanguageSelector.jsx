@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useLanguage } from "@/context/LanguageContext";
+import { useLanguage, clearAllGoogTransCookies } from "@/context/LanguageContext";
 import { ChevronDown, Check, Globe } from "lucide-react";
 
 export const TOP_LANGUAGES = [
@@ -49,15 +49,22 @@ export function TopLanguageBar({ theme = "slate", className = "" }) {
 
     // Strictly host-isolated cookie: NO domain wildcard so customer UI and vendor UI never cross-share
     if (lang === "en") {
-      document.cookie = "googtrans=/en/en; path=/; SameSite=Lax";
-      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      clearAllGoogTransCookies();
       try {
-        localStorage.removeItem("grab_vendor_selected_language");
+        localStorage.setItem("grab_vendor_selected_language", "en");
       } catch {}
+
+      const gtSelect = document.querySelector(".goog-te-combo");
+      if (gtSelect) {
+        gtSelect.value = "en";
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        gtSelect.selectedIndex = 0;
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
 
       setTimeout(() => {
         window.location.reload();
-      }, 250);
+      }, 200);
       return;
     }
 
@@ -190,15 +197,22 @@ export function LanguageSelector({ variant = "header" }) {
     setContextLang(lang);
 
     if (lang === "en") {
-      document.cookie = "googtrans=/en/en; path=/; SameSite=Lax";
-      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      clearAllGoogTransCookies();
       try {
-        localStorage.removeItem("grab_vendor_selected_language");
+        localStorage.setItem("grab_vendor_selected_language", "en");
       } catch {}
+
+      const gtSelect = document.querySelector(".goog-te-combo");
+      if (gtSelect) {
+        gtSelect.value = "en";
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        gtSelect.selectedIndex = 0;
+        gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
 
       setTimeout(() => {
         window.location.reload();
-      }, 250);
+      }, 200);
       return;
     }
 

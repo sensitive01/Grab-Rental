@@ -15,13 +15,43 @@ const LanguageContext = createContext({
   stopTranslating: () => {},
 });
 
+// Comprehensive multi-domain cookie clear helper: purges googtrans across all domain variations and paths
+export const clearAllGoogTransCookies = () => {
+  if (typeof document === "undefined") return;
+
+  const hostname = window.location.hostname || "";
+  const parts = hostname.split(".");
+  const domains = ["", hostname, `.${hostname}`];
+
+  // Include parent domains (e.g., .grabrentals.in, grabrentals.in)
+  for (let i = 0; i < parts.length - 1; i++) {
+    const parent = parts.slice(i).join(".");
+    domains.push(parent);
+    domains.push(`.${parent}`);
+  }
+
+  const paths = ["/", "/vendor", "/driver"];
+
+  domains.forEach((d) => {
+    paths.forEach((p) => {
+      const dAttr = d ? `; domain=${d}` : "";
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${p}${dAttr}; SameSite=Lax`;
+      document.cookie = `googtrans=/en/en; path=${p}${dAttr}; SameSite=Lax`;
+      document.cookie = `googtrans=; max-age=0; path=${p}${dAttr}; SameSite=Lax`;
+    });
+  });
+
+  // Base host-only
+  document.cookie = "googtrans=/en/en; path=/; SameSite=Lax";
+  document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+};
+
 // Strictly host-isolated cookie: NO domain wildcard so customer UI and vendor UI never cross-share
-const setGoogTransCookie = (lang) => {
+export const setGoogTransCookie = (lang) => {
   if (typeof document === "undefined") return;
 
   if (lang === "en" || !lang) {
-    document.cookie = "googtrans=/en/en; path=/; SameSite=Lax";
-    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    clearAllGoogTransCookies();
   } else {
     document.cookie = `googtrans=/en/${lang}; path=/; max-age=31536000; SameSite=Lax`;
   }
@@ -59,102 +89,104 @@ export function LanguageProvider({ children }) {
     }, 1800);
   }, [stopTranslating]);
 
-  // On mount: check if a non-English language was preloaded from vendor-isolated storage or cookie
+  // On mount: check localStorage as SINGLE SOURCE OF TRUTH
   useEffect(() => {
     try {
       const stored = localStorage.getItem("grab_vendor_selected_language");
-      if (stored && translations[stored]) {
-        setLanguageState(stored);
+
+      // CASE A: Stored is explicitly "en", or not set -> User wants English!
+      if (!stored || stored === "en" || !translations[stored]) {
+        setLanguageState("en");
+        clearAllGoogTransCookies();
         if (typeof document !== "undefined") {
-          document.documentElement.setAttribute("data-lang", stored);
-          document.documentElement.setAttribute("lang", stored);
+          document.documentElement.setAttribute("data-lang", "en");
+          document.documentElement.setAttribute("lang", "en");
+          document.documentElement.classList.remove("lang-preloading");
         }
+        return;
       }
 
-      // Check googtrans cookie on client mount
+      // CASE B: Stored is an active non-English language -> User intentionally chose it
+      setLanguageState(stored);
       if (typeof document !== "undefined") {
-        const match = document.cookie.match(/(^| )googtrans=([^;]+)/);
-        if (match && match[2] && match[2] !== "/en/en" && match[2] !== "en") {
-          const langPart = match[2].split("/")[2] || match[2];
-          if (langPart && langPart !== "en") {
-            document.documentElement.setAttribute("data-lang", langPart);
-            document.documentElement.setAttribute("lang", langPart);
-            if (translations[langPart]) {
-              setLanguageState(langPart);
-            }
-            setIsTranslating(true);
-            const foundLang = SUPPORTED_LANGUAGES.find((l) => l.code === langPart);
-            setTargetLangInfo(foundLang || { code: langPart, label: langPart, name: langPart });
-
-            // Watch for Google Translate class on <html> or timeout
-            let checkCount = 0;
-            const checkInterval = setInterval(() => {
-              checkCount++;
-              const isTranslated = document.documentElement.classList.contains("translated-ltr") ||
-                                   document.documentElement.classList.contains("translated-rtl");
-              if (isTranslated || checkCount >= 18) {
-                clearInterval(checkInterval);
-                setTimeout(() => {
-                  stopTranslating();
-                }, 200);
-              }
-            }, 100);
-
-            return () => clearInterval(checkInterval);
-          }
-        }
+        document.documentElement.setAttribute("data-lang", stored);
+        document.documentElement.setAttribute("lang", stored);
+        setGoogTransCookie(stored);
       }
+      setIsTranslating(true);
+      const foundLang = SUPPORTED_LANGUAGES.find((l) => l.code === stored);
+      setTargetLangInfo(foundLang || { code: stored, label: stored, name: stored });
+
+      // Watch for Google Translate class on <html> or timeout
+      let checkCount = 0;
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        const isTranslated = document.documentElement.classList.contains("translated-ltr") ||
+                             document.documentElement.classList.contains("translated-rtl");
+        if (isTranslated || checkCount >= 18) {
+          clearInterval(checkInterval);
+          setTimeout(() => {
+            stopTranslating();
+          }, 200);
+        }
+      }, 100);
+
+      return () => clearInterval(checkInterval);
     } catch {}
   }, [stopTranslating]);
 
   // Route change synchronization: whenever pathname changes in Next.js SPA navigation across vendor portal,
-  // re-apply active non-English translation to the newly mounted route's DOM!
+  // re-apply active non-English translation ONLY if language state is non-English!
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    // Check if currently translated to non-English
-    const match = document.cookie.match(/(^| )googtrans=([^;]+)/);
-    const activeCookie = match?.[2];
-    const isTargetNonEnglish = activeCookie && activeCookie !== "/en/en" && activeCookie !== "en";
-    const currentCode = isTargetNonEnglish ? (activeCookie.split("/")[2] || activeCookie) : language;
-
-    if (currentCode && currentCode !== "en") {
-      setGoogTransCookie(currentCode);
-      document.documentElement.setAttribute("data-lang", currentCode);
-      document.documentElement.setAttribute("lang", currentCode);
-
-      const triggerGoogleTranslate = () => {
-        const gtSelect = document.querySelector(".goog-te-combo");
-        if (gtSelect) {
-          if (gtSelect.value !== currentCode) {
-            gtSelect.value = currentCode;
-            gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
-          }
-        }
-      };
-
-      triggerGoogleTranslate();
-      const retry1 = setTimeout(triggerGoogleTranslate, 150);
-      const retry2 = setTimeout(triggerGoogleTranslate, 400);
-
-      return () => {
-        clearTimeout(retry1);
-        clearTimeout(retry2);
-      };
+    // If active language is English, NEVER resurrect a foreign language!
+    if (language === "en") {
+      clearAllGoogTransCookies();
+      document.documentElement.setAttribute("data-lang", "en");
+      document.documentElement.setAttribute("lang", "en");
+      return;
     }
+
+    // Active language is non-English -> Re-apply translation to newly mounted route's DOM
+    setGoogTransCookie(language);
+    document.documentElement.setAttribute("data-lang", language);
+    document.documentElement.setAttribute("lang", language);
+
+    const triggerGoogleTranslate = () => {
+      const gtSelect = document.querySelector(".goog-te-combo");
+      if (gtSelect) {
+        if (gtSelect.value !== language) {
+          gtSelect.value = language;
+          gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+    };
+
+    triggerGoogleTranslate();
+    const retry1 = setTimeout(triggerGoogleTranslate, 150);
+    const retry2 = setTimeout(triggerGoogleTranslate, 400);
+
+    return () => {
+      clearTimeout(retry1);
+      clearTimeout(retry2);
+    };
   }, [pathname, language]);
 
   const setLanguage = (langCode) => {
-    setLanguageState(langCode);
-    setGoogTransCookie(langCode);
-
-    try {
-      if (langCode === "en") {
-        localStorage.removeItem("grab_vendor_selected_language");
-      } else {
+    if (langCode === "en" || !langCode) {
+      setLanguageState("en");
+      clearAllGoogTransCookies();
+      try {
+        localStorage.setItem("grab_vendor_selected_language", "en");
+      } catch {}
+    } else {
+      setLanguageState(langCode);
+      setGoogTransCookie(langCode);
+      try {
         localStorage.setItem("grab_vendor_selected_language", langCode);
-      }
-    } catch {}
+      } catch {}
+    }
   };
 
   const t = (key) => {

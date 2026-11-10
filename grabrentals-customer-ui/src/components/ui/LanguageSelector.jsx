@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useLanguage } from "@/context/LanguageContext";
+import { useLanguage, clearAllGoogTransCookies } from "@/context/LanguageContext";
 import { Globe, ChevronDown, Check } from "lucide-react";
 
 export function LanguageSelector({ variant = "default" }) {
@@ -52,13 +52,27 @@ export function LanguageSelector({ variant = "default" }) {
                   setLanguage(lang.code);
 
                   if (lang.code === "en") {
-                    document.cookie = "googtrans=/en/en; path=/;";
-                    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                    setTimeout(() => window.location.reload(), 250);
+                    clearAllGoogTransCookies();
+                    try {
+                      localStorage.setItem("grab_selected_language", "en");
+                    } catch {}
+
+                    const gtSelect = document.querySelector(".goog-te-combo");
+                    if (gtSelect) {
+                      gtSelect.value = "en";
+                      gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                      gtSelect.selectedIndex = 0;
+                      gtSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
+
+                    setTimeout(() => window.location.reload(), 200);
                     return;
                   }
 
-                  document.cookie = `googtrans=/en/${lang.code}; path=/;`;
+                  document.cookie = `googtrans=/en/${lang.code}; path=/; max-age=31536000; SameSite=Lax`;
+                  try {
+                    localStorage.setItem("grab_selected_language", lang.code);
+                  } catch {}
                   const gtSelect = document.querySelector(".goog-te-combo");
                   if (gtSelect) {
                     gtSelect.value = lang.code;
