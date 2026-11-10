@@ -297,6 +297,14 @@ export const translations = {
     log_out: "வெளியேறு",
     home: "முகப்பு",
     back_to_home: "முகப்புக்கு",
+    customer_login: "வாடிக்கையாளர் உள்நுழைவு",
+    login_subtitle: "10-இலக்க மொபைல் எண்ணை உள்ளிடவும்",
+    mobile_number: "மொபைல் எண்",
+    enter_mobile: "10-இலக்க மொபைல் எண்ணை உள்ளிடவும்",
+    send_otp: "OTP பெறுக",
+    verify_otp: "சரிபார்த்து தொடரவும்",
+    enter_otp: "6-இலக்க OTP குறியீட்டை உள்ளிடவும்",
+    resend_otp: "மீண்டும் அனுப்புக",
   },
 
   kn: {
@@ -336,6 +344,14 @@ export const translations = {
     log_out: "ಲಾಗ್ ಔಟ್",
     home: "ಮುಖಪುಟ",
     back_to_home: "ಮುಖಪುಟಕ್ಕೆ",
+    customer_login: "ಗ್ರಾಹಕರ ಲಾಗಿನ್",
+    login_subtitle: "10-ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
+    mobile_number: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",
+    enter_mobile: "10-ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
+    send_otp: "OTP ಪಡೆಯಿರಿ",
+    verify_otp: "ಪರಿಶೀಲಿಸಿ ಮುಂದುವರಿಯಿರಿ",
+    enter_otp: "6-ಅಂಕಿಯ OTP ಕೋಡ್ ನಮೂದಿಸಿ",
+    resend_otp: "ಮತ್ತೆ ಕಳುಹಿಸಿ",
   },
 
   ml: {
@@ -375,6 +391,14 @@ export const translations = {
     log_out: "ലോഗ് ഔട്ട്",
     home: "ഹോം",
     back_to_home: "ഹോമിലേക്ക്",
+    customer_login: "കസ്റ്റമർ ലോഗിൻ",
+    login_subtitle: "10-അക്ക മൊബൈൽ നമ്പർ നൽകുക",
+    mobile_number: "മൊബൈൽ നമ്പർ",
+    enter_mobile: "10-അക്ക മൊബൈൽ നമ്പർ നൽകുക",
+    send_otp: "OTP നേടുക",
+    verify_otp: "സ്ഥിരീകരിച്ച് തുടരുക",
+    enter_otp: "6-അക്ക OTP കോഡ് നൽകുക",
+    resend_otp: "വീണ്ടും അയയ്ക്കുക",
   },
 
   te: {
@@ -414,6 +438,14 @@ export const translations = {
     log_out: "లాగ్ అవుట్",
     home: "హోమ్",
     back_to_home: "హోమ్‌కి",
+    customer_login: "కస్టమర్ లాగిన్",
+    login_subtitle: "10-అంకెల మొబైల్ నంబర్‌ను నమోదు చేయండి",
+    mobile_number: "మొబైల్ నంబర్",
+    enter_mobile: "10-అంకెల మొబైల్ నంబర్‌ను నమోదు చేయండి",
+    send_otp: "OTP పొందండి",
+    verify_otp: "ధృవీకరించి కొనసాగండి",
+    enter_otp: "6-అంకెల OTP కోడ్‌ను నమోదు చేయండి",
+    resend_otp: "మళ్లీ పంపండి",
   },
 
   hi: {
@@ -453,5 +485,13 @@ export const translations = {
     log_out: "लॉग आउट",
     home: "होम",
     back_to_home: "होम पेज",
+    customer_login: "ग्राहक लॉगिन",
+    login_subtitle: "10-अंकों का मोबाइल नंबर दर्ज करें",
+    mobile_number: "मोबाइल नंबर",
+    enter_mobile: "10-अंकों का मोबाइल नंबर दर्ज करें",
+    send_otp: "OTP प्राप्त करें",
+    verify_otp: "सत्यापित करें और आगे बढ़ें",
+    enter_otp: "6-अंकों का OTP कोड दर्ज करें",
+    resend_otp: "पुनः भेजें",
   },
 };

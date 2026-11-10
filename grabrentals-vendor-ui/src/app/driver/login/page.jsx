@@ -192,7 +192,7 @@ export default function DriverLoginPage() {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    Send Login OTP <ArrowRight className="w-4 h-4" />
+                    Send Login <span className="notranslate" translate="no">OTP</span> <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -202,7 +202,7 @@ export default function DriverLoginPage() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                    Enter 6-Digit OTP
+                    Enter 6-Digit <span className="notranslate" translate="no">OTP</span>
                   </label>
                   <button
                     type="button"
@@ -249,7 +249,7 @@ export default function DriverLoginPage() {
               <div className="text-center pt-2">
                 {countdown > 0 ? (
                   <span className="text-xs text-slate-500 font-medium">
-                    Resend OTP in <strong className="text-slate-300">{countdown}s</strong>
+                    Resend <span className="notranslate" translate="no">OTP</span> in <strong className="text-slate-300">{countdown}s</strong>
                   </span>
                 ) : (
                   <button

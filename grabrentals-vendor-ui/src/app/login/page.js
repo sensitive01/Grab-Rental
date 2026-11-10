@@ -177,8 +177,8 @@ function LoginContent() {
             alt="Grab Rentals"
             className="h-8 sm:h-10 w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform shrink-0"
           />
-          <span className="hidden sm:inline-block font-black text-xs sm:text-sm tracking-wider uppercase text-amber-400 whitespace-nowrap">
-            Vendor Portal
+          <span className="hidden sm:inline-block font-black text-xs sm:text-sm tracking-wider uppercase text-amber-400 whitespace-nowrap notranslate" translate="no">
+            {t("portal_brand") || "Partner Portal"}
           </span>
         </Link>
 
@@ -248,7 +248,7 @@ function LoginContent() {
           </div>
 
           {/* Sign-in Method Tabs */}
-          <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950 border border-slate-800 text-[11px] sm:text-xs font-bold">
+          <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950 border border-slate-800 text-[11px] sm:text-xs font-bold notranslate" translate="no">
             <button
               type="button"
               onClick={() => {
@@ -262,7 +262,7 @@ function LoginContent() {
               }`}
             >
               <Phone className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">{t("mobile_tab")}</span>
+              <span className="whitespace-nowrap">{t("mobile_tab")}</span>
             </button>
             <button
               type="button"
@@ -277,7 +277,7 @@ function LoginContent() {
               }`}
             >
               <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">{t("email_tab")}</span>
+              <span className="whitespace-nowrap">{t("email_tab")}</span>
             </button>
           </div>
 
@@ -303,11 +303,11 @@ function LoginContent() {
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-slate-300">
+                    <label className="block font-bold text-slate-300 notranslate" translate="no">
                       {t("mobile_number")}
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 notranslate" translate="no">
                         +91
                       </span>
                       <input
@@ -333,7 +333,7 @@ function LoginContent() {
                       <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                     ) : (
                       <>
-                        <span>{t("get_otp")}</span>
+                        <span className="notranslate" translate="no">{t("get_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -357,7 +357,7 @@ function LoginContent() {
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <label className="font-bold text-slate-300">
+                      <label className="font-bold text-slate-300 notranslate" translate="no">
                         {t("enter_otp")}
                       </label>
                       {devOtp && (
@@ -388,7 +388,8 @@ function LoginContent() {
                       <button
                         type="button"
                         onClick={handleSendOtp}
-                        className="font-bold text-amber-400 hover:underline"
+                        className="font-bold text-amber-400 hover:underline notranslate"
+                        translate="no"
                       >
                         {t("resend")}
                       </button>
@@ -404,7 +405,7 @@ function LoginContent() {
                       <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                     ) : (
                       <>
-                        <span>{t("verify_otp")}</span>
+                        <span className="notranslate" translate="no">{t("verify_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -418,11 +419,11 @@ function LoginContent() {
           {authMethod === "EMAIL" && (
             <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
               <div className="space-y-1.5">
-                <label className="block font-bold text-slate-300">
+                <label className="block font-bold text-slate-300 notranslate" translate="no">
                   {t("vendor_email")}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 notranslate" translate="no">
                     +91
                   </span>
                   <input
@@ -441,7 +442,7 @@ function LoginContent() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-300">
+                  <label className="font-bold text-slate-300 notranslate" translate="no">
                     {t("password_label")}
                   </label>
                   <Link
@@ -493,7 +494,7 @@ function LoginContent() {
                   <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
                 ) : (
                   <>
-                    <span>{t("use_password") || "Sign In"}</span>
+                    <span className="notranslate" translate="no">{t("use_password") || "Sign In"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

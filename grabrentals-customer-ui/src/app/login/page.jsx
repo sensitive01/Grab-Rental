@@ -579,12 +579,12 @@ export default function LoginPage() {
               /* MODE 2: STEP 1 - PHONE FOR OTP */
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 notranslate" translate="no">
                     {t("mobile_number")}
                   </label>
                   <div className="relative flex items-center">
                     {/* Country Prefix Badge */}
-                    <div className="absolute left-3.5 flex items-center gap-1.5 text-xs font-bold text-[#0082fe] pr-3 border-r border-slate-200 select-none">
+                    <div className="absolute left-3.5 flex items-center gap-1.5 text-xs font-bold text-[#0082fe] pr-3 border-r border-slate-200 select-none notranslate" translate="no">
                       <Phone className="w-3.5 h-3.5" />
                       <span>+91</span>
                     </div>
@@ -619,7 +619,7 @@ export default function LoginPage() {
                       <span>Sending OTP...</span>
                     ) : (
                       <>
-                        <span>{t("send_otp")}</span>
+                        <span className="notranslate" translate="no">{t("send_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -669,7 +669,7 @@ export default function LoginPage() {
               <form onSubmit={handleVerifyOtp} className="space-y-5">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 notranslate" translate="no">
                       {t("enter_otp")}
                     </label>
                     <span className="text-xs text-slate-500">Valid for 5 mins</span>
@@ -700,7 +700,7 @@ export default function LoginPage() {
                       className="mt-2.5 p-3 rounded-xl bg-blue-50/80 border border-blue-200 flex items-center justify-between cursor-pointer hover:bg-blue-100/70 transition-all group select-none shadow-2xs"
                     >
                       <div className="flex items-center gap-2 text-xs text-slate-700">
-                        <span className="px-2 py-0.5 rounded bg-blue-100 text-[#0082fe] font-mono font-bold text-[11px] uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded bg-blue-100 text-[#0082fe] font-mono font-bold text-[11px] uppercase tracking-wider notranslate" translate="no">
                           Test OTP
                         </span>
                         <span>Code: <strong className="text-slate-900 font-mono text-sm tracking-widest">{devOtp}</strong></span>
@@ -717,7 +717,8 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={handleSendOtp}
-                        className="text-[#0082fe] hover:text-blue-700 font-bold flex items-center gap-1.5 cursor-pointer"
+                        className="text-[#0082fe] hover:text-blue-700 font-bold flex items-center gap-1.5 cursor-pointer notranslate"
+                        translate="no"
                       >
                         <RotateCcw className="w-3.5 h-3.5" /> {t("resend_otp")}
                       </button>
@@ -754,7 +755,7 @@ export default function LoginPage() {
                       <span>Verifying Code...</span>
                     ) : (
                       <>
-                        <span>{t("verify_otp")}</span>
+                        <span className="notranslate" translate="no">{t("verify_otp")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
