@@ -122,6 +122,7 @@ export default function PackagesPage() {
       {/* Dynamic Hero Section */}
       <PageHeroSection
         pageKey="PACKAGES"
+        hasFloatingWidget
         defaultBadge="Special Roadtrip & Tour Packages"
         defaultTitle1="Outstation Tourist Packages"
         defaultSubtitle="Multi-day scenic highway expeditions and curated roadtrips — Goa, Ladakh, Ooty, Coorg, and beyond. Fixed all-inclusive fares with seasoned highway chauffeurs and premium SUVs."
@@ -130,7 +131,7 @@ export default function PackagesPage() {
       />
 
       {/* Booking Widget (Pre-selected with Packages Tab) */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <BookingWidget />
       </section>
 

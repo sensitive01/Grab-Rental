@@ -14,6 +14,7 @@ export default function BusesPage() {
       {/* Dynamic Hero Section */}
       <PageHeroSection
         pageKey="BUSES"
+        hasFloatingWidget
         defaultBadge={t("buses_hero_badge") || "35 to 55 Seater Luxury Coaches"}
         defaultTitle1={t("buses_hero_title") || "Luxury Bus Rentals"}
         defaultSubtitle={t("buses_hero_subtitle") || "Volvo, Scania, and Mercedes coaches for weddings, corporate offsites, and large group travel across India."}
@@ -21,7 +22,7 @@ export default function BusesPage() {
       />
 
       {/* Booking Widget */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <BookingWidget />
       </section>
 

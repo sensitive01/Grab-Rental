@@ -60,6 +60,7 @@ export default function EvCabsPage() {
       {/* 1. Dynamic Hero Section */}
       <PageHeroSection
         pageKey="EV_CABS"
+        hasFloatingWidget
         defaultBadge="100% Electric & Zero Emission Fleet"
         defaultTitle1="Whisper-Quiet, Clean & Sustainable"
         defaultTitle2="EV Cabs"
@@ -95,7 +96,7 @@ export default function EvCabsPage() {
       </PageHeroSection>
 
       {/* 2. Floating Interactive Booking Widget */}
-      <section id="ev-booking-widget" className="px-3 sm:px-4 md:px-6 relative z-20 -mt-16 sm:-mt-20 md:-mt-28 lg:-mt-32">
+      <section id="ev-booking-widget" className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <BookingWidget hideOutstationTab={true} />
       </section>
 

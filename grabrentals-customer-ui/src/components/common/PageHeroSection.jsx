@@ -17,6 +17,7 @@ export default function PageHeroSection({
   badgeClass = "bg-[#0082fe] border border-blue-400/40 text-white",
   children,
   autoSlideIntervalMs = 4500,
+  hasFloatingWidget = false,
 }) {
   const { language } = useLanguage();
   const isLongScript = language === "ta" || language === "ml";
@@ -85,7 +86,13 @@ export default function PageHeroSection({
   // CASE 1: If no details are added (or cleared by Admin), show clean white screen!
   if (!hasDetails) {
     return (
-      <section className="bg-white pt-6 sm:pt-8 md:pt-12 pb-24 sm:pb-32 md:pb-40 px-3 sm:px-4 lg:px-8 relative flex flex-col items-center">
+      <section
+        className={`bg-white px-3 sm:px-4 lg:px-8 relative flex flex-col items-center ${
+          hasFloatingWidget
+            ? "pt-4 sm:pt-5 pb-[120px] sm:pb-[170px] md:pb-[220px] lg:pb-[290px]"
+            : "pt-4 sm:pt-6 md:pt-8 pb-10 sm:pb-12 md:pb-16"
+        }`}
+      >
         {/* Clean white background area: zero picture fallback, zero banner text */}
       </section>
     );
@@ -98,7 +105,13 @@ export default function PageHeroSection({
   const subtitle = heroData?.subtitle || defaultSubtitle;
 
   return (
-    <section className="text-white pt-5 sm:pt-7 md:pt-8 pb-20 sm:pb-24 md:pb-28 lg:pb-32 px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900 select-none">
+    <section
+      className={`text-white px-3 sm:px-4 lg:px-8 relative overflow-hidden flex flex-col items-center bg-slate-900 select-none ${
+        hasFloatingWidget
+          ? "pt-2.5 sm:pt-3 md:pt-3 pb-[120px] sm:pb-[170px] md:pb-[220px] lg:pb-[290px]"
+          : "pt-4 sm:pt-6 md:pt-8 pb-10 sm:pb-12 md:pb-14 lg:pb-16"
+      }`}
+    >
       {/* Background Image(s) with Smooth Transition */}
       {images.length > 0 ? (
         images.map((imgUrl, i) => (
@@ -121,23 +134,23 @@ export default function PageHeroSection({
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/30 to-slate-950/80 pointer-events-none" />
 
       {/* Content Container */}
-      <div className="max-w-7xl w-full relative z-10 flex flex-col items-center text-center mt-0.5 sm:mt-1 md:mt-1.5">
+      <div className="max-w-7xl w-full relative z-10 flex flex-col items-center text-center">
         {/* Pill Badge */}
         {badgeText && (
           <div
-            className={`inline-flex items-center gap-1.5 sm:gap-2 ${badgeClass} px-4 py-1.5 rounded-full text-xs sm:text-[13px] font-extrabold uppercase tracking-widest mb-2.5 sm:mb-3 shadow-lg shadow-blue-900/30`}
+            className={`inline-flex items-center gap-1.5 sm:gap-2 ${badgeClass} px-3 py-1 rounded-full text-[10.5px] sm:text-xs font-extrabold uppercase tracking-widest mb-1 sm:mb-1.5 shadow-lg shadow-blue-900/30`}
           >
-            {badgeIcon || <Star className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" />}
+            {badgeIcon || <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />}
             <span>{badgeText}</span>
           </div>
         )}
 
         {/* Headings */}
         <h1
-          className={`font-extrabold tracking-tight mb-2.5 sm:mb-3 drop-shadow-2xl w-full max-w-7xl mx-auto px-2 sm:px-4 leading-snug sm:leading-snug md:leading-tight hero-title ${
+          className={`font-extrabold tracking-tight mb-1 sm:mb-1.5 drop-shadow-2xl w-full max-w-7xl mx-auto px-2 sm:px-4 leading-tight hero-title ${
             isLongScript
-              ? "text-xl sm:text-2xl md:text-[28px] lg:text-[30px] xl:text-[34px] 2xl:text-[38px]"
-              : "text-2xl sm:text-3xl md:text-4xl lg:text-[38px] xl:text-[42px] 2xl:text-[46px]"
+              ? "text-lg sm:text-xl md:text-[22px] lg:text-[25px] xl:text-[28px] 2xl:text-[32px]"
+              : "text-xl sm:text-2xl md:text-[26px] lg:text-[28px] xl:text-[32px] 2xl:text-[36px]"
           }`}
         >
           {title1 && (
@@ -146,7 +159,7 @@ export default function PageHeroSection({
             </span>
           )}
           {title2 && (
-            <span className={`${accentColorClass} drop-shadow-lg block mt-0.5 sm:mt-1 lg:whitespace-nowrap`}>
+            <span className={`${accentColorClass} drop-shadow-lg block mt-0.5 lg:whitespace-nowrap`}>
               {title2}
             </span>
           )}
@@ -155,10 +168,10 @@ export default function PageHeroSection({
         {/* Subtitle */}
         {subtitle && (
           <p
-            className={`font-medium drop-shadow-md px-2 leading-relaxed hero-subtitle ${
+            className={`font-medium drop-shadow-md px-2 leading-snug hero-subtitle ${
               isLongScript
-                ? "text-xs sm:text-sm md:text-base lg:text-[17px] text-slate-200/95 max-w-3xl mx-auto"
-                : "text-sm sm:text-base md:text-lg lg:text-xl text-slate-200/95 max-w-4xl mx-auto"
+                ? "text-xs sm:text-[13px] md:text-sm lg:text-[14.5px] text-slate-200/95 max-w-3xl mx-auto"
+                : "text-xs sm:text-sm md:text-[14.5px] lg:text-[15.5px] text-slate-200/95 max-w-4xl mx-auto"
             }`}
           >
             {subtitle}
@@ -166,11 +179,11 @@ export default function PageHeroSection({
         )}
 
         {/* Optional Page-Specific Sub-content */}
-        {children && <div className="mt-2">{children}</div>}
+        {children && <div className="mt-1.5">{children}</div>}
 
         {/* Bottom Carousel Navigation Dots (When multiple images exist) */}
         {images.length > 1 && (
-          <div className="flex items-center gap-1.5 mt-5">
+          <div className="flex items-center gap-1.5 mt-2">
             {images.map((_, i) => (
               <button
                 key={i}

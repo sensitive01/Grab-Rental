@@ -13,6 +13,7 @@ export default function LocalRentalsPage() {
       {/* Dynamic Hero Section */}
       <PageHeroSection
         pageKey="LOCAL"
+        hasFloatingWidget
         defaultBadge={t("local_hero_badge") || "Flexible Hourly Packages"}
         defaultTitle1={t("local_hero_title") || "Local Hourly Premium Car Rentals"}
         defaultSubtitle={t("local_hero_subtitle") || "Book a chauffeur-driven car for 4 hrs, 8 hrs, or 12 hrs. Perfect for city tours, shopping, and back-to-back meetings."}
@@ -20,7 +21,7 @@ export default function LocalRentalsPage() {
       />
 
       {/* Booking Widget */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <BookingWidget />
       </section>
 

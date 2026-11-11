@@ -223,7 +223,7 @@ html[data-lang="ta"] .hero-title,
 html[data-lang="ml"] .hero-title,
 html[lang="ta"] .hero-title,
 html[lang="ml"] .hero-title {
-  font-size: clamp(1.25rem, 2.35vw, 2.15rem) !important;
+  font-size: clamp(1.15rem, 2.0vw, 1.95rem) !important;
   line-height: 1.25 !important;
 }
 
@@ -231,8 +231,8 @@ html[data-lang="ta"] .hero-subtitle,
 html[data-lang="ml"] .hero-subtitle,
 html[lang="ta"] .hero-subtitle,
 html[lang="ml"] .hero-subtitle {
-  font-size: clamp(0.85rem, 1.15vw, 1.05rem) !important;
-  line-height: 1.5 !important;
+  font-size: clamp(0.8rem, 1.05vw, 0.95rem) !important;
+  line-height: 1.45 !important;
   max-width: 52rem !important;
 }
 

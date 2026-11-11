@@ -13,6 +13,7 @@ export default function AirportTransfersPage() {
       {/* Dynamic Hero Section */}
       <PageHeroSection
         pageKey="AIRPORT"
+        hasFloatingWidget
         defaultBadge={t("airport_hero_badge") || "100% On-Time Guarantee"}
         defaultTitle1={t("airport_hero_title") || "Reliable Airport Transfers"}
         defaultSubtitle={t("airport_hero_subtitle") || "Pre-book your airport pickup or drop with Grab Rentals. Enjoy flight tracking, 1 hr free waiting time, and meet-and-greet services."}
@@ -20,7 +21,7 @@ export default function AirportTransfersPage() {
       />
 
       {/* Booking Widget */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <BookingWidget />
       </section>
 

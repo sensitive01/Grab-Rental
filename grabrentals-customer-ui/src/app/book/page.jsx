@@ -39,6 +39,7 @@ function BookingPageContent() {
       {/* 2. Dynamic Hero Section */}
       <PageHeroSection
         pageKey="HOME"
+        hasFloatingWidget
         defaultBadge="Fast-Track Online Reservation"
         defaultTitle1="India's Most Trusted Cab Rental Service"
         defaultTitle2="Car, Van & Bus Rentals"
@@ -47,7 +48,7 @@ function BookingPageContent() {
       />
 
       {/* 3. Floating Booking Widget with Trip Type & Cab Type Dropdowns */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36 mb-16 flex-1">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px] mb-16 flex-1">
         <BookingWidget isDropdownMode={true} />
       </section>
     </div>

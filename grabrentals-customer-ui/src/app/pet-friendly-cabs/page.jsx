@@ -48,6 +48,7 @@ export default function PetFriendlyCabsPage() {
       {/* 1. Dynamic Hero Section */}
       <PageHeroSection
         pageKey="PET_FRIENDLY"
+        hasFloatingWidget
         defaultBadge="Grab Rentals Pet Mobility"
         defaultTitle1="Travel Anywhere with Your"
         defaultTitle2="Furry Best Friend"
@@ -65,7 +66,7 @@ export default function PetFriendlyCabsPage() {
       </PageHeroSection>
 
       {/* 2. Floating Interactive Pet Booking Widget */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-16 sm:-mt-20 md:-mt-28 lg:-mt-32">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <PetBookingWidget />
       </section>
 

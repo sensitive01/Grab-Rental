@@ -130,6 +130,7 @@ export default function Home() {
       {/* 1. Dynamic Hero Section (Multi-Image Auto-Scroll & CMS) */}
       <PageHeroSection
         pageKey="HOME"
+        hasFloatingWidget
         defaultBadge={t("hero_badge") || "Grab Rentals - India’s first ISO travel company"}
         defaultTitle1={t("hero_title_1") || "India's Most Trusted Cab Rental Service"}
         defaultTitle2={t("hero_title_2") || "Car, Van & Bus Rentals"}
@@ -137,7 +138,7 @@ export default function Home() {
       />
 
       {/* Floating Booking Widget */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-16 sm:-mt-20 md:-mt-24 lg:-mt-28">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <BookingWidget />
       </section>
 

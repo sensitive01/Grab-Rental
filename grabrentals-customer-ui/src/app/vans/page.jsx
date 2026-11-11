@@ -49,6 +49,7 @@ export default function VansPage() {
       {/* Dynamic Hero Section */}
       <PageHeroSection
         pageKey="VANS"
+        hasFloatingWidget
         defaultBadge={t("vans_hero_badge") || "9 to 26 Seater Vehicles"}
         defaultTitle1={t("vans_hero_title") || "Tempo Traveller & Van Rentals"}
         defaultSubtitle={t("vans_hero_subtitle") || "Travel together. Rent premium Force Urbania and luxury Tempo Travellers for outstation family trips and group tours."}
@@ -56,7 +57,7 @@ export default function VansPage() {
       />
 
       {/* Booking Widget */}
-      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-20 sm:-mt-24 md:-mt-32 lg:-mt-36">
+      <section className="px-3 sm:px-4 md:px-6 relative z-20 -mt-[110px] sm:-mt-[158px] md:-mt-[208px] lg:-mt-[278px]">
         <BookingWidget />
       </section>
 
