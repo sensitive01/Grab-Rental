@@ -611,7 +611,7 @@ export default function PetBookingWidget() {
                     if (details) setDropDetails(details);
                     if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                   }}
-                  placeholder={t("choose_the_location") || "Choose the location"}
+                  placeholder={t("choose_the_location", "Choose the location")}
                 />
                 {validationErrors.drop && (
                   <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
@@ -710,7 +710,7 @@ export default function PetBookingWidget() {
                     if (details) setDropDetails(details);
                     if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                   }}
-                  placeholder={t("choose_the_location") || "Choose the location"}
+                  placeholder={t("choose_the_location", "Choose the location")}
                 />
                 {validationErrors.drop && (
                   <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
@@ -769,7 +769,7 @@ export default function PetBookingWidget() {
                     if (details) setDropDetails(details);
                     if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                   }}
-                  placeholder={t("choose_the_location") || "Choose the location"}
+                  placeholder={t("choose_the_location", "Choose the location")}
                 />
                 {validationErrors.drop && (
                   <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">
@@ -916,7 +916,7 @@ export default function PetBookingWidget() {
                         if (details) setDropDetails(details);
                         if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                       }}
-                      placeholder={t("choose_the_location") || "Choose the location"}
+                      placeholder={t("choose_the_location", "Choose the location")}
                     />
                     {validationErrors.drop && (
                       <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1 animate-in fade-in duration-200">

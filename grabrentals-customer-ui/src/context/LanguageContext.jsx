@@ -7,7 +7,7 @@ import { translations, SUPPORTED_LANGUAGES } from "@/lib/i18n";
 const LanguageContext = createContext({
   language: "en",
   setLanguage: () => {},
-  t: (key) => key,
+  t: (key, fallback = null) => fallback || key,
   supportedLanguages: SUPPORTED_LANGUAGES,
   isTranslating: false,
   targetLangInfo: null,
@@ -183,9 +183,18 @@ export function LanguageProvider({ children }) {
     }
   };
 
-  const t = (key) => {
+  const t = (key, fallback = null) => {
     const langDict = translations[language] || translations.en;
-    return langDict[key] || translations.en[key] || key;
+    if (langDict && langDict[key]) return langDict[key];
+    if (translations.en && translations.en[key]) return translations.en[key];
+    if (fallback) return fallback;
+    if (typeof key === "string" && key.includes("_")) {
+      return key
+        .split("_")
+        .map((w, i) => (i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+        .join(" ");
+    }
+    return key;
   };
 
   return (

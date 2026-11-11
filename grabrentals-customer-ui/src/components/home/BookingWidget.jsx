@@ -962,7 +962,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
                   if (details) setPickupDetails(details);
                   if (validationErrors.pickup) setValidationErrors((prev) => ({ ...prev, pickup: false }));
                 }}
-                placeholder={t("enter_pickup_city") || "Enter pickup city"}
+                placeholder={t("enter_pickup_city", "Enter pickup city")}
                 iconColor="text-brand-emerald"
                 inputClassName="rounded-xl"
               />
@@ -1081,7 +1081,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
                   if (details) setDropDetails(details);
                   if (validationErrors.drop) setValidationErrors((prev) => ({ ...prev, drop: false }));
                 }}
-                placeholder={t("choose_the_location") || "Choose the location"}
+                placeholder={t("choose_the_location", "Choose the location")}
                 iconColor="text-brand-orange"
                 inputClassName="rounded-xl"
               />
@@ -1272,7 +1272,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
                     setMapTarget("pickup");
                     setIsMapModalOpen(true);
                   }}
-                  placeholder={activeTab === "airport" ? (t("enter_pickup_location") || "Enter address / hotel / location") : (t("enter_pickup_city") || "Enter pickup city")}
+                  placeholder={activeTab === "airport" ? t("enter_pickup_location", "Enter address / hotel / location") : t("enter_pickup_city", "Enter pickup city")}
                   iconColor="text-brand-emerald"
                 />
                 {validationErrors.pickup && (
@@ -1418,7 +1418,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
                     setMapTarget("drop");
                     setIsMapModalOpen(true);
                   }}
-                  placeholder={activeTab === "airport" ? (t("enter_drop_location") || "Enter address / hotel / location") : (t("choose_the_location") || "Choose the location")}
+                  placeholder={activeTab === "airport" ? t("enter_drop_location", "Enter address / hotel / location") : t("choose_the_location", "Choose the location")}
                   iconColor="text-brand-orange"
                   inputClassName="rounded-xl"
                 />

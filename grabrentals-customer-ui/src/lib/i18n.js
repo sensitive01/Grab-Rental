@@ -70,6 +70,9 @@ export const translations = {
     pickup_airport: "Pickup Airport",
     drop_airport: "Drop Airport",
     from_city: "Pickup City",
+    enter_pickup_city: "Enter pickup city",
+    enter_pickup_location: "Enter address / hotel / location",
+    enter_drop_location: "Enter address / hotel / location",
     choose_from_location: "Choose From Map",
     choose_to_location: "Choose To Map",
     choose_the_location: "Choose the location",
@@ -305,6 +308,11 @@ export const translations = {
     verify_otp: "சரிபார்த்து தொடரவும்",
     enter_otp: "6-இலக்க OTP குறியீட்டை உள்ளிடவும்",
     resend_otp: "மீண்டும் அனுப்புக",
+    enter_pickup_city: "பிக்கப் நகரத்தை உள்ளிடவும்",
+    enter_pickup_location: "முகவரி / ஹோட்டல் / இடத்தை உள்ளிடவும்",
+    enter_drop_location: "சேரும் இடம் / அடையாளத்தை உள்ளிடவும்",
+    choose_the_location: "இடத்தைத் தேர்ந்தெடுக்கவும்",
+    choose_from_location: "வரைபடத்தில் தேர்ந்தெடுக்கவும்",
   },
 
   kn: {
@@ -352,6 +360,11 @@ export const translations = {
     verify_otp: "ಪರಿಶೀಲಿಸಿ ಮುಂದುವರಿಯಿರಿ",
     enter_otp: "6-ಅಂಕಿಯ OTP ಕೋಡ್ ನಮೂದಿಸಿ",
     resend_otp: "ಮತ್ತೆ ಕಳುಹಿಸಿ",
+    enter_pickup_city: "ಪಿಕಪ್ ನಗರವನ್ನು ನಮೂದಿಸಿ",
+    enter_pickup_location: "ವಿಳಾಸ / ಹೋಟೆಲ್ / ಸ್ಥಳವನ್ನು ನಮೂದಿಸಿ",
+    enter_drop_location: "ತಲುಪುವ ಸ್ಥಳವನ್ನು ನಮೂದಿಸಿ",
+    choose_the_location: "ಸ್ಥಳವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    choose_from_location: "ಮ್ಯಾಪ್‌ನಿಂದ ಆಯ್ಕೆಮಾಡಿ",
   },
 
   ml: {
@@ -399,6 +412,11 @@ export const translations = {
     verify_otp: "സ്ഥിരീകരിച്ച് തുടരുക",
     enter_otp: "6-അക്ക OTP കോഡ് നൽകുക",
     resend_otp: "വീണ്ടും അയയ്ക്കുക",
+    enter_pickup_city: "പിക്കപ്പ് നഗരം നൽകുക",
+    enter_pickup_location: "വിലാസം / ഹോട്ടൽ / ലൊക്കേഷൻ നൽകുക",
+    enter_drop_location: "ഡ്രോപ്പ് സ്ഥലം നൽകുക",
+    choose_the_location: "ലൊക്കേഷൻ തിരഞ്ഞെടുക്കുക",
+    choose_from_location: "മാപ്പിൽ നിന്ന് തിരഞ്ഞെടുക്കുക",
   },
 
   te: {
@@ -446,6 +464,11 @@ export const translations = {
     verify_otp: "ధృవీకరించి కొనసాగండి",
     enter_otp: "6-అంకెల OTP కోడ్‌ను నమోదు చేయండి",
     resend_otp: "మళ్లీ పంపండి",
+    enter_pickup_city: "పికప్ నగరాన్ని నమోదు చేయండి",
+    enter_pickup_location: "చిరునామా / హోటల్ / స్థలాన్ని నమోదు చేయండి",
+    enter_drop_location: "చేరే గమ్యాన్ని నమోదు చేయండి",
+    choose_the_location: "స్థలాన్ని ఎంచుకోండి",
+    choose_from_location: "మ్యాప్ నుండి ఎంచుకోండి",
   },
 
   hi: {
@@ -493,5 +516,10 @@ export const translations = {
     verify_otp: "सत्यापित करें और आगे बढ़ें",
     enter_otp: "6-अंकों का OTP कोड दर्ज करें",
     resend_otp: "पुनः भेजें",
+    enter_pickup_city: "पिकअप शहर दर्ज करें",
+    enter_pickup_location: "पता / होटल / स्थान दर्ज करें",
+    enter_drop_location: "गंतव्य स्थान दर्ज करें",
+    choose_the_location: "स्थान चुनें",
+    choose_from_location: "मानचित्र से चुनें",
   },
 };
