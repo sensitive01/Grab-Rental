@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -42,6 +43,24 @@ public class OtpService {
 
     @Value("${app.whatsapp.support-phone:9876543210}")
     private String whatsappSupportPhone;
+
+    @Value("${app.sms.enabled:false}")
+    private boolean smsEnabled;
+
+    @Value("${app.sms.api-url:}")
+    private String smsApiUrl;
+
+    @Value("${app.sms.api-key:}")
+    private String smsApiKey;
+
+    @Value("${app.sms.sender-id:}")
+    private String smsSenderId;
+
+    @Value("${app.sms.template-id:}")
+    private String smsTemplateId;
+
+    @Value("${app.sms.campaign-name:API TEST}")
+    private String smsCampaignName;
 
     @Value("${app.otp.expose-dev-otp:false}")
     private boolean exposeDevOtp;
@@ -144,8 +163,8 @@ public class OtpService {
             log.info("🔐 [OTP GENERATED] Phone: {} -> Dispatched to recipient (valid for {} seconds)", phone, OTP_EXPIRY_SECONDS);
         }
 
-        // Dispatch real OTP message via WhatsApp Business Cloud API
-        sendWhatsAppOtp(phone, otp);
+        // Dispatch real OTP message via WeFormSolution SMS API
+        sendSmsOtp(phone, otp);
 
         return SendOtpResponse.builder()
                 .phone(phone)
@@ -154,6 +173,73 @@ public class OtpService {
                 .build();
     }
 
+    private void sendSmsOtp(String rawPhone, String otp) {
+        if (!smsEnabled || smsApiKey == null || smsApiKey.isBlank() || smsApiUrl == null || smsApiUrl.isBlank()
+                || smsSenderId == null || smsSenderId.isBlank() || smsTemplateId == null || smsTemplateId.isBlank()) {
+            log.info("SMS OTP is disabled or credentials are not configured in environment");
+            return;
+        }
+
+        String recipient = formatCountryRecipient(rawPhone);
+        if (recipient.isBlank()) {
+            log.warn("Cannot send SMS OTP: empty or invalid recipient phone");
+            return;
+        }
+
+        try {
+            String messageText = String.format(
+                    "Hi, Welcome to GranRentals, The best cab rental service platform in India. Your One Time Password for Login is %s For more details, log onto www.grabrentals.in",
+                    otp
+            );
+
+            String query = String.format(
+                    "api_key=%s&sender_id=%s&template_id=%s&dcs=0&priority=0&number=%s&message=%s&campaign_name=%s",
+                    encodeParam(smsApiKey),
+                    encodeParam(smsSenderId),
+                    encodeParam(smsTemplateId),
+                    encodeParam(recipient),
+                    encodeParam(messageText),
+                    encodeParam(smsCampaignName)
+            );
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(smsApiUrl + "?" + query))
+                    .GET()
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+
+            httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(res -> {
+                        if (res.statusCode() >= 200 && res.statusCode() < 300) {
+                            log.info("✅ SMS OTP successfully submitted to {} via {} (Status: {}, Body: {})", recipient, smsSenderId, res.statusCode(), res.body());
+                        } else {
+                            log.warn("⚠️ SMS OTP API returned non-2xx for {} (Status: {}, Body: {})", recipient, res.statusCode(), res.body());
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        log.error("❌ Failed to send SMS OTP to {}: {}", recipient, ex.getMessage());
+                        return null;
+                    });
+        } catch (Exception e) {
+            log.error("❌ Error building SMS OTP request for {}: {}", recipient, e.getMessage(), e);
+        }
+    }
+
+    private String encodeParam(String value) {
+        if (value == null) return "";
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    public String formatCountryRecipient(String phone) {
+        if (phone == null) return "";
+        String digits = phone.replaceAll("[^0-9]", "");
+        if (digits.length() >= 10) {
+            return "91" + digits.substring(digits.length() - 10);
+        }
+        return digits;
+    }
+
+    @SuppressWarnings("unused")
     private void sendWhatsAppOtp(String rawPhone, String otp) {
         if (!whatsappEnabled || whatsappApiKey == null || whatsappApiKey.isBlank() || whatsappApiUrl == null || whatsappApiUrl.isBlank()) {
             log.info("WhatsApp OTP is disabled or credentials are not configured in environment");

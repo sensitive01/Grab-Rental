@@ -61,4 +61,11 @@ app:
     api-url: ${WHATSAPP_API_URL:}
     api-key: ${WHATSAPP_API_KEY:}
     support-phone: ${WHATSAPP_SUPPORT_PHONE:9876543210}
+  sms:
+    enabled: ${SMS_ENABLED:false}
+    api-url: ${SMS_API_URL:}
+    api-key: ${SMS_API_KEY:}
+    sender-id: ${SMS_SENDER_ID:}
+    template-id: ${SMS_TEMPLATE_ID:}
+    campaign-name: ${SMS_CAMPAIGN_NAME:API TEST}
 
