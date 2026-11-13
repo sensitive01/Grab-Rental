@@ -9,7 +9,12 @@ import com.grabrentals.customer.entity.Booking;
 import com.grabrentals.customer.entity.BookingStatus;
 import com.grabrentals.customer.repository.BookingRepository;
 import com.grabrentals.notification.service.NotificationService;
+import com.grabrentals.invoice.service.InvoicePdfGeneratorService;
+import com.grabrentals.vendor.service.CloudinaryService;
+import com.grabrentals.notification.service.WhatsAppNotificationService;
 import com.grabrentals.user.entity.Role;
+import com.grabrentals.user.entity.UserStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import com.grabrentals.vendor.entity.Driver;
 import com.grabrentals.vendor.entity.DriverStatus;
 import com.grabrentals.vendor.entity.Vehicle;
@@ -44,9 +49,14 @@ public class CustomerBookingService {
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final WhatsAppNotificationService whatsAppNotificationService;
+    private final InvoicePdfGeneratorService invoicePdfGeneratorService;
+    private final CloudinaryService cloudinaryService;
     private final com.grabrentals.tariff.service.VehicleTariffService vehicleTariffService;
     private final PublicVehicleService publicVehicleService;
     private final com.grabrentals.coupon.service.CouponService couponService;
+    @org.springframework.context.annotation.Lazy
+    private final PasswordEncoder passwordEncoder;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -127,6 +137,13 @@ public class CustomerBookingService {
 
         Booking saved = bookingRepository.save(booking);
 
+        try {
+            generateAndStoreInvoicePdf(saved, 1);
+            whatsAppNotificationService.sendScenario1BookingEstimate(saved, null);
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch WhatsApp Scenario 1 booking estimate: {}", ex.getMessage());
+        }
+
         if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
             try {
                 couponService.recordCouponUsage(
@@ -175,6 +192,175 @@ public class CustomerBookingService {
         }
 
         return BookingResponse.fromEntity(saved);
+    }
+
+    /**
+     * Creates a manual booking entered by an Operations or Admin agent.
+     */
+    @Transactional
+    public BookingResponse createBookingByOperator(BookingCreateRequest request, User operator) {
+        String phone = request.getPassengerPhone();
+        String name = request.getPassengerName() != null && !request.getPassengerName().isBlank()
+                ? request.getPassengerName().trim()
+                : "Valued Passenger";
+        String email = request.getPassengerEmail();
+
+        String normalizedPhone = normalizePhone(phone);
+        User customer = null;
+        if (normalizedPhone != null) {
+            customer = userRepository.findByPhone(normalizedPhone).orElse(null);
+            if (customer == null && normalizedPhone.startsWith("+91")) {
+                customer = userRepository.findByPhone(normalizedPhone.substring(3)).orElse(null);
+            }
+        }
+        if (customer == null && email != null && !email.isBlank()) {
+            customer = userRepository.findByEmail(email.trim().toLowerCase()).orElse(null);
+        }
+        if (customer == null && normalizedPhone != null) {
+            String digits = normalizedPhone.replaceAll("[^0-9]", "");
+            String safeEmail = (email != null && !email.isBlank())
+                    ? email.trim().toLowerCase()
+                    : "customer." + digits + "@grabrentals.in";
+            if (userRepository.findByEmail(safeEmail).isPresent()) {
+                safeEmail = "customer." + digits + "." + System.currentTimeMillis() + "@grabrentals.in";
+            }
+            customer = User.builder()
+                    .name(name)
+                    .phone(normalizedPhone)
+                    .email(safeEmail)
+                    .password(passwordEncoder != null ? passwordEncoder.encode(UUID.randomUUID().toString()) : "NOPASS")
+                    .role(Role.CUSTOMER)
+                    .status(UserStatus.ACTIVE)
+                    .passwordSet(false)
+                    .build();
+            customer = userRepository.save(customer);
+            log.info("[Operations Booking] Auto-provisioned customer user id={} for phone={}", customer.getId(), normalizedPhone);
+        }
+        if (customer == null) {
+            customer = operator;
+        }
+
+        String ref = generateBookingReference();
+
+        BigDecimal totalFare = request.getTotalFare() != null ? request.getTotalFare() : new BigDecimal("4500.00");
+        BigDecimal advance = request.getAdvancePaid() != null ? request.getAdvancePaid() : BigDecimal.ZERO;
+        BigDecimal due = totalFare.subtract(advance).max(BigDecimal.ZERO);
+
+        BigDecimal vendorPayout = request.getVendorPayout();
+        if (vendorPayout == null) {
+            vendorPayout = totalFare.multiply(new BigDecimal("0.70")).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        String paymentStatus = request.getPaymentStatus();
+        if (paymentStatus == null || paymentStatus.isBlank()) {
+            if (advance.compareTo(totalFare) >= 0) {
+                paymentStatus = "PAID";
+            } else if (advance.compareTo(BigDecimal.ZERO) > 0) {
+                paymentStatus = "ADVANCE_PAID";
+            } else {
+                paymentStatus = "PENDING";
+            }
+        }
+
+        boolean isDirectConfirm = "CONFIRMED".equalsIgnoreCase(request.getInitialStatus()) || request.getAssignedVehicleId() != null;
+        BookingStatus status = isDirectConfirm ? BookingStatus.CONFIRMED : BookingStatus.PENDING_ALLOCATION;
+
+        Booking.BookingBuilder builder = Booking.builder()
+                .bookingReference(ref)
+                .customer(customer)
+                .tripType(request.getTripType())
+                .pickupCity(request.getPickupCity())
+                .dropCity(request.getDropCity() != null ? request.getDropCity() : request.getPickupCity())
+                .stops(request.getStops())
+                .pickupAddress(request.getPickupAddress())
+                .pickupDoorNo(request.getPickupDoorNo())
+                .pickupStreet(request.getPickupStreet())
+                .pickupArea(request.getPickupArea())
+                .pickupLandmark(request.getPickupLandmark())
+                .pickupPincode(request.getPickupPincode())
+                .dropAddress(request.getDropAddress())
+                .pickupDateTime(request.getPickupDateTime())
+                .returnDateTime(request.getReturnDateTime())
+                .vehicleCategory(request.getVehicleCategory())
+                .passengerCount(request.getPassengerCount() != null ? request.getPassengerCount() : 1)
+                .passengerName(name)
+                .passengerPhone(normalizedPhone != null ? normalizedPhone : phone)
+                .totalFare(totalFare)
+                .vendorPayout(vendorPayout)
+                .advancePaid(advance)
+                .dueAmount(due)
+                .paymentStatus(paymentStatus)
+                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "MANUAL_DISPATCH")
+                .paymentUtrNumber(request.getPaymentUtrNumber())
+                .paymentProofUrl(request.getPaymentProofUrl())
+                .isPetFriendly(Boolean.TRUE.equals(request.getIsPetFriendly()))
+                .petType(request.getPetType())
+                .petCount(request.getPetCount() != null ? request.getPetCount() : 1)
+                .petCharge(request.getPetCharge() != null ? request.getPetCharge() : BigDecimal.ZERO)
+                .vendorPetPayout(request.getVendorPetPayout() != null ? request.getVendorPetPayout() : BigDecimal.ZERO)
+                .status(status)
+                .specialInstructions(request.getSpecialInstructions());
+
+        if (request.getAssignedVehicleId() != null) {
+            Vehicle v = vehicleRepository.findById(request.getAssignedVehicleId()).orElse(null);
+            if (v != null) {
+                builder.assignedVehicle(v);
+                builder.vendor(v.getUser());
+                v.setStatus(VehicleStatus.BOOKED);
+                vehicleRepository.save(v);
+            }
+        }
+
+        if (request.getAssignedDriverId() != null) {
+            Driver d = driverRepository.findById(request.getAssignedDriverId()).orElse(null);
+            if (d != null) {
+                builder.assignedDriver(d);
+                d.setStatus(DriverStatus.ASSIGNED);
+                driverRepository.save(d);
+            }
+        }
+
+        builder.rideOtp(String.format("%04d", random.nextInt(10000)));
+
+        Booking booking = builder.build();
+        Booking saved = bookingRepository.save(booking);
+
+        try {
+            if (saved.getStatus() == BookingStatus.CONFIRMED) {
+                generateAndStoreInvoicePdf(saved, 2);
+                whatsAppNotificationService.sendScenario2ConfirmedVoucher(saved, null);
+            } else {
+                generateAndStoreInvoicePdf(saved, 1);
+                whatsAppNotificationService.sendScenario1BookingEstimate(saved, null);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch automated WhatsApp for manual booking {}: {}", saved.getBookingReference(), ex.getMessage());
+        }
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("OPERATIONS")
+                    .event("BOOKING_CREATED_BY_OPERATIONS")
+                    .userId(operator.getId().toString())
+                    .userName(operator.getName() + " (" + operator.getEmail() + ")")
+                    .details("Created manual booking " + saved.getBookingReference() + " for " + name + " (" + (normalizedPhone != null ? normalizedPhone : phone) + ")")
+                    .build());
+        } catch (Exception ex) {
+            log.warn("Failed to audit log manual booking creation: {}", ex.getMessage());
+        }
+
+        return BookingResponse.fromEntity(saved);
+    }
+
+    private String normalizePhone(String phone) {
+        if (phone == null || phone.isBlank()) return null;
+        String digits = phone.replaceAll("[^0-9]", "");
+        if (digits.length() == 10) {
+            return "+91" + digits;
+        } else if (digits.length() == 12 && digits.startsWith("91")) {
+            return "+" + digits;
+        }
+        return phone.trim();
     }
 
     /**
@@ -373,6 +559,13 @@ public class CustomerBookingService {
         }
 
         Booking confirmed = bookingRepository.save(booking);
+
+        try {
+            generateAndStoreInvoicePdf(confirmed, 2);
+            whatsAppNotificationService.sendScenario2ConfirmedVoucher(confirmed, null);
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch WhatsApp Scenario 2 confirmed voucher on vendor acceptance: {}", ex.getMessage());
+        }
 
         try {
             String driverName = confirmed.getAssignedDriver() != null ? confirmed.getAssignedDriver().getName() : "None";
@@ -700,6 +893,22 @@ public class CustomerBookingService {
 
         Booking saved = bookingRepository.save(booking);
 
+        if (newStatus == BookingStatus.CONFIRMED) {
+            try {
+                generateAndStoreInvoicePdf(saved, 2);
+                whatsAppNotificationService.sendScenario2ConfirmedVoucher(saved, null);
+            } catch (Exception ex) {
+                log.warn("Failed to dispatch WhatsApp Scenario 2 voucher on status CONFIRMED: {}", ex.getMessage());
+            }
+        } else if (newStatus == BookingStatus.COMPLETED) {
+            try {
+                generateAndStoreInvoicePdf(saved, 3);
+                whatsAppNotificationService.sendScenario3FinalInvoice(saved, null);
+            } catch (Exception ex) {
+                log.warn("Failed to dispatch automated WhatsApp Scenario 3 final invoice on operations status update: {}", ex.getMessage());
+            }
+        }
+
         try {
             auditLogService.logEvent(CreateAuditLogRequest.builder()
                     .category("OPERATIONS")
@@ -863,6 +1072,13 @@ public class CustomerBookingService {
         }
 
         Booking saved = bookingRepository.save(booking);
+
+        try {
+            generateAndStoreInvoicePdf(saved, 3);
+            whatsAppNotificationService.sendScenario3FinalInvoice(saved, null);
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch automated WhatsApp Scenario 3 final invoice on trip closing: {}", ex.getMessage());
+        }
 
         try {
             auditLogService.logEvent(CreateAuditLogRequest.builder()
@@ -1082,4 +1298,77 @@ public class CustomerBookingService {
         }
         return sb.toString();
     }
+
+    @Transactional
+    public String sendScenarioWhatsAppInvoice(String idOrRef, int scenario, String customPhone) {
+        Booking booking = null;
+        try {
+            UUID id = UUID.fromString(idOrRef);
+            booking = bookingRepository.findById(id).orElse(null);
+        } catch (IllegalArgumentException ignored) {}
+
+        if (booking == null) {
+            booking = bookingRepository.findByBookingReference(idOrRef)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + idOrRef));
+        }
+
+        String targetPhone = (customPhone != null && !customPhone.isBlank())
+                ? customPhone
+                : (booking.getPassengerPhone() != null && !booking.getPassengerPhone().isBlank() ? booking.getPassengerPhone() : (booking.getCustomer() != null ? booking.getCustomer().getPhone() : null));
+
+        if (targetPhone == null || targetPhone.isBlank()) {
+            throw new BadRequestException("No customer phone number available for booking: " + booking.getBookingReference());
+        }
+
+        if (booking.getInvoiceNumber() == null || booking.getInvoiceNumber().isBlank()) {
+            String invNum = "INV-" + booking.getBookingReference().replaceAll("[^A-Za-z0-9]", "");
+            booking.setInvoiceNumber(invNum);
+            bookingRepository.save(booking);
+        }
+
+        generateAndStoreInvoicePdf(booking, scenario);
+        whatsAppNotificationService.sendScenarioInvoice(booking, scenario, targetPhone);
+        String scenarioLabel = switch (scenario) {
+            case 1 -> "Scenario 1 (Booking Estimate Bill)";
+            case 2 -> "Scenario 2 (Confirmed Duty Voucher - No OTP)";
+            case 3 -> "Scenario 3 (Final Tax Invoice)";
+            default -> "Invoice";
+        };
+        return scenarioLabel + " successfully dispatched via WhatsApp to " + targetPhone;
+    }
+
+    @Transactional
+    public String sendWhatsAppBookingBill(String idOrRef, String customPhone) {
+        return sendScenarioWhatsAppInvoice(idOrRef, 1, customPhone);
+    }
+
+    @Transactional
+    public String sendWhatsAppTripInvoice(String idOrRef, String customPhone) {
+        return sendScenarioWhatsAppInvoice(idOrRef, 3, customPhone);
+    }
+
+    @Transactional
+    public String sendWhatsAppInvoice(String idOrRef, String customPhone) {
+        return sendScenarioWhatsAppInvoice(idOrRef, 3, customPhone);
+    }
+
+    public String generateAndStoreInvoicePdf(Booking booking, int scenario) {
+        if (booking == null) return null;
+        try {
+            byte[] pdfBytes = invoicePdfGeneratorService.generatePdf(booking, scenario);
+            String ref = booking.getBookingReference() != null ? booking.getBookingReference() : "booking";
+            String publicId = "inv_" + ref.replaceAll("[^A-Za-z0-9_-]", "") + "_s" + scenario + "_" + System.currentTimeMillis() + ".pdf";
+            String cldUrl = cloudinaryService.uploadPdfBytes(pdfBytes, publicId, "grabrentals/invoices");
+            if (cldUrl != null && !cldUrl.isBlank()) {
+                booking.setInvoicePdfUrl(cldUrl);
+                bookingRepository.save(booking);
+                log.info("✅ Generated and saved Cloudinary PDF for booking #{} (scenario {}): {}", ref, scenario, cldUrl);
+                return cldUrl;
+            }
+        } catch (Exception ex) {
+            log.warn("⚠️ Could not generate/store invoice PDF for booking {}: {}", booking.getBookingReference(), ex.getMessage());
+        }
+        return booking.getInvoicePdfUrl();
+    }
+
 }

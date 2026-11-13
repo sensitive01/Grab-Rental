@@ -240,6 +240,9 @@ public class AuthService {
             throw new AccountBlockedException("Your account is currently inactive. Please contact administrator to reactivate your access.");
         }
 
+        user.setLastLoginAt(Instant.now());
+        user = userRepository.save(user);
+
         String token = jwtService.generateToken(user);
 
         try {
@@ -445,6 +448,9 @@ public class AuthService {
         }
 
         // PENDING accounts can log in to view their registered fleet & profile details, but bookings remain restricted until approved.
+        user.setLastLoginAt(Instant.now());
+        user = userRepository.save(user);
+
         String token = jwtService.generateToken(user);
 
         try {

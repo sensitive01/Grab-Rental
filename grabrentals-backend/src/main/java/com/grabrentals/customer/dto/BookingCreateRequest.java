@@ -54,6 +54,8 @@ public class BookingCreateRequest {
 
     private String passengerPhone;
 
+    private String passengerEmail;
+
     @NotNull(message = "Total fare is required")
     @Positive(message = "Total fare must be greater than zero")
     private BigDecimal totalFare;
@@ -81,4 +83,9 @@ public class BookingCreateRequest {
     private Integer petCount;
     private BigDecimal petCharge;
     private BigDecimal vendorPetPayout;
+
+    // Optional direct assignment by admin/operations:
+    private java.util.UUID assignedVehicleId;
+    private java.util.UUID assignedDriverId;
+    private String initialStatus;
 }

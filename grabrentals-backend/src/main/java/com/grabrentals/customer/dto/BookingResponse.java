@@ -110,6 +110,7 @@ public class BookingResponse {
     private BigDecimal finalGst;
     private BigDecimal finalTotalFare;
     private String invoiceNumber;
+    private String invoicePdfUrl;
     private Instant tripCompletedAt;
     private String tripClosedBy;
     private String endOdometerProofUrl;
@@ -117,6 +118,7 @@ public class BookingResponse {
 
     // Customer Booked Route Distance
     private Integer distanceKm;
+    private java.util.List<BookingAddonItem> addons;
 
     public static BookingResponse fromEntity(Booking b) {
         if (b == null) return null;
@@ -212,6 +214,7 @@ public class BookingResponse {
                 .finalGst(b.getFinalGst())
                 .finalTotalFare(b.getFinalTotalFare())
                 .invoiceNumber(b.getInvoiceNumber())
+                .invoicePdfUrl(b.getInvoicePdfUrl())
                 .tripCompletedAt(b.getTripCompletedAt())
                 .tripClosedBy(b.getTripClosedBy())
                 .endOdometerProofUrl(b.getEndOdometerProofUrl())
@@ -254,7 +257,108 @@ public class BookingResponse {
             builder.rideOtp(b.getRideOtp());
         }
 
+        builder.addons(extractAddons(b));
         return builder.build();
+    }
+
+    public static java.util.List<BookingAddonItem> extractAddons(Booking b) {
+        java.util.List<BookingAddonItem> list = new java.util.ArrayList<>();
+        if (b == null) return list;
+
+        String spec = b.getSpecialInstructions() != null ? b.getSpecialInstructions() : "";
+
+        // 1. Language Chauffeur
+        if (spec.toLowerCase().contains("language chauffeur") || spec.toLowerCase().contains("language")) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("Language Chauffeur\\s*\\(([^)]+)\\)(?:\\s*\\([?₹](\\d+)\\))?", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(spec);
+            String lang = "English";
+            BigDecimal fee = new BigDecimal("199.00");
+            if (m.find()) {
+                if (m.group(1) != null && !m.group(1).isBlank()) lang = m.group(1).trim();
+                if (m.group(2) != null) fee = new BigDecimal(m.group(2));
+            }
+            list.add(BookingAddonItem.builder()
+                    .id("language_chauffeur")
+                    .name("Language Chauffeur (" + lang + ")")
+                    .description("Verified chauffeur fluent in " + lang)
+                    .sacCode("9966")
+                    .packageQty("1 Chauffeur")
+                    .price(fee)
+                    .emoji("🗣️")
+                    .build());
+        }
+
+        // 2. Luggage Carrier / Roof Carrier
+        if (spec.toLowerCase().contains("luggage carrier") || spec.toLowerCase().contains("roof carrier")) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("Luggage Carrier[^?₹)]*[?₹](\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(spec);
+            BigDecimal fee = new BigDecimal("249.00");
+            if (m.find()) {
+                fee = new BigDecimal(m.group(1));
+            }
+            list.add(BookingAddonItem.builder()
+                    .id("luggage_carrier")
+                    .name("Luggage / Roof Top Carrier")
+                    .description("Mounted carrier for extra luggage capacity")
+                    .sacCode("9966")
+                    .packageQty("1 Unit")
+                    .price(fee)
+                    .emoji("🧳")
+                    .build());
+        }
+
+        // 3. Vehicle < 3 Years Old
+        if (spec.toLowerCase().contains("less than 3 years") || spec.toLowerCase().contains("< 3 years")) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("Less than 3 years[^?₹)]*[?₹](\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(spec);
+            BigDecimal fee = new BigDecimal("299.00");
+            if (m.find()) {
+                fee = new BigDecimal(m.group(1));
+            }
+            list.add(BookingAddonItem.builder()
+                    .id("less_than_3_years")
+                    .name("Guaranteed Car < 3 Years Old")
+                    .description("Pristine, latest model commercial vehicle")
+                    .sacCode("9966")
+                    .packageQty("1 Vehicle")
+                    .price(fee)
+                    .emoji("✨")
+                    .build());
+        }
+
+        // 4. Expressway FASTag Included
+        if (spec.toLowerCase().contains("expressway fastag") || spec.toLowerCase().contains("expressway toll")) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("Expressway Fastag[^?₹)]*[?₹](\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(spec);
+            BigDecimal fee = new BigDecimal("415.00");
+            if (m.find()) {
+                fee = new BigDecimal(m.group(1));
+            }
+            list.add(BookingAddonItem.builder()
+                    .id("expressway")
+                    .name("Expressway FASTag Toll Pass")
+                    .description("Prepaid express highway fastag permit")
+                    .sacCode("9966")
+                    .packageQty("1 Trip")
+                    .price(fee)
+                    .emoji("🛣️")
+                    .build());
+        }
+
+        // 5. Pet Friendly Accommodation
+        boolean isPet = Boolean.TRUE.equals(b.getIsPetFriendly()) || spec.contains("Pet Friendly Cab") || spec.contains("Pet Fee");
+        if (isPet) {
+            String pType = b.getPetType() != null && !b.getPetType().isBlank() ? b.getPetType() : "Pet";
+            int pCount = b.getPetCount() != null && b.getPetCount() > 0 ? b.getPetCount() : 1;
+            BigDecimal pCharge = b.getPetCharge() != null && b.getPetCharge().compareTo(BigDecimal.ZERO) > 0 ? b.getPetCharge() : BigDecimal.ZERO;
+            list.add(BookingAddonItem.builder()
+                    .id("pet_friendly")
+                    .name("Pet Friendly Accommodation (" + pType + " × " + pCount + ")")
+                    .description("Cabin seat protector & pet sanitization package")
+                    .sacCode("9966")
+                    .packageQty("1 Surcharge")
+                    .price(pCharge)
+                    .emoji("🐾")
+                    .build());
+        }
+
+        return list;
     }
 
     /**

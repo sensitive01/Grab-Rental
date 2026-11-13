@@ -78,3 +78,100 @@ export function getStatusStyle(status) {
       return "bg-slate-100 text-slate-700 border-slate-200";
   }
 }
+
+// Unified Customer Booking Add-ons Extractor
+export function extractBookingAddons(booking) {
+  if (!booking) return [];
+  if (Array.isArray(booking.addons) && booking.addons.length > 0) {
+    return booking.addons;
+  }
+  const list = [];
+  const spec = `${booking.specialInstructions || ""} ${booking.notes || ""}`;
+
+  // 1. Language Chauffeur
+  if (/language chauffeur|language/i.test(spec)) {
+    const m = spec.match(/Language Chauffeur\s*\(([^)]+)\)(?:\s*\([?₹](\d+)\))?/i);
+    let lang = "English";
+    let fee = 199;
+    if (m) {
+      if (m[1]) lang = m[1].trim();
+      if (m[2]) fee = Number(m[2]);
+    }
+    list.push({
+      id: "language_chauffeur",
+      name: `Language Chauffeur (${lang})`,
+      description: `Dedicated ${lang}-fluent professional chauffeur`,
+      sacCode: "9966",
+      packageQty: "1 Duty",
+      price: fee,
+      emoji: "🗣️",
+    });
+  }
+
+  // 2. Luggage / Rooftop Carrier
+  if (/luggage carrier|roof top carrier|carrier added/i.test(spec)) {
+    const m = spec.match(/Luggage Carrier Added\s*\([?₹](\d+)\)/i);
+    let fee = 249;
+    if (m && m[1]) fee = Number(m[1]);
+    list.push({
+      id: "luggage_carrier",
+      name: "Luggage / Roof Top Carrier",
+      description: "Secure rooftop luggage rack & weatherproof tarpaulin",
+      sacCode: "9966",
+      packageQty: "1 Vehicle",
+      price: fee,
+      emoji: "🧳",
+    });
+  }
+
+  // 3. Guaranteed Car < 3 Years
+  if (/car < 3 years|vehicle < 3 years|new car guarantee/i.test(spec)) {
+    const m = spec.match(/Car < 3 Years\s*\([?₹](\d+)\)/i);
+    let fee = 299;
+    if (m && m[1]) fee = Number(m[1]);
+    list.push({
+      id: "new_car_guarantee",
+      name: "Guaranteed Car < 3 Years Old",
+      description: "Pristine, late-model vehicle (model year 2023 or newer)",
+      sacCode: "9966",
+      packageQty: "1 Vehicle",
+      price: fee,
+      emoji: "✨",
+    });
+  }
+
+  // 4. Expressway FASTag Pass
+  if (/fastag pass|expressway fastag/i.test(spec)) {
+    const m = spec.match(/Expressway FASTag Pass\s*\([?₹](\d+)\)/i);
+    let fee = 415;
+    if (m && m[1]) fee = Number(m[1]);
+    list.push({
+      id: "fastag_pass",
+      name: "Expressway FASTag Included",
+      description: "Prepaid electronic highway toll plaza pass",
+      sacCode: "9966",
+      packageQty: "Unlimited",
+      price: fee,
+      emoji: "🛣️",
+    });
+  }
+
+  // 5. Pet Friendly Accommodation
+  const isPet = Boolean(booking.isPetFriendly) || /pet friendly cab|pet fee/i.test(spec);
+  if (isPet) {
+    const pType = booking.petType || "Pet";
+    const pCount = booking.petCount || 1;
+    const pCharge = Number(booking.petCharge || 0);
+    list.push({
+      id: "pet_friendly",
+      name: `Pet Friendly Accommodation (${pType} × ${pCount})`,
+      description: "Cabin seat protector & pet sanitization package",
+      sacCode: "9966",
+      packageQty: "1 Surcharge",
+      price: pCharge,
+      emoji: "🐾",
+    });
+  }
+
+  return list;
+}

@@ -3,6 +3,7 @@ package com.grabrentals.operations.controller;
 import com.grabrentals.common.exception.UserNotFoundException;
 import com.grabrentals.common.response.ApiResponse;
 import com.grabrentals.customer.dto.BookingAssignRequest;
+import com.grabrentals.customer.dto.BookingCreateRequest;
 import com.grabrentals.customer.dto.BookingResponse;
 import com.grabrentals.customer.dto.BookingStatusUpdateRequest;
 import com.grabrentals.customer.entity.BookingStatus;
@@ -19,6 +20,7 @@ import com.grabrentals.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,6 +41,19 @@ public class OperationsBookingController {
     private final VehicleRepository vehicleRepository;
     private final DriverRepository driverRepository;
     private final UserRepository userRepository;
+
+    @PostMapping("/bookings")
+    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody BookingCreateRequest request
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings - Operator '{}' creating manual booking for passenger: {} ({})",
+                operator.getEmail(), request.getPassengerName(), request.getPassengerPhone());
+        BookingResponse response = bookingService.createBookingByOperator(request, operator);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Booking created successfully by operations", response));
+    }
 
     @GetMapping("/bookings")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getBookings(
@@ -135,6 +150,44 @@ public class OperationsBookingController {
                 .map(DriverResponse::fromEntity)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success("Available drivers retrieved", drivers));
+    }
+
+
+    @PostMapping("/bookings/{idOrRef}/send-scenario-invoice")
+    public ResponseEntity<ApiResponse<String>> sendScenarioInvoice(
+            @PathVariable String idOrRef,
+            @RequestParam(defaultValue = "1") int scenario,
+            @RequestParam(required = false) String customPhone,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings/{}/send-scenario-invoice (scenario={}) by {}", idOrRef, scenario, operator.getEmail());
+        String result = bookingService.sendScenarioWhatsAppInvoice(idOrRef, scenario, customPhone);
+        return ResponseEntity.ok(ApiResponse.success(result, result));
+    }
+
+    @PostMapping("/bookings/{idOrRef}/send-booking-bill")
+    public ResponseEntity<ApiResponse<String>> sendBookingBill(
+            @PathVariable String idOrRef,
+            @RequestParam(required = false) String customPhone,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings/{}/send-booking-bill by {}", idOrRef, operator.getEmail());
+        String result = bookingService.sendWhatsAppBookingBill(idOrRef, customPhone);
+        return ResponseEntity.ok(ApiResponse.success(result, result));
+    }
+
+    @PostMapping("/bookings/{idOrRef}/send-whatsapp-invoice")
+    public ResponseEntity<ApiResponse<String>> sendWhatsAppInvoice(
+            @PathVariable String idOrRef,
+            @RequestParam(required = false) String customPhone,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings/{}/send-whatsapp-invoice by {}", idOrRef, operator.getEmail());
+        String result = bookingService.sendWhatsAppInvoice(idOrRef, customPhone);
+        return ResponseEntity.ok(ApiResponse.success(result, result));
     }
 
     private User getUser(CustomUserDetails userDetails) {

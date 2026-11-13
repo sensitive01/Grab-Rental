@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
+import { ScenarioInvoiceModal } from "@/components/bookings/ScenarioInvoiceModal";
 import {
   Building2,
   Calendar,
@@ -30,7 +31,8 @@ import {
   ExternalLink,
   Banknote,
   FileCheck,
-  Receipt
+  Receipt,
+  MessageSquare
 } from "lucide-react";
 
 export default function BookingDetailPage({ params }) {
@@ -42,6 +44,8 @@ export default function BookingDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [previewProof, setPreviewProof] = useState(null);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -114,6 +118,47 @@ export default function BookingDetailPage({ params }) {
             >
               Print Duty Slip
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={FileText}
+              onClick={() => setIsInvoiceModalOpen(true)}
+              className="border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 font-bold"
+            >
+              Preview Invoices &amp; Vouchers
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(1)}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+            >
+              {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(2)}
+              className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+            >
+              {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
+            </Button>
+            {booking.status === "COMPLETED" && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={MessageSquare}
+                disabled={sendingWhatsApp}
+                onClick={() => handleSendScenarioInvoice(3)}
+                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold"
+              >
+                {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
+              </Button>
+            )}
             {booking.status === "PENDING_ALLOCATION" && (
               <Link href={`/operations/assignments/vehicle?bookingId=${booking.id}`}>
                 <Button variant="amber" size="sm" icon={Car}>
@@ -250,7 +295,7 @@ export default function BookingDetailPage({ params }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-500">Invoice:</span>
               <span className="font-mono font-bold text-xs bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
                 {booking.invoiceNumber || `INV-${String(booking.bookingReference || booking.id).replace(/[^A-Za-z0-9]/g, "")}`}
@@ -507,7 +552,7 @@ export default function BookingDetailPage({ params }) {
               <span className="text-[10px] font-bold uppercase text-amber-900 tracking-wider block">
                 Chauffeur Closing Log & Remarks
               </span>
-              <p className="text-slate-800 italic">"{booking.tripClosingNotes}"</p>
+              <p className="text-slate-800 italic">&ldquo;{booking.tripClosingNotes}&rdquo;</p>
             </div>
           )}
         </div>
@@ -771,6 +816,13 @@ export default function BookingDetailPage({ params }) {
           </Card>
         </div>
       </div>
+      {/* 3-Scenario Invoicing and Voucher Modal */}
+      <ScenarioInvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        booking={booking}
+        onToast={setToast}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Toast } from "@/components/ui/Toast";
 import { formatINR, getStatusStyle } from "@/lib/utils";
 import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
+import { CreateBookingModal } from "@/components/bookings/CreateBookingModal";
 import {
   Eye,
   CalendarCheck,
@@ -37,6 +38,7 @@ import {
   ShieldCheck,
   ArrowRight,
   QrCode,
+  PlusCircle,
 } from "lucide-react";
 
 function formatDateTime(val) {
@@ -85,6 +87,7 @@ export default function AdminMasterBookingsPage() {
   const [toast, setToast] = useState(null);
   const [verifyModalBooking, setVerifyModalBooking] = useState(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
@@ -313,6 +316,16 @@ export default function AdminMasterBookingsPage() {
         title="Master Booking Ledger"
         subtitle="Platform-wide booking records across all customer accounts, live dispatch allocation, and vendor fleet"
         breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Bookings" }]}
+        action={
+          <Button
+            variant="amber"
+            size="sm"
+            icon={PlusCircle}
+            onClick={() => setCreateModalOpen(true)}
+          >
+            Create Booking
+          </Button>
+        }
       />
 
       <Card noPadding>
@@ -866,6 +879,14 @@ export default function AdminMasterBookingsPage() {
         booking={verifyModalBooking}
         onVerify={handleVerifyPayment}
         loading={verifyingPayment}
+      />
+
+      {/* Manual Booking Entry Modal */}
+      <CreateBookingModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => setReloadTrigger((prev) => prev + 1)}
+        onToast={setToast}
       />
 
       {/* Toast Feedback */}

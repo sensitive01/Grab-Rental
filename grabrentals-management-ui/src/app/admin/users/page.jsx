@@ -1037,7 +1037,7 @@ export default function AdminUsersDirectoryPage() {
             />
           )}
 
-          {newUser.role === "OPERATIONS" && (
+          {/* {newUser.role === "OPERATIONS" && (
             <Select
               label="Assigned Operations Hub"
               value={newUser.hubLocation}
@@ -1051,7 +1051,7 @@ export default function AdminUsersDirectoryPage() {
               ]}
               helperText="Staff member will be authorized to monitor dispatch at this hub"
             />
-          )}
+          )} */}
 
           {newUser.role === "CUSTOMER" && (
             <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-xs text-blue-700">

@@ -578,10 +578,10 @@ export const adminApi = {
           email: u.email,
           phone: u.phone || "—",
           role: "Operations Dispatcher",
-          city: u.businessName || "Primary Hub",
-          status: u.status,
-          shiftsAssigned: "Standard Shift (08:00 - 17:00)",
-          lastLogin: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Active",
+          status: u.status || "ACTIVE",
+          shiftsAssigned: u.businessName || "Standard Shift (08:00 - 17:00)",
+          lastLoginAt: u.lastLoginAt || null,
+          createdAt: u.createdAt,
         }));
       return createApiResponse(opsStaff);
     }
@@ -1192,5 +1192,29 @@ export const adminApi = {
   async deleteSearchHistory(id) {
     const response = await axiosClient.delete(`/api/admin/search-history/${id}`);
     return response.data;
+  },
+
+  async sendScenarioInvoice(bookingIdOrRef, scenario = 1, customPhone) {
+    try {
+      const params = { scenario };
+      if (customPhone) params.customPhone = customPhone;
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/send-scenario-invoice`, null, { params });
+      return createApiResponse(res.data?.data || `Scenario ${scenario} invoice dispatched successfully via WhatsApp`);
+    } catch (err) {
+      console.error(`sendScenarioInvoice (scenario ${scenario}) error:`, err);
+      return createApiError(err?.response?.data?.message || err?.message || `Failed to dispatch Scenario ${scenario} invoice`);
+    }
+  },
+
+  async sendWhatsAppInvoice(bookingIdOrRef, customPhone) {
+    const params = customPhone ? { customPhone } : {};
+    const res = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/send-whatsapp-invoice`, null, { params });
+    return createApiResponse(res.data?.data || "Official tax invoice dispatched successfully via WhatsApp");
+  },
+
+  async sendWhatsAppBookingBill(bookingIdOrRef, customPhone) {
+    const params = customPhone ? { customPhone } : {};
+    const res = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/send-booking-bill`, null, { params });
+    return createApiResponse(res.data?.data || "Booking confirmation bill dispatched successfully via WhatsApp");
   },
 };

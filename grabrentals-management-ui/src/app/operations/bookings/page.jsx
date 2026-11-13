@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/Table";
 import { Toast } from "@/components/ui/Toast";
 import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
+import { CreateBookingModal } from "@/components/bookings/CreateBookingModal";
 import { CalendarCheck, Eye, PlusCircle, UserCheck, QrCode, ShieldCheck } from "lucide-react";
 
 const TABS = [
@@ -41,6 +42,7 @@ export default function OperationsBookingsPage() {
   const [page, setPage] = useState(1);
   const [verifyModalBooking, setVerifyModalBooking] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const pageSize = 8;
 
@@ -112,11 +114,21 @@ export default function OperationsBookingsPage() {
         subtitle="Manage end-to-end booking dispatch, fleet assignments, and status lifecycles"
         breadcrumbs={[{ label: "Operations", href: "/operations/dashboard" }, { label: "Bookings" }]}
         action={
-          <Link href="/operations/assignments/vehicle">
-            <Button variant="amber" size="sm" icon={UserCheck}>
-              Fast Dispatch Allocator
+          <div className="flex items-center gap-2">
+            <Button
+              variant="amber"
+              size="sm"
+              icon={PlusCircle}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              New Booking
             </Button>
-          </Link>
+            <Link href="/operations/assignments/vehicle">
+              <Button variant="secondary" size="sm" icon={UserCheck}>
+                Fast Dispatch Allocator
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -272,6 +284,23 @@ export default function OperationsBookingsPage() {
         onVerify={handleVerifyPayment}
         loading={verifying}
       />
+
+      {/* Manual Booking Entry Modal */}
+      <CreateBookingModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={reloadBookings}
+        onToast={setToast}
+      />
+
+      {/* Toast Feedback */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

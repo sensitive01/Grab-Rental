@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { driverApi } from "@/lib/vendorApi";
-import { formatINR } from "@/lib/utils";
+import { formatINR, extractBookingAddons } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/auth";
 import NumberPlate from "@/components/ui/NumberPlate";
 
@@ -104,7 +104,9 @@ export default function DriverTripInvoicePage({ params }) {
     : new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   // Numbers
-  const baseFare = Number(trip.estimatedAmount || trip.totalFare || 0);
+  const addons = extractBookingAddons(trip);
+  const addonsTotal = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
+
   const extraKm = Number(trip.extraKm || 0);
   const extraKmRate = Number(trip.extraKmRate || 14);
   const extraKmCost = Number(trip.extraKmCharge || (extraKm * extraKmRate));
@@ -115,15 +117,20 @@ export default function DriverTripInvoicePage({ params }) {
   const allowance = Number(trip.driverAllowanceCharges || 0);
   const other = Number(trip.otherCharges || 0);
 
-  const totalExtras = extraKmCost + toll + permit + parking + allowance + other;
-  const grandTotal = Number(trip.finalTotalFare || trip.totalFare || (baseFare + totalExtras));
-  const advancePaid = Number(trip.advancePaid || 0);
-  const balanceDue = Number(trip.dueAmount != null ? trip.dueAmount : Math.max(0, grandTotal - advancePaid));
+  const totalExtrasSubtotal = extraKmCost + toll + permit + parking + allowance + other;
+  const extrasGst = totalExtrasSubtotal > 0 ? Math.round(totalExtrasSubtotal * 0.05) : 0;
+  const totalExtras = totalExtrasSubtotal + extrasGst;
 
-  const taxableAmount = Math.round(grandTotal / 1.05);
-  const gstAmount = grandTotal - taxableAmount;
-  const cgst = (gstAmount / 2).toFixed(2);
-  const sgst = (gstAmount / 2).toFixed(2);
+  const grandTotal = Number(trip.finalTotalFare || trip.totalFare || 0);
+  const initialFare = (trip.finalTotalFare && totalExtras > 0)
+    ? Math.max(0, grandTotal - totalExtras)
+    : Number(trip.estimatedAmount || trip.totalFare || 0);
+  const baseFare = Math.max(0, initialFare - addonsTotal);
+
+  const isCompleted = trip.status === "COMPLETED";
+  const advancePaid = Number(trip.advancePaid || 0);
+  const paidAtDrop = isCompleted ? Math.max(0, grandTotal - advancePaid) : 0;
+  const balanceDue = isCompleted ? 0 : Math.max(0, grandTotal - advancePaid);
 
   return (
     <div className="min-h-screen bg-slate-950 py-6 sm:py-10 px-4 sm:px-6 print:bg-white print:p-0">
@@ -283,13 +290,13 @@ export default function DriverTripInvoicePage({ params }) {
                   <td className="py-3 px-3 text-right font-bold text-slate-900">{formatINR(baseFare)}</td>
                 </tr>
 
-                {trip.addons && trip.addons.length > 0 && trip.addons.map((a) => (
+                {addons.length > 0 && addons.map((a) => (
                   <tr key={a.id} className="bg-blue-50/20">
                     <td className="py-3 px-3 font-bold text-slate-900">
                       {a.emoji || "✨"} {a.name}
-                      <p className="text-[10px] text-slate-400 font-normal">{a.desc}</p>
+                      <p className="text-[10px] text-slate-400 font-normal">{a.description || a.desc}</p>
                     </td>
-                    <td className="py-3 px-3 text-center">Included</td>
+                    <td className="py-3 px-3 text-center">{a.packageQty || "1 Unit"}</td>
                     <td className="py-3 px-3 text-right font-bold text-slate-900">{formatINR(a.price)}</td>
                   </tr>
                 ))}
@@ -359,6 +366,17 @@ export default function DriverTripInvoicePage({ params }) {
                     <td className="py-3 px-3 text-right font-bold text-slate-900">{formatINR(other)}</td>
                   </tr>
                 )}
+
+                {extrasGst > 0 && (
+                  <tr>
+                    <td className="py-3 px-3 font-bold text-slate-900">
+                      GST on Extra Trip Charges (5%)
+                      <p className="text-[10px] text-slate-400 font-normal">Applicable road tax on extra journey charges</p>
+                    </td>
+                    <td className="py-3 px-3 text-center">5%</td>
+                    <td className="py-3 px-3 text-right font-bold text-slate-900">{formatINR(extrasGst)}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -368,21 +386,16 @@ export default function DriverTripInvoicePage({ params }) {
             
             <div className="space-y-2 max-w-sm">
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
-                Tax Particulars (SAC Code: 996601)
+                Fare Particulars (SAC Code: 996601)
               </span>
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1 text-[11px] text-slate-600">
                 <div className="flex justify-between">
-                  <span>Taxable Value:</span>
-                  <span>{formatINR(taxableAmount)}</span>
+                  <span>Trip Fare Status:</span>
+                  <span className="font-semibold text-emerald-700">All-Inclusive (GST Included)</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>CGST (2.5%):</span>
-                  <span>₹{cgst}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>SGST (2.5%):</span>
-                  <span>₹{sgst}</span>
-                </div>
+                <p className="text-[10px] text-slate-400 pt-0.5">
+                  Includes commercial vehicle rental, fuel, chauffeur trip batta, and applicable road taxes.
+                </p>
               </div>
               <p className="text-[10px] text-slate-400 italic">
                 Passenger transport services by road under GST rules.
@@ -398,6 +411,12 @@ export default function DriverTripInvoicePage({ params }) {
                 <span>Less: Prepaid Advance:</span>
                 <span className="font-semibold">-{formatINR(advancePaid)}</span>
               </div>
+              {isCompleted && paidAtDrop > 0 && (
+                <div className="flex justify-between py-1 border-b border-slate-100 text-emerald-700 font-semibold">
+                  <span>Collected at Drop:</span>
+                  <span>-{formatINR(paidAtDrop)}</span>
+                </div>
+              )}
               <div className="pt-2 flex justify-between items-center text-sm font-black text-slate-950">
                 <span>Grand Total Fare:</span>
                 <span className="text-base text-slate-950">{formatINR(grandTotal)}</span>
@@ -407,14 +426,14 @@ export default function DriverTripInvoicePage({ params }) {
               <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex justify-between items-center mt-2">
                 <div>
                   <span className="text-[10px] font-bold uppercase text-emerald-700 block">
-                    Balance Paid / Collected
+                    {isCompleted ? "Final Settled Balance" : "Balance Due at Drop"}
                   </span>
                   <span className="text-base font-black text-emerald-900">
                     {formatINR(balanceDue)}
                   </span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-200/60 text-emerald-800 text-[10px] font-extrabold">
-                  {balanceDue === 0 ? "PAID IN FULL" : "COLLECTED"}
+                  {isCompleted ? "FULLY SETTLED" : (balanceDue === 0 ? "PAID IN FULL" : "TO COLLECT")}
                 </span>
               </div>
             </div>

@@ -234,6 +234,9 @@ public class Booking {
     @Column(name = "invoice_number", length = 50)
     private String invoiceNumber;
 
+    @Column(name = "invoice_pdf_url", columnDefinition = "TEXT")
+    private String invoicePdfUrl;
+
     @Column(name = "trip_completed_at")
     private Instant tripCompletedAt;
 

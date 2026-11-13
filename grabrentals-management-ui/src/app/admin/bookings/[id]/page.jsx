@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { ScenarioInvoiceModal } from "@/components/bookings/ScenarioInvoiceModal";
 import { Toast } from "@/components/ui/Toast";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { formatINR, getStatusStyle } from "@/lib/utils";
@@ -48,7 +49,8 @@ import {
   X,
   ExternalLink,
   Banknote,
-  FileCheck
+  FileCheck,
+  MessageSquare
 } from "lucide-react";
 
 function formatDateTime(val) {
@@ -174,6 +176,8 @@ export default function AdminBookingDetailPage({ params }) {
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [previewProof, setPreviewProof] = useState(null);
 
   // Allocation Modal States
@@ -188,20 +192,69 @@ export default function AdminBookingDetailPage({ params }) {
   const [loadingFleet, setLoadingFleet] = useState(false);
   const [submittingAllocation, setSubmittingAllocation] = useState(false);
 
-  async function loadBooking() {
-    try {
-      const res = await operationsApi.getBookingById(id);
-      setBooking(res.data);
-    } catch (err) {
-      console.error("Failed to load booking details:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const loadBooking = () => {
+    operationsApi.getBookingById(id)
+      .then((res) => {
+        if (res?.data) setBooking(res.data);
+      })
+      .catch((err) => console.error("Failed to load booking details:", err))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    loadBooking();
+    let ignore = false;
+    operationsApi.getBookingById(id)
+      .then((res) => {
+        if (!ignore && res?.data) {
+          setBooking(res.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load booking details:", err);
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [id]);
+
+
+  const handleSendScenarioInvoice = async (scenario) => {
+    if (sendingWhatsApp) return;
+    try {
+      setSendingWhatsApp(true);
+      const res = await operationsApi.sendScenarioInvoice(
+        booking.rawId || booking.id || id,
+        scenario,
+        booking.customerPhone || booking.passengerPhone
+      );
+      if (res && res.error) {
+        setToast({ show: true, type: "error", message: res.error.message || `Failed to dispatch Scenario ${scenario} invoice` });
+      } else {
+        const scenarioLabel =
+          scenario === 1
+            ? "Scenario 1 (Booking Estimate)"
+            : scenario === 2
+            ? "Scenario 2 (Confirmed)"
+            : "Scenario 3 (Final Tax Invoice)";
+        setToast({
+          show: true,
+          type: "success",
+          message: `${scenarioLabel} dispatched to ${booking.customerPhone || booking.passengerPhone || "customer"} via WhatsApp!`,
+        });
+      }
+    } catch (err) {
+      setToast({ show: true, type: "error", message: err?.message || `Failed to dispatch Scenario ${scenario} invoice` });
+    } finally {
+      setSendingWhatsApp(false);
+    }
+  };
+
+  const handleSendBookingBill = () => handleSendScenarioInvoice(1);
+  const handleSendTripInvoice = () => handleSendScenarioInvoice(3);
 
   const handleCopy = (text) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -453,11 +506,52 @@ export default function AdminBookingDetailPage({ params }) {
             <Button
               variant="outline"
               size="sm"
+              icon={FileText}
+              onClick={() => setIsInvoiceModalOpen(true)}
+              className="border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 font-bold"
+            >
+              Preview Invoices &amp; Vouchers
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               icon={Printer}
               onClick={() => window.print()}
             >
-              Print Audit Certificate
+              Print Duty Slip
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(1)}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+            >
+              {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(2)}
+              className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+            >
+              {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
+            </Button>
+            {booking.status === "COMPLETED" && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={MessageSquare}
+                disabled={sendingWhatsApp}
+                onClick={() => handleSendScenarioInvoice(3)}
+                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold"
+              >
+                {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
+              </Button>
+            )}
           </div>
         }
       />
@@ -661,7 +755,7 @@ export default function AdminBookingDetailPage({ params }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-500">Invoice:</span>
               <span className="font-mono font-bold text-xs bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
                 {booking.invoiceNumber || `INV-${String(booking.bookingReference || booking.id).replace(/[^A-Za-z0-9]/g, "")}`}
@@ -918,7 +1012,7 @@ export default function AdminBookingDetailPage({ params }) {
               <span className="text-[10px] font-bold uppercase text-amber-900 tracking-wider block">
                 Chauffeur Closing Log & Remarks
               </span>
-              <p className="text-slate-800 italic">"{booking.tripClosingNotes}"</p>
+              <p className="text-slate-800 italic">&ldquo;{booking.tripClosingNotes}&rdquo;</p>
             </div>
           )}
         </div>
@@ -1570,6 +1664,13 @@ export default function AdminBookingDetailPage({ params }) {
           </div>
         </Modal>
       )}
+      {/* 3-Scenario Invoicing and Voucher Modal */}
+      <ScenarioInvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        booking={booking}
+        onToast={setToast}
+      />
     </div>
   );
 }

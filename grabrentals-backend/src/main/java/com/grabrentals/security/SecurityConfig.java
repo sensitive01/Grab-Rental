@@ -76,6 +76,8 @@ public class SecurityConfig {
                 ).permitAll()
                 // Public vehicle search & catalog
                 .requestMatchers(HttpMethod.GET, "/api/vehicles/**").permitAll()
+                // Public dynamic booking invoices and vouchers for WhatsApp and customer download
+                .requestMatchers(HttpMethod.GET, "/api/public/bookings/**").permitAll()
                 // Public banners, promo popup, coupon validation, UPI checkout, customer enquiries, and search history logging
                 .requestMatchers("/api/coupons/**", "/api/promo-popup/**", "/api/banners/**", "/api/upi/**", "/api/enquiries", "/api/enquiries/**", "/api/search-history", "/api/search-history/**").permitAll()
                 // Role-based endpoints

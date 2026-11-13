@@ -7,26 +7,35 @@ import { formatINR } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Toast } from "@/components/ui/Toast";
+import { CreateBookingModal } from "@/components/bookings/CreateBookingModal";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
-import { AlertCircle, ArrowRight, UserCheck, ShieldAlert } from "lucide-react";
+import { AlertCircle, ArrowRight, UserCheck, ShieldAlert, PlusCircle } from "lucide-react";
 
 export default function NewBookingsPage() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   useEffect(() => {
+    let ignore = false;
     async function load() {
       try {
         const res = await operationsApi.getBookings("PENDING_ALLOCATION");
-        setBookings(res.data);
+        if (!ignore) setBookings(res.data || []);
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     }
     load();
-  }, []);
+    return () => {
+      ignore = true;
+    };
+  }, [reloadTrigger]);
 
   return (
     <div className="space-y-6">
@@ -38,6 +47,16 @@ export default function NewBookingsPage() {
           { label: "Bookings", href: "/operations/bookings" },
           { label: "Pending Allocations" },
         ]}
+        action={
+          <Button
+            variant="amber"
+            size="sm"
+            icon={PlusCircle}
+            onClick={() => setCreateModalOpen(true)}
+          >
+            Manual Booking Entry
+          </Button>
+        }
       />
 
       <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/70 text-amber-900 text-xs flex items-center justify-between">
@@ -121,6 +140,23 @@ export default function NewBookingsPage() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Manual Booking Entry Modal */}
+      <CreateBookingModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => setReloadTrigger((prev) => prev + 1)}
+        onToast={setToast}
+      />
+
+      {/* Toast Feedback */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

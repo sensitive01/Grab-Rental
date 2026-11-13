@@ -21,6 +21,7 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
 
         executeSafe("ALTER TABLE users ALTER COLUMN city TYPE TEXT");
         executeSafe("ALTER TABLE users ALTER COLUMN alternate_phone TYPE VARCHAR(255)");
+        executeSafe("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE");
         executeSafe("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
         executeSafe("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role::text = ANY (ARRAY['CUSTOMER'::character varying, 'VENDOR'::character varying, 'FLEET'::character varying, 'ADMIN'::character varying, 'OPERATIONS'::character varying, 'DRIVER'::character varying]::text[]))");
         executeSafe("ALTER TABLE customer_profiles ALTER COLUMN city TYPE TEXT");
@@ -134,6 +135,7 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
         executeSafe("ALTER TABLE coupons ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT 'ALL'");
         executeSafe("UPDATE coupons SET state = 'ALL' WHERE state IS NULL");
         executeSafe("UPDATE coupons SET city = 'ALL' WHERE city IS NULL");
+        executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS invoice_pdf_url TEXT");
 
         log.info("DatabaseSchemaFixer column verification completed.");
     }

@@ -61,6 +61,8 @@ app:
     api-url: ${WHATSAPP_API_URL:}
     api-key: ${WHATSAPP_API_KEY:}
     support-phone: ${WHATSAPP_SUPPORT_PHONE:9876543210}
+    booking-confirmation-pdf-url: ${WHATSAPP_BOOKING_PDF_URL:https://whatsappdata.s3.ap-south-1.amazonaws.com/userMedia/95c67d929b9fee3507244cbb024c0e73/invoice.pdf}
+    default-invoice-pdf-url: ${WHATSAPP_DEFAULT_INVOICE_PDF_URL:https://whatsappdata.s3.ap-south-1.amazonaws.com/userMedia/95c67d929b9fee3507244cbb024c0e73/invoice.pdf}
   sms:
     enabled: ${SMS_ENABLED:false}
     api-url: ${SMS_API_URL:}

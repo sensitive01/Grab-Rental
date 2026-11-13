@@ -108,4 +108,40 @@ public class CloudinaryService {
             throw new RuntimeException("Failed to upload file to Cloudinary: " + ex.getMessage(), ex);
         }
     }
+
+    public String uploadPdfBytes(byte[] pdfBytes, String fileName, String customFolder) {
+        if (pdfBytes == null || pdfBytes.length == 0) {
+            log.warn("Cannot upload empty PDF bytes to Cloudinary");
+            return null;
+        }
+        String folder = (customFolder != null && !customFolder.isBlank()) ? customFolder : "grabrentals/invoices";
+
+        String base = (fileName != null && !fileName.isBlank()) ? fileName.trim() : ("inv_" + System.currentTimeMillis());
+        if (base.toLowerCase().endsWith(".pdf")) {
+            base = base.substring(0, base.length() - 4);
+        }
+        String cleanName = base.replaceAll("[^A-Za-z0-9_-]", "_") + ".pdf";
+
+        try {
+            Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+                    "cloud_name", cloudName,
+                    "api_key", apiKey,
+                    "api_secret", apiSecret
+            ));
+
+            Map<String, Object> uploadParams = new HashMap<>();
+            uploadParams.put("folder", folder);
+            uploadParams.put("public_id", cleanName);
+            uploadParams.put("resource_type", "raw");
+
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(pdfBytes, uploadParams);
+            String secureUrl = (String) uploadResult.get("secure_url");
+            log.info("✅ [CLOUDINARY PDF UPLOAD] Successfully uploaded invoice PDF '{}' ({} bytes) -> {}",
+                    cleanName, pdfBytes.length, secureUrl);
+            return secureUrl;
+        } catch (Exception ex) {
+            log.warn("⚠️ [CLOUDINARY PDF UPLOAD ERROR] Could not upload PDF to Cloudinary: {}", ex.getMessage());
+            return null;
+        }
+    }
 }

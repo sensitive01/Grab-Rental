@@ -64,6 +64,11 @@ export const operationsApi = {
     });
   },
 
+  async createBooking(bookingData) {
+    const res = await axiosClient.post("/api/operations/bookings", bookingData);
+    return res.data;
+  },
+
   async getBookings(statusFilter = "ALL") {
     try {
       const params = (statusFilter && statusFilter !== "ALL") ? { status: statusFilter } : {};
@@ -423,5 +428,39 @@ export const operationsApi = {
       rejectionReason,
     });
     return res.data;
+  },
+
+  async sendScenarioInvoice(bookingIdOrRef, scenario = 1, customPhone) {
+    try {
+      const params = { scenario };
+      if (customPhone) params.customPhone = customPhone;
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/send-scenario-invoice`, null, { params });
+      return createApiResponse(res.data?.data || `Scenario ${scenario} invoice dispatched successfully via WhatsApp`);
+    } catch (err) {
+      console.error(`sendScenarioInvoice (scenario ${scenario}) error:`, err);
+      return createApiError(err?.response?.data?.message || err?.message || `Failed to dispatch Scenario ${scenario} invoice`);
+    }
+  },
+
+  async sendWhatsAppInvoice(bookingIdOrRef, customPhone) {
+    try {
+      const params = customPhone ? { customPhone } : {};
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/send-whatsapp-invoice`, null, { params });
+      return createApiResponse(res.data?.data || "Official tax invoice dispatched successfully via WhatsApp");
+    } catch (err) {
+      console.error("sendWhatsAppInvoice error:", err);
+      return createApiError(err?.response?.data?.message || err?.message || "Failed to dispatch WhatsApp invoice");
+    }
+  },
+
+  async sendWhatsAppBookingBill(bookingIdOrRef, customPhone) {
+    try {
+      const params = customPhone ? { customPhone } : {};
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingIdOrRef}/send-booking-bill`, null, { params });
+      return createApiResponse(res.data?.data || "Booking confirmation bill dispatched successfully via WhatsApp");
+    } catch (err) {
+      console.error("sendWhatsAppBookingBill error:", err);
+      return createApiError(err?.response?.data?.message || err?.message || "Failed to dispatch WhatsApp booking bill");
+    }
   },
 };
