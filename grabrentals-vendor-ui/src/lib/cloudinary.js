@@ -22,72 +22,81 @@ export const CLOUDINARY_CONFIG = {
  */
 
 /**
- * Compresses an image client-side if it exceeds 800KB.
- * Uses native HTML5 canvas — zero external dependencies.
+ * Compresses an image client-side if it exceeds 600KB.
+ * Uses native HTML5 canvas and lightweight ObjectURL — zero external dependencies, minimal memory footprint.
  */
-async function compressImageIfNeeded(file, maxDimension = 1920, quality = 0.8) {
+async function compressImageIfNeeded(file, maxDimension = 1600, quality = 0.75) {
   if (typeof window === "undefined" || !file || !file.type?.startsWith("image/") || file.type === "image/svg+xml") {
     return file;
   }
 
   // Already small enough, no compression needed
-  if (file.size <= 800 * 1024) {
+  if (file.size <= 600 * 1024) {
     return file;
   }
 
-  try {
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          let { width, height } = img;
+  return new Promise((resolve) => {
+    let objectUrl = null;
+    try {
+      objectUrl = URL.createObjectURL(file);
+    } catch {
+      return resolve(file);
+    }
 
-          // Scale down if larger than maxDimension while keeping aspect ratio
-          if (width > maxDimension || height > maxDimension) {
-            if (width > height) {
-              height = Math.round((height * maxDimension) / width);
-              width = maxDimension;
-            } else {
-              width = Math.round((width * maxDimension) / height);
-              height = maxDimension;
-            }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let { width, height } = img;
+
+        // Scale down if larger than maxDimension while keeping aspect ratio
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
           }
+        }
 
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
 
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
 
-          canvas.toBlob(
-            (blob) => {
-              if (blob && blob.size < file.size) {
-                const newName = file.name.replace(/\.[^/.]+$/, ".jpg");
-                const compressedFile = new File([blob], newName, {
-                  type: "image/jpeg",
-                  lastModified: Date.now(),
-                });
-                resolve(compressedFile);
-              } else {
-                resolve(file);
-              }
-            },
-            "image/jpeg",
-            quality
-          );
-        };
-        img.onerror = () => resolve(file);
-        img.src = e.target.result;
-      };
-      reader.onerror = () => resolve(file);
-      reader.readAsDataURL(file);
-    });
-  } catch (err) {
-    console.warn("Client-side image compression skipped:", err);
-    return file;
-  }
+        canvas.toBlob(
+          (blob) => {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            if (blob && blob.size < file.size) {
+              const newName = file.name.replace(/\.[^/.]+$/, ".jpg");
+              const compressedFile = new File([blob], newName, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          "image/jpeg",
+          quality
+        );
+      } catch (err) {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        console.warn("Canvas compression failed, using original file:", err);
+        resolve(file);
+      }
+    };
+
+    img.onerror = () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+
+    img.src = objectUrl;
+  });
 }
 
 export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehicles", endpoint = null, customPreset = null) {
@@ -119,6 +128,7 @@ export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehic
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        timeout: 60000,
       });
 
       if (res.data?.success && res.data?.data?.url) {
@@ -131,7 +141,7 @@ export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehic
           headers: {
             "Content-Type": "multipart/form-data",
           },
-          timeout: 25000,
+          timeout: 60000,
         });
         if (publicRes.data?.success && publicRes.data?.data?.url) {
           return publicRes.data.data.url;
@@ -143,7 +153,7 @@ export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehic
             headers: {
               "Content-Type": "multipart/form-data",
             },
-            timeout: 25000,
+            timeout: 60000,
           });
           if (fallbackRes.data?.success && fallbackRes.data?.data?.url) {
             return fallbackRes.data.data.url;
@@ -157,7 +167,13 @@ export async function uploadSignedToCloudinary(file, folder = "grabrentals/vehic
   } catch (error) {
     console.error("Cloudinary upload error:", error);
     if (error.response?.status === 413) {
-      throw new Error("File size exceeds server limit (1MB). Please select a file smaller than 1MB.");
+      throw new Error("File size exceeds server upload limit. Please select a smaller photo or compress it.");
+    }
+    if (error.code === "ECONNABORTED" || error.message?.toLowerCase().includes("timeout")) {
+      throw new Error("Upload timed out due to slow cellular network. Please try again.");
+    }
+    if (error.message === "Network Error") {
+      throw new Error("Network connection issue while uploading. Please check your internet connection and try again.");
     }
     const serverMessage = error.response?.data?.message || error.message;
     throw new Error(serverMessage || "Failed to upload file");
