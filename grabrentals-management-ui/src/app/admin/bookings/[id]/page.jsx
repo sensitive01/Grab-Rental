@@ -375,7 +375,7 @@ export default function AdminBookingDetailPage({ params }) {
   if (loading) {
     return (
       <div className="py-20 text-center">
-        <LoadingAnimation title="Compiling Audit Dossier..." subtitle="Fetching telemetry, route ledger and settlement records" />
+        <LoadingAnimation title="Loading Booking Details..." subtitle="Fetching telemetry, route ledger and settlement records" />
       </div>
     );
   }
@@ -407,6 +407,9 @@ export default function AdminBookingDetailPage({ params }) {
 
   const pickupDt = formatDateTime(booking.pickupDateTime || booking.startDate);
   const returnDt = booking.returnDateTime ? formatDateTime(booking.returnDateTime) : null;
+  const vendorDisplay = (booking.vendorBusinessName || booking.vendorName)
+    ? `${booking.vendorBusinessName || booking.vendorName}${booking.vendorPhone ? ` (${booking.vendorPhone})` : ""}`
+    : "Unallocated (In Dispatch Queue)";
 
   const rawTripType = (booking.tripType || "ONE_WAY").toUpperCase();
   const isRoundTrip = rawTripType.includes("ROUND");
@@ -456,17 +459,17 @@ export default function AdminBookingDetailPage({ params }) {
 
       {/* Top Page Header */}
       <PageHeader
-        title={`Audit Dossier: Booking #${booking.bookingReference || booking.id}`}
-        subtitle={`Logged on ${pickupDt.date} • Fleet Partner: ${booking.vendorBusinessName || booking.vendorName || "Fleet Partner"}${booking.vendorPhone ? ` (${booking.vendorPhone})` : ""}`}
+        title={`Booking #${booking.bookingReference || booking.id}`}
+        subtitle={`Logged on ${pickupDt.date} • Fleet Partner: ${vendorDisplay}`}
         breadcrumbs={[
           { label: "Admin", href: "/admin/dashboard" },
           { label: "Bookings", href: "/admin/bookings" },
           { label: booking.bookingReference || booking.id },
         ]}
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/admin/bookings">
-              <Button variant="secondary" size="sm" icon={ArrowLeft}>
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <Link href="/admin/bookings" className="w-full sm:w-auto">
+              <Button variant="secondary" size="sm" icon={ArrowLeft} className="w-full sm:w-auto justify-center">
                 Back to Ledger
               </Button>
             </Link>
@@ -478,7 +481,7 @@ export default function AdminBookingDetailPage({ params }) {
                 icon={Car}
                 disabled
                 title="Payment verification required before allocating fleet"
-                className="opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200"
+                className="opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200 w-full sm:w-auto justify-center"
               >
                 Verification Required
               </Button>
@@ -488,7 +491,7 @@ export default function AdminBookingDetailPage({ params }) {
                 size="sm"
                 icon={Car}
                 onClick={openAllocateModal}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-xs font-bold w-full sm:w-auto justify-center"
               >
                 Allocate Fleet Asset
               </Button>
@@ -498,66 +501,79 @@ export default function AdminBookingDetailPage({ params }) {
                 size="sm"
                 icon={RefreshCw}
                 onClick={openAllocateModal}
+                className="w-full sm:w-auto justify-center"
               >
                 Reassign Fleet
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              icon={FileText}
-              onClick={() => setIsInvoiceModalOpen(true)}
-              className="border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 font-bold"
-            >
-              Preview Invoices &amp; Vouchers
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={Printer}
-              onClick={() => window.print()}
-            >
-              Print Duty Slip
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={MessageSquare}
-              disabled={sendingWhatsApp}
-              onClick={() => handleSendScenarioInvoice(1)}
-              className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
-            >
-              {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={MessageSquare}
-              disabled={sendingWhatsApp}
-              onClick={() => handleSendScenarioInvoice(2)}
-              className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
-            >
-              {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
-            </Button>
-            {booking.status === "COMPLETED" && (
-              <Button
-                variant="outline"
-                size="sm"
-                icon={MessageSquare}
-                disabled={sendingWhatsApp}
-                onClick={() => handleSendScenarioInvoice(3)}
-                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold"
-              >
-                {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
               </Button>
             )}
           </div>
         }
       />
 
+      {/* Document & WhatsApp Action Toolbar */}
+      <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={FileText}
+            onClick={() => setIsInvoiceModalOpen(true)}
+            className="border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 font-bold justify-center"
+          >
+            Preview Invoices
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Printer}
+            onClick={() => window.print()}
+            className="justify-center"
+          >
+            Print Duty Slip
+          </Button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full md:w-auto">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:inline mr-1">
+            WhatsApp Dispatch:
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={MessageSquare}
+            disabled={sendingWhatsApp}
+            onClick={() => handleSendScenarioInvoice(1)}
+            className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-medium justify-center w-full sm:w-auto"
+          >
+            {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={MessageSquare}
+            disabled={sendingWhatsApp}
+            onClick={() => handleSendScenarioInvoice(2)}
+            className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 font-medium justify-center w-full sm:w-auto"
+          >
+            {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
+          </Button>
+          {booking.status === "COMPLETED" && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(3)}
+              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold justify-center w-full sm:w-auto"
+            >
+              {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Key Financial & Route Metric Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-500 text-xs">
             <span className="font-semibold uppercase tracking-wider text-[10px]">Gross Tariff</span>
@@ -711,6 +727,7 @@ export default function AdminBookingDetailPage({ params }) {
             </div>
 
             <div className="max-h-[75vh] overflow-auto flex items-center justify-center rounded-2xl bg-black/60 p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewProof.url}
                 alt={previewProof.title}
@@ -839,6 +856,7 @@ export default function AdminBookingDetailPage({ params }) {
                     className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
                     onClick={() => setPreviewProof({ url: booking.startOdometerProofUrl || booking.startOdometerProof, title: `Start Odometer Proof - Booking #${booking.bookingReference || booking.id}` })}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={booking.startOdometerProofUrl || booking.startOdometerProof}
                       alt="Start Odometer Reading"
@@ -878,6 +896,7 @@ export default function AdminBookingDetailPage({ params }) {
                     className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
                     onClick={() => setPreviewProof({ url: booking.endOdometerProofUrl, title: `End Odometer Proof - Booking #${booking.bookingReference || booking.id}` })}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={booking.endOdometerProofUrl}
                       alt="End Odometer Reading"
@@ -917,6 +936,7 @@ export default function AdminBookingDetailPage({ params }) {
                     className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
                     onClick={() => setPreviewProof({ url: booking.paymentProofUrl, title: `Payment Receipt Proof - Booking #${booking.bookingReference || booking.id}` })}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={booking.paymentProofUrl}
                       alt="Payment Collection Proof"
@@ -1146,6 +1166,7 @@ export default function AdminBookingDetailPage({ params }) {
                   </div>
 
                   {specParsed.vehicleImage && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={specParsed.vehicleImage}
                       alt="Booked Vehicle"

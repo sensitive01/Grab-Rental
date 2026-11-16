@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { ScenarioInvoiceModal } from "@/components/bookings/ScenarioInvoiceModal";
 import {
+  ArrowLeft,
   Building2,
   Calendar,
   Car,
@@ -72,7 +73,7 @@ export default function BookingDetailPage({ params }) {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500">Loading booking dossier...</div>;
+    return <div className="p-8 text-center text-slate-500">Loading booking details...</div>;
   }
 
   if (!booking) {
@@ -109,59 +110,16 @@ export default function BookingDetailPage({ params }) {
           { label: booking.id },
         ]}
         action={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Printer}
-              onClick={() => window.print()}
-            >
-              Print Duty Slip
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={FileText}
-              onClick={() => setIsInvoiceModalOpen(true)}
-              className="border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 font-bold"
-            >
-              Preview Invoices &amp; Vouchers
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={MessageSquare}
-              disabled={sendingWhatsApp}
-              onClick={() => handleSendScenarioInvoice(1)}
-              className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
-            >
-              {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={MessageSquare}
-              disabled={sendingWhatsApp}
-              onClick={() => handleSendScenarioInvoice(2)}
-              className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
-            >
-              {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
-            </Button>
-            {booking.status === "COMPLETED" && (
-              <Button
-                variant="outline"
-                size="sm"
-                icon={MessageSquare}
-                disabled={sendingWhatsApp}
-                onClick={() => handleSendScenarioInvoice(3)}
-                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold"
-              >
-                {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <Link href="/operations/bookings" className="w-full sm:w-auto">
+              <Button variant="secondary" size="sm" icon={ArrowLeft} className="w-full sm:w-auto justify-center">
+                Back
               </Button>
-            )}
+            </Link>
+
             {booking.status === "PENDING_ALLOCATION" && (
-              <Link href={`/operations/assignments/vehicle?bookingId=${booking.id}`}>
-                <Button variant="amber" size="sm" icon={Car}>
+              <Link href={`/operations/assignments/vehicle?bookingId=${booking.id}`} className="w-full sm:w-auto">
+                <Button variant="amber" size="sm" icon={Car} className="w-full sm:w-auto justify-center">
                   Assign Vehicle
                 </Button>
               </Link>
@@ -171,6 +129,7 @@ export default function BookingDetailPage({ params }) {
                 variant="primary"
                 size="sm"
                 onClick={() => handleStatusChange("IN_TRANSIT")}
+                className="w-full sm:w-auto justify-center"
               >
                 Mark Dispatched (In Transit)
               </Button>
@@ -180,6 +139,7 @@ export default function BookingDetailPage({ params }) {
                 variant="emerald"
                 size="sm"
                 onClick={() => handleStatusChange("COMPLETED")}
+                className="w-full sm:w-auto justify-center"
               >
                 Mark Trip Completed
               </Button>
@@ -187,6 +147,68 @@ export default function BookingDetailPage({ params }) {
           </div>
         }
       />
+
+      {/* Document & WhatsApp Action Toolbar */}
+      <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={FileText}
+            onClick={() => setIsInvoiceModalOpen(true)}
+            className="border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 font-bold justify-center"
+          >
+            Preview Invoices
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Printer}
+            onClick={() => window.print()}
+            className="justify-center"
+          >
+            Print Duty Slip
+          </Button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full md:w-auto">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:inline mr-1">
+            WhatsApp Dispatch:
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={MessageSquare}
+            disabled={sendingWhatsApp}
+            onClick={() => handleSendScenarioInvoice(1)}
+            className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-medium justify-center w-full sm:w-auto"
+          >
+            {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={MessageSquare}
+            disabled={sendingWhatsApp}
+            onClick={() => handleSendScenarioInvoice(2)}
+            className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 font-medium justify-center w-full sm:w-auto"
+          >
+            {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
+          </Button>
+          {booking.status === "COMPLETED" && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(3)}
+              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold justify-center w-full sm:w-auto"
+            >
+              {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Top Status Banner */}
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
@@ -251,6 +273,7 @@ export default function BookingDetailPage({ params }) {
             </div>
 
             <div className="max-h-[75vh] overflow-auto flex items-center justify-center rounded-2xl bg-black/60 p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewProof.url}
                 alt={previewProof.title}
@@ -379,6 +402,7 @@ export default function BookingDetailPage({ params }) {
                     className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
                     onClick={() => setPreviewProof({ url: booking.startOdometerProofUrl || booking.startOdometerProof, title: `Start Odometer Proof - Booking #${booking.bookingReference || booking.id}` })}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={booking.startOdometerProofUrl || booking.startOdometerProof}
                       alt="Start Odometer Reading"
@@ -418,6 +442,7 @@ export default function BookingDetailPage({ params }) {
                     className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
                     onClick={() => setPreviewProof({ url: booking.endOdometerProofUrl, title: `End Odometer Proof - Booking #${booking.bookingReference || booking.id}` })}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={booking.endOdometerProofUrl}
                       alt="End Odometer Reading"
@@ -457,6 +482,7 @@ export default function BookingDetailPage({ params }) {
                     className="relative group rounded-xl overflow-hidden border border-slate-200 bg-black aspect-video cursor-pointer"
                     onClick={() => setPreviewProof({ url: booking.paymentProofUrl, title: `Payment Receipt Proof - Booking #${booking.bookingReference || booking.id}` })}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={booking.paymentProofUrl}
                       alt="Payment Collection Proof"

@@ -23,22 +23,22 @@ export function TopNavbar({ onMenuClick, role = "OPERATIONS" }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shadow-2xs">
+    <header className="sticky top-0 z-30 h-16 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shadow-xs">
       {/* Left: Mobile Menu Toggle & Breadcrumbs/Portal Badge */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           type="button"
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          className="lg:hidden w-10 h-10 -ml-1 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition-colors shrink-0"
           aria-label="Toggle Navigation"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span
             className={cn(
-              "px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5",
+              "px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0",
               isOps
                 ? "bg-amber-100 text-amber-800 border border-amber-300"
                 : "bg-blue-100 text-blue-800 border border-blue-300"
@@ -46,14 +46,19 @@ export function TopNavbar({ onMenuClick, role = "OPERATIONS" }) {
           >
             <span
               className={cn(
-                "w-2 h-2 rounded-full",
+                "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
                 isOps ? "bg-amber-600 animate-pulse" : "bg-blue-600 animate-pulse"
               )}
             />
-            {isOps ? "Operations Portal" : "Admin Command Center"}
+            <span className="hidden sm:inline">
+              {isOps ? "Operations Portal" : "Admin Command Center"}
+            </span>
+            <span className="sm:hidden font-extrabold">
+              {isOps ? "Operations" : "Admin"}
+            </span>
           </span>
           <span className="hidden sm:inline text-xs text-slate-400">|</span>
-          <span className="hidden sm:inline text-xs font-medium text-slate-600">
+          <span className="hidden md:inline text-xs font-medium text-slate-600 truncate">
             {isOps ? "Fleet & Trip Dispatch Console" : "System Governance & Finance"}
           </span>
         </div>

@@ -48,10 +48,11 @@ export const OPERATIONS_NAV = [
     title: "Dispatch Command",
     items: [
       { label: "Dashboard", href: "/operations/dashboard", icon: LayoutDashboard },
+      { label: "New Booking", href: "/operations/bookings/new", icon: PlusCircle },
       { label: "All Bookings", href: "/operations/bookings", icon: CalendarCheck },
-      { label: "New Requests", href: "/operations/bookings/new", icon: PlusCircle },
+      { label: "Pending Allocations", href: "/operations/bookings/pending", icon: Clock },
       { label: "Customer Enquiries", href: "/admin/enquiries", icon: MessageSquare },
-      { label: "Search History", href: "/admin/search-history", icon: Navigation },
+      // { label: "Search History", href: "/admin/search-history", icon: Navigation },
     ],
   },
   {
@@ -95,6 +96,7 @@ export const ADMIN_NAV = [
     title: "Main",
     items: [
       { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "New Booking", href: "/admin/bookings/new", icon: PlusCircle },
       { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
       { label: "Enquiries & Leads", href: "/admin/enquiries", icon: MessageSquare },
       { label: "Search History", href: "/admin/search-history", icon: Navigation },
@@ -213,6 +215,7 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
         {/* Brand Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800 bg-slate-950/60">
           <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/brand-logo.png"
               alt="Grab Rentals"
@@ -254,7 +257,7 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
         </div>
 
         {/* Scrollable Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 no-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-6 no-scrollbar">
           {navSections.map((section, idx) => (
             <div key={idx}>
               <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -263,14 +266,22 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
               <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/operations/dashboard" &&
-                      item.href !== "/admin/dashboard" &&
-                      pathname.startsWith(item.href));
+                  const itemPath = item.href.split("?")[0];
+                  const hasCreateParam = item.href.includes("create=true");
+                  const isActive = hasCreateParam
+                    ? pathname === itemPath && typeof window !== "undefined" && window.location.search.includes("create=true")
+                    : pathname === item.href ||
+                      (item.href !== "/operations/dashboard" &&
+                        item.href !== "/admin/dashboard" &&
+                        itemPath !== "/admin/bookings" &&
+                        itemPath !== "/operations/bookings" &&
+                        pathname.startsWith(item.href)) ||
+                      ((item.href === "/admin/bookings" || item.href === "/operations/bookings") &&
+                        pathname === itemPath &&
+                        (typeof window === "undefined" || !window.location.search.includes("create=true")));
 
                   let badgeText = item.badge;
-                  if (item.href === "/operations/bookings/new") {
+                  if (item.href === "/operations/bookings/pending") {
                     badgeText = counts.pendingAllocations > 0 ? String(counts.pendingAllocations) : null;
                   } else if (item.href === "/operations/trips/active") {
                     badgeText = counts.activeTrips > 0 ? String(counts.activeTrips) : null;
@@ -283,6 +294,9 @@ export function Sidebar({ role = "OPERATIONS", isOpen = true, onClose }) {
                       key={item.href}
                       href={item.href}
                       onClick={() => {
+                        if (hasCreateParam && typeof window !== "undefined") {
+                          window.dispatchEvent(new CustomEvent("open-create-booking"));
+                        }
                         if (window.innerWidth < 1024 && onClose) onClose();
                       }}
                       className={cn(

@@ -200,7 +200,7 @@ export default function VehicleAssignmentPage() {
         subtitle="Assign commercial vehicles to customer bookings. Chauffeurs are assigned by the fleet owner upon dispatch acceptance."
         breadcrumbs={[
           { label: "Operations", href: "/operations/dashboard" },
-          { label: "Pending Allocations", href: "/operations/bookings/new" },
+          { label: "Pending Allocations", href: "/operations/bookings/pending" },
           {
             label: selectedBooking?.id
               ? `Allocate ${selectedBooking.id}`
@@ -245,7 +245,7 @@ export default function VehicleAssignmentPage() {
                   </button>
                 )}
                 <Link
-                  href="/operations/bookings/new"
+                  href="/operations/bookings/pending"
                   className="text-slate-500 hover:text-slate-800 flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3 h-3" /> Back to Queue

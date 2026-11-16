@@ -46,7 +46,7 @@ public class InvoicePdfGeneratorService {
             Color slate700 = new Color(51, 65, 85);
             Color slate500 = new Color(100, 116, 139);
             Color slate400 = new Color(148, 163, 184);
-            Color amber500 = new Color(245, 158, 11);
+            Color brandPrimary = new Color(0, 130, 254); // Customer Electric Blue (#0082fe)
             Color amber700 = new Color(180, 83, 9);
             Color emerald700 = new Color(4, 120, 87);
             Color lightBg = new Color(248, 250, 252);
@@ -54,7 +54,7 @@ public class InvoicePdfGeneratorService {
 
             // Fonts
             Font brandDarkFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, slate900);
-            Font brandAmberFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, amber500);
+            Font brandAccentFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, brandPrimary);
             Font docTitleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, slate900);
             Font smallLabelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, slate400);
             Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 8, slate700);
@@ -122,26 +122,11 @@ public class InvoicePdfGeneratorService {
                     ? BigDecimal.ZERO
                     : totalFare.subtract(advancePaid).max(BigDecimal.ZERO);
 
-            String docTitle;
-            String docBadge;
-            Color badgeBgColor;
-            switch (scenario) {
-                case 1 -> {
-                    docTitle = "PROVISIONAL BOOKING ESTIMATE";
-                    docBadge = "SCENARIO 1: BOOKING CREATED";
-                    badgeBgColor = new Color(239, 246, 255);
-                }
-                case 2 -> {
-                    docTitle = "BOOKING CONFIRMATION & DUTY SLIP";
-                    docBadge = "SCENARIO 2: BOOKING CONFIRMED (NO OTP)";
-                    badgeBgColor = new Color(250, 245, 255);
-                }
-                default -> {
-                    docTitle = "OFFICIAL TAX INVOICE (SAC: 9966)";
-                    docBadge = "SCENARIO 3: TRIP COMPLETED & SETTLED";
-                    badgeBgColor = new Color(236, 253, 245);
-                }
-            }
+            String docTitle = switch (scenario) {
+                case 1 -> "PROVISIONAL BOOKING ESTIMATE";
+                case 2 -> "BOOKING CONFIRMATION";
+                default -> "OFFICIAL TAX INVOICE (SAC: 9966)";
+            };
 
             // 1. Header (Brand Logo Left, Document Details Right)
             PdfPTable headerTable = new PdfPTable(2);
@@ -152,9 +137,9 @@ public class InvoicePdfGeneratorService {
             leftHeader.setBorder(Rectangle.NO_BORDER);
             Paragraph brandPara = new Paragraph();
             brandPara.add(new Chunk("GRAB", brandDarkFont));
-            brandPara.add(new Chunk("RENTAL", brandAmberFont));
+            brandPara.add(new Chunk("RENTALS", brandAccentFont));
             leftHeader.addElement(brandPara);
-            leftHeader.addElement(new Paragraph("Grab Rental Technologies Pvt. Ltd.", normalFont));
+            leftHeader.addElement(new Paragraph("Grab Rentals Technologies Pvt. Ltd.", normalFont));
             leftHeader.addElement(new Paragraph("GSTIN: 29AABCG7890F1Z2 • Place of Supply: Karnataka (29)", metaFont));
             leftHeader.addElement(new Paragraph("Helpline: +91 9071 100 200 • Email: grabrentals2016@gmail.com", metaFont));
             headerTable.addCell(leftHeader);
@@ -167,15 +152,10 @@ public class InvoicePdfGeneratorService {
             docTitlePara.setAlignment(Element.ALIGN_RIGHT);
             rightHeader.addElement(docTitlePara);
 
-            Paragraph badgePara = new Paragraph(docBadge, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, slate700));
-            badgePara.setAlignment(Element.ALIGN_RIGHT);
-            rightHeader.addElement(badgePara);
-
             Paragraph refPara = new Paragraph();
             refPara.setAlignment(Element.ALIGN_RIGHT);
-            refPara.add(new Chunk("Doc No: " + invNum + "\n", normalBoldFont));
-            refPara.add(new Chunk("Date: " + LocalDateTime.now().format(DATE_FORMATTER) + "\n", metaFont));
             refPara.add(new Chunk("Booking Ref: " + bRef + "\n", normalBoldFont));
+            refPara.add(new Chunk("Date: " + LocalDateTime.now().format(DATE_FORMATTER) + "\n", metaFont));
             rightHeader.addElement(refPara);
             headerTable.addCell(rightHeader);
 
@@ -248,80 +228,76 @@ public class InvoicePdfGeneratorService {
             // 4. Itemized Charges Table
             PdfPTable itemsTable = new PdfPTable(5);
             itemsTable.setWidthPercentage(100);
-            itemsTable.setWidths(new float[]{6, 50, 14, 15, 15});
+            itemsTable.setWidths(new float[]{8, 50, 14, 14, 14});
 
-            String[] tableHeaders = {"#", "Service Description", "SAC Code", "Package / Qty", "Amount (INR)"};
-            for (String h : tableHeaders) {
-                PdfPCell hCell = new PdfPCell(new Phrase(h, tableHeadFont));
+            String[] tableHeaders = {"S.No", "Service Description", "SAC Code", "Package / Qty", "Amount (INR)"};
+            for (int i = 0; i < tableHeaders.length; i++) {
+                PdfPCell hCell = new PdfPCell(new Phrase(tableHeaders[i], tableHeadFont));
                 hCell.setBackgroundColor(new Color(241, 245, 249));
                 hCell.setPadding(6);
+                hCell.setUseAscender(true);
+                hCell.setUseDescender(true);
+                hCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 hCell.setBorderColor(borderColor);
+                if (i != 1) {
+                    hCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                }
                 itemsTable.addCell(hCell);
             }
 
-            int rowNum = 1;
+            int sNo = 1;
 
             // Row 1: Base Rental Duty (Package minus customer addons)
-            itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-            itemsTable.addCell(new Phrase("Intercity Chauffeur Passenger Rental (" + pickupCity + " to " + dropCity + ")", normalFont));
-            itemsTable.addCell(new Phrase("9966", metaFont));
-            itemsTable.addCell(new Phrase("1 Trip", normalFont));
-            itemsTable.addCell(new Phrase("Rs " + formatCurrency(baseRentalFare), normalBoldFont));
+            addTableRow(itemsTable, String.valueOf(sNo++), "Intercity Chauffeur Passenger Rental (" + pickupCity + " to " + dropCity + ")", "9966", "1 Trip", "Rs " + formatCurrency(baseRentalFare), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
 
             // Customer Selected Add-ons (Visible across ALL Scenarios 1, 2, 3)
             for (BookingAddonItem a : addons) {
-                itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-                itemsTable.addCell(new Phrase(a.getName() + " - " + a.getDescription(), normalFont));
-                itemsTable.addCell(new Phrase(a.getSacCode() != null ? a.getSacCode() : "9966", metaFont));
-                itemsTable.addCell(new Phrase(a.getPackageQty() != null ? a.getPackageQty() : "1 Unit", normalFont));
-                itemsTable.addCell(new Phrase("Rs " + formatCurrency(a.getPrice() != null ? a.getPrice() : BigDecimal.ZERO), normalBoldFont));
+                addTableRow(itemsTable, String.valueOf(sNo++), a.getName() + " - " + a.getDescription(), a.getSacCode() != null ? a.getSacCode() : "9966", a.getPackageQty() != null ? a.getPackageQty() : "1 Unit", "Rs " + formatCurrency(a.getPrice() != null ? a.getPrice() : BigDecimal.ZERO), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
             }
 
             // Post-Trip Extras (Strictly Scenario 3 ONLY)
             if (scenario == 3) {
                 if (extraKmCharge.compareTo(BigDecimal.ZERO) > 0) {
-                    itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-                    itemsTable.addCell(new Phrase("Extra Distance Traveled Beyond Package (" + (booking.getExtraKm() != null ? booking.getExtraKm() : 0) + " KM)", normalFont));
-                    itemsTable.addCell(new Phrase("9966", metaFont));
-                    itemsTable.addCell(new Phrase((booking.getExtraKm() != null ? booking.getExtraKm() : 0) + " KM", normalFont));
-                    itemsTable.addCell(new Phrase("Rs " + formatCurrency(extraKmCharge), normalBoldFont));
+                    addTableRow(itemsTable, String.valueOf(sNo++), "Extra Distance Traveled Beyond Package (" + (booking.getExtraKm() != null ? booking.getExtraKm() : 0) + " KM)", "9966", (booking.getExtraKm() != null ? booking.getExtraKm() : 0) + " KM", "Rs " + formatCurrency(extraKmCharge), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
                 }
                 if (tolls.compareTo(BigDecimal.ZERO) > 0) {
-                    itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-                    itemsTable.addCell(new Phrase("Highway Express Tolls & FASTag Receipts", normalFont));
-                    itemsTable.addCell(new Phrase("9966", metaFont));
-                    itemsTable.addCell(new Phrase("Actuals", normalFont));
-                    itemsTable.addCell(new Phrase("Rs " + formatCurrency(tolls), normalBoldFont));
+                    addTableRow(itemsTable, String.valueOf(sNo++), "Highway Express Tolls & FASTag Receipts", "9966", "Actuals", "Rs " + formatCurrency(tolls), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
                 }
                 if (parking.compareTo(BigDecimal.ZERO) > 0) {
-                    itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-                    itemsTable.addCell(new Phrase("Airport & Station Parking Charges", normalFont));
-                    itemsTable.addCell(new Phrase("9966", metaFont));
-                    itemsTable.addCell(new Phrase("Actuals", normalFont));
-                    itemsTable.addCell(new Phrase("Rs " + formatCurrency(parking), normalBoldFont));
+                    addTableRow(itemsTable, String.valueOf(sNo++), "Airport & Station Parking Charges", "9966", "Actuals", "Rs " + formatCurrency(parking), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
                 }
                 if (allowance.compareTo(BigDecimal.ZERO) > 0) {
-                    itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-                    itemsTable.addCell(new Phrase("Chauffeur Night / Extra Duty Allowance", normalFont));
-                    itemsTable.addCell(new Phrase("9966", metaFont));
-                    itemsTable.addCell(new Phrase("Actuals", normalFont));
-                    itemsTable.addCell(new Phrase("Rs " + formatCurrency(allowance), normalBoldFont));
+                    addTableRow(itemsTable, String.valueOf(sNo++), "Chauffeur Night / Extra Duty Allowance", "9966", "Actuals", "Rs " + formatCurrency(allowance), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
                 }
                 if (other.compareTo(BigDecimal.ZERO) > 0) {
-                    itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-                    itemsTable.addCell(new Phrase("Other Verified Expenses" + (booking.getOtherChargesNotes() != null ? " (" + booking.getOtherChargesNotes() + ")" : ""), normalFont));
-                    itemsTable.addCell(new Phrase("9966", metaFont));
-                    itemsTable.addCell(new Phrase("Actuals", normalFont));
-                    itemsTable.addCell(new Phrase("Rs " + formatCurrency(other), normalBoldFont));
+                    addTableRow(itemsTable, String.valueOf(sNo++), "Other Verified Expenses" + (booking.getOtherChargesNotes() != null ? " (" + booking.getOtherChargesNotes() + ")" : ""), "9966", "Actuals", "Rs " + formatCurrency(other), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
                 }
                 if (extrasGst.compareTo(BigDecimal.ZERO) > 0) {
-                    itemsTable.addCell(new Phrase(String.valueOf(rowNum++), normalFont));
-                    itemsTable.addCell(new Phrase("Applicable GST on Additional Trip Extras (5%)", normalFont));
-                    itemsTable.addCell(new Phrase("9966", metaFont));
-                    itemsTable.addCell(new Phrase("5%", normalFont));
-                    itemsTable.addCell(new Phrase("Rs " + formatCurrency(extrasGst), normalBoldFont));
+                    addTableRow(itemsTable, String.valueOf(sNo++), "Applicable GST on Additional Trip Extras (5%)", "9966", "5%", "Rs " + formatCurrency(extrasGst), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
                 }
             }
+
+            // Dedicated Row Total at the end of the itemized table
+            PdfPCell totalLabelCell = new PdfPCell(new Phrase("Total", tableHeadFont));
+            totalLabelCell.setColspan(4);
+            totalLabelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            totalLabelCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            totalLabelCell.setUseAscender(true);
+            totalLabelCell.setUseDescender(true);
+            totalLabelCell.setPadding(6);
+            totalLabelCell.setBackgroundColor(new Color(248, 250, 252));
+            totalLabelCell.setBorderColor(borderColor);
+            itemsTable.addCell(totalLabelCell);
+
+            PdfPCell totalValCell = new PdfPCell(new Phrase("Rs " + formatCurrency(totalFare), normalBoldFont));
+            totalValCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            totalValCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            totalValCell.setUseAscender(true);
+            totalValCell.setUseDescender(true);
+            totalValCell.setPadding(6);
+            totalValCell.setBackgroundColor(new Color(248, 250, 252));
+            totalValCell.setBorderColor(borderColor);
+            itemsTable.addCell(totalValCell);
 
             document.add(itemsTable);
             document.add(new Paragraph(" "));
@@ -363,7 +339,7 @@ public class InvoicePdfGeneratorService {
 
             // 6. Footer
             Paragraph footer = new Paragraph(
-                    "\nThank you for choosing Grab Rental! This is a computer-generated document under the Information Technology Act.\nHelpline: +91 9071 100 200 • www.grabrentals.in • grabrentals2016@gmail.com",
+                    "\nThank you for choosing Grab Rentals! This is a computer-generated document under the Information Technology Act.\nHelpline: +91 9071 100 200 • www.grabrentals.in • grabrentals2016@gmail.com",
                     metaFont
             );
             footer.setAlignment(Element.ALIGN_CENTER);
@@ -390,6 +366,54 @@ public class InvoicePdfGeneratorService {
         cell.addElement(pLabel);
         cell.addElement(pVal);
         table.addCell(cell);
+    }
+
+    private void addTableRow(PdfPTable table, String sNo, String desc, String sac, String qty, String amount,
+                             Font sNoFont, Font descFont, Font sacFont, Font qtyFont, Font amountFont, Color borderColor) {
+        PdfPCell c0 = new PdfPCell(new Phrase(sNo, sNoFont));
+        c0.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c0.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c0.setUseAscender(true);
+        c0.setUseDescender(true);
+        c0.setPadding(6);
+        c0.setBorderColor(borderColor);
+        table.addCell(c0);
+
+        PdfPCell c1 = new PdfPCell(new Phrase(desc, descFont));
+        c1.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c1.setUseAscender(true);
+        c1.setUseDescender(true);
+        c1.setPadding(6);
+        c1.setLeading(2.5f, 1.2f);
+        c1.setBorderColor(borderColor);
+        table.addCell(c1);
+
+        PdfPCell c2 = new PdfPCell(new Phrase(sac, sacFont));
+        c2.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c2.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c2.setUseAscender(true);
+        c2.setUseDescender(true);
+        c2.setPadding(6);
+        c2.setBorderColor(borderColor);
+        table.addCell(c2);
+
+        PdfPCell c3 = new PdfPCell(new Phrase(qty, qtyFont));
+        c3.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c3.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c3.setUseAscender(true);
+        c3.setUseDescender(true);
+        c3.setPadding(6);
+        c3.setBorderColor(borderColor);
+        table.addCell(c3);
+
+        PdfPCell c4 = new PdfPCell(new Phrase(amount, amountFont));
+        c4.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c4.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c4.setUseAscender(true);
+        c4.setUseDescender(true);
+        c4.setPadding(6);
+        c4.setBorderColor(borderColor);
+        table.addCell(c4);
     }
 
     private String formatCurrency(BigDecimal amount) {

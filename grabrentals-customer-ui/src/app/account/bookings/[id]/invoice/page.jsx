@@ -421,7 +421,7 @@ export default function BookingInvoicePage({ params }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-black tracking-tight text-slate-900">
-                  GRAB<span className="text-amber-500">RENTAL</span>
+                  GRAB<span className="text-[#0082fe]">RENTALS</span>
                 </span>
                 <span
                   className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
@@ -435,24 +435,20 @@ export default function BookingInvoicePage({ params }) {
                   {scenario === 1
                     ? "Provisional Estimate & Quotation"
                     : scenario === 2
-                    ? "Booking Confirmation & Duty Slip"
+                    ? "Booking Confirmation"
                     : "Official Tax Invoice (SAC: 9966)"}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-2 font-medium">Grab Rental Technologies Pvt. Ltd.</p>
+              <p className="text-xs text-slate-500 mt-2 font-medium">Grab Rentals Technologies Pvt. Ltd.</p>
               <p className="text-xs text-slate-500">Bangalore, Karnataka</p>
               <p className="text-xs text-slate-500">GSTIN: <span className="font-mono font-bold text-slate-700">29AABCG7890F1Z2</span></p>
               <p className="text-xs text-slate-500">Email: grabrentals2016@gmail.com • Web: grabrentals.in</p>
             </div>
 
             <div className="sm:text-right space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                {scenario === 1 ? "Estimate No." : scenario === 2 ? "Confirmation No." : "Tax Invoice No."}
-              </span>
-              <h2 className="text-xl font-black font-mono text-slate-900">{invNumber}</h2>
               <div className="text-xs text-slate-600 pt-1 space-y-0.5">
+                <p><span className="text-slate-400">Booking Ref:</span> <span className="font-mono font-bold text-slate-900">{bRef}</span></p>
                 <p><span className="text-slate-400">Date:</span> {invoiceDateStr}</p>
-                <p><span className="text-slate-400">Booking Ref:</span> <span className="font-mono font-bold">{bRef}</span></p>
                 <p><span className="text-slate-400">Place of Supply:</span> Karnataka (29)</p>
               </div>
             </div>
@@ -542,28 +538,37 @@ export default function BookingInvoicePage({ params }) {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b-2 border-slate-200 text-[11px] font-black text-slate-700 uppercase tracking-wider">
-                  <th className="py-3 px-2">#</th>
+                  <th className="py-3 px-2 text-center w-12">S.No</th>
                   <th className="py-3 px-3">Service Description</th>
-                  <th className="py-3 px-3">SAC Code</th>
+                  <th className="py-3 px-3 text-center">SAC Code</th>
                   <th className="py-3 px-3 text-center">Package / Qty</th>
-                  <th className="py-3 px-3 text-right">Rate</th>
-                  <th className="py-3 px-3 text-right">Amount (INR)</th>
+                  <th className="py-3 px-3 text-center">Rate</th>
+                  <th className="py-3 px-3 text-center">Amount (INR)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                 {invoiceRows.map((row, idx) => (
-                  <tr key={row.id || idx}>
-                    <td className="py-3.5 px-2 font-bold text-slate-400">{idx + 1}</td>
-                    <td className="py-3.5 px-3">
-                      <p className="font-bold text-slate-900">{row.title}</p>
-                      <span className="text-[11px] text-slate-400">{row.subtitle}</span>
+                  <tr key={row.id || idx} className="align-middle">
+                    <td className="py-3.5 px-2 text-center font-mono font-bold text-slate-500 align-middle">{idx + 1}</td>
+                    <td className="py-3.5 px-3 align-middle">
+                      <p className="font-bold text-slate-900 leading-relaxed">{row.title}</p>
+                      <span className="text-[11px] text-slate-400 leading-normal">{row.subtitle}</span>
                     </td>
-                    <td className="py-3.5 px-3 font-mono text-slate-500">{row.sac}</td>
-                    <td className="py-3.5 px-3 text-center">{row.qty}</td>
-                    <td className="py-3.5 px-3 text-right font-mono">₹{row.rate.toLocaleString("en-IN")}.00</td>
-                    <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">₹{row.amount.toLocaleString("en-IN")}.00</td>
+                    <td className="py-3.5 px-3 text-center font-mono text-slate-500 align-middle">{row.sac}</td>
+                    <td className="py-3.5 px-3 text-center align-middle">{row.qty}</td>
+                    <td className="py-3.5 px-3 text-center font-mono align-middle">₹{row.rate.toLocaleString("en-IN")}.00</td>
+                    <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-900 align-middle">₹{row.amount.toLocaleString("en-IN")}.00</td>
                   </tr>
                 ))}
+                {/* Dedicated Row Total */}
+                <tr className="border-t-2 border-slate-300 bg-slate-50/70 font-bold text-slate-900 align-middle">
+                  <td colSpan={5} className="py-3 px-4 text-right font-black uppercase text-xs tracking-wider text-slate-700 align-middle">
+                    Total
+                  </td>
+                  <td className="py-3 px-3 text-center font-mono font-black text-sm text-slate-900 align-middle">
+                    ₹{displayedTotalFare.toLocaleString("en-IN")}.00
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -632,7 +637,7 @@ export default function BookingInvoicePage({ params }) {
 
           {/* Footer Terms */}
           <div className="pt-6 border-t border-slate-100 text-[11px] text-slate-400 text-center space-y-1">
-            <p className="font-bold text-slate-600">Thank you for choosing Grab-Rental!</p>
+            <p className="font-bold text-slate-600">Thank you for choosing Grab Rentals!</p>
             <p>For any billing inquiries, call our 24/7 helpline at +91 9071 100 200 or email grabrentals2016@gmail.com</p>
           </div>
 

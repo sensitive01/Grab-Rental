@@ -98,14 +98,14 @@ export default function OperationsDashboard() {
         subtitle="Real-time dispatch control, vehicle assignments, and trip monitoring"
         breadcrumbs={[{ label: "Operations" }, { label: "Dashboard" }]}
         action={
-          <div className="flex items-center gap-2.5">
-            <Link href="/operations/assignments/vehicle">
-              <Button variant="secondary" size="sm" icon={Car}>
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <Link href="/operations/assignments/vehicle" className="w-full sm:w-auto">
+              <Button variant="secondary" size="sm" icon={Car} className="w-full sm:w-auto justify-center">
                 Assign Vehicles
               </Button>
             </Link>
-            <Link href="/operations/bookings/new">
-              <Button variant="amber" size="sm" icon={PlusCircle}>
+            <Link href="/operations/bookings/pending" className="w-full sm:w-auto">
+              <Button variant="amber" size="sm" icon={PlusCircle} className="w-full sm:w-auto justify-center">
                 Pending Requests ({pendingBookings.length})
               </Button>
             </Link>
@@ -114,7 +114,7 @@ export default function OperationsDashboard() {
       />
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Active Trips */}
         <Card className="border-l-4 border-l-blue-500 bg-white">
           <div className="flex items-center justify-between">
@@ -235,7 +235,7 @@ export default function OperationsDashboard() {
           subtitle="Assign available vehicle and driver before pickup time"
           action={
             <Link
-              href="/operations/bookings/new"
+              href="/operations/bookings/pending"
               className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
             >
               <span>View All</span>

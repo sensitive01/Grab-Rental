@@ -188,6 +188,33 @@ export const operationsApi = {
     return createApiResponse(booking);
   },
 
+  async searchAvailableVehicles(params = {}) {
+    try {
+      const res = await axiosClient.get("/api/vehicles/search", {
+        params: {
+          from: params.from,
+          fromCity: params.fromCity,
+          to: params.to,
+          toCity: params.toCity,
+          stops: params.stops,
+          tripType: params.tripType,
+          pickupDate: params.pickupDate,
+          pickupTime: params.pickupTime,
+          returnDate: params.returnDate,
+          tripDays: params.tripDays,
+          serviceType: params.serviceType,
+          distanceKm: params.distanceKm,
+        },
+      });
+      if (res.data && res.data.success && res.data.data) {
+        return createApiResponse(res.data.data);
+      }
+    } catch {
+      // Fallback to offline or client calculations
+    }
+    return createApiResponse(null);
+  },
+
   async getVehicles(status = "ALL") {
     try {
       const endpoint = status === "AVAILABLE" ? "/api/operations/vehicles/available" : "/api/operations/vehicles";

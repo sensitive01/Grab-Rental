@@ -89,6 +89,27 @@ export default function AdminMasterBookingsPage() {
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
+  // Auto-open CreateBookingModal if ?create=true is in URL or open-create-booking event fires
+  useEffect(() => {
+    function checkCreateParam() {
+      if (typeof window !== "undefined") {
+        const p = new URLSearchParams(window.location.search);
+        if (p.get("create") === "true") {
+          setCreateModalOpen(true);
+        }
+      }
+    }
+    const handleOpen = () => setCreateModalOpen(true);
+
+    checkCreateParam();
+    window.addEventListener("popstate", checkCreateParam);
+    window.addEventListener("open-create-booking", handleOpen);
+    return () => {
+      window.removeEventListener("popstate", checkCreateParam);
+      window.removeEventListener("open-create-booking", handleOpen);
+    };
+  }, []);
+
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
   const handleVerifyPayment = async (bookingId, { action, rejectionReason }) => {
@@ -331,7 +352,7 @@ export default function AdminMasterBookingsPage() {
       <Card noPadding>
         {/* DataTable Controls Bar */}
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/50">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 w-full">
             <SearchInput
               value={search}
               onChange={(val) => {
@@ -342,7 +363,7 @@ export default function AdminMasterBookingsPage() {
               className="w-full sm:w-80"
             />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Filter className="w-4 h-4 text-slate-400 shrink-0" />
               <select
                 value={statusFilter}
@@ -350,7 +371,7 @@ export default function AdminMasterBookingsPage() {
                   setStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                className="w-full sm:w-auto text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 cursor-pointer"
               >
                 <option value="ALL">All Statuses ({bookings.length})</option>
                 <option value="PENDING_PAYMENT_VERIFICATION">Pending Payment Verification</option>
@@ -365,9 +386,9 @@ export default function AdminMasterBookingsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-end md:self-center">
-            <span className="text-xs text-slate-500">
-              Showing <strong>{filteredAndSortedBookings.length}</strong> bookings (New to Old)
+          <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+            <span className="text-xs text-slate-500 whitespace-nowrap">
+              Showing <strong>{filteredAndSortedBookings.length}</strong> bookings
             </span>
 
             <select
@@ -376,7 +397,7 @@ export default function AdminMasterBookingsPage() {
                 setPageSize(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 font-medium focus:outline-none"
+              className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 font-medium focus:outline-none cursor-pointer"
             >
               <option value={10}>10 / page</option>
               <option value={25}>25 / page</option>
@@ -884,7 +905,14 @@ export default function AdminMasterBookingsPage() {
       {/* Manual Booking Entry Modal */}
       <CreateBookingModal
         isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        onClose={() => {
+          setCreateModalOpen(false);
+          if (typeof window !== "undefined" && window.location.search.includes("create=true")) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("create");
+            window.history.replaceState({}, "", url.pathname + (url.search || ""));
+          }
+        }}
         onSuccess={() => setReloadTrigger((prev) => prev + 1)}
         onToast={setToast}
       />

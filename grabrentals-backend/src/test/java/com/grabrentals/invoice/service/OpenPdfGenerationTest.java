@@ -32,7 +32,7 @@ public class OpenPdfGenerationTest {
 
         // Fonts
         Font brandFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, new Color(15, 23, 42)); // Slate-900
-        Font brandAccentFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, new Color(245, 158, 11)); // Amber-500
+        Font brandAccentFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, new Color(0, 130, 254)); // Customer Electric Blue (#0082fe)
         Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13, new Color(30, 41, 59));
         Font subTitleFont = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(100, 116, 139));
         Font tableHeaderFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, new Color(51, 65, 85));
@@ -49,9 +49,9 @@ public class OpenPdfGenerationTest {
         leftCell.setBorder(Rectangle.NO_BORDER);
         Paragraph brandPara = new Paragraph();
         brandPara.add(new Chunk("GRAB", brandFont));
-        brandPara.add(new Chunk("RENTAL", brandAccentFont));
+        brandPara.add(new Chunk("RENTALS", brandAccentFont));
         leftCell.addElement(brandPara);
-        leftCell.addElement(new Paragraph("Grab Rental Technologies Pvt. Ltd.", subTitleFont));
+        leftCell.addElement(new Paragraph("Grab Rentals Technologies Pvt. Ltd.", subTitleFont));
         leftCell.addElement(new Paragraph("GSTIN: 29AABCG7890F1Z2 • Place of Supply: Karnataka (29)", subTitleFont));
         leftCell.addElement(new Paragraph("Helpline: +91 9071 100 200 • grabrentals2016@gmail.com", subTitleFont));
         headerTable.addCell(leftCell);
@@ -59,15 +59,14 @@ public class OpenPdfGenerationTest {
         PdfPCell rightCell = new PdfPCell();
         rightCell.setBorder(Rectangle.NO_BORDER);
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        Paragraph invTitle = new Paragraph("CONFIRMED DUTY VOUCHER", titleFont);
+        Paragraph invTitle = new Paragraph("BOOKING CONFIRMATION", titleFont);
         invTitle.setAlignment(Element.ALIGN_RIGHT);
         rightCell.addElement(invTitle);
 
         Paragraph invDetails = new Paragraph();
         invDetails.setAlignment(Element.ALIGN_RIGHT);
-        invDetails.add(new Chunk("Voucher No: INV-GRB1025\n", boldCellFont));
-        invDetails.add(new Chunk("Date: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy")) + "\n", subTitleFont));
         invDetails.add(new Chunk("Booking Ref: GRB1025\n", boldCellFont));
+        invDetails.add(new Chunk("Date: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy")) + "\n", subTitleFont));
         rightCell.addElement(invDetails);
         headerTable.addCell(rightCell);
 
@@ -105,37 +104,99 @@ public class OpenPdfGenerationTest {
         // 4. Line Items Table
         PdfPTable itemsTable = new PdfPTable(5);
         itemsTable.setWidthPercentage(100);
-        itemsTable.setWidths(new float[]{8, 47, 15, 15, 15});
+        itemsTable.setWidths(new float[]{8, 50, 14, 14, 14});
 
-        String[] headers = {"#", "Service Description", "SAC Code", "Qty / Package", "Amount (INR)"};
-        for (String h : headers) {
-            PdfPCell hCell = new PdfPCell(new Phrase(h, tableHeaderFont));
+        String[] headers = {"S.No", "Service Description", "SAC Code", "Qty / Package", "Amount (INR)"};
+        for (int i = 0; i < headers.length; i++) {
+            PdfPCell hCell = new PdfPCell(new Phrase(headers[i], tableHeaderFont));
             hCell.setBackgroundColor(new Color(241, 245, 249));
             hCell.setPadding(6);
+            hCell.setUseAscender(true);
+            hCell.setUseDescender(true);
+            hCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
             hCell.setBorderColor(new Color(203, 213, 225));
+            if (i != 1) {
+                hCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            }
             itemsTable.addCell(hCell);
         }
 
+        // Helper to add centered rows
+        java.util.function.Consumer<String[]> addRow = (vals) -> {
+            PdfPCell c0 = new PdfPCell(new Phrase(vals[0], cellFont));
+            c0.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c0.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            c0.setUseAscender(true);
+            c0.setUseDescender(true);
+            c0.setPadding(6);
+            c0.setBorderColor(new Color(203, 213, 225));
+            itemsTable.addCell(c0);
+
+            PdfPCell c1 = new PdfPCell(new Phrase(vals[1], cellFont));
+            c1.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            c1.setUseAscender(true);
+            c1.setUseDescender(true);
+            c1.setPadding(6);
+            c1.setLeading(2.5f, 1.2f);
+            c1.setBorderColor(new Color(203, 213, 225));
+            itemsTable.addCell(c1);
+
+            PdfPCell c2 = new PdfPCell(new Phrase(vals[2], cellFont));
+            c2.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c2.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            c2.setUseAscender(true);
+            c2.setUseDescender(true);
+            c2.setPadding(6);
+            c2.setBorderColor(new Color(203, 213, 225));
+            itemsTable.addCell(c2);
+
+            PdfPCell c3 = new PdfPCell(new Phrase(vals[3], cellFont));
+            c3.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c3.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            c3.setUseAscender(true);
+            c3.setUseDescender(true);
+            c3.setPadding(6);
+            c3.setBorderColor(new Color(203, 213, 225));
+            itemsTable.addCell(c3);
+
+            PdfPCell c4 = new PdfPCell(new Phrase(vals[4], boldCellFont));
+            c4.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c4.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            c4.setUseAscender(true);
+            c4.setUseDescender(true);
+            c4.setPadding(6);
+            c4.setBorderColor(new Color(203, 213, 225));
+            itemsTable.addCell(c4);
+        };
+
         // Row 1: Base Fare
-        itemsTable.addCell(new Phrase("1", cellFont));
-        itemsTable.addCell(new Phrase("Intercity Chauffeur Car Rental Duty (Bengaluru Airport -> Mysore)", cellFont));
-        itemsTable.addCell(new Phrase("9966", cellFont));
-        itemsTable.addCell(new Phrase("1 Trip", cellFont));
-        itemsTable.addCell(new Phrase("Rs 4,500.00", boldCellFont));
-
+        addRow.accept(new String[]{"1", "Intercity Chauffeur Car Rental Duty (Bengaluru Airport -> Mysore)", "9966", "1 Trip", "Rs 4,500.00"});
         // Row 2: Chauffeur Allowance
-        itemsTable.addCell(new Phrase("2", cellFont));
-        itemsTable.addCell(new Phrase("Commercial Chauffeur Duty Allowance & Highway Batta", cellFont));
-        itemsTable.addCell(new Phrase("9966", cellFont));
-        itemsTable.addCell(new Phrase("Included", cellFont));
-        itemsTable.addCell(new Phrase("Rs 0.00", cellFont));
-
+        addRow.accept(new String[]{"2", "Commercial Chauffeur Duty Allowance & Highway Batta", "9966", "Included", "Rs 0.00"});
         // Row 3: Tolls
-        itemsTable.addCell(new Phrase("3", cellFont));
-        itemsTable.addCell(new Phrase("Expressway FASTag Tolls & Passenger Taxes", cellFont));
-        itemsTable.addCell(new Phrase("9966", cellFont));
-        itemsTable.addCell(new Phrase("Included", cellFont));
-        itemsTable.addCell(new Phrase("Rs 0.00", cellFont));
+        addRow.accept(new String[]{"3", "Expressway FASTag Tolls & Passenger Taxes", "9966", "Included", "Rs 0.00"});
+
+        // Row Total
+        PdfPCell totalLabelCell = new PdfPCell(new Phrase("Total", tableHeaderFont));
+        totalLabelCell.setColspan(4);
+        totalLabelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        totalLabelCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        totalLabelCell.setUseAscender(true);
+        totalLabelCell.setUseDescender(true);
+        totalLabelCell.setPadding(6);
+        totalLabelCell.setBackgroundColor(new Color(248, 250, 252));
+        totalLabelCell.setBorderColor(new Color(203, 213, 225));
+        itemsTable.addCell(totalLabelCell);
+
+        PdfPCell totalValCell = new PdfPCell(new Phrase("Rs 4,500.00", boldCellFont));
+        totalValCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        totalValCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        totalValCell.setUseAscender(true);
+        totalValCell.setUseDescender(true);
+        totalValCell.setPadding(6);
+        totalValCell.setBackgroundColor(new Color(248, 250, 252));
+        totalValCell.setBorderColor(new Color(203, 213, 225));
+        itemsTable.addCell(totalValCell);
 
         document.add(itemsTable);
         document.add(new Paragraph(" "));
@@ -165,7 +226,7 @@ public class OpenPdfGenerationTest {
         document.add(totalTable);
 
         // 6. Footer
-        Paragraph footer = new Paragraph("\nThank you for choosing Grab Rental! This is a computer-generated document under the IT Act.\nHelpline: +91 9071 100 200 • www.grabrentals.in", subTitleFont);
+        Paragraph footer = new Paragraph("\nThank you for choosing Grab Rentals! This is a computer-generated document under the IT Act.\nHelpline: +91 9071 100 200 • www.grabrentals.in", subTitleFont);
         footer.setAlignment(Element.ALIGN_CENTER);
         document.add(footer);
 

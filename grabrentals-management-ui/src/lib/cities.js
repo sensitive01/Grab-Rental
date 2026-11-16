@@ -1,0 +1,513 @@
+// Comprehensive Indian Cities Catalog with Geolocation Coordinates for Automatic KM Detection
+
+export const INDIAN_CITIES = [
+  // Top Metros & South India Hubs (Popular)
+  { name: "Bangalore", state: "Karnataka", aliases: ["Bengaluru", "BLR"], lat: 12.9716, lng: 77.5946, popular: true },
+  { name: "Coimbatore", state: "Tamil Nadu", aliases: ["CJB", "Kovai"], lat: 11.0168, lng: 76.9558, popular: true },
+  { name: "Chennai", state: "Tamil Nadu", aliases: ["Madras", "MAA"], lat: 13.0827, lng: 80.2707, popular: true },
+  { name: "Hyderabad", state: "Telangana", aliases: ["HYD", "Secunderabad"], lat: 17.3850, lng: 78.4867, popular: true },
+  { name: "Mysore", state: "Karnataka", aliases: ["Mysuru", "MYQ"], lat: 12.2958, lng: 76.6394, popular: true },
+  { name: "Ooty", state: "Tamil Nadu", aliases: ["Udhagamandalam"], lat: 11.4102, lng: 76.6950, popular: true },
+  { name: "Mumbai", state: "Maharashtra", aliases: ["Bombay", "BOM"], lat: 19.0760, lng: 72.8777, popular: true },
+  { name: "Pune", state: "Maharashtra", aliases: ["PNQ", "Poona"], lat: 18.5204, lng: 73.8567, popular: true },
+  { name: "Delhi", state: "NCR", aliases: ["New Delhi", "DEL"], lat: 28.6139, lng: 77.2090, popular: true },
+  { name: "Kochi", state: "Kerala", aliases: ["Cochin", "COK", "Ernakulam"], lat: 9.9312, lng: 76.2673, popular: true },
+  { name: "Goa", state: "Goa", aliases: ["Panaji", "GOI", "Madgaon", "Vasco"], lat: 15.2993, lng: 74.1240, popular: true },
+  { name: "Jaipur", state: "Rajasthan", aliases: ["JAI", "Pink City"], lat: 26.9124, lng: 75.7873, popular: true },
+
+  // Tamil Nadu
+  { name: "Theni", state: "Tamil Nadu", aliases: ["Theni Allinagaram", "Theni Bus Stand", "Theni Old Bus Stand", "Theni New Bus Stand"], lat: 10.0104, lng: 77.4768, popular: true },
+  { name: "Madurai", state: "Tamil Nadu", aliases: ["IXM"], lat: 9.9252, lng: 78.1198, popular: true },
+  { name: "Salem", state: "Tamil Nadu", aliases: ["SXV"], lat: 11.6643, lng: 78.1460, popular: true },
+  { name: "Tiruchirappalli", state: "Tamil Nadu", aliases: ["Trichy", "TRZ"], lat: 10.7905, lng: 78.7047 },
+  { name: "Pondicherry", state: "Puducherry", aliases: ["Puducherry", "PNY"], lat: 11.9416, lng: 79.8083, popular: true },
+  { name: "Kodaikanal", state: "Tamil Nadu", aliases: ["Kodai"], lat: 10.2381, lng: 77.4892 },
+  { name: "Tirunelveli", state: "Tamil Nadu", lat: 8.7139, lng: 77.7567 },
+  { name: "Tirupur", state: "Tamil Nadu", lat: 11.1085, lng: 77.3411 },
+  { name: "Erode", state: "Tamil Nadu", lat: 11.3410, lng: 77.7172 },
+  { name: "Vellore", state: "Tamil Nadu", lat: 12.9165, lng: 79.1325 },
+  { name: "Thanjavur", state: "Tamil Nadu", aliases: ["Tanjore"], lat: 10.7870, lng: 79.1378 },
+  { name: "Rameswaram", state: "Tamil Nadu", aliases: ["Rameshwaram"], lat: 9.2876, lng: 79.3129 },
+  { name: "Kanyakumari", state: "Tamil Nadu", aliases: ["Cape Comorin"], lat: 8.0883, lng: 77.5385 },
+  { name: "Dindigul", state: "Tamil Nadu", lat: 10.3673, lng: 77.9803 },
+  { name: "Hosur", state: "Tamil Nadu", lat: 12.7409, lng: 77.8253 },
+  { name: "Karur", state: "Tamil Nadu", lat: 10.9601, lng: 78.0766 },
+  { name: "Nagercoil", state: "Tamil Nadu", lat: 8.1833, lng: 77.4119 },
+  { name: "Yercaud", state: "Tamil Nadu", lat: 11.7753, lng: 78.2093 },
+  { name: "Coonoor", state: "Tamil Nadu", lat: 11.3530, lng: 76.7959 },
+  { name: "Pollachi", state: "Tamil Nadu", lat: 10.6609, lng: 77.0048 },
+  { name: "Tiruvannamalai", state: "Tamil Nadu", aliases: ["Thiruvannamalai"], lat: 12.2253, lng: 79.0747 },
+  { name: "Kumbakonam", state: "Tamil Nadu", lat: 10.9602, lng: 79.3845 },
+  { name: "Palani", state: "Tamil Nadu", aliases: ["Palani Murugan"], lat: 10.4500, lng: 77.5200 },
+  { name: "Chidambaram", state: "Tamil Nadu", lat: 11.3992, lng: 79.6936 },
+  { name: "Velankanni", state: "Tamil Nadu", aliases: ["Vailankanni"], lat: 10.6800, lng: 79.8398 },
+  { name: "Karaikudi", state: "Tamil Nadu", lat: 10.0735, lng: 78.7732 },
+  { name: "Ramanathapuram", state: "Tamil Nadu", aliases: ["Ramnad"], lat: 9.3639, lng: 78.8395 },
+  { name: "Dharmapuri", state: "Tamil Nadu", lat: 12.1211, lng: 78.1582 },
+  { name: "Krishnagiri", state: "Tamil Nadu", lat: 12.5186, lng: 78.2137 },
+  { name: "Namakkal", state: "Tamil Nadu", lat: 11.2189, lng: 78.1674 },
+  { name: "Tenkasi", state: "Tamil Nadu", lat: 8.9594, lng: 77.3150 },
+  { name: "Courtallam", state: "Tamil Nadu", aliases: ["Kutralam"], lat: 8.9287, lng: 77.2731 },
+
+  // Karnataka
+  { name: "Mangalore", state: "Karnataka", aliases: ["Mangaluru", "IXE"], lat: 12.9141, lng: 74.8560 },
+  { name: "Chikmagalur", state: "Karnataka", aliases: ["Chikkamagaluru"], lat: 13.3161, lng: 75.7720 },
+  { name: "Coorg", state: "Karnataka", aliases: ["Madikeri", "Kodagu"], lat: 12.4244, lng: 75.7382 },
+  { name: "Hubli", state: "Karnataka", aliases: ["Hubballi", "Dharwad", "HBX"], lat: 15.3647, lng: 75.1240 },
+  { name: "Belgaum", state: "Karnataka", aliases: ["Belagavi", "IXG"], lat: 15.8497, lng: 74.4977 },
+  { name: "Hampi", state: "Karnataka", aliases: ["Hospet"], lat: 15.3350, lng: 76.4600 },
+  { name: "Shimoga", state: "Karnataka", aliases: ["Shivamogga"], lat: 13.9299, lng: 75.5681 },
+  { name: "Udupi", state: "Karnataka", aliases: ["Manipal"], lat: 13.3409, lng: 74.7421 },
+  { name: "Gokarna", state: "Karnataka", lat: 14.5479, lng: 74.3188 },
+  { name: "Dandeli", state: "Karnataka", lat: 15.2458, lng: 74.6231 },
+  { name: "Hassan", state: "Karnataka", lat: 13.0033, lng: 76.1004 },
+  { name: "Tumkur", state: "Karnataka", aliases: ["Tumakuru"], lat: 13.3392, lng: 77.1017 },
+  { name: "Davangere", state: "Karnataka", lat: 14.4644, lng: 75.9218 },
+  { name: "Gulbarga", state: "Karnataka", aliases: ["Kalaburagi"], lat: 17.3297, lng: 76.8343 },
+  { name: "Bellary", state: "Karnataka", aliases: ["Ballari"], lat: 15.1394, lng: 76.9214 },
+  { name: "Sakleshpur", state: "Karnataka", lat: 12.9438, lng: 75.7877 },
+  { name: "Kabini", state: "Karnataka", lat: 11.9567, lng: 76.3533 },
+  { name: "Bandipur", state: "Karnataka", lat: 11.6667, lng: 76.6333 },
+
+  // Kerala
+  { name: "Thiruvananthapuram", state: "Kerala", aliases: ["Trivandrum", "TRV"], lat: 8.5241, lng: 76.9366 },
+  { name: "Kozhikode", state: "Kerala", aliases: ["Calicut", "CCJ"], lat: 11.2588, lng: 75.7804 },
+  { name: "Munnar", state: "Kerala", lat: 10.0889, lng: 77.0595 },
+  { name: "Wayanad", state: "Kerala", aliases: ["Kalpetta"], lat: 11.6854, lng: 76.1320 },
+  { name: "Alappuzha", state: "Kerala", aliases: ["Alleppey"], lat: 9.4981, lng: 76.3388 },
+  { name: "Thrissur", state: "Kerala", aliases: ["Trichur"], lat: 10.5276, lng: 76.2144 },
+  { name: "Kollam", state: "Kerala", aliases: ["Quilon"], lat: 8.8932, lng: 76.6141 },
+  { name: "Kannur", state: "Kerala", aliases: ["CNN"], lat: 11.8745, lng: 75.3704 },
+  { name: "Palakkad", state: "Kerala", aliases: ["Palghat"], lat: 10.7867, lng: 76.6548 },
+  { name: "Kottayam", state: "Kerala", lat: 9.5916, lng: 76.5222 },
+  { name: "Varkala", state: "Kerala", lat: 8.7379, lng: 76.7163 },
+  { name: "Thekkady", state: "Kerala", aliases: ["Periyar"], lat: 9.6031, lng: 77.1615 },
+
+  // Andhra Pradesh & Telangana
+  { name: "Visakhapatnam", state: "Andhra Pradesh", aliases: ["Vizag", "VTZ"], lat: 17.6868, lng: 83.2185 },
+  { name: "Vijayawada", state: "Andhra Pradesh", aliases: ["VGA"], lat: 16.5062, lng: 80.6480 },
+  { name: "Tirupati", state: "Andhra Pradesh", aliases: ["TIR"], lat: 13.6288, lng: 79.4192, popular: true },
+  { name: "Guntur", state: "Andhra Pradesh", lat: 16.3067, lng: 80.4365 },
+  { name: "Nellore", state: "Andhra Pradesh", lat: 14.4426, lng: 79.9865 },
+  { name: "Kurnool", state: "Andhra Pradesh", lat: 15.8281, lng: 78.0373 },
+  { name: "Rajahmundry", state: "Andhra Pradesh", aliases: ["RJA"], lat: 17.0005, lng: 81.8040 },
+  { name: "Warangal", state: "Telangana", lat: 17.9689, lng: 79.5941 },
+  { name: "Nizamabad", state: "Telangana", lat: 18.6725, lng: 78.0941 },
+  { name: "Karimnagar", state: "Telangana", lat: 18.4386, lng: 79.1288 },
+
+  // Maharashtra & Gujarat
+  { name: "Nagpur", state: "Maharashtra", aliases: ["NAG"], lat: 21.1458, lng: 79.0882 },
+  { name: "Nashik", state: "Maharashtra", aliases: ["Nasik"], lat: 19.9975, lng: 73.7898 },
+  { name: "Aurangabad", state: "Maharashtra", aliases: ["Chhatrapati Sambhajinagar", "IXU"], lat: 19.8762, lng: 75.3433 },
+  { name: "Shirdi", state: "Maharashtra", aliases: ["SAG"], lat: 19.7668, lng: 74.4762 },
+  { name: "Mahabaleshwar", state: "Maharashtra", aliases: ["Panchgani"], lat: 17.9307, lng: 73.6477 },
+  { name: "Lonavala", state: "Maharashtra", aliases: ["Khandala"], lat: 18.7557, lng: 73.4091 },
+  { name: "Kolhapur", state: "Maharashtra", lat: 16.7050, lng: 74.2433 },
+  { name: "Solapur", state: "Maharashtra", lat: 17.6599, lng: 75.9064 },
+  { name: "Ahmedabad", state: "Gujarat", aliases: ["AMD"], lat: 23.0225, lng: 72.5714 },
+  { name: "Surat", state: "Gujarat", aliases: ["STV"], lat: 21.1702, lng: 72.8311 },
+  { name: "Vadodara", state: "Gujarat", aliases: ["Baroda", "BDQ"], lat: 22.3072, lng: 73.1812 },
+  { name: "Rajkot", state: "Gujarat", aliases: ["RAJ"], lat: 22.3039, lng: 70.8022 },
+
+  // North India & Rajasthan
+  { name: "Noida", state: "Uttar Pradesh", lat: 28.5355, lng: 77.3910 },
+  { name: "Gurgaon", state: "Haryana", aliases: ["Gurugram"], lat: 28.4595, lng: 77.0266 },
+  { name: "Chandigarh", state: "Punjab/Haryana", aliases: ["IXC"], lat: 30.7333, lng: 76.7794 },
+  { name: "Amritsar", state: "Punjab", aliases: ["ATQ"], lat: 31.6340, lng: 74.8723 },
+  { name: "Ludhiana", state: "Punjab", lat: 30.9010, lng: 75.8573 },
+  { name: "Agra", state: "Uttar Pradesh", aliases: ["AGR"], lat: 27.1767, lng: 78.0081 },
+  { name: "Lucknow", state: "Uttar Pradesh", aliases: ["LKO"], lat: 26.8467, lng: 80.9462 },
+  { name: "Varanasi", state: "Uttar Pradesh", aliases: ["Banaras", "Kashi", "VNS"], lat: 25.3176, lng: 82.9739 },
+  { name: "Kanpur", state: "Uttar Pradesh", lat: 26.4499, lng: 80.3319 },
+  { name: "Mathura", state: "Uttar Pradesh", aliases: ["Vrindavan"], lat: 27.4924, lng: 77.6737 },
+  { name: "Dehradun", state: "Uttarakhand", aliases: ["DED"], lat: 30.3165, lng: 78.0322 },
+  { name: "Haridwar", state: "Uttarakhand", lat: 29.9457, lng: 78.1642 },
+  { name: "Rishikesh", state: "Uttarakhand", lat: 30.0869, lng: 78.2676 },
+  { name: "Mussoorie", state: "Uttarakhand", lat: 30.4598, lng: 78.0644 },
+  { name: "Nainital", state: "Uttarakhand", lat: 29.3919, lng: 79.4542 },
+  { name: "Shimla", state: "Himachal Pradesh", lat: 31.1048, lng: 77.1734 },
+  { name: "Manali", state: "Himachal Pradesh", aliases: ["Kullu"], lat: 32.2432, lng: 77.1892 },
+  { name: "Dharamshala", state: "Himachal Pradesh", aliases: ["Dharamsala", "McLeod Ganj"], lat: 32.2190, lng: 76.3234 },
+  { name: "Udaipur", state: "Rajasthan", aliases: ["UDR"], lat: 24.5854, lng: 73.7125 },
+  { name: "Jodhpur", state: "Rajasthan", aliases: ["JDH"], lat: 26.2389, lng: 73.0243 },
+  { name: "Ajmer", state: "Rajasthan", aliases: ["Pushkar"], lat: 26.4499, lng: 74.6399 },
+  { name: "Jaisalmer", state: "Rajasthan", lat: 26.9157, lng: 70.9083 },
+
+  // East & Central India
+  { name: "Kolkata", state: "West Bengal", aliases: ["Calcutta", "CCU"], lat: 22.5726, lng: 88.3639 },
+  { name: "Darjeeling", state: "West Bengal", lat: 27.0410, lng: 88.2663 },
+  { name: "Siliguri", state: "West Bengal", lat: 26.7271, lng: 88.3953 },
+  { name: "Bhubaneswar", state: "Odisha", aliases: ["BBI"], lat: 20.2961, lng: 85.8245 },
+  { name: "Puri", state: "Odisha", lat: 19.8135, lng: 85.8312 },
+  { name: "Patna", state: "Bihar", aliases: ["PAT"], lat: 25.5941, lng: 85.1376 },
+  { name: "Ranchi", state: "Jharkhand", aliases: ["IXR"], lat: 23.3441, lng: 85.3096 },
+  { name: "Guwahati", state: "Assam", aliases: ["GAU"], lat: 26.1445, lng: 91.7362 },
+  { name: "Shillong", state: "Meghalaya", lat: 25.5788, lng: 91.8933 },
+  { name: "Indore", state: "Madhya Pradesh", aliases: ["IDR"], lat: 22.7196, lng: 75.8577 },
+  { name: "Bhopal", state: "Madhya Pradesh", aliases: ["BHO"], lat: 23.2599, lng: 77.4126 },
+  { name: "Gwalior", state: "Madhya Pradesh", aliases: ["GWL"], lat: 26.2183, lng: 78.1828 },
+  { name: "Raipur", state: "Chhattisgarh", aliases: ["RPR"], lat: 21.2514, lng: 81.6296 },
+
+  // Additional Cities from Master Rate Card (charges.xlsx)
+  { name: "Agartala", state: "Tripura", aliases: ["IXA"], lat: 23.8315, lng: 91.2868 },
+  { name: "Allahabad", state: "Uttar Pradesh", aliases: ["Prayagraj", "Allahabad / Prayagraj", "IXD"], lat: 25.4358, lng: 81.8463 },
+  { name: "Ambala", state: "Haryana", aliases: ["Ambala Cantt"], lat: 30.3782, lng: 76.7767 },
+  { name: "Bathinda", state: "Punjab", aliases: ["BTI"], lat: 30.2110, lng: 74.9455 },
+  { name: "Bareilly", state: "Uttar Pradesh", aliases: ["BE"], lat: 28.3670, lng: 79.4304 },
+  { name: "Bhilai", state: "Chhattisgarh", aliases: ["Durg Bhilai"], lat: 21.2144, lng: 81.3800 },
+  { name: "Bikaner", state: "Rajasthan", aliases: ["BKB"], lat: 28.0229, lng: 73.3119 },
+  { name: "Cuttack", state: "Odisha", aliases: ["CTC"], lat: 20.4625, lng: 85.8828 },
+  { name: "Dhanbad", state: "Jharkhand", aliases: ["DHN"], lat: 23.7957, lng: 86.4304 },
+  { name: "Dibrugarh", state: "Assam", aliases: ["DIB"], lat: 27.4728, lng: 94.9120 },
+  { name: "Durgapur", state: "West Bengal", aliases: ["DGR"], lat: 23.5204, lng: 87.3119 },
+  { name: "Faridabad", state: "Haryana", aliases: ["FDB"], lat: 28.4089, lng: 77.3178 },
+  { name: "Gandhinagar", state: "Gujarat", aliases: ["GNC"], lat: 23.2156, lng: 72.6369 },
+  { name: "Gaya", state: "Bihar", aliases: ["Bodh Gaya", "GAY"], lat: 24.7914, lng: 85.0002 },
+  { name: "Ghaziabad", state: "Uttar Pradesh", aliases: ["GZB"], lat: 28.6692, lng: 77.4538 },
+  { name: "Gorakhpur", state: "Uttar Pradesh", aliases: ["GKP"], lat: 26.7606, lng: 83.3732 },
+  { name: "Jabalpur", state: "Madhya Pradesh", aliases: ["JBP"], lat: 23.1815, lng: 79.9864 },
+  { name: "Jalandhar", state: "Punjab", aliases: ["JUC"], lat: 31.3260, lng: 75.5762 },
+  { name: "Jammu", state: "Jammu and Kashmir", aliases: ["Jammu Tawi", "JAT"], lat: 32.7266, lng: 74.8570 },
+  { name: "Jamnagar", state: "Gujarat", aliases: ["JGA"], lat: 22.4707, lng: 70.0577 },
+  { name: "Jamshedpur", state: "Jharkhand", aliases: ["Tatanagar", "TAT"], lat: 22.8046, lng: 86.2029 },
+  { name: "Jhansi", state: "Uttar Pradesh", aliases: ["JHS"], lat: 25.4484, lng: 78.5685 },
+  { name: "Khajuraho", state: "Madhya Pradesh", aliases: ["HJR"], lat: 24.8318, lng: 79.9199 },
+  { name: "Kota", state: "Rajasthan", aliases: ["KOTA"], lat: 25.2138, lng: 75.8648 },
+  { name: "Bhuj", state: "Gujarat", aliases: ["Kutch", "Kutch / Bhuj", "BHJ"], lat: 23.2420, lng: 69.6669 },
+  { name: "Meerut", state: "Uttar Pradesh", aliases: ["MUT"], lat: 28.9845, lng: 77.7064 },
+  { name: "Pathankot", state: "Punjab", aliases: ["PTK"], lat: 32.2689, lng: 75.6499 },
+  { name: "Patiala", state: "Punjab", aliases: ["PTA"], lat: 30.3398, lng: 76.3869 },
+  { name: "Srinagar", state: "Jammu and Kashmir", aliases: ["SXR"], lat: 34.0837, lng: 74.7973 },
+  { name: "Tiruppur", state: "Tamil Nadu", aliases: ["Tirupur", "TUP"], lat: 11.1085, lng: 77.3411 },
+  { name: "Ujjain", state: "Madhya Pradesh", aliases: ["UJN", "Mahakal"], lat: 23.1765, lng: 75.7885 }
+];
+
+const STORAGE_KEY = "grabrentals_custom_cities";
+
+/**
+ * Get stored custom user-added cities from localStorage
+ */
+export function getCustomCities() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Add a new custom city and save to localStorage
+ */
+export function saveCustomCity(cityName, stateName = "India") {
+  if (!cityName || typeof window === "undefined") return null;
+  const cleanName = cityName.trim();
+  if (!cleanName) return null;
+
+  try {
+    const current = getCustomCities();
+    const exists = current.some((c) => c.name.toLowerCase() === cleanName.toLowerCase()) ||
+                   INDIAN_CITIES.some((c) => c.name.toLowerCase() === cleanName.toLowerCase());
+    
+    if (!exists) {
+      const newCity = {
+        name: cleanName,
+        state: stateName || "India",
+        custom: true
+      };
+      const updated = [newCity, ...current];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return newCity;
+    }
+  } catch (err) {
+    console.warn("Could not save custom city:", err);
+  }
+  return null;
+}
+
+/**
+ * Get all available cities (default + custom)
+ */
+export function getAllCities() {
+  const custom = getCustomCities();
+  return [...custom, ...INDIAN_CITIES];
+}
+
+/**
+ * Search and filter cities based on query text
+ */
+export function searchCities(query = "") {
+  const all = getAllCities();
+  const q = (query || "").trim().toLowerCase();
+
+  if (!q) {
+    return all.filter((c) => c.popular || c.custom).slice(0, 10);
+  }
+
+  return all
+    .filter((city) => {
+      const nameMatch = city.name.toLowerCase().includes(q);
+      const stateMatch = city.state.toLowerCase().includes(q);
+      const aliasMatch = city.aliases && city.aliases.some((a) => a.toLowerCase().includes(q));
+      return nameMatch || stateMatch || aliasMatch;
+    })
+    .slice(0, 10);
+}
+
+/**
+ * Find city coordinates by name or alias
+ */
+export function findCityCoordinates(cityName) {
+  if (!cityName) return null;
+  const raw = String(cityName);
+  const all = getAllCities();
+
+  // 1. Try each comma-separated segment from right to left (e.g. "Hospital, Bengaluru, Karnataka" -> checks Bengaluru first)
+  const segments = raw.split(",").map((s) => s.replace(/\(.*?\)/g, "").trim().toLowerCase()).filter(Boolean);
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const seg = segments[i];
+    const match = all.find((c) => 
+      c.name.toLowerCase() === seg ||
+      (c.aliases && c.aliases.some((a) => a.toLowerCase() === seg))
+    );
+    if (match && match.lat && match.lng) {
+      return { lat: match.lat, lng: match.lng };
+    }
+  }
+
+  // 2. Search whole string for known city names and aliases
+  const full = raw.toLowerCase();
+  for (const c of all) {
+    const cName = c.name.toLowerCase();
+    if (full.includes(cName)) {
+      if (c.lat && c.lng) return { lat: c.lat, lng: c.lng };
+    }
+    if (c.aliases) {
+      for (const a of c.aliases) {
+        const aName = a.toLowerCase();
+        const isShort = aName.length <= 4;
+        if (isShort ? new RegExp(`\\b${aName}\\b`, "i").test(full) : full.includes(aName)) {
+          if (c.lat && c.lng) return { lat: c.lat, lng: c.lng };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Great-circle distance using Haversine formula (km)
+ */
+function haversineDistanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Calculate driving road distance between two cities (in km)
+ */
+export function getSegmentDistance(fromCity, toCity) {
+  if (!fromCity || !toCity) return 0;
+  const c1 = fromCity.toLowerCase().split(",")[0].replace(/\(.*?\)/g, "").trim();
+  const c2 = toCity.toLowerCase().split(",")[0].replace(/\(.*?\)/g, "").trim();
+
+  if (c1 === c2) return 25; // Local city trip
+
+  // Calculate dynamically from GPS coordinates with road curvature factor
+  const coords1 = findCityCoordinates(fromCity);
+  const coords2 = findCityCoordinates(toCity);
+
+  if (coords1 && coords2) {
+    const directKm = haversineDistanceKm(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
+    // Indian highway road winding factor is typically 1.28x - 1.30x of air distance
+    const roadKm = Math.round(directKm * 1.297);
+    return Math.max(roadKm, 25);
+  }
+
+  return 0;
+}
+
+/**
+ * Automatic Route Distance Detection (including stops & round trip)
+ */
+export function detectRouteDistance(from, to, stops = [], tripType = "one-way") {
+  if (!from || !to) {
+    return { distanceKm: 0, durationHours: 0, isDetected: false };
+  }
+
+  const isRound = (tripType || "").toLowerCase().includes("round");
+  const points = [from];
+  if (stops) {
+    const list = Array.isArray(stops) ? stops : (typeof stops === "string" ? stops.split("|") : []);
+    list.forEach((s) => {
+      if (s && s.trim()) points.push(s.trim());
+    });
+  }
+  points.push(to);
+  if (isRound) {
+    points.push(from);
+  }
+
+  let totalKm = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    totalKm += getSegmentDistance(points[i], points[i + 1]);
+  }
+
+  const oneWayKm = isRound ? Math.round(totalKm / 2) : totalKm;
+  const hours = Math.round((totalKm / 55) * 10) / 10;
+
+  return {
+    distanceKm: totalKm,
+    oneWayKm,
+    durationHours: hours,
+    isDetected: true
+  };
+}
+
+const routeDistanceCache = new Map();
+
+/**
+ * Live Google Routes API distance, duration & FASTag toll calculation
+ */
+export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = "one-way", options = {}) {
+  if (!from || !to) {
+    return { distanceKm: 0, durationHours: 0, tollPrice: 0, isDetected: false };
+  }
+
+  const cleanFrom = from.trim();
+  const cleanTo = to.trim();
+  const cleanStops = Array.isArray(stops) 
+    ? stops.filter(Boolean) 
+    : (typeof stops === "string" && stops.trim() ? stops.split("|").map((s) => s.trim()).filter(Boolean) : []);
+  const cacheKey = `${cleanFrom}|${cleanTo}|${cleanStops.join(",")}|${tripType}|${options.originCoords?.lat ?? ""},${options.originCoords?.lng ?? ""}|${options.destinationCoords?.lat ?? ""},${options.destinationCoords?.lng ?? ""}`.toLowerCase();
+
+  if (routeDistanceCache.has(cacheKey)) {
+    return routeDistanceCache.get(cacheKey);
+  }
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    const fallback = detectRouteDistance(cleanFrom, cleanTo, cleanStops, tripType);
+    routeDistanceCache.set(cacheKey, fallback);
+    return fallback;
+  }
+
+  try {
+    const isRound = (tripType || "").toLowerCase().includes("round");
+
+    const origin = (options.originCoords?.lat != null && options.originCoords?.lng != null)
+      ? { location: { latLng: { latitude: Number(options.originCoords.lat), longitude: Number(options.originCoords.lng) } } }
+      : { address: cleanFrom.includes(",") ? cleanFrom : `${cleanFrom}, India` };
+
+    const destPoint = (options.destinationCoords?.lat != null && options.destinationCoords?.lng != null)
+      ? { location: { latLng: { latitude: Number(options.destinationCoords.lat), longitude: Number(options.destinationCoords.lng) } } }
+      : { address: cleanTo.includes(",") ? cleanTo : `${cleanTo}, India` };
+
+    const destination = isRound ? origin : destPoint;
+
+    const intermediates = cleanStops.map((s, idx) => {
+      const sc = options.stopsCoords?.[idx] || (Array.isArray(options.stopsCoords) ? options.stopsCoords[idx] : null);
+      if (sc?.lat != null && sc?.lng != null) {
+        return { location: { latLng: { latitude: Number(sc.lat), longitude: Number(sc.lng) } } };
+      }
+      return { address: s.includes(",") ? s : `${s}, India` };
+    });
+
+    if (isRound) {
+      intermediates.push(destPoint);
+    }
+
+    const body = {
+      origin,
+      destination,
+      travelMode: "DRIVE",
+      extraComputations: ["TOLLS"],
+      routeModifiers: {
+        tollPasses: ["IN_FASTAG"]
+      }
+    };
+    if (intermediates.length > 0) {
+      body.intermediates = intermediates;
+    }
+
+    const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.travelAdvisory.tollInfo"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.routes?.[0]) {
+        const route = data.routes[0];
+        const meters = route.distanceMeters || 0;
+        const totalKm = Math.round(meters / 1000);
+        const oneWayKm = isRound ? Math.round(totalKm / 2) : totalKm;
+
+        let dynamicToll = 0;
+        const tollEst = route.travelAdvisory?.tollInfo?.estimatedPrice?.[0];
+        if (tollEst?.units) {
+          dynamicToll = parseInt(tollEst.units, 10) || 0;
+        }
+        if (dynamicToll === 0 && totalKm > 20) {
+          dynamicToll = Math.round(totalKm * 1.35);
+        }
+
+        const seconds = parseInt((route.duration || "0s").replace("s", ""), 10) || 0;
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.round((seconds % 3600) / 60);
+        const durationText = hrs > 0 ? (mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`) : `${mins} min`;
+
+        const result = {
+          distanceKm: totalKm,
+          oneWayKm,
+          durationHours: Math.round((seconds / 3600) * 10) / 10,
+          durationText,
+          tollPrice: dynamicToll,
+          actualToll: dynamicToll,
+          encodedPolyline: route.polyline?.encodedPolyline || null,
+          isGoogle: true,
+          isDetected: true
+        };
+        routeDistanceCache.set(cacheKey, result);
+        return result;
+      }
+    }
+  } catch (err) {
+    console.warn("[Google Routes API] Fallback to Haversine:", err);
+  }
+
+  // Graceful fallback to offline Haversine calculation
+  const fallback = detectRouteDistance(cleanFrom, cleanTo, cleanStops, tripType);
+  if (fallback && fallback.isDetected) {
+    const km = fallback.distanceKm || 0;
+    fallback.tollPrice = km > 20 ? Math.round(km * 1.35) : 0;
+    fallback.actualToll = fallback.tollPrice;
+  }
+  routeDistanceCache.set(cacheKey, fallback);
+  return fallback;
+}
+
+/**
+ * Format city display text as "City, State"
+ */
+export function formatCityLabel(city) {
+  if (!city) return "";
+  if (typeof city === "string") return city;
+  return `${city.name}, ${city.state}`;
+}

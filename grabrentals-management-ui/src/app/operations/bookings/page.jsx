@@ -46,6 +46,27 @@ export default function OperationsBookingsPage() {
   const [toast, setToast] = useState(null);
   const pageSize = 8;
 
+  // Auto-open CreateBookingModal if ?create=true is in URL (from sidebar "New Booking" link)
+  useEffect(() => {
+    function checkCreateParam() {
+      if (typeof window !== "undefined") {
+        const p = new URLSearchParams(window.location.search);
+        if (p.get("create") === "true") {
+          setCreateModalOpen(true);
+        }
+      }
+    }
+    const handleOpen = () => setCreateModalOpen(true);
+
+    checkCreateParam();
+    window.addEventListener("popstate", checkCreateParam);
+    window.addEventListener("open-create-booking", handleOpen);
+    return () => {
+      window.removeEventListener("popstate", checkCreateParam);
+      window.removeEventListener("open-create-booking", handleOpen);
+    };
+  }, []);
+
   useEffect(() => {
     async function load() {
       try {
@@ -114,17 +135,18 @@ export default function OperationsBookingsPage() {
         subtitle="Manage end-to-end booking dispatch, fleet assignments, and status lifecycles"
         breadcrumbs={[{ label: "Operations", href: "/operations/dashboard" }, { label: "Bookings" }]}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
             <Button
               variant="amber"
               size="sm"
               icon={PlusCircle}
               onClick={() => setCreateModalOpen(true)}
+              className="w-full sm:w-auto"
             >
               New Booking
             </Button>
-            <Link href="/operations/assignments/vehicle">
-              <Button variant="secondary" size="sm" icon={UserCheck}>
+            <Link href="/operations/assignments/vehicle" className="w-full sm:w-auto">
+              <Button variant="secondary" size="sm" icon={UserCheck} className="w-full sm:w-auto">
                 Fast Dispatch Allocator
               </Button>
             </Link>
@@ -135,11 +157,14 @@ export default function OperationsBookingsPage() {
       <Card noPadding>
         {/* Filters Bar */}
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <Tabs tabs={TABS} activeTab={activeTab} onTabChange={(t) => { setActiveTab(t); setPage(1); }} />
+          <div className="w-full overflow-x-auto pb-1 no-scrollbar">
+            <Tabs tabs={TABS} activeTab={activeTab} onTabChange={(t) => { setActiveTab(t); setPage(1); }} />
+          </div>
           <SearchInput
             value={search}
             onChange={(val) => { setSearch(val); setPage(1); }}
             placeholder="Search by ID, customer, route..."
+            className="w-full md:w-72 shrink-0"
           />
         </div>
 
@@ -288,7 +313,14 @@ export default function OperationsBookingsPage() {
       {/* Manual Booking Entry Modal */}
       <CreateBookingModal
         isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        onClose={() => {
+          setCreateModalOpen(false);
+          if (typeof window !== "undefined" && window.location.search.includes("create=true")) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("create");
+            window.history.replaceState({}, "", url.pathname + (url.search || ""));
+          }
+        }}
         onSuccess={reloadBookings}
         onToast={setToast}
       />

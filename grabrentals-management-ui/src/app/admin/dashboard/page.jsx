@@ -111,14 +111,14 @@ export default function AdminDashboardPage() {
         subtitle="Platform-wide governance, revenue performance, vendor ecosystem, and fleet capacity"
         breadcrumbs={[{ label: "Admin" }, { label: "Executive Dashboard" }]}
         action={
-          <div className="flex items-center gap-2">
-            <Link href="/admin/vendors?tab=approvals">
-              <Button variant="secondary" size="sm" icon={Building2}>
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <Link href="/admin/vendors?tab=approvals" className="w-full sm:w-auto">
+              <Button variant="secondary" size="sm" icon={Building2} className="w-full sm:w-auto justify-center">
                 Vendor Approvals ({loading ? "..." : kpis?.pendingVendorApprovals ?? 1})
               </Button>
             </Link>
-            <Link href="/admin/pricing">
-              <Button variant="primary" size="sm" icon={IndianRupee}>
+            <Link href="/admin/pricing" className="w-full sm:w-auto">
+              <Button variant="primary" size="sm" icon={IndianRupee} className="w-full sm:w-auto justify-center">
                 Update Pricing Matrix
               </Button>
             </Link>
@@ -127,7 +127,7 @@ export default function AdminDashboardPage() {
       />
 
       {/* 6 Top Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         {/* Total Platform GMV */}
         <Card className="bg-white border-l-4 border-l-blue-600">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -215,9 +215,9 @@ export default function AdminDashboardPage() {
           title="Monthly Platform Gross Booking Value (GBV)"
           subtitle="Revenue growth and customer booking count progression in INR"
         >
-          <div className="h-72 w-full">
+          <div className="h-64 sm:h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={MONTHLY_REVENUE} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+              <AreaChart data={MONTHLY_REVENUE} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
