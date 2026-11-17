@@ -132,7 +132,7 @@ public class AirportTariffService {
             LocalDate date,
             LocalTime time
     ) {
-        return findMatchingTariff(city, state, tripDirection, category, null, distanceKm, date, time);
+        return findMatchingTariff(city, state, tripDirection, category, null, null, distanceKm, date, time);
     }
 
     @Transactional(readOnly = true)
@@ -142,6 +142,21 @@ public class AirportTariffService {
             String tripDirection,
             String category,
             String modelName,
+            int distanceKm,
+            LocalDate date,
+            LocalTime time
+    ) {
+        return findMatchingTariff(city, state, tripDirection, category, modelName, null, distanceKm, date, time);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AirportTariff> findMatchingTariff(
+            String city,
+            String state,
+            String tripDirection,
+            String category,
+            String modelName,
+            String seatingCapacity,
             int distanceKm,
             LocalDate date,
             LocalTime time
@@ -164,6 +179,7 @@ public class AirportTariffService {
                 .filter(t -> isDirectionMatching(t, tripDirection))
                 .filter(t -> isCategoryMatching(t, category))
                 .filter(t -> isModelMatching(t, modelName))
+                .filter(t -> isSeatsMatching(t, seatingCapacity))
                 .filter(t -> isDistanceMatching(t, distanceKm))
                 .collect(Collectors.toList());
 
@@ -180,10 +196,21 @@ public class AirportTariffService {
                 .filter(t -> isDirectionMatching(t, tripDirection))
                 .filter(t -> isCategoryMatching(t, category))
                 .filter(t -> isModelMatching(t, modelName))
+                .filter(t -> isSeatsMatching(t, seatingCapacity))
                 .filter(t -> isDistanceMatching(t, distanceKm))
                 .collect(Collectors.toList());
 
         return selectBestLocationMatch(regular, city, state);
+    }
+
+    private boolean isSeatsMatching(AirportTariff t, String seats) {
+        if (t.getSeatingCapacity() == null || t.getSeatingCapacity().isBlank() || "ALL".equalsIgnoreCase(t.getSeatingCapacity().trim())) {
+            return true;
+        }
+        if (seats == null || seats.isBlank()) {
+            return true;
+        }
+        return VehicleTariffService.areSeatsCompatible(seats, t.getSeatingCapacity());
     }
 
     private boolean isModelMatching(AirportTariff t, String modelName) {

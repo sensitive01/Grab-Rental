@@ -4,12 +4,13 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { operationsApi } from "@/lib/operationsApi";
-import { formatINR, getStatusStyle } from "@/lib/utils";
+import { formatINR, getStatusStyle, printDocumentPdf } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { ScenarioInvoiceModal } from "@/components/bookings/ScenarioInvoiceModal";
+import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
 import {
   ArrowLeft,
   Building2,
@@ -22,6 +23,7 @@ import {
   MapPin,
   Phone,
   Printer,
+  Loader2,
   Shield,
   User,
   Users,
@@ -33,7 +35,8 @@ import {
   Banknote,
   FileCheck,
   Receipt,
-  MessageSquare
+  MessageSquare,
+  QrCode
 } from "lucide-react";
 
 export default function BookingDetailPage({ params }) {
@@ -47,6 +50,33 @@ export default function BookingDetailPage({ params }) {
   const [previewProof, setPreviewProof] = useState(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [verifyPaymentModalOpen, setVerifyPaymentModalOpen] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [printingDutySlip, setPrintingDutySlip] = useState(false);
+  const [printingTaxInvoice, setPrintingTaxInvoice] = useState(false);
+
+  const handleVerifyPayment = async (bookingId, { action, rejectionReason }) => {
+    setVerifyingPayment(true);
+    try {
+      const res = await operationsApi.verifyBookingPayment(bookingId, { action, rejectionReason });
+      if (res?.success) {
+        setToast({
+          type: "success",
+          message:
+            action === "APPROVE"
+              ? "Payment verified & approved! Ready for vehicle dispatch."
+              : "Payment rejected.",
+        });
+        setVerifyPaymentModalOpen(false);
+        const refreshed = await operationsApi.getBookingById(id);
+        setBooking(refreshed.data);
+      }
+    } catch (err) {
+      setToast({ type: "error", message: err.message || "Failed to verify payment." });
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -110,16 +140,27 @@ export default function BookingDetailPage({ params }) {
           { label: booking.id },
         ]}
         action={
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             <Link href="/operations/bookings" className="w-full sm:w-auto">
-              <Button variant="secondary" size="sm" icon={ArrowLeft} className="w-full sm:w-auto justify-center">
+              <Button variant="secondary" size="sm" icon={ArrowLeft} className="w-full justify-center">
                 Back
               </Button>
             </Link>
 
-            {booking.status === "PENDING_ALLOCATION" && (
-              <Link href={`/operations/assignments/vehicle?bookingId=${booking.id}`} className="w-full sm:w-auto">
-                <Button variant="amber" size="sm" icon={Car} className="w-full sm:w-auto justify-center">
+            {(booking.status === "PENDING_PAYMENT_VERIFICATION" ||
+              booking.paymentStatus === "UNDER_REVIEW") ? (
+              <Button
+                variant="amber"
+                size="sm"
+                icon={QrCode}
+                onClick={() => setVerifyPaymentModalOpen(true)}
+                className="w-full justify-center animate-pulse font-bold"
+              >
+                Verify Payment
+              </Button>
+            ) : booking.status === "PENDING_ALLOCATION" && (
+              <Link href={`/operations/assignments/vehicle?bookingId=${booking.id}`} className="w-full">
+                <Button variant="amber" size="sm" icon={Car} className="w-full justify-center">
                   Assign Vehicle
                 </Button>
               </Link>
@@ -129,7 +170,7 @@ export default function BookingDetailPage({ params }) {
                 variant="primary"
                 size="sm"
                 onClick={() => handleStatusChange("IN_TRANSIT")}
-                className="w-full sm:w-auto justify-center"
+                className="w-full justify-center"
               >
                 Mark Dispatched (In Transit)
               </Button>
@@ -139,7 +180,7 @@ export default function BookingDetailPage({ params }) {
                 variant="emerald"
                 size="sm"
                 onClick={() => handleStatusChange("COMPLETED")}
-                className="w-full sm:w-auto justify-center"
+                className="w-full justify-center"
               >
                 Mark Trip Completed
               </Button>
@@ -149,7 +190,7 @@ export default function BookingDetailPage({ params }) {
       />
 
       {/* Document & WhatsApp Action Toolbar */}
-      <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="p-3 sm:p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
@@ -163,50 +204,83 @@ export default function BookingDetailPage({ params }) {
           <Button
             variant="outline"
             size="sm"
-            icon={Printer}
-            onClick={() => window.print()}
+            icon={printingDutySlip ? Loader2 : Printer}
+            disabled={printingDutySlip}
+            onClick={async () => {
+              if (printingDutySlip) return;
+              setPrintingDutySlip(true);
+              try {
+                // Strictly prints the official Booking Confirmation & Duty Slip (Scenario 2)
+                await printDocumentPdf(booking?.bookingReference || booking?.id || id, 2);
+              } finally {
+                setPrintingDutySlip(false);
+              }
+            }}
             className="justify-center"
           >
-            Print Duty Slip
+            {printingDutySlip ? "Preparing Duty Slip..." : "Print Duty Slip"}
           </Button>
+          {/* Print Tax Invoice commented out as requested */}
+          {/* {booking?.status === "COMPLETED" && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={printingTaxInvoice ? Loader2 : FileCheck}
+              disabled={printingTaxInvoice}
+              onClick={async () => {
+                if (printingTaxInvoice) return;
+                setPrintingTaxInvoice(true);
+                try {
+                  await printDocumentPdf(booking?.bookingReference || booking?.id || id, 3);
+                } finally {
+                  setPrintingTaxInvoice(false);
+                }
+              }}
+              className="border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 font-bold justify-center"
+            >
+              {printingTaxInvoice ? "Preparing Tax Invoice..." : "Print Tax Invoice"}
+            </Button>
+          )} */}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full md:w-auto">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:inline mr-1">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full md:w-auto pt-2 sm:pt-0 border-t border-slate-100 sm:border-0">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block sm:inline">
             WhatsApp Dispatch:
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={MessageSquare}
-            disabled={sendingWhatsApp}
-            onClick={() => handleSendScenarioInvoice(1)}
-            className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-medium justify-center w-full sm:w-auto"
-          >
-            {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={MessageSquare}
-            disabled={sendingWhatsApp}
-            onClick={() => handleSendScenarioInvoice(2)}
-            className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 font-medium justify-center w-full sm:w-auto"
-          >
-            {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
-          </Button>
-          {booking.status === "COMPLETED" && (
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               icon={MessageSquare}
               disabled={sendingWhatsApp}
-              onClick={() => handleSendScenarioInvoice(3)}
-              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold justify-center w-full sm:w-auto"
+              onClick={() => handleSendScenarioInvoice(1)}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-medium justify-center text-xs"
             >
-              {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
+              <span className="hidden sm:inline">WhatsApp </span>Estimate (S1)
             </Button>
-          )}
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(2)}
+              className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 font-medium justify-center text-xs"
+            >
+              <span className="hidden sm:inline">WhatsApp </span>Confirmed (S2)
+            </Button>
+            {booking.status === "COMPLETED" && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={MessageSquare}
+                disabled={sendingWhatsApp}
+                onClick={() => handleSendScenarioInvoice(3)}
+                className="col-span-2 sm:col-span-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold justify-center text-xs"
+              >
+                <span className="hidden sm:inline">WhatsApp </span>Tax Invoice (S3)
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -719,11 +793,24 @@ export default function BookingDetailPage({ params }) {
                 <p className="text-xs text-slate-500 mt-1 mb-4">
                   This booking requires a {booking.vehicleCategory} ({booking.preferredVehicle}).
                 </p>
-                <Link href={`/operations/assignments/vehicle?bookingId=${booking.id}`}>
-                  <Button variant="amber" size="sm">
-                    Open Fast Dispatch Allocator
+                {booking.status === "PENDING_PAYMENT_VERIFICATION" ||
+                booking.paymentStatus === "UNDER_REVIEW" ? (
+                  <Button
+                    variant="amber"
+                    size="sm"
+                    icon={QrCode}
+                    onClick={() => setVerifyPaymentModalOpen(true)}
+                    className="animate-pulse font-bold"
+                  >
+                    Verify Customer Payment First
                   </Button>
-                </Link>
+                ) : (
+                  <Link href={`/operations/assignments/vehicle?bookingId=${booking.id}`}>
+                    <Button variant="amber" size="sm">
+                      Open Fast Dispatch Allocator
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
           </Card>
@@ -848,6 +935,15 @@ export default function BookingDetailPage({ params }) {
         onClose={() => setIsInvoiceModalOpen(false)}
         booking={booking}
         onToast={setToast}
+      />
+
+      {/* Payment Verification Modal */}
+      <PaymentVerificationModal
+        isOpen={verifyPaymentModalOpen}
+        onClose={() => setVerifyPaymentModalOpen(false)}
+        booking={booking}
+        onVerify={handleVerifyPayment}
+        loading={verifyingPayment}
       />
     </div>
   );

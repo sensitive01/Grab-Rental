@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { operationsApi } from "@/lib/operationsApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
@@ -24,7 +24,6 @@ import { formatINR, getStatusStyle } from "@/lib/utils";
 import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
 import { CreateBookingModal } from "@/components/bookings/CreateBookingModal";
 import {
-  Eye,
   CalendarCheck,
   Filter,
   Car,
@@ -62,7 +61,113 @@ function formatDateTime(val) {
   }
 }
 
+const INDIAN_STATES_AND_REGIONS = new Set([
+  "tamil nadu", "tamilnadu", "karnataka", "andhra pradesh", "telangana",
+  "kerala", "maharashtra", "goa", "gujarat", "rajasthan", "delhi",
+  "new delhi", "haryana", "uttar pradesh", "madhya pradesh", "west bengal",
+  "odisha", "punjab", "bihar", "jharkhand", "assam", "india"
+]);
+
+const KNOWN_CITIES = [
+  "Bangalore", "Bengaluru", "Mysore", "Mysuru", "Chennai", "Hyderabad",
+  "Mumbai", "Pune", "Coimbatore", "Ooty", "Coorg", "Kodaikanal",
+  "Madurai", "Tirupati", "Mangalore", "Mangaluru", "Hubli", "Dharwad",
+  "Belgaum", "Hosur", "Salem", "Trichy", "Pondicherry", "Puducherry",
+  "Vellore", "Kochi", "Ernakulam", "Trivandrum", "Calicut", "Goa"
+];
+
+function cleanCityName(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  const str = raw.trim();
+
+  // 1. Check known cities explicitly at start
+  for (const city of KNOWN_CITIES) {
+    if (new RegExp(`^${city}\\b`, "i").test(str)) {
+      return city;
+    }
+  }
+
+  // 2. Split by comma and filter out pincodes, states, and countries
+  const segments = str
+    .split(",")
+    .map((s) => s.trim().replace(/\b\d{6}\b/g, "").trim())
+    .filter(Boolean);
+
+  const filtered = segments.filter((s) => {
+    const lower = s.toLowerCase();
+    return !INDIAN_STATES_AND_REGIONS.has(lower) && !/^\d+$/.test(lower);
+  });
+
+  if (filtered.length > 0) {
+    for (const seg of filtered) {
+      for (const city of KNOWN_CITIES) {
+        if (new RegExp(`\\b${city}\\b`, "i").test(seg)) {
+          return city;
+        }
+      }
+    }
+    return filtered[0];
+  }
+
+  // 3. Fallback: check anywhere in string for known city
+  for (const city of KNOWN_CITIES) {
+    if (new RegExp(`\\b${city}\\b`, "i").test(str)) {
+      return city;
+    }
+  }
+
+  return segments[0] || str;
+}
+
+function formatTripService(tripType, serviceType) {
+  const raw = String(tripType || serviceType || "ONE_WAY").toUpperCase();
+  if (raw.includes("ROUND")) return "Round Trip";
+  if (raw.includes("ONE_WAY") || raw.includes("ONEWAY") || raw.includes("ONE WAY")) return "One Way";
+  if (raw.includes("LOCAL")) return "Local Rental";
+  if (raw.includes("AIRPORT_PICKUP")) return "Airport Pickup";
+  if (raw.includes("AIRPORT_DROP")) return "Airport Drop";
+  if (raw.includes("AIRPORT")) return "Airport Transfer";
+  return raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatModelName(model, category, vehicleType) {
+  // If model is generic "Commercial Vehicle" or missing, use category or vehicleType
+  const isGeneric = !model || /commercial/i.test(model);
+  const preferred = (!isGeneric && model ? model : (category || vehicleType || "Sedan")).trim();
+
+  // If preferred still contains "commercial", fallback to "Sedan"
+  const resolved = /commercial/i.test(preferred) ? "Sedan" : preferred;
+
+  // Standardize common types to uppercase (SEDAN, SUV, HATCHBACK, etc.)
+  if (/^(sedan|suv|hatchback|cng|ev)/i.test(resolved)) {
+    return resolved.toUpperCase();
+  }
+  return resolved.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function extractCityFromAddress(addr) {
+  if (!addr || typeof addr !== "string") return "";
+  return cleanCityName(addr);
+}
+
+function formatCityRoute(b) {
+  const rawPickup = b.pickupCity || extractCityFromAddress(b.pickupLocation) || "Bangalore";
+  const rawDrop = b.dropCity || extractCityFromAddress(b.dropLocation) || "";
+
+  const pickup = cleanCityName(rawPickup);
+  const drop = cleanCityName(rawDrop);
+
+  if (drop && drop.toLowerCase() !== pickup.toLowerCase()) {
+    return `${pickup} to ${drop}`;
+  }
+  if (drop && drop.toLowerCase() === pickup.toLowerCase()) {
+    return `${pickup} (Local)`;
+  }
+  return pickup;
+}
+
 export default function AdminMasterBookingsPage() {
+  const router = useRouter();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -263,8 +368,11 @@ export default function AdminMasterBookingsPage() {
           b.customerPhone?.toLowerCase().includes(q) ||
           b.pickupLocation?.toLowerCase().includes(q) ||
           b.dropLocation?.toLowerCase().includes(q) ||
+          b.pickupCity?.toLowerCase().includes(q) ||
+          b.dropCity?.toLowerCase().includes(q) ||
           b.vendorName?.toLowerCase().includes(q) ||
-          b.assignedVehicleNumber?.toLowerCase().includes(q)
+          b.assignedVehicleNumber?.toLowerCase().includes(q) ||
+          b.assignedDriverName?.toLowerCase().includes(q)
       );
     }
 
@@ -285,6 +393,9 @@ export default function AdminMasterBookingsPage() {
           const secB = b.pickupDateTime ? new Date(b.pickupDateTime).getTime() : 0;
           return sortConfig.direction === "asc" ? secA - secB : secB - secA;
         }
+      } else if (sortConfig.key === "vendorName") {
+        valA = (a.vendorName && a.vendorName !== "In-House Fleet" ? a.vendorName : a.assignedVehicleNumber || "zzz").toLowerCase();
+        valB = (b.vendorName && b.vendorName !== "In-House Fleet" ? b.vendorName : b.assignedVehicleNumber || "zzz").toLowerCase();
       } else if (typeof valA === "string") {
         valA = valA.toLowerCase();
         valB = (valB || "").toLowerCase();
@@ -410,8 +521,8 @@ export default function AdminMasterBookingsPage() {
           <TableHeader>
             <TableRow>
               <SortableHeader
-                columnKey="id"
-                label="Booking ID"
+                columnKey="createdAt"
+                label="Booking ID & Date"
                 currentSort={sortConfig}
                 onSort={handleSort}
               />
@@ -423,12 +534,6 @@ export default function AdminMasterBookingsPage() {
               />
               <TableHead>Route / Service</TableHead>
               <SortableHeader
-                columnKey="createdAt"
-                label="Booking Date & Time"
-                currentSort={sortConfig}
-                onSort={handleSort}
-              />
-              <SortableHeader
                 columnKey="pickupDateTime"
                 label="Pickup Date & Time"
                 currentSort={sortConfig}
@@ -436,11 +541,10 @@ export default function AdminMasterBookingsPage() {
               />
               <SortableHeader
                 columnKey="vendorName"
-                label="Partner Vendor"
+                label="Vendor / Vehicle"
                 currentSort={sortConfig}
                 onSort={handleSort}
               />
-              <TableHead>Vehicle & Driver</TableHead>
               <SortableHeader
                 columnKey="fare"
                 label="Total Fare"
@@ -450,22 +554,23 @@ export default function AdminMasterBookingsPage() {
               <SortableHeader
                 columnKey="status"
                 label="Status"
+                align="right"
                 currentSort={sortConfig}
                 onSort={handleSort}
+                className="text-right"
               />
-              <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} className="py-12">
+                <TableCell colSpan={7} className="py-12">
                   <LoadingAnimation inline title="Loading master booking ledger..." />
                 </TableCell>
               </TableRow>
             ) : paginatedBookings.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-12 text-slate-500">
+                <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                   <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
                     <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
                       <CalendarCheck className="w-5 h-5" />
@@ -488,10 +593,26 @@ export default function AdminMasterBookingsPage() {
                 const isPendingVerification = b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW";
 
                 return (
-                  <TableRow key={b.id}>
-                    {/* Booking ID */}
+                  <TableRow key={b.id} onClick={() => router.push(`/admin/bookings/${b.id}`)}>
+                    {/* Booking ID & Date */}
                     <TableCell>
-                      <span className="font-mono font-bold text-xs text-slate-900">{b.id}</span>
+                      <div className="space-y-1">
+                        <span className="font-mono font-bold text-xs text-slate-900 block">
+                          {b.id}
+                        </span>
+                        <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>{booked.date}</span>
+                          </span>
+                          {booked.time && (
+                            <span className="inline-flex items-center gap-1 font-mono text-[10.5px] text-slate-500">
+                              <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span>{booked.time}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* Customer */}
@@ -504,38 +625,27 @@ export default function AdminMasterBookingsPage() {
 
                     {/* Route / Service */}
                     <TableCell>
-                      <div className="text-xs font-semibold text-slate-800 max-w-[200px] truncate" title={`${b.pickupLocation} ➔ ${b.dropLocation}`}>
-                        {b.pickupLocation} ➔ {b.dropLocation}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                          {b.serviceType || b.tripType || "Ride"}
-                        </span>
-                        {b.vehicleCategory && (
-                          <span className="text-[10px] font-semibold text-blue-600">
-                            • {b.vehicleCategory}
+                      <div className="space-y-0.5">
+                        {/* Line 1: One Way - Model */}
+                        <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5 flex-wrap">
+                          <span>
+                            {formatTripService(b.tripType, b.serviceType)} - {formatModelName(b.vehicleModel, b.vehicleCategory, b.vehicleType)}
                           </span>
-                        )}
-                        {Boolean(b.isPetFriendly) && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
-                            🐾 {b.petType || "Pet"} ({b.petCount || 1})
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    {/* Booking Date & Time */}
-                    <TableCell>
-                      <div className="text-xs font-semibold text-slate-800 flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span>{booked.date}</span>
-                      </div>
-                      {booked.time && (
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span>{booked.time}</span>
+                          {Boolean(b.isPetFriendly) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-300">
+                              🐾 {b.petType || "Pet"} ({b.petCount || 1})
+                            </span>
+                          )}
                         </div>
-                      )}
+
+                        {/* Line 2: Main city like Bangalore to Mysore */}
+                        <div
+                          className="text-[11.5px] font-medium text-slate-600 truncate max-w-[210px]"
+                          title={`${b.pickupLocation || b.pickupCity || ""} ➔ ${b.dropLocation || b.dropCity || ""}`}
+                        >
+                          {formatCityRoute(b)}
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* Pickup Date & Time */}
@@ -552,31 +662,60 @@ export default function AdminMasterBookingsPage() {
                       )}
                     </TableCell>
 
-                    {/* Partner Vendor */}
+                    {/* Vendor / Vehicle */}
                     <TableCell>
-                      <span className="text-xs font-semibold text-slate-800">
-                        {b.vendorName || "In-House Fleet"}
-                      </span>
-                    </TableCell>
+                      {(() => {
+                        const hasExternalVendor = Boolean(
+                          b.vendorName &&
+                          b.vendorName !== "In-House Fleet" &&
+                          b.vendorName !== "Grab In-House"
+                        );
 
-                    {/* Vehicle & Driver */}
-                    <TableCell>
-                      {isAllocated ? (
-                        <div className="space-y-1">
-                          <NumberPlate registrationNumber={b.assignedVehicleNumber} />
-                          <div className="text-[10px] text-slate-500">
-                            {b.assignedDriverName || "Chauffeur pending vendor"}
+                        if (isPendingVerification) {
+                          return (
+                            <span className="text-xs text-amber-600/90 font-medium italic">
+                              Verify Payment First
+                            </span>
+                          );
+                        }
+
+                        if (!isAllocated && !hasExternalVendor) {
+                          return (
+                            <span className="text-xs text-amber-600 font-medium italic">
+                              Unallocated
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-1">
+                            {hasExternalVendor && (
+                              <div className="text-xs font-semibold text-slate-800">
+                                {b.vendorName}
+                              </div>
+                            )}
+                            {isAllocated ? (
+                              <>
+                                <div>
+                                  <NumberPlate registrationNumber={b.assignedVehicleNumber} />
+                                </div>
+                                {b.assignedDriverName && (
+                                  <div
+                                    className="text-[10px] text-slate-500 truncate max-w-[170px]"
+                                    title={b.assignedDriverName}
+                                  >
+                                    {b.assignedDriverName}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-xs text-amber-600 font-medium italic block">
+                                Unallocated
+                              </span>
+                            )}
                           </div>
-                        </div>
-                      ) : isPendingVerification ? (
-                        <span className="text-xs text-amber-600/90 font-medium italic">
-                          Verify Payment First
-                        </span>
-                      ) : (
-                        <span className="text-xs text-amber-600 font-medium italic">
-                          Unallocated
-                        </span>
-                      )}
+                        );
+                      })()}
                     </TableCell>
 
                     {/* Fare */}
@@ -592,54 +731,50 @@ export default function AdminMasterBookingsPage() {
                     </TableCell>
 
                     {/* Status */}
-                    <TableCell>
-                      {b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW" ? (
-                        <button
-                          onClick={() => setVerifyModalBooking(b)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition-colors animate-pulse"
-                        >
-                          <QrCode className="w-3.5 h-3.5" />
-                          <span>Verify Payment</span>
-                        </button>
-                      ) : (
-                        <span
-                          className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}
-                        >
-                          {statusStyle.label}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Action */}
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {isPendingVerification ? (
+                      <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                        {b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW" ? (
+                          <button
+                            type="button"
+                            onClick={() => setVerifyModalBooking(b)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition-colors animate-pulse cursor-pointer"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Verify Payment</span>
+                          </button>
+                        ) : b.status === "COMPLETED" ? (
+                          <span
+                            className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}
+                          >
+                            {statusStyle.label}
+                          </span>
+                        ) : b.status === "CANCELLED" || b.status === "REJECTED" ? (
+                          <span
+                            className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-semibold border ${statusStyle.bg}`}
+                          >
+                            {statusStyle.label}
+                          </span>
+                        ) : isAllocated || b.status === "ASSIGNED_TO_VENDOR" ? (
                           <Button
                             size="xs"
                             variant="secondary"
                             icon={Car}
-                            disabled
-                            title="Payment verification required before allocating fleet"
-                            className="opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200"
+                            onClick={() => openAllocateModal(b)}
+                            title="Reallocate Fleet"
                           >
-                            Allocate
+                            Reallocate
                           </Button>
                         ) : (
                           <Button
                             size="xs"
-                            variant={isAllocated ? "secondary" : "amber"}
+                            variant="amber"
                             icon={Car}
                             onClick={() => openAllocateModal(b)}
-                            title={isAllocated ? "Reallocate Fleet" : "Allocate Commercial Vehicle"}
+                            title="Allocate Commercial Vehicle"
                           >
-                            {isAllocated ? "Reallocate" : "Allocate"}
+                            Allocate
                           </Button>
                         )}
-                        <Link href={`/admin/bookings/${b.id}`}>
-                          <Button size="xs" variant="secondary" icon={Eye} title="Audit Booking Details">
-                            Audit
-                          </Button>
-                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>

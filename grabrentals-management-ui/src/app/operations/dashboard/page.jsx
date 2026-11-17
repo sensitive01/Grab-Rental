@@ -275,11 +275,19 @@ export default function OperationsDashboard() {
                     </div>
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
-                    <Link href={`/operations/assignments/vehicle?bookingId=${b.id}`}>
-                      <Button size="xs" variant="amber">
-                        Assign Now
-                      </Button>
-                    </Link>
+                    {b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW" ? (
+                      <Link href="/operations/bookings/pending">
+                        <Button size="xs" variant="amber" className="animate-pulse font-bold">
+                          Verify Payment
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href={`/operations/assignments/vehicle?bookingId=${b.id}`}>
+                        <Button size="xs" variant="amber">
+                          Assign Now
+                        </Button>
+                      </Link>
+                    )}
                     <Link href={`/operations/bookings/${b.id}`}>
                       <Button size="xs" variant="secondary">
                         Details

@@ -315,14 +315,29 @@ function haversineDistanceKm(lat1, lon1, lat2, lon2) {
 }
 
 /**
+ * Check if two locations refer to the exact same address or the same city
+ */
+export function isSameCityOrLocation(loc1, loc2) {
+  if (!loc1 || !loc2) return false;
+  const clean1 = String(loc1).toLowerCase().replace(/[^\w\s]/g, "").trim();
+  const clean2 = String(loc2).toLowerCase().replace(/[^\w\s]/g, "").trim();
+  if (clean1 === clean2) return true;
+
+  const c1 = findCityCoordinates(loc1);
+  const c2 = findCityCoordinates(loc2);
+  if (c1 && c2) {
+    const dist = haversineDistanceKm(c1.lat, c1.lng, c2.lat, c2.lng);
+    if (dist <= 0.05) return true;
+  }
+  return false;
+}
+
+/**
  * Calculate driving road distance between two cities (in km)
  */
 export function getSegmentDistance(fromCity, toCity) {
   if (!fromCity || !toCity) return 0;
-  const c1 = fromCity.toLowerCase().split(",")[0].replace(/\(.*?\)/g, "").trim();
-  const c2 = toCity.toLowerCase().split(",")[0].replace(/\(.*?\)/g, "").trim();
-
-  if (c1 === c2) return 25; // Local city trip
+  if (isSameCityOrLocation(fromCity, toCity)) return 0;
 
   // Calculate dynamically from GPS coordinates with road curvature factor
   const coords1 = findCityCoordinates(fromCity);
@@ -330,6 +345,7 @@ export function getSegmentDistance(fromCity, toCity) {
 
   if (coords1 && coords2) {
     const directKm = haversineDistanceKm(coords1.lat, coords1.lng, coords2.lat, coords2.lng);
+    if (directKm <= 0.05) return 0;
     // Indian highway road winding factor is typically 1.28x - 1.30x of air distance
     const roadKm = Math.round(directKm * 1.297);
     return Math.max(roadKm, 25);
@@ -394,6 +410,12 @@ export async function fetchGoogleRouteDistance(from, to, stops = [], tripType = 
 
   if (routeDistanceCache.has(cacheKey)) {
     return routeDistanceCache.get(cacheKey);
+  }
+
+  if (cleanStops.length === 0 && isSameCityOrLocation(cleanFrom, cleanTo)) {
+    const zeroRes = { distanceKm: 0, oneWayKm: 0, durationHours: 0, tollPrice: 0, isDetected: true };
+    routeDistanceCache.set(cacheKey, zeroRes);
+    return zeroRes;
   }
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;

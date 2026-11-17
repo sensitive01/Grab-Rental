@@ -2,6 +2,7 @@ package com.grabrentals.tariff.config;
 
 import com.grabrentals.tariff.dto.VehicleModelConfigRequest;
 import com.grabrentals.tariff.dto.VehicleTariffRequest;
+import com.grabrentals.tariff.entity.VehicleModelConfig;
 import com.grabrentals.tariff.repository.VehicleModelConfigRepository;
 import com.grabrentals.tariff.repository.VehicleTariffRepository;
 import com.grabrentals.tariff.service.VehicleTariffService;
@@ -30,8 +31,26 @@ public class TariffDataSeeder implements CommandLineRunner {
     public void run(String... args) {
         log.info("TariffDataSeeder: ensuring default vehicle model configurations exist in database...");
         tariffService.seedDefaultModelConfigs();
+        unifySameModelPhotos();
         log.info("TariffDataSeeder: vehicle models check/seed completed.");
         // Airport tariffs are configured manually by admin - no automatic seeding
+    }
+
+    private void unifySameModelPhotos() {
+        try {
+            List<VehicleModelConfig> busConfigs = modelConfigRepository.findByCategoryIgnoreCase("Bus");
+            for (VehicleModelConfig b : busConfigs) {
+                if (b.getModelName() != null && b.getModelName().equalsIgnoreCase("Luxury Bus")) {
+                    if (!"/images/cars/bus.jpg".equals(b.getCommonPhotoUrl())) {
+                        b.setCommonPhotoUrl("/images/cars/bus.jpg");
+                        modelConfigRepository.save(b);
+                        log.info("TariffDataSeeder: Unified photo for Luxury Bus ({} seats) to /images/cars/bus.jpg", b.getSeatingCapacity());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("TariffDataSeeder: Could not unify bus model photos: {}", e.getMessage());
+        }
     }
 
     private void seedVehicleModels() {

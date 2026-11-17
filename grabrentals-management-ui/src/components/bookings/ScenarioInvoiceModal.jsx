@@ -116,10 +116,37 @@ function extractBookingAddons(booking) {
 }
 
 export function ScenarioInvoiceModal({ isOpen, onClose, booking, onToast }) {
-  const [activeScenario, setActiveScenario] = useState(
-    booking?.status === "COMPLETED" ? 3 : booking?.status === "CONFIRMED" || booking?.assignedVehicle ? 2 : 1
+  const hasVehicleAllocated = Boolean(
+    booking?.assignedVehicleNumber ||
+    booking?.vehicleNumber ||
+    booking?.assignedVehicle
   );
+
+  const isScenario2Unlocked = Boolean(
+    booking?.status === "CONFIRMED" ||
+    booking?.status === "ON_THE_WAY" ||
+    booking?.status === "IN_TRANSIT" ||
+    booking?.status === "COMPLETED" ||
+    hasVehicleAllocated
+  );
+
+  const isScenario3Unlocked = Boolean(booking?.status === "COMPLETED");
+
+  const maxAllowedScenario = isScenario3Unlocked ? 3 : isScenario2Unlocked ? 2 : 1;
+
+  const [selectedScenario, setSelectedScenario] = useState(null);
+  const [prevBookingId, setPrevBookingId] = useState(null);
   const [sendingScenario, setSendingScenario] = useState(false);
+  const [printing, setPrinting] = useState(false);
+
+  const currentBookingId = booking?.rawId || booking?.id;
+  if (currentBookingId !== prevBookingId) {
+    setPrevBookingId(currentBookingId);
+    setSelectedScenario(null);
+  }
+
+  const activeScenario = selectedScenario !== null ? Math.min(selectedScenario, maxAllowedScenario) : maxAllowedScenario;
+  const effectiveScenario = activeScenario;
 
   if (!isOpen || !booking) return null;
 
@@ -131,7 +158,7 @@ export function ScenarioInvoiceModal({ isOpen, onClose, booking, onToast }) {
   const dropCity = booking?.dropCity || "Destination";
   const tripType = (booking?.tripType || "ONE_WAY").replace(/_/g, " ");
 
-  const isFinalScenario = activeScenario === 3;
+  const isFinalScenario = effectiveScenario === 3;
   const customerAddons = extractBookingAddons(booking);
   const addonsTotal = customerAddons.reduce((sum, a) => sum + Number(a.price || 0), 0);
 
@@ -314,20 +341,59 @@ export function ScenarioInvoiceModal({ isOpen, onClose, booking, onToast }) {
     }
   };
 
-  const handlePrint = () => {
-    if (typeof window !== "undefined") {
+  const handlePrint = async () => {
+    if (printing) return;
+    setPrinting(true);
+    const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/public/bookings/${booking.rawId || booking.id || bRef}/document.pdf?scenario=${activeScenario}`;
+
+    try {
+      const response = await fetch(pdfUrl);
+      if (!response.ok) throw new Error("Could not load PDF document");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      let iframe = document.getElementById("scenario-pdf-print-frame");
+      if (!iframe) {
+        iframe = document.createElement("iframe");
+        iframe.id = "scenario-pdf-print-frame";
+        iframe.style.position = "fixed";
+        iframe.style.top = "-9999px";
+        iframe.style.left = "-9999px";
+        iframe.style.width = "0px";
+        iframe.style.height = "0px";
+        iframe.style.border = "none";
+        document.body.appendChild(iframe);
+      }
+
+      iframe.src = blobUrl;
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            const printWin = window.open(blobUrl, "_blank");
+            if (printWin) printWin.focus();
+          } finally {
+            setPrinting(false);
+          }
+        }, 300);
+      };
+    } catch (err) {
+      console.warn("Direct PDF print failed, falling back to window.print():", err);
       window.print();
+      setPrinting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 print:p-0 print:bg-white print:static print:z-auto">
       <div
-        className="w-full max-w-4xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh]"
+        className="w-full max-w-4xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] print:max-h-none print:h-auto print:border-none print:shadow-none print:rounded-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50/80 gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50/80 gap-3 print:hidden">
           <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shrink-0">
@@ -356,6 +422,7 @@ export function ScenarioInvoiceModal({ isOpen, onClose, booking, onToast }) {
               href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/public/bookings/${booking.rawId || booking.id || bRef}/document.pdf?scenario=${activeScenario}`}
               target="_blank"
               rel="noopener noreferrer"
+              download={`GrabRentals_${activeScenario === 1 ? "Estimate" : activeScenario === 2 ? "Confirmation" : "Invoice"}_${bRef}.pdf`}
               className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold shadow-2xs transition flex-1 sm:flex-initial"
             >
               <Download className="w-3.5 h-3.5 text-amber-600" />
@@ -363,10 +430,15 @@ export function ScenarioInvoiceModal({ isOpen, onClose, booking, onToast }) {
             </a>
             <button
               onClick={handlePrint}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition flex-1 sm:flex-initial"
+              disabled={printing}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition flex-1 sm:flex-initial cursor-pointer disabled:opacity-60"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span>Print</span>
+              {printing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+              ) : (
+                <Printer className="w-3.5 h-3.5 text-slate-500" />
+              )}
+              <span>{printing ? "Preparing Print..." : "Print"}</span>
             </button>
             <button
               onClick={onClose}
@@ -379,79 +451,105 @@ export function ScenarioInvoiceModal({ isOpen, onClose, booking, onToast }) {
         </div>
 
         {/* Scenario Selection Tabs */}
-        <div className="flex border-b border-slate-200 bg-slate-100/70 p-1.5 sm:p-2 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveScenario(1)}
-            className={`flex-1 min-w-[200px] flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-              activeScenario === 1
-                ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                : "text-slate-600 hover:bg-slate-200/60"
-            }`}
-          >
-            <div className="flex items-center gap-2 text-left">
-              <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-black">
-                1
-              </span>
-              <div>
-                <p className="font-bold">Scenario 1: Estimate Bill</p>
-                <p className="text-[10px] text-slate-400 font-normal">When Booking Created</p>
+        <div className="flex flex-col sm:flex-row sm:items-center border-b border-slate-200 bg-slate-100/70 p-1.5 sm:p-2 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar print:hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-1 overflow-x-auto">
+            {/* Scenario 1: Always available */}
+            <button
+              onClick={() => setSelectedScenario(1)}
+              className={`flex-1 min-w-[200px] flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+                activeScenario === 1
+                  ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                  : "text-slate-600 hover:bg-slate-200/60"
+              }`}
+            >
+              <div className="flex items-center gap-2 text-left">
+                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-black">
+                  1
+                </span>
+                <div>
+                  <p className="font-bold">Scenario 1: Estimate Bill</p>
+                  <p className="text-[10px] text-slate-400 font-normal">When Booking Created</p>
+                </div>
               </div>
-            </div>
-            <span className="text-[10px] uppercase font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
-              Provisional
-            </span>
-          </button>
+              <span className="text-[10px] uppercase font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                Provisional
+              </span>
+            </button>
 
-          <button
-            onClick={() => setActiveScenario(2)}
-            className={`flex-1 min-w-[200px] flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-              activeScenario === 2
-                ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                : "text-slate-600 hover:bg-slate-200/60"
-            }`}
-          >
-            <div className="flex items-center gap-2 text-left">
-              <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px] font-black">
-                2
-              </span>
-              <div>
-                <p className="font-bold">Scenario 2: Confirmed</p>
-                <p className="text-[10px] text-slate-400 font-normal">When Confirmed (No OTP)</p>
-              </div>
-            </div>
-            <span className="text-[10px] uppercase font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">
-              Confirmed
-            </span>
-          </button>
+            {/* Scenario 2: Unlocked upon fleet allocation / confirmation */}
+            {isScenario2Unlocked && (
+              <button
+                onClick={() => setSelectedScenario(2)}
+                className={`flex-1 min-w-[200px] flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+                  activeScenario === 2
+                    ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                    : "text-slate-600 hover:bg-slate-200/60"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-left">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px] font-black">
+                    2
+                  </span>
+                  <div>
+                    <p className="font-bold">Scenario 2: Confirmed</p>
+                    <p className="text-[10px] text-slate-400 font-normal">When Confirmed (No OTP)</p>
+                  </div>
+                </div>
+                <span className="text-[10px] uppercase font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">
+                  Confirmed
+                </span>
+              </button>
+            )}
 
-          <button
-            onClick={() => setActiveScenario(3)}
-            className={`flex-1 min-w-[200px] flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-              activeScenario === 3
-                ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                : "text-slate-600 hover:bg-slate-200/60"
-            }`}
-          >
-            <div className="flex items-center gap-2 text-left">
-              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-black">
-                3
-              </span>
-              <div>
-                <p className="font-bold">Scenario 3: Tax Invoice</p>
-                <p className="text-[10px] text-slate-400 font-normal">When Trip Completed</p>
-              </div>
+            {/* Scenario 3: Unlocked upon trip completion */}
+            {isScenario3Unlocked && (
+              <button
+                onClick={() => setSelectedScenario(3)}
+                className={`flex-1 min-w-[200px] flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+                  activeScenario === 3
+                    ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                    : "text-slate-600 hover:bg-slate-200/60"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-left">
+                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-black">
+                    3
+                  </span>
+                  <div>
+                    <p className="font-bold">Scenario 3: Tax Invoice</p>
+                    <p className="text-[10px] text-slate-400 font-normal">When Trip Completed</p>
+                  </div>
+                </div>
+                <span className="text-[10px] uppercase font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
+                  Final Tax
+                </span>
+              </button>
+            )}
+          </div>
+
+          {!isScenario2Unlocked && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-slate-500 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+              <span>Scenario 2 (Confirmation Voucher) will unlock upon fleet allocation</span>
             </div>
-            <span className="text-[10px] uppercase font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-              Final Tax
-            </span>
-          </button>
+          )}
+
+          {isScenario2Unlocked && !isScenario3Unlocked && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-slate-500 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+              <span>Scenario 3 (Tax Invoice) will unlock upon trip completion</span>
+            </div>
+          )}
         </div>
 
         {/* Document Body Area */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-8 space-y-6 bg-slate-50/50">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-8 space-y-6 bg-slate-50/50 print:p-0 print:bg-white print:overflow-visible">
           
           {/* Main Paper Document Container */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-8 shadow-sm space-y-6 overflow-x-auto">
+          <div
+            id="scenario-invoice-printable"
+            className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-8 shadow-sm space-y-6 overflow-x-auto print:border-none print:shadow-none print:p-0 print:rounded-none print:overflow-visible"
+          >
             
             {/* Document Header */}
             <div className="flex flex-col sm:flex-row justify-between gap-4 pb-6 border-b-2 border-slate-900">
@@ -681,7 +779,7 @@ export function ScenarioInvoiceModal({ isOpen, onClose, booking, onToast }) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 print:hidden">
           <div className="text-xs text-slate-500 text-center sm:text-left">
             Dispatching <span className="font-bold text-slate-700">Scenario {activeScenario}</span> to customer WhatsApp:{" "}
             <span className="font-mono font-bold text-slate-900">{customerPhone}</span>

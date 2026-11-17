@@ -99,3 +99,48 @@ export function getStatusStyle(status) {
       };
   }
 }
+
+export async function printDocumentPdf(bookingIdOrRef, scenario = 2) {
+  if (typeof window === "undefined" || !bookingIdOrRef) return;
+
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  const scenarioParam = scenario ? `?scenario=${scenario}` : "";
+  const pdfUrl = `${base}/api/public/bookings/${bookingIdOrRef}/document.pdf${scenarioParam}`;
+
+  try {
+    const res = await fetch(pdfUrl);
+    if (!res.ok) throw new Error("Could not load PDF document");
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    let iframe = document.getElementById("grabrentals-pdf-print-frame");
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "grabrentals-pdf-print-frame";
+      iframe.style.position = "fixed";
+      iframe.style.top = "-9999px";
+      iframe.style.left = "-9999px";
+      iframe.style.width = "0px";
+      iframe.style.height = "0px";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+    }
+
+    iframe.src = blobUrl;
+    iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            const w = window.open(blobUrl, "_blank");
+            if (w) w.focus();
+          }
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        }, 300);
+    };
+  } catch (err) {
+    console.warn("Direct PDF print failed, falling back to window.print():", err);
+    window.print();
+  }
+}

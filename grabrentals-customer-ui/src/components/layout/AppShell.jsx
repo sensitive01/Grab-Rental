@@ -210,8 +210,8 @@ export default function AppShell({ children }) {
     );
   };
 
-  // Auth pages like /login use a dedicated focused layout
-  if (pathname === "/login") {
+  // Auth pages like /login and /account/set-pin use a dedicated focused layout
+  if (pathname === "/login" || pathname === "/account/set-pin") {
     return <>{children}</>;
   }
 

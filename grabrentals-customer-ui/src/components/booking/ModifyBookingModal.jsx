@@ -13,9 +13,11 @@ import {
   getDefaultPickupDateTime,
   isDateTimeInPast
 } from "@/lib/dateTimeUtils";
-import { findCityCoordinates } from "@/lib/cities";
+import { findCityCoordinates, isSameCityOrLocation } from "@/lib/cities";
+import { useToast } from "@/context/ToastContext";
 
 export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSave }) {
+  const toast = useToast();
   const isLocal = currentTrip?.serviceType === "LOCAL" || (currentTrip?.to && currentTrip.to.toLowerCase().includes("hr"));
   const isAirport = currentTrip?.serviceType === "AIRPORT" || (currentTrip?.tripType && currentTrip.tripType.toLowerCase().includes("airport"));
   const [from, setFrom] = useState(currentTrip?.from || "Bangalore, Karnataka");
@@ -123,6 +125,23 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
   const handleSubmit = (e) => {
     e.preventDefault();
     const validStops = stops.filter((s) => s && s.trim());
+
+    if (!isLocal && !isAirport) {
+      const cleanFromText = (from || "").toLowerCase().trim();
+      const cleanToText = (to || "").toLowerCase().trim();
+      if (cleanFromText && cleanToText && cleanFromText === cleanToText) {
+        toast.error("Pickup and drop destination cannot be the same location.", "Invalid Destination");
+        return;
+      }
+      if (validStops.length === 0 && isSameCityOrLocation(from, to)) {
+        toast.warning(
+          "Outstation trips require travel between different cities. For intra-city rides, please select Local Hourly Packages.",
+          "Same City Detected"
+        );
+        return;
+      }
+    }
+
     const resolvedPickupCoords = pickupCoords || (pickupDetails?.lat && pickupDetails?.lng ? { lat: pickupDetails.lat, lng: pickupDetails.lng } : null) || findCityCoordinates(from);
     const resolvedDropCoords = dropCoords || (dropDetails?.lat && dropDetails?.lng ? { lat: dropDetails.lat, lng: dropDetails.lng } : null) || findCityCoordinates(to);
 

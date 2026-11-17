@@ -30,15 +30,20 @@ public class PublicInvoicePdfController {
     ) {
         Booking booking = findBooking(idOrRef);
 
+        int maxAllowed;
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            maxAllowed = 3;
+        } else {
+            // Scenario 1 (Estimate) and Scenario 2 (Confirmation & Duty Slip) are always available.
+            // Scenario 3 (Final Tax Invoice with closing telemetry) requires trip completion.
+            maxAllowed = 2;
+        }
+
         int resolvedScenario;
         if (scenario != null && scenario >= 1 && scenario <= 3) {
-            resolvedScenario = scenario;
-        } else if (booking.getStatus() == BookingStatus.COMPLETED) {
-            resolvedScenario = 3;
-        } else if (booking.getStatus() == BookingStatus.CONFIRMED || booking.getAssignedVehicle() != null) {
-            resolvedScenario = 2;
+            resolvedScenario = Math.min(scenario, maxAllowed);
         } else {
-            resolvedScenario = 1;
+            resolvedScenario = maxAllowed;
         }
 
         byte[] pdfBytes = pdfGeneratorService.generatePdf(booking, resolvedScenario);

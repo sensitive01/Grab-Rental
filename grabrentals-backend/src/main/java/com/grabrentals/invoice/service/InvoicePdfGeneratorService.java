@@ -124,7 +124,7 @@ public class InvoicePdfGeneratorService {
 
             String docTitle = switch (scenario) {
                 case 1 -> "PROVISIONAL BOOKING ESTIMATE";
-                case 2 -> "BOOKING CONFIRMATION";
+                case 2 -> "BOOKING CONFIRMATION & DUTY SLIP";
                 default -> "OFFICIAL TAX INVOICE (SAC: 9966)";
             };
 
@@ -188,30 +188,60 @@ public class InvoicePdfGeneratorService {
                 tripCell.addElement(new Paragraph("Vehicle Category: " + (booking.getVehicleCategory() != null ? booking.getVehicleCategory() : "AC Cab"), normalFont));
                 tripCell.addElement(new Paragraph("Note: Fleet & chauffeur will be appointed upon confirmation.", metaFont));
             } else {
-                tripCell.addElement(new Paragraph("CONFIRMED FLEET & CHAUFFEUR (NO OTP)", smallLabelFont));
+                tripCell.addElement(new Paragraph("CONFIRMED FLEET & CHAUFFEUR (DUTY DISPATCH)", smallLabelFont));
+                boolean hasAssignedVehicle = booking.getAssignedVehicle() != null
+                        && booking.getAssignedVehicle().getVehicleNumber() != null
+                        && !booking.getAssignedVehicle().getVehicleNumber().isBlank();
+                boolean hasAssignedDriver = booking.getAssignedDriver() != null
+                        && booking.getAssignedDriver().getName() != null
+                        && !booking.getAssignedDriver().getName().isBlank();
+
                 String vModel = (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getModel() != null)
                         ? booking.getAssignedVehicle().getModel()
                         : (booking.getVehicleCategory() != null ? booking.getVehicleCategory() : "Commercial AC Fleet");
-                String vNum = (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getVehicleNumber() != null)
+                String vNum = hasAssignedVehicle
                         ? booking.getAssignedVehicle().getVehicleNumber()
-                        : "Assigned Cab";
-                String dName = (booking.getAssignedDriver() != null && booking.getAssignedDriver().getName() != null)
+                        : "________________________ (To Be Filled)";
+                String dName = hasAssignedDriver
                         ? booking.getAssignedDriver().getName()
-                        : "Appointed Chauffeur";
+                        : "________________________ (To Be Filled)";
                 String dPhone = (booking.getAssignedDriver() != null && booking.getAssignedDriver().getPhone() != null)
                         ? booking.getAssignedDriver().getPhone()
-                        : "+91 Contact on File";
+                        : (hasAssignedDriver ? "+91 Contact on File" : "________________________");
 
-                tripCell.addElement(new Paragraph(vModel + " (" + vNum + ")", normalBoldFont));
-                tripCell.addElement(new Paragraph("Chauffeur: " + dName + " (" + dPhone + ")", normalFont));
+                tripCell.addElement(new Paragraph(vModel + (hasAssignedVehicle ? (" (" + vNum + ")") : ""), normalBoldFont));
+                if (!hasAssignedVehicle) {
+                    tripCell.addElement(new Paragraph("Vehicle Reg No: " + vNum, normalFont));
+                }
+                tripCell.addElement(new Paragraph("Chauffeur: " + dName + (hasAssignedDriver ? (" (" + dPhone + ")") : ""), normalFont));
+                if (!hasAssignedDriver) {
+                    tripCell.addElement(new Paragraph("Chauffeur Mobile: " + dPhone, normalFont));
+                }
                 tripCell.addElement(new Paragraph("Route: " + pickupCity + " ➔ " + dropCity, metaFont));
             }
             infoTable.addCell(tripCell);
             document.add(infoTable);
             document.add(new Paragraph(" "));
 
-            // 3. Scenario 3 Odometer Telemetry Strip (if Scenario 3)
-            if (scenario == 3) {
+            // 3. Scenario 2 (Duty Slip Trip Sheet) & Scenario 3 (Final Odometer Telemetry)
+            if (scenario == 2) {
+                PdfPTable odoTable = new PdfPTable(4);
+                odoTable.setWidthPercentage(100);
+                odoTable.setWidths(new float[]{25, 25, 25, 25});
+
+                String startKmVal = booking.getStartKm() != null ? (booking.getStartKm() + " KM") : "___________ KM";
+                String endKmVal = booking.getEndKm() != null ? (booking.getEndKm() + " KM") : "___________ KM";
+                String startTimeVal = booking.getPickupDateTime() != null ? booking.getPickupDateTime().format(TIME_FORMATTER) : "____ : ____";
+                String endTimeVal = booking.getReturnDateTime() != null ? booking.getReturnDateTime().format(TIME_FORMATTER) : "____ : ____";
+
+                addTelemetryCell(odoTable, "STARTING KM", startKmVal, borderColor, lightBg);
+                addTelemetryCell(odoTable, "CLOSING KM", endKmVal, borderColor, lightBg);
+                addTelemetryCell(odoTable, "STARTING TIME", startTimeVal, borderColor, lightBg);
+                addTelemetryCell(odoTable, "CLOSING TIME", endTimeVal, borderColor, lightBg);
+
+                document.add(odoTable);
+                document.add(new Paragraph(" "));
+            } else if (scenario == 3) {
                 PdfPTable odoTable = new PdfPTable(4);
                 odoTable.setWidthPercentage(100);
                 odoTable.setWidths(new float[]{25, 25, 25, 25});
@@ -337,7 +367,31 @@ public class InvoicePdfGeneratorService {
 
             document.add(totalTable);
 
-            // 6. Footer
+            // 6. Signatures (Scenario 2: Duty Slip / Trip Sheet)
+            if (scenario == 2) {
+                PdfPTable sigTable = new PdfPTable(2);
+                sigTable.setWidthPercentage(100);
+                sigTable.setWidths(new float[]{50, 50});
+
+                PdfPCell custSigCell = new PdfPCell();
+                custSigCell.setBorder(Rectangle.NO_BORDER);
+                custSigCell.setPaddingTop(12);
+                custSigCell.addElement(new Paragraph("Customer / Passenger Signature: _______________________", metaFont));
+                sigTable.addCell(custSigCell);
+
+                PdfPCell driverSigCell = new PdfPCell();
+                driverSigCell.setBorder(Rectangle.NO_BORDER);
+                driverSigCell.setPaddingTop(12);
+                driverSigCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                Paragraph dSigP = new Paragraph("Chauffeur Signature: _______________________", metaFont);
+                dSigP.setAlignment(Element.ALIGN_RIGHT);
+                driverSigCell.addElement(dSigP);
+                sigTable.addCell(driverSigCell);
+
+                document.add(sigTable);
+            }
+
+            // 7. Footer
             Paragraph footer = new Paragraph(
                     "\nThank you for choosing Grab Rentals! This is a computer-generated document under the Information Technology Act.\nHelpline: +91 9071 100 200 • www.grabrentals.in • grabrentals2016@gmail.com",
                     metaFont

@@ -443,7 +443,8 @@ public class CustomerBookingService {
                     .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + idOrRef));
         }
 
-        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT_VERIFICATION) {
+        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT_VERIFICATION
+                || "UNDER_REVIEW".equalsIgnoreCase(booking.getPaymentStatus())) {
             throw new BadRequestException("Payment verification is pending for this booking. Please verify payment before allocating fleet.");
         }
 

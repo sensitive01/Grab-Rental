@@ -24,5 +24,6 @@ public class VehicleSearchResponseDto {
     private List<PublicVehicleCardDto> vehicles;
     private Boolean serviceAvailable;
     private String serviceCity;
+    private String serviceCode;
     private String serviceMessage;
 }

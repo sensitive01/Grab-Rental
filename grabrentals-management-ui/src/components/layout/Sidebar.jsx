@@ -51,7 +51,7 @@ export const OPERATIONS_NAV = [
       { label: "New Booking", href: "/operations/bookings/new", icon: PlusCircle },
       { label: "All Bookings", href: "/operations/bookings", icon: CalendarCheck },
       { label: "Pending Allocations", href: "/operations/bookings/pending", icon: Clock },
-      { label: "Customer Enquiries", href: "/admin/enquiries", icon: MessageSquare },
+      // { label: "Customer Enquiries", href: "/admin/enquiries", icon: MessageSquare },
       // { label: "Search History", href: "/admin/search-history", icon: Navigation },
     ],
   },
@@ -76,11 +76,12 @@ export const OPERATIONS_NAV = [
     title: "Coordination & Insights",
     items: [
       { label: "Customer Requests", href: "/operations/customer-requests", icon: MessageSquare },
-      { label: "Vendor Coordination", href: "/operations/vendor-coordination", icon: Building2 },
+      // { label: "Vendor Coordination", href: "/operations/vendor-coordination", icon: Building2 },
       { label: "Operations Reports", href: "/operations/reports", icon: FileBarChart },
       { label: "Notifications", href: "/operations/notifications", icon: Bell },
     ],
   },
+  /*
   {
     title: "Account",
     items: [
@@ -89,6 +90,7 @@ export const OPERATIONS_NAV = [
       { label: "Ops Support", href: "/operations/support", icon: LifeBuoy },
     ],
   },
+  */
 ];
 
 export const ADMIN_NAV = [

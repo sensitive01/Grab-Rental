@@ -582,6 +582,7 @@ function SelectVehicleContent() {
             setServiceStatus({
               available: false,
               city: res.data.serviceCity || resolvedFromCity,
+              code: res.data.serviceCode || "",
               message: res.data.serviceMessage || `Service will Be Soon in ${res.data.serviceCity || resolvedFromCity}`,
             });
             setBackendVehicles([]);
@@ -589,6 +590,7 @@ function SelectVehicleContent() {
             setServiceStatus({
               available: true,
               city: res.data.serviceCity || "",
+              code: "",
               message: "",
             });
             if (Array.isArray(res.data.vehicles)) {
@@ -1487,36 +1489,69 @@ function SelectVehicleContent() {
                 ))}
               </div>
             ) : !serviceStatus.available ? (
-              <div className="bg-white rounded-2xl border-2 border-blue-200/80 p-8 sm:p-12 text-center space-y-4 shadow-sm">
-                <div className="w-16 h-16 rounded-2xl bg-blue-100 text-[#0082fe] flex items-center justify-center mx-auto shadow-inner">
-                  <MapPin className="w-8 h-8 text-[#0082fe] animate-bounce" />
+              serviceStatus.code === "SAME_CITY_OUTSTATION" ? (
+                <div className="bg-white rounded-2xl border-2 border-amber-200/80 p-8 sm:p-12 text-center space-y-4 shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+                    <Car className="w-8 h-8 text-amber-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 uppercase tracking-wider">
+                      🚗 Local Travel in {serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
+                      Looking for travel within {serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}?
+                    </h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+                    Outstation One-Way is designed for inter-city travel between different cities. For rides within <strong className="text-slate-900">{serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}</strong>, please explore our affordable <strong>Local Hourly Packages</strong> (4 hrs / 40 km, 8 hrs / 80 km, etc.).
+                  </p>
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      onClick={() => router.push(`/local?from=${encodeURIComponent(trip.from || serviceStatus.city)}`)}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
+                    >
+                      Switch to Local Rentals
+                    </button>
+                    <button
+                      onClick={() => setIsModifyOpen(true)}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Change Destination
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-900 uppercase tracking-wider">
-                    🚀 Launching Soon
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
-                    Service will Be Soon in {serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}
-                  </h3>
+              ) : (
+                <div className="bg-white rounded-2xl border-2 border-blue-200/80 p-8 sm:p-12 text-center space-y-4 shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-100 text-[#0082fe] flex items-center justify-center mx-auto shadow-inner">
+                    <MapPin className="w-8 h-8 text-[#0082fe] animate-bounce" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-900 uppercase tracking-wider">
+                      🚀 Launching Soon
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
+                      Service will Be Soon in {serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}
+                    </h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                    We are actively expanding our fleet network to <strong className="text-slate-900">{serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}</strong>. Verified drivers, transparent per-KM fares, and instant bookings will be available in this hub very soon!
+                  </p>
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      onClick={() => setIsModifyOpen(true)}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
+                    >
+                      Change Pickup Location
+                    </button>
+                    <button
+                      onClick={() => router.push("/")}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Explore Other Hubs
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                  We are actively expanding our fleet network to <strong className="text-slate-900">{serviceStatus.city || cleanCityName(trip.from, trip.fromCity || trip.pickupDetails?.city)}</strong>. Verified drivers, transparent per-KM fares, and instant bookings will be available in this hub very soon!
-                </p>
-                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <button
-                    onClick={() => setIsModifyOpen(true)}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-[#0082fe] hover:bg-[#006ed6] text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
-                  >
-                    Change Pickup Location
-                  </button>
-                  <button
-                    onClick={() => router.push("/")}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                  >
-                    Explore Other Hubs
-                  </button>
-                </div>
-              </div>
+              )
             ) : paginatedVehicles.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
                 <div className="w-14 h-14 rounded-full bg-blue-50 text-[#0082fe] flex items-center justify-center mx-auto">

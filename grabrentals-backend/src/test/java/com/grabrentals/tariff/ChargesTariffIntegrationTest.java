@@ -205,4 +205,141 @@ public class ChargesTariffIntegrationTest {
         );
         assertEquals(new BigDecimal("10.0"), etiosOst.get("ratePerKm"));
     }
+
+    @Test
+    @DisplayName("Verify seating capacity compatibility helper")
+    void testSeatsCompatibility() {
+        // Direct matching
+        assertTrue(VehicleTariffService.areSeatsCompatible("4", "4"));
+        assertTrue(VehicleTariffService.areSeatsCompatible("26", "26"));
+
+        // Normalization with textual suffixes
+        assertTrue(VehicleTariffService.areSeatsCompatible("26", "26 Seater"));
+        assertTrue(VehicleTariffService.areSeatsCompatible("35 Seater", "35"));
+        assertTrue(VehicleTariffService.areSeatsCompatible("12", "12 Seater AC Cab"));
+
+        // Wildcard
+        assertTrue(VehicleTariffService.areSeatsCompatible("26", "ALL"));
+        assertTrue(VehicleTariffService.areSeatsCompatible("35", null));
+        assertTrue(VehicleTariffService.areSeatsCompatible(null, "35"));
+
+        // Incompatible counts
+        assertFalse(VehicleTariffService.areSeatsCompatible("26", "35"));
+        assertFalse(VehicleTariffService.areSeatsCompatible("26 Seater", "35 Seater"));
+        assertFalse(VehicleTariffService.areSeatsCompatible("12", "17"));
+        assertFalse(VehicleTariffService.areSeatsCompatible("6", "7"));
+    }
+
+    @Test
+    @DisplayName("Verify that when only 35-seater bus is priced, 26-seater bus hasTariff is false and does not show")
+    void testSeatingCapacityTariffIsolation() {
+        VehicleTariffService service = new VehicleTariffService(null, null, null);
+
+        // Custom list containing ONLY a 35-seater Luxury Bus tariff in Chennai
+        List<VehicleTariff> customTariffs = List.of(
+                VehicleTariff.builder()
+                        .serviceType("ONE_WAY")
+                        .city("Chennai")
+                        .state("Tamil Nadu")
+                        .category("Bus")
+                        .modelName("Luxury Bus")
+                        .seatingCapacity("35")
+                        .fuelType("Diesel")
+                        .seasonal(false)
+                        .weekdayDayRate(new BigDecimal("35.00"))
+                        .weekdayNightRate(new BigDecimal("35.00"))
+                        .weekendDayRate(new BigDecimal("35.00"))
+                        .weekendNightRate(new BigDecimal("35.00"))
+                        .build()
+        );
+
+        // 1. Calculate rate for 35-seater: should have tariff and match 35.00
+        Map<String, Object> bus35Rate = service.calculateRate(
+                "Bus", "Luxury Bus", "35", "Diesel",
+                "2026-11-17", "10:00", "ONE_WAY", "Chennai", "Tamil Nadu", null, customTariffs
+        );
+        assertEquals(Boolean.TRUE, bus35Rate.get("hasTariff"), "35-seater must have hasTariff=true");
+        assertEquals(new BigDecimal("35.00"), bus35Rate.get("ratePerKm"), "35-seater rate must match 35.00");
+
+        // 2. Calculate rate for 26-seater: must NOT match 35-seater, must return hasTariff=false
+        Map<String, Object> bus26Rate = service.calculateRate(
+                "Bus", "Luxury Bus", "26", "Diesel",
+                "2026-11-17", "10:00", "ONE_WAY", "Chennai", "Tamil Nadu", null, customTariffs
+        );
+        assertEquals(Boolean.FALSE, bus26Rate.get("hasTariff"), "26-seater must have hasTariff=false when only 35 is priced");
+
+        // 3. Now add 26-seater tariff at 28.00 and verify 26-seater gets its own rate
+        List<VehicleTariff> bothTariffs = List.of(
+                customTariffs.get(0),
+                VehicleTariff.builder()
+                        .serviceType("ONE_WAY")
+                        .city("Chennai")
+                        .state("Tamil Nadu")
+                        .category("Bus")
+                        .modelName("Luxury Bus")
+                        .seatingCapacity("26")
+                        .fuelType("Diesel")
+                        .seasonal(false)
+                        .weekdayDayRate(new BigDecimal("28.00"))
+                        .weekdayNightRate(new BigDecimal("28.00"))
+                        .weekendDayRate(new BigDecimal("28.00"))
+                        .weekendNightRate(new BigDecimal("28.00"))
+                        .build()
+        );
+
+        Map<String, Object> bus26Priced = service.calculateRate(
+                "Bus", "Luxury Bus", "26", "Diesel",
+                "2026-11-17", "10:00", "ONE_WAY", "Chennai", "Tamil Nadu", null, bothTariffs
+        );
+        assertEquals(Boolean.TRUE, bus26Priced.get("hasTariff"), "26-seater must now have hasTariff=true");
+        assertEquals(new BigDecimal("28.00"), bus26Priced.get("ratePerKm"), "26-seater rate must be 28.00");
+    }
+
+    @Test
+    @DisplayName("Verify that Outstation search with same pickup and drop city returns SAME_CITY_OUTSTATION")
+    void testSameCityOutstationValidation() {
+        com.grabrentals.customer.service.PublicVehicleService publicVehicleService =
+                new com.grabrentals.customer.service.PublicVehicleService(
+                        null, null, null, null, null, null
+                );
+
+        // 1. Same exact address for OneWay Outstation
+        com.grabrentals.customer.dto.VehicleSearchResponseDto res1 = publicVehicleService.searchVehicles(
+                "16, 9th Cross Rd, Sarakki Nagar, Bengaluru, Karnataka 560078",
+                "Bangalore",
+                "16, 9th Cross Rd, Sarakki Nagar, Bengaluru, Karnataka 560078",
+                "Bangalore",
+                null,
+                "ONE_WAY",
+                "2026-11-17",
+                "18:30",
+                null,
+                1,
+                "OUTSTATION",
+                null
+        );
+        assertNotNull(res1);
+        assertEquals(Boolean.FALSE, res1.getServiceAvailable(), "Service must not be available for same location outstation");
+        assertEquals("SAME_CITY_OUTSTATION", res1.getServiceCode());
+        assertTrue(res1.getServiceMessage().contains("Local Hourly Rentals"));
+
+        // 2. Different locations in Bangalore (Bangalore to Bangalore) without stops
+        com.grabrentals.customer.dto.VehicleSearchResponseDto res2 = publicVehicleService.searchVehicles(
+                "Koramangala, Bangalore",
+                "Bangalore",
+                "Whitefield, Bangalore",
+                "Bangalore",
+                null,
+                "ONE_WAY",
+                "2026-11-17",
+                "18:30",
+                null,
+                1,
+                "OUTSTATION",
+                null
+        );
+        assertNotNull(res2);
+        assertEquals(Boolean.FALSE, res2.getServiceAvailable());
+        assertEquals("SAME_CITY_OUTSTATION", res2.getServiceCode());
+    }
 }

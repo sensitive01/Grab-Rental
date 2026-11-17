@@ -10,10 +10,11 @@ import { Modal } from "@/components/ui/Modal";
 import { ScenarioInvoiceModal } from "@/components/bookings/ScenarioInvoiceModal";
 import { Toast } from "@/components/ui/Toast";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
-import { formatINR, getStatusStyle } from "@/lib/utils";
+import { formatINR, getStatusStyle, printDocumentPdf } from "@/lib/utils";
 import {
   ArrowLeft,
   Printer,
+  Loader2,
   Car,
   MapPin,
   Calendar,
@@ -177,6 +178,8 @@ export default function AdminBookingDetailPage({ params }) {
   const [toast, setToast] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [printingDutySlip, setPrintingDutySlip] = useState(false);
+  const [printingTaxInvoice, setPrintingTaxInvoice] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [previewProof, setPreviewProof] = useState(null);
 
@@ -460,16 +463,16 @@ export default function AdminBookingDetailPage({ params }) {
       {/* Top Page Header */}
       <PageHeader
         title={`Booking #${booking.bookingReference || booking.id}`}
-        subtitle={`Logged on ${pickupDt.date} • Fleet Partner: ${vendorDisplay}`}
+        subtitle={`Logged on ${pickupDt.date} • Vendor Partner: ${vendorDisplay}`}
         breadcrumbs={[
           { label: "Admin", href: "/admin/dashboard" },
           { label: "Bookings", href: "/admin/bookings" },
           { label: booking.bookingReference || booking.id },
         ]}
         action={
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             <Link href="/admin/bookings" className="w-full sm:w-auto">
-              <Button variant="secondary" size="sm" icon={ArrowLeft} className="w-full sm:w-auto justify-center">
+              <Button variant="secondary" size="sm" icon={ArrowLeft} className="w-full justify-center">
                 Back to Ledger
               </Button>
             </Link>
@@ -481,7 +484,7 @@ export default function AdminBookingDetailPage({ params }) {
                 icon={Car}
                 disabled
                 title="Payment verification required before allocating fleet"
-                className="opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200 w-full sm:w-auto justify-center"
+                className="opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200 w-full justify-center"
               >
                 Verification Required
               </Button>
@@ -491,7 +494,7 @@ export default function AdminBookingDetailPage({ params }) {
                 size="sm"
                 icon={Car}
                 onClick={openAllocateModal}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-xs font-bold w-full sm:w-auto justify-center"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-xs font-bold w-full justify-center"
               >
                 Allocate Fleet Asset
               </Button>
@@ -501,7 +504,7 @@ export default function AdminBookingDetailPage({ params }) {
                 size="sm"
                 icon={RefreshCw}
                 onClick={openAllocateModal}
-                className="w-full sm:w-auto justify-center"
+                className="w-full justify-center"
               >
                 Reassign Fleet
               </Button>
@@ -511,7 +514,7 @@ export default function AdminBookingDetailPage({ params }) {
       />
 
       {/* Document & WhatsApp Action Toolbar */}
-      <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="p-3 sm:p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
@@ -525,50 +528,83 @@ export default function AdminBookingDetailPage({ params }) {
           <Button
             variant="outline"
             size="sm"
-            icon={Printer}
-            onClick={() => window.print()}
+            icon={printingDutySlip ? Loader2 : Printer}
+            disabled={printingDutySlip}
+            onClick={async () => {
+              if (printingDutySlip) return;
+              setPrintingDutySlip(true);
+              try {
+                // Strictly prints the official Booking Confirmation & Duty Slip (Scenario 2)
+                await printDocumentPdf(booking?.bookingReference || booking?.id || id, 2);
+              } finally {
+                setPrintingDutySlip(false);
+              }
+            }}
             className="justify-center"
           >
-            Print Duty Slip
+            {printingDutySlip ? "Preparing Duty Slip..." : "Print Duty Slip"}
           </Button>
+          {/* Print Tax Invoice commented out as requested */}
+          {/* {booking?.status === "COMPLETED" && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={printingTaxInvoice ? Loader2 : FileCheck}
+              disabled={printingTaxInvoice}
+              onClick={async () => {
+                if (printingTaxInvoice) return;
+                setPrintingTaxInvoice(true);
+                try {
+                  await printDocumentPdf(booking?.bookingReference || booking?.id || id, 3);
+                } finally {
+                  setPrintingTaxInvoice(false);
+                }
+              }}
+              className="border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 font-bold justify-center"
+            >
+              {printingTaxInvoice ? "Preparing Tax Invoice..." : "Print Tax Invoice"}
+            </Button>
+          )} */}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full md:w-auto">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:inline mr-1">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full md:w-auto pt-2 sm:pt-0 border-t border-slate-100 sm:border-0">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block sm:inline">
             WhatsApp Dispatch:
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={MessageSquare}
-            disabled={sendingWhatsApp}
-            onClick={() => handleSendScenarioInvoice(1)}
-            className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-medium justify-center w-full sm:w-auto"
-          >
-            {sendingWhatsApp ? "Sending..." : "WhatsApp Estimate (S1)"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={MessageSquare}
-            disabled={sendingWhatsApp}
-            onClick={() => handleSendScenarioInvoice(2)}
-            className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 font-medium justify-center w-full sm:w-auto"
-          >
-            {sendingWhatsApp ? "Sending..." : "WhatsApp Confirmed (S2)"}
-          </Button>
-          {booking.status === "COMPLETED" && (
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               icon={MessageSquare}
               disabled={sendingWhatsApp}
-              onClick={() => handleSendScenarioInvoice(3)}
-              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold justify-center w-full sm:w-auto"
+              onClick={() => handleSendScenarioInvoice(1)}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-medium justify-center text-xs"
             >
-              {sendingWhatsApp ? "Sending..." : "WhatsApp Tax Invoice (S3)"}
+              <span className="hidden sm:inline">WhatsApp </span>Estimate (S1)
             </Button>
-          )}
+            <Button
+              variant="outline"
+              size="sm"
+              icon={MessageSquare}
+              disabled={sendingWhatsApp}
+              onClick={() => handleSendScenarioInvoice(2)}
+              className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 font-medium justify-center text-xs"
+            >
+              <span className="hidden sm:inline">WhatsApp </span>Confirmed (S2)
+            </Button>
+            {booking.status === "COMPLETED" && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={MessageSquare}
+                disabled={sendingWhatsApp}
+                onClick={() => handleSendScenarioInvoice(3)}
+                className="col-span-2 sm:col-span-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold justify-center text-xs"
+              >
+                <span className="hidden sm:inline">WhatsApp </span>Tax Invoice (S3)
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

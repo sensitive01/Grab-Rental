@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
+import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
 import {
   Car,
   CheckCircle2,
@@ -19,6 +20,8 @@ import {
   ArrowLeft,
   Filter,
   Sparkles,
+  AlertCircle,
+  QrCode,
 } from "lucide-react";
 import { formatINR } from "@/lib/utils";
 
@@ -36,6 +39,8 @@ export default function VehicleAssignmentPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
+  const [verifyModalBooking, setVerifyModalBooking] = useState(null);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -44,20 +49,21 @@ export default function VehicleAssignmentPage() {
           operationsApi.getBookings(),
           operationsApi.getVehicles("AVAILABLE"),
         ]);
-        const list = (bookRes.data || []).filter(
+        const allFetched = bookRes.data || [];
+        const list = allFetched.filter(
           (b) =>
-            (b.status === "PENDING_ALLOCATION" ||
-              b.id === preselectedBookingId ||
-              b.rawId === preselectedBookingId) &&
-            b.status !== "PENDING_PAYMENT_VERIFICATION" &&
-            b.paymentStatus !== "UNDER_REVIEW"
+            b.id === preselectedBookingId ||
+            b.rawId === preselectedBookingId ||
+            ((b.status === "PENDING_ALLOCATION" || b.status === "REASSIGN_REQUIRED") &&
+              b.status !== "PENDING_PAYMENT_VERIFICATION" &&
+              b.paymentStatus !== "UNDER_REVIEW")
         );
         setAllBookings(list);
         setVehicles(vehRes.data || []);
 
         let target = null;
         if (preselectedBookingId) {
-          target = list.find(
+          target = allFetched.find(
             (b) =>
               b.id === preselectedBookingId ||
               b.rawId === preselectedBookingId ||
@@ -81,6 +87,34 @@ export default function VehicleAssignmentPage() {
     }
     load();
   }, [preselectedBookingId]);
+
+  const handleVerifyPayment = async (bookingId, { action, rejectionReason }) => {
+    setVerifying(true);
+    try {
+      const res = await operationsApi.verifyBookingPayment(bookingId, { action, rejectionReason });
+      if (res?.success) {
+        setToast({
+          type: "success",
+          message:
+            action === "APPROVE"
+              ? "Payment verified & approved! Ready for vehicle allocation."
+              : "Payment rejected.",
+        });
+        setVerifyModalBooking(null);
+        if (selectedBooking && (selectedBooking.id === bookingId || selectedBooking.rawId === bookingId)) {
+          setSelectedBooking((prev) => ({
+            ...prev,
+            status: action === "APPROVE" ? "PENDING_ALLOCATION" : "REJECTED",
+            paymentStatus: action === "APPROVE" ? "ADVANCE_PAID" : "REJECTED",
+          }));
+        }
+      }
+    } catch (err) {
+      setToast({ type: "error", message: err.message || "Failed to verify payment." });
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const isTargetMode = Boolean(preselectedBookingId && !showAllBookings);
   const displayedBookings =
@@ -521,6 +555,29 @@ export default function VehicleAssignmentPage() {
             </div>
           </div>
 
+          {/* Payment Verification Warning if under review */}
+          {selectedBooking &&
+            (selectedBooking.status === "PENDING_PAYMENT_VERIFICATION" ||
+              selectedBooking.paymentStatus === "UNDER_REVIEW") && (
+              <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <span>
+                    <strong>Payment Verification Required:</strong> This booking&apos;s payment is under review. You must verify customer payment before confirming vehicle assignment.
+                  </span>
+                </div>
+                <Button
+                  size="xs"
+                  variant="amber"
+                  icon={QrCode}
+                  onClick={() => setVerifyModalBooking(selectedBooking)}
+                  className="font-bold shrink-0 shadow-xs animate-pulse"
+                >
+                  Verify Payment Now
+                </Button>
+              </div>
+            )}
+
           {/* Confirm Button Bar */}
           <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="text-xs text-slate-600 space-y-0.5">
@@ -537,13 +594,28 @@ export default function VehicleAssignmentPage() {
               icon={CheckCircle2}
               onClick={handleConfirmDispatch}
               isLoading={submitting}
-              disabled={submitting || !selectedBooking || !selectedVehicle}
+              disabled={
+                submitting ||
+                !selectedBooking ||
+                !selectedVehicle ||
+                selectedBooking.status === "PENDING_PAYMENT_VERIFICATION" ||
+                selectedBooking.paymentStatus === "UNDER_REVIEW"
+              }
             >
               {submitting ? "Dispatching to Fleet Owner..." : "Confirm & Dispatch Vehicle"}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Payment Verification Modal */}
+      <PaymentVerificationModal
+        isOpen={Boolean(verifyModalBooking)}
+        onClose={() => setVerifyModalBooking(null)}
+        booking={verifyModalBooking}
+        onVerify={handleVerifyPayment}
+        loading={verifying}
+      />
     </div>
   );
 }

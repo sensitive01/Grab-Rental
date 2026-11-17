@@ -193,6 +193,11 @@ public class ChargesTariffSeeder implements CommandLineRunner {
                         .build();
                 modelConfigRepository.save(entity);
                 log.info("ChargesTariffSeeder: Created model config {} / {}", m.category, m.modelName);
+            } else if ("Luxury Bus".equalsIgnoreCase(m.modelName) && !"/images/cars/bus.jpg".equals(existing.get().getCommonPhotoUrl())) {
+                VehicleModelConfig entity = existing.get();
+                entity.setCommonPhotoUrl(m.commonPhotoUrl);
+                modelConfigRepository.save(entity);
+                log.info("ChargesTariffSeeder: Synced photo for {} ({} seats) to {}", m.modelName, m.seatingCapacity, m.commonPhotoUrl);
             }
         }
     }

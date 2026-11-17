@@ -11,7 +11,7 @@ import AirportSearchDropdown from "@/components/booking/AirportSearchDropdown";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
 import PackageSelectDropdown from "@/components/booking/PackageSelectDropdown";
 import TripTypeSelectDropdown from "@/components/booking/TripTypeSelectDropdown";
-import { detectRouteDistance, fetchGoogleRouteDistance } from "@/lib/cities";
+import { detectRouteDistance, fetchGoogleRouteDistance, isSameCityOrLocation } from "@/lib/cities";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   formatLocalDate,
@@ -659,6 +659,35 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
         newErrors.package = true;
         setValidationErrors(newErrors);
         toast.error("Please select an hourly rental package.", "Package Required");
+        return;
+      }
+    }
+
+    // 2b. Same location / Same city check for Outstation
+    if (activeTab === "outstation") {
+      const cleanFromText = (fromLoc || "").toLowerCase().trim();
+      const cleanToText = (toLoc || "").toLowerCase().trim();
+      const hasIntermediateStops = validStops && validStops.length > 0;
+
+      // Check 1: Exact same address/text
+      if (cleanFromText && cleanToText && cleanFromText === cleanToText) {
+        newErrors.drop = true;
+        setValidationErrors(newErrors);
+        toast.error(
+          "Pickup and drop destination cannot be the same location. Please enter a different destination.",
+          "Invalid Destination"
+        );
+        return;
+      }
+
+      // Check 2: Same city for Outstation (unless intermediate stops exist)
+      if (!hasIntermediateStops && isSameCityOrLocation(fromLoc, toLoc)) {
+        newErrors.drop = true;
+        setValidationErrors(newErrors);
+        toast.warning(
+          "Outstation is for inter-city travel between different cities. For rides within the same city, please select 'Local' hourly rentals.",
+          "Local Travel Detected"
+        );
         return;
       }
     }

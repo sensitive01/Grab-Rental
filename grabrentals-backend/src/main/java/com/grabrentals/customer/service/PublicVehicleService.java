@@ -163,6 +163,44 @@ public class PublicVehicleService {
             }
         }
 
+        // Outstation Check: Pickup and Drop cannot be the same address or the same city (unless intermediate outstation stops exist)
+        boolean isOutstation = "ONE_WAY".equalsIgnoreCase(resolvedServiceType)
+                || "ROUND_TRIP".equalsIgnoreCase(resolvedServiceType)
+                || (serviceType != null && serviceType.toUpperCase().contains("OUTSTATION"));
+
+        if (isOutstation) {
+            String toLookup = (toCity != null && !toCity.isBlank()) ? toCity.trim() : cleanTo;
+            String[] toCityAndState = extractCityAndState(toLookup);
+            String dropCity = toCityAndState[0];
+
+            boolean isSameAddress = cleanFrom != null && cleanTo != null && cleanFrom.trim().equalsIgnoreCase(cleanTo.trim());
+            boolean isSameCity = pickupCity != null && dropCity != null && VehicleTariffService.areCitiesEqual(pickupCity, dropCity);
+
+            if (parsedStops.isEmpty() && (isSameAddress || isSameCity)) {
+                log.info("[OUTSTATION VALIDATION] Blocked same-city/same-location search: from='{}' ({}), to='{}' ({})",
+                        cleanFrom, pickupCity, cleanTo, dropCity);
+                String msg = isOneWay
+                        ? "Outstation One-Way is only available between different cities. For local travel within " + pickupCity + ", please book Local Hourly Rentals."
+                        : "Destination must be different from pickup city for an Outstation trip. For local travel within " + pickupCity + ", please book Local Hourly Rentals.";
+                return VehicleSearchResponseDto.builder()
+                        .from(cleanFrom)
+                        .to(cleanTo)
+                        .stops(null)
+                        .tripType(normalizedTripType)
+                        .distanceKm(0)
+                        .pickupDate(pickupDate)
+                        .pickupTime(pickupTime)
+                        .returnDate(returnDate)
+                        .tripDays(effectiveDays)
+                        .vehicles(Collections.emptyList())
+                        .serviceAvailable(false)
+                        .serviceCity(pickupCity)
+                        .serviceCode("SAME_CITY_OUTSTATION")
+                        .serviceMessage(msg)
+                        .build();
+            }
+        }
+
         // Fetch all tariffs for this service type in ONE single query (O(1) DB hit)
         List<VehicleTariff> tariffs = null;
         boolean serviceable;
@@ -299,7 +337,7 @@ public class PublicVehicleService {
                     LocalDate pDate = parseDateSafely(pickupDate);
                     LocalTime pTime = parseTimeSafely(pickupTime);
                     hasAirportSlab = airportTariffService.findMatchingTariff(
-                            pickupCity, pickupState, airportDir, config.getCategory(), model, distanceKm, pDate, pTime
+                            pickupCity, pickupState, airportDir, config.getCategory(), model, String.valueOf(seats), distanceKm, pDate, pTime
                     ).isPresent();
                 }
 
@@ -323,6 +361,11 @@ public class PublicVehicleService {
                 String image = (config.getCommonPhotoUrl() != null && !config.getCommonPhotoUrl().isBlank())
                         ? config.getCommonPhotoUrl()
                         : resolveVehicleImage(model, category, null);
+
+                // Models with same model name "Luxury Bus" share the same official bus image
+                if (model != null && model.trim().equalsIgnoreCase("Luxury Bus")) {
+                    image = "/images/cars/bus.jpg";
+                }
 
                 String badge = (Boolean.TRUE.equals(rateContext.get("isSeasonal")))
                         ? (rateContext.get("seasonName") != null ? rateContext.get("seasonName").toString() : "Festive Special")
@@ -376,7 +419,7 @@ public class PublicVehicleService {
                     LocalTime pTime = parseTimeSafely(pickupTime);
 
                     var airportTariffOpt = airportTariffService.findMatchingTariff(
-                            pickupCity, pickupState, airportDir, config.getCategory(), model, distanceKm, pDate, pTime
+                            pickupCity, pickupState, airportDir, config.getCategory(), model, String.valueOf(seats), distanceKm, pDate, pTime
                     );
                     if (airportTariffOpt.isPresent()) {
                         var at = airportTariffOpt.get();
@@ -1188,14 +1231,21 @@ public class PublicVehicleService {
     }
 
     private int getSegmentDistance(String from, String to) {
-        String f = (from != null ? from : "").toLowerCase();
-        String t = (to != null ? to : "").toLowerCase();
+        String f = (from != null ? from : "").toLowerCase().trim();
+        String t = (to != null ? to : "").toLowerCase().trim();
+
+        if (f.equalsIgnoreCase(t)) {
+            return 0;
+        }
 
         // Dynamic GPS Coordinate Haversine + road winding factor (1.28x)
         double[] c1 = lookupCoordinates(f);
         double[] c2 = lookupCoordinates(t);
         if (c1 != null && c2 != null) {
             double airKm = haversineKm(c1[0], c1[1], c2[0], c2[1]);
+            if (airKm <= 0.05) {
+                return 0;
+            }
             int roadKm = (int) Math.round(airKm * 1.297);
             return Math.max(roadKm, 25);
         }

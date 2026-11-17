@@ -476,10 +476,12 @@ const DEFAULT_RATES_BY_CATEGORY = {
 
 export default function AdminPricingPage() {
   const [tariffs, setTariffs] = useState([]);
+  const [airportTariffs, setAirportTariffs] = useState([]);
   const [models, setModels] = useState([]);
   const [airportTariffsCount, setAirportTariffsCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [serviceFilter, setServiceFilter] = useState("ALL"); // ALL, OUTSTATION, LOCAL, AIRPORT
+  const [activeServiceTab, setActiveServiceTab] = useState("ALL"); // ALL, OUTSTATION, LOCAL, AIRPORT
+  const [serviceFilter, setServiceFilter] = useState("ALL"); // ALL, ONE_WAY, ROUND_TRIP, OUTSTATION, LOCAL, AIRPORT
   const [activeTab, setActiveTab] = useState("ALL"); // ALL, STANDARD, SEASONAL
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("ALL");
@@ -593,9 +595,12 @@ export default function AdminPricingPage() {
           adminApi.getAirportTariffs().catch(() => []),
         ]);
         if (isMounted) {
-          if (tariffRes.data) setTariffs(tariffRes.data);
-          if (modelRes.data) setModels(modelRes.data);
-          if (Array.isArray(airportTariffRes)) setAirportTariffsCount(airportTariffRes.length);
+          if (tariffRes?.data) setTariffs(tariffRes.data);
+          if (modelRes?.data) setModels(modelRes.data);
+          if (Array.isArray(airportTariffRes)) {
+            setAirportTariffs(airportTariffRes);
+            setAirportTariffsCount(airportTariffRes.length);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -611,16 +616,70 @@ export default function AdminPricingPage() {
 
   async function refreshData() {
     try {
-      const [tariffRes, modelRes] = await Promise.all([
+      const [tariffRes, modelRes, airportTariffRes] = await Promise.all([
         adminApi.getTariffs(),
         adminApi.getModelConfigs(),
+        adminApi.getAirportTariffs().catch(() => []),
       ]);
-      if (tariffRes.data) setTariffs(tariffRes.data);
-      if (modelRes.data) setModels(modelRes.data);
+      if (tariffRes?.data) setTariffs(tariffRes.data);
+      if (modelRes?.data) setModels(modelRes.data);
+      if (Array.isArray(airportTariffRes)) {
+        setAirportTariffs(airportTariffRes);
+        setAirportTariffsCount(airportTariffRes.length);
+      }
     } catch (err) {
       console.error(err);
     }
   }
+
+  // Unified Tariffs combining Outstation/Local with normalized Airport Transfer slabs
+  const unifiedTariffs = useMemo(() => {
+    const normalizedAirportTariffs = (airportTariffs || []).map((item) => {
+      const minKm = item.minKm ?? 0;
+      const maxKm = item.maxKm ?? 35;
+      const custFare = parseFloat(item.customerFare || 0);
+      const vendFare = parseFloat(item.vendorFare || (custFare * 0.80) || 0);
+      const extraKm = parseFloat(item.extraKmRate || 0);
+      const vendExtraKm = parseFloat(item.vendorExtraKmRate || (extraKm * 0.80) || 0);
+
+      return {
+        ...item,
+        id: item.id,
+        isAirportItem: true,
+        serviceType: "AIRPORT",
+        category: item.category || "Sedan",
+        modelName: item.modelName && item.modelName !== "ALL"
+          ? item.modelName
+          : `${item.category || "Vehicle"} (Airport Slab ${minKm}-${maxKm} km)`,
+        seatingCapacity: item.seatingCapacity || "4",
+        fuelType: item.fuelType || "ALL",
+        state: item.state || "Tamil Nadu",
+        city: item.city || "All Cities",
+        seasonal: (item.pricingType || "REGULAR").toUpperCase() === "SEASONAL",
+        seasonName: item.title || `${item.category || "Vehicle"} Airport Transfer`,
+        startDate: item.startDate || null,
+        endDate: item.endDate || null,
+        baseFare: custFare,
+        vendorBaseFare: vendFare,
+        baseIncludedKm: maxKm,
+        weekdayDayRate: extraKm,
+        weekdayNightRate: extraKm,
+        weekendDayRate: extraKm,
+        weekendNightRate: extraKm,
+        vendorWeekdayDayRate: vendExtraKm,
+        vendorWeekdayNightRate: vendExtraKm,
+        vendorWeekendDayRate: vendExtraKm,
+        vendorWeekendNightRate: vendExtraKm,
+        extraKmRate: extraKm,
+        vendorExtraKmRate: vendExtraKm,
+        discountPercentage: parseFloat(item.discountPercentage || 0),
+        petCharge: parseFloat(item.petCharge || 0),
+        vendorPetCharge: parseFloat(item.vendorPetCharge || 0),
+      };
+    });
+
+    return [...tariffs, ...normalizedAirportTariffs];
+  }, [tariffs, airportTariffs]);
 
   // Dynamic categories derived from database models
   const dynamicCategories = useMemo(() => {
@@ -740,6 +799,10 @@ export default function AdminPricingPage() {
   }
 
   function handleStartEdit(item) {
+    if (item.isAirportItem || item.serviceType === "AIRPORT") {
+      handleOpenEditAirport(item);
+      return;
+    }
     setEditingItem(item);
     const isSeasonal = Boolean(item.seasonal || item.tariffType === "SEASONAL");
     const rawService = item.serviceType || "ONE_WAY";
@@ -1066,6 +1129,27 @@ export default function AdminPricingPage() {
   }
 
   function handleDelete(item) {
+    if (item.isAirportItem || item.serviceType === "AIRPORT") {
+      setConfirmDialog({
+        title: `Delete Airport Charge Rule`,
+        message: `Are you sure you want to delete the airport tariff rule for ${item.category} (${item.city || "All Cities"} - ${item.baseIncludedKm || item.maxKm || 35} km)?`,
+        confirmText: "Delete Rule",
+        variant: "danger",
+        onConfirm: async () => {
+          try {
+            await adminApi.deleteAirportTariff(item.id);
+            setToast({ type: "success", message: "Airport charge rule deleted successfully" });
+            refreshData();
+          } catch (err) {
+            setToast({ type: "error", message: "Failed to delete airport charge rule" });
+          } finally {
+            setConfirmDialog(null);
+          }
+        },
+      });
+      return;
+    }
+
     setConfirmDialog({
       title: `Delete Tariff: ${item.modelName}`,
       message: `Are you sure you want to delete the tariff for ${item.modelName} (${item.serviceType === 'OUTSTATION' ? 'ONE_WAY' : (item.serviceType || 'ONE_WAY')} - ${item.city || 'Standard'})?`,
@@ -1111,7 +1195,7 @@ export default function AdminPricingPage() {
   // Available cities dynamically derived from tariffs matching the selected state (or all if ALL)
   const availableCities = useMemo(() => {
     const set = new Set();
-    tariffs.forEach((t) => {
+    unifiedTariffs.forEach((t) => {
       if (t.city && t.city !== "ALL") {
         if (stateFilter === "ALL" || (t.state && t.state.toLowerCase() === stateFilter.toLowerCase())) {
           set.add(t.city);
@@ -1119,24 +1203,26 @@ export default function AdminPricingPage() {
       }
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [tariffs, stateFilter]);
+  }, [unifiedTariffs, stateFilter]);
 
   // Unique categories derived from tariffs
   const availableCategories = useMemo(() => {
     const set = new Set();
-    tariffs.forEach((t) => {
+    unifiedTariffs.forEach((t) => {
       if (t.category) set.add(t.category);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [tariffs]);
+  }, [unifiedTariffs]);
 
   // Filtered & Sorted Tariffs for DataTable
   const filteredAndSortedTariffs = useMemo(() => {
-    const filtered = tariffs.filter((t) => {
+    const filtered = unifiedTariffs.filter((t) => {
       const sType = (t.serviceType || "OUTSTATION").toUpperCase();
       const isOneWay = sType === "ONE_WAY" || sType === "OUTSTATION";
       const isRoundTrip = sType === "ROUND_TRIP";
       const isOutstation = isOneWay || isRoundTrip;
+      const isLocal = sType === "LOCAL";
+      const isAirport = sType === "AIRPORT" || t.isAirportItem;
 
       let matchService = false;
       if (serviceFilter === "ALL") {
@@ -1147,6 +1233,10 @@ export default function AdminPricingPage() {
         matchService = isRoundTrip;
       } else if (serviceFilter === "OUTSTATION") {
         matchService = isOutstation;
+      } else if (serviceFilter === "LOCAL") {
+        matchService = isLocal;
+      } else if (serviceFilter === "AIRPORT") {
+        matchService = isAirport;
       } else {
         matchService = sType === serviceFilter.toUpperCase();
       }
@@ -1171,6 +1261,8 @@ export default function AdminPricingPage() {
         t.seasonName?.toLowerCase().includes(search.toLowerCase()) ||
         t.city?.toLowerCase().includes(search.toLowerCase()) ||
         t.state?.toLowerCase().includes(search.toLowerCase()) ||
+        t.airportName?.toLowerCase().includes(search.toLowerCase()) ||
+        t.title?.toLowerCase().includes(search.toLowerCase()) ||
         t.serviceType?.toLowerCase().includes(search.toLowerCase());
 
       return matchService && matchType && matchState && matchCity && matchCategory && matchSearch;
@@ -1191,13 +1283,24 @@ export default function AdminPricingPage() {
         valA = Number(valA || 0);
         valB = Number(valB || 0);
       } else if (sortConfig.key === "margin") {
-        const cA = parseFloat(a.weekdayDayRate || 1);
-        const vA = parseFloat(a.vendorWeekdayDayRate || (a.weekdayDayRate * 0.80) || 0.80);
-        valA = cA > 0 ? ((cA - vA) / cA) * 100 : 0;
-
-        const cB = parseFloat(b.weekdayDayRate || 1);
-        const vB = parseFloat(b.vendorWeekdayDayRate || (b.weekdayDayRate * 0.80) || 0.80);
-        valB = cB > 0 ? ((cB - vB) / cB) * 100 : 0;
+        const getMargin = (item) => {
+          const st = (item.serviceType || "OUTSTATION").toUpperCase();
+          if (st === "AIRPORT" || item.isAirportItem) {
+            const c = parseFloat(item.customerFare || item.baseFare || 1);
+            const v = parseFloat(item.vendorFare || item.vendorBaseFare || (c * 0.80));
+            return c > 0 ? ((c - v) / c) * 100 : 0;
+          }
+          if (st === "LOCAL" && item.hourlyWeekdayDayRate) {
+            const c = parseFloat(item.hourlyWeekdayDayRate);
+            const v = parseFloat(item.hourlyVendorWeekdayDayRate || (c * 0.80));
+            return c > 0 ? ((c - v) / c) * 100 : 0;
+          }
+          const c = parseFloat(item.weekdayDayRate || 1);
+          const v = parseFloat(item.vendorWeekdayDayRate || (c * 0.80) || 0.80);
+          return c > 0 ? ((c - v) / c) * 100 : 0;
+        };
+        valA = getMargin(a);
+        valB = getMargin(b);
       } else if (sortConfig.key === "tariffType") {
         valA = a.seasonal ? "Seasonal" : "Standard";
         valB = b.seasonal ? "Seasonal" : "Standard";
@@ -1210,7 +1313,7 @@ export default function AdminPricingPage() {
       if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [tariffs, serviceFilter, activeTab, stateFilter, cityFilter, categoryFilter, search, sortConfig]);
+  }, [unifiedTariffs, serviceFilter, activeTab, stateFilter, cityFilter, categoryFilter, search, sortConfig]);
 
   const totalPages = Math.ceil(filteredAndSortedTariffs.length / pageSize) || 1;
   const paginatedTariffs = useMemo(() => {
@@ -1232,6 +1335,7 @@ export default function AdminPricingPage() {
     setCityFilter("ALL");
     setCategoryFilter("ALL");
     setServiceFilter("ALL");
+    setActiveServiceTab("ALL");
     setActiveTab("ALL");
     setCurrentPage(1);
   };
@@ -1291,7 +1395,7 @@ export default function AdminPricingPage() {
         />
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => handleOpenCreate("STANDARD", serviceFilter !== "ALL" ? serviceFilter : "OUTSTATION")}
+            onClick={() => handleOpenCreate("STANDARD", activeServiceTab !== "ALL" ? activeServiceTab : serviceFilter !== "ALL" ? serviceFilter : "OUTSTATION")}
             variant="outline"
             className="text-xs gap-1.5 shadow-xs border-blue-300 text-blue-600 hover:bg-blue-50"
           >
@@ -1299,7 +1403,7 @@ export default function AdminPricingPage() {
             + Standard Tariff
           </Button>
           <Button
-            onClick={() => handleOpenCreate("SEASONAL", serviceFilter !== "ALL" ? serviceFilter : "OUTSTATION")}
+            onClick={() => handleOpenCreate("SEASONAL", activeServiceTab !== "ALL" ? activeServiceTab : serviceFilter !== "ALL" ? serviceFilter : "OUTSTATION")}
             className="bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 shadow-sm"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -1311,7 +1415,7 @@ export default function AdminPricingPage() {
       {/* SERVICE TYPE HIGH-LEVEL TABS */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         {[
-          { id: "ALL", label: "All Services", icon: ShieldCheck, count: tariffs.length, desc: "Combined Overview" },
+          { id: "ALL", label: "All Services", icon: ShieldCheck, count: unifiedTariffs.length, desc: "Combined Overview" },
           {
             id: "OUTSTATION",
             label: "Outstation",
@@ -1323,15 +1427,25 @@ export default function AdminPricingPage() {
             desc: "One Way & Round Trip Rates"
           },
           { id: "LOCAL", label: "Local", icon: MapPin, count: tariffs.filter(t => t.serviceType?.toUpperCase() === "LOCAL").length, desc: "City Limits Per-KM Pricing" },
-          { id: "AIRPORT", label: "Airport Transfer", icon: Plane, count: airportTariffsCount, desc: "Distance Slabs & Transfer Rates" },
+          { id: "AIRPORT", label: "Airport Transfer", icon: Plane, count: airportTariffs.length || airportTariffsCount, desc: "Distance Slabs & Transfer Rates" },
         ].map((tab) => {
           const Icon = tab.icon;
-          const isActive = serviceFilter === tab.id || (tab.id === "OUTSTATION" && (serviceFilter === "ONE_WAY" || serviceFilter === "ROUND_TRIP"));
+          const isActive = activeServiceTab === tab.id;
           return (
             <button
               key={tab.id}
-              onClick={() => setServiceFilter(tab.id)}
-              className={`text-left p-3.5 rounded-2xl border transition-all ${
+              onClick={() => {
+                setActiveServiceTab(tab.id);
+                if (tab.id === "ALL") {
+                  setServiceFilter("ALL");
+                } else if (tab.id === "OUTSTATION") {
+                  setServiceFilter("OUTSTATION");
+                } else if (tab.id === "LOCAL") {
+                  setServiceFilter("LOCAL");
+                }
+                setCurrentPage(1);
+              }}
+              className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
                 isActive
                   ? "bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-400/30"
                   : "bg-white text-slate-800 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
@@ -1352,9 +1466,12 @@ export default function AdminPricingPage() {
         })}
       </div>
 
-      {serviceFilter === "AIRPORT" ? (
+      {activeServiceTab === "AIRPORT" ? (
         <AirportTariffSection
-          onUpdateCount={(count) => setAirportTariffsCount(count)}
+          onUpdateCount={(count) => {
+            setAirportTariffsCount(count);
+            refreshData();
+          }}
           onEditItem={handleOpenEditAirport}
         />
       ) : (
@@ -1520,9 +1637,9 @@ export default function AdminPricingPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar">
             {[
-              { id: "ALL", label: `All Rules (${tariffs.length.toLocaleString()})` },
-              { id: "STANDARD", label: `Standard (${tariffs.filter((t) => !t.seasonal).length.toLocaleString()})` },
-              { id: "SEASONAL", label: `✨ Seasonal (${tariffs.filter((t) => t.seasonal).length.toLocaleString()})` },
+              { id: "ALL", label: `All Rules (${unifiedTariffs.length.toLocaleString()})` },
+              { id: "STANDARD", label: `Standard (${unifiedTariffs.filter((t) => !t.seasonal).length.toLocaleString()})` },
+              { id: "SEASONAL", label: `✨ Seasonal (${unifiedTariffs.filter((t) => t.seasonal).length.toLocaleString()})` },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1555,7 +1672,7 @@ export default function AdminPricingPage() {
             <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-2xs">
               <span>Showing</span>
               <strong className="text-slate-900 font-bold">{filteredAndSortedTariffs.length.toLocaleString()}</strong>
-              <span>of {tariffs.length.toLocaleString()}</span>
+              <span>of {unifiedTariffs.length.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -1778,30 +1895,70 @@ export default function AdminPricingPage() {
             <TableBody>
               {paginatedTariffs.map((t) => {
                 const sType = (t.serviceType || "ONE_WAY").toUpperCase();
-                
-                let custWd = sType === "LOCAL" && (t.hourlyWeekdayDayRate || t.hourlyCustomerFare)
-                  ? `₹${parseFloat(t.hourlyWeekdayDayRate || t.hourlyCustomerFare).toFixed(0)}/hr • ₹${parseFloat(t.weekdayDayRate || 0).toFixed(1)}/km`
-                  : `₹${parseFloat(t.weekdayDayRate || 0).toFixed(1)}/km`;
-                let vendWd = sType === "LOCAL" && (t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare)
-                  ? `₹${parseFloat(t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.80) || 0).toFixed(1)}/km`
-                  : `₹${parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.80) || 0).toFixed(1)}/km`;
-                let custWe = sType === "LOCAL" && (t.hourlyWeekendDayRate || t.hourlyCustomerWeekendFare)
-                  ? `₹${parseFloat(t.hourlyWeekendDayRate || t.hourlyCustomerWeekendFare).toFixed(0)}/hr • ₹${parseFloat(t.weekendDayRate || 0).toFixed(1)}/km`
-                  : `₹${parseFloat(t.weekendDayRate || 0).toFixed(1)}/km`;
-                let vendWe = sType === "LOCAL" && (t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare)
-                  ? `₹${parseFloat(t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare).toFixed(0)}/hr • ₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.80) || 0).toFixed(1)}/km`
-                  : `₹${parseFloat(t.vendorWeekendDayRate || (t.weekendDayRate * 0.80) || 0).toFixed(1)}/km`;
-                let defaultKm = sType === "LOCAL" ? 80 : sType === "AIRPORT" ? 40 : 250;
-                let defaultHrs = sType === "LOCAL" ? (t.packageHours || 8) : null;
-                let baseDisplay = sType === "LOCAL" && defaultHrs
-                  ? `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`
-                  : `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")}`;
-                let vendBaseDisplay = sType === "LOCAL" && defaultHrs
-                  ? `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.80) || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`
-                  : `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.80) || 0).toLocaleString("en-IN")} (${t.baseIncludedKm || defaultKm}km)`;
-                const c = sType === "LOCAL" && t.hourlyWeekdayDayRate ? parseFloat(t.hourlyWeekdayDayRate) : parseFloat(t.weekdayDayRate || 1);
-                const v = sType === "LOCAL" && t.hourlyVendorWeekdayDayRate ? parseFloat(t.hourlyVendorWeekdayDayRate) : parseFloat(t.vendorWeekdayDayRate || (t.weekdayDayRate * 0.80) || 0.80);
-                let marginPct = c > 0 ? ((c - v) / c) * 100 : 0;
+                const isAirport = sType === "AIRPORT" || t.isAirportItem;
+                const isLocal = sType === "LOCAL";
+
+                let custWd, vendWd, custWe, vendWe, baseDisplay, vendBaseDisplay, marginPct;
+
+                if (isAirport) {
+                  const minKm = t.minKm ?? 0;
+                  const maxKm = t.maxKm ?? t.baseIncludedKm ?? 35;
+                  const custFare = parseFloat(t.customerFare || t.baseFare || 0);
+                  const vendFare = parseFloat(t.vendorFare || t.vendorBaseFare || (custFare * 0.80) || 0);
+                  const extraKm = parseFloat(t.extraKmRate || 0);
+                  const vendExtraKm = parseFloat(t.vendorExtraKmRate || (extraKm * 0.80) || 0);
+
+                  custWd = `₹${custFare.toLocaleString("en-IN")} (${minKm}-${maxKm}km)`;
+                  vendWd = `₹${vendFare.toLocaleString("en-IN")} (${minKm}-${maxKm}km)`;
+                  custWe = custWd;
+                  vendWe = vendWd;
+                  baseDisplay = `₹${custFare.toLocaleString("en-IN")} (${minKm}-${maxKm} km)`;
+                  vendBaseDisplay = `₹${vendFare.toLocaleString("en-IN")} (${minKm}-${maxKm} km)`;
+                  marginPct = custFare > 0 ? ((custFare - vendFare) / custFare) * 100 : 0;
+                } else if (isLocal) {
+                  const custRate = parseFloat(t.hourlyWeekdayDayRate || t.hourlyCustomerFare || 0);
+                  const kmRate = parseFloat(t.weekdayDayRate || 0);
+                  custWd = custRate > 0 ? `₹${custRate.toFixed(0)}/hr • ₹${kmRate.toFixed(1)}/km` : `₹${kmRate.toFixed(1)}/km`;
+
+                  const vendRate = parseFloat(t.hourlyVendorWeekdayDayRate || t.hourlyVendorFare || 0);
+                  const vendKmRate = parseFloat(t.vendorWeekdayDayRate || (kmRate * 0.80) || 0);
+                  vendWd = vendRate > 0 ? `₹${vendRate.toFixed(0)}/hr • ₹${vendKmRate.toFixed(1)}/km` : `₹${vendKmRate.toFixed(1)}/km`;
+
+                  const custWeRate = parseFloat(t.hourlyWeekendDayRate || t.hourlyCustomerWeekendFare || 0);
+                  const kmWeRate = parseFloat(t.weekendDayRate || 0);
+                  custWe = custWeRate > 0 ? `₹${custWeRate.toFixed(0)}/hr • ₹${kmWeRate.toFixed(1)}/km` : `₹${kmWeRate.toFixed(1)}/km`;
+
+                  const vendWeRate = parseFloat(t.hourlyVendorWeekendDayRate || t.hourlyVendorWeekendFare || 0);
+                  const vendKmWeRate = parseFloat(t.vendorWeekendDayRate || (kmWeRate * 0.80) || 0);
+                  vendWe = vendWeRate > 0 ? `₹${vendWeRate.toFixed(0)}/hr • ₹${vendKmWeRate.toFixed(1)}/km` : `₹${vendKmWeRate.toFixed(1)}/km`;
+
+                  const defaultKm = 80;
+                  const defaultHrs = t.packageHours || 8;
+                  baseDisplay = `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`;
+                  vendBaseDisplay = `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.80) || 0).toLocaleString("en-IN")} (${defaultHrs}h / ${t.baseIncludedKm || defaultKm}km)`;
+
+                  const c = custRate > 0 ? custRate : (kmRate || 1);
+                  const v = vendRate > 0 ? vendRate : (vendKmRate || 0.80);
+                  marginPct = c > 0 ? ((c - v) / c) * 100 : 0;
+                } else {
+                  const kmRate = parseFloat(t.weekdayDayRate || 0);
+                  const vendKmRate = parseFloat(t.vendorWeekdayDayRate || (kmRate * 0.80) || 0);
+                  const kmWeRate = parseFloat(t.weekendDayRate || 0);
+                  const vendKmWeRate = parseFloat(t.vendorWeekendDayRate || (kmWeRate * 0.80) || 0);
+
+                  custWd = `₹${kmRate.toFixed(1)}/km`;
+                  vendWd = `₹${vendKmRate.toFixed(1)}/km`;
+                  custWe = `₹${kmWeRate.toFixed(1)}/km`;
+                  vendWe = `₹${vendKmWeRate.toFixed(1)}/km`;
+
+                  const defaultKm = 250;
+                  baseDisplay = `₹${parseFloat(t.baseFare || 0).toLocaleString("en-IN")}`;
+                  vendBaseDisplay = `₹${parseFloat(t.vendorBaseFare || (t.baseFare * 0.80) || 0).toLocaleString("en-IN")} (${t.baseIncludedKm || defaultKm}km)`;
+
+                  const c = kmRate || 1;
+                  const v = vendKmRate || 0.80;
+                  marginPct = c > 0 ? ((c - v) / c) * 100 : 0;
+                }
 
                 return (
                   <TableRow key={t.id} className="hover:bg-slate-50/80 transition-colors">
@@ -1819,6 +1976,11 @@ export default function AdminPricingPage() {
                           <Fuel className="w-2.5 h-2.5 text-emerald-600" />
                           {t.fuelType || "Diesel"}
                         </span>
+                        {t.airportName && t.airportName !== "ALL" && (
+                          <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200/60 inline-flex items-center gap-1">
+                            ✈️ {t.airportName.split("(")[0].trim()}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
 
@@ -1837,24 +1999,31 @@ export default function AdminPricingPage() {
 
                     {/* Service */}
                     <TableCell>
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                        sType === "ONE_WAY"
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : sType === "OUTSTATION"
-                          ? "bg-sky-50 text-sky-700 border-sky-200"
-                          : sType === "ROUND_TRIP"
-                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-                          : sType === "LOCAL"
-                          ? "bg-amber-50 text-amber-700 border-amber-200"
-                          : "bg-purple-50 text-purple-700 border-purple-200"
-                      }`}>
-                        {sType === "ONE_WAY" && <Navigation className="w-3 h-3" />}
-                        {sType === "OUTSTATION" && <Car className="w-3 h-3" />}
-                        {sType === "ROUND_TRIP" && <ArrowLeftRight className="w-3 h-3" />}
-                        {sType === "LOCAL" && <MapPin className="w-3 h-3" />}
-                        {sType === "AIRPORT" && <Plane className="w-3 h-3" />}
-                        {sType === "ROUND_TRIP" ? "Round Trip" : sType === "ONE_WAY" ? "One Way" : sType === "OUTSTATION" ? "Outstation" : sType === "LOCAL" ? "Local" : "Airport"}
-                      </span>
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                          sType === "ONE_WAY"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : sType === "OUTSTATION"
+                            ? "bg-sky-50 text-sky-700 border-sky-200"
+                            : sType === "ROUND_TRIP"
+                            ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                            : sType === "LOCAL"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-purple-50 text-purple-700 border-purple-200"
+                        }`}>
+                          {sType === "ONE_WAY" && <Navigation className="w-3 h-3" />}
+                          {sType === "OUTSTATION" && <Car className="w-3 h-3" />}
+                          {sType === "ROUND_TRIP" && <ArrowLeftRight className="w-3 h-3" />}
+                          {sType === "LOCAL" && <MapPin className="w-3 h-3" />}
+                          {isAirport && <Plane className="w-3 h-3" />}
+                          {isAirport ? "Airport Transfer" : sType === "ROUND_TRIP" ? "Round Trip" : sType === "ONE_WAY" ? "One Way" : sType === "OUTSTATION" ? "Outstation" : "Local"}
+                        </span>
+                        {t.tripDirection && (
+                          <span className="text-[9.5px] text-purple-600 font-semibold pl-1">
+                            {t.tripDirection === "CITY_TO_AIRPORT" ? "City ➔ Airport (Drop)" : t.tripDirection === "AIRPORT_TO_CITY" ? "Airport ➔ City (Pickup)" : "Both Directions"}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
 
                     {/* Type */}
