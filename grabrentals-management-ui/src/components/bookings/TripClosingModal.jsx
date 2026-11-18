@@ -36,6 +36,101 @@ const EXTRA_CHARGE_CONFIG = [
   { id: "OTHER", label: "Other Extras", icon: "➕", placeholder: "e.g. 250", hasNotes: true }
 ];
 
+
+function extractBookingAddons(booking) {
+  if (!booking) return [];
+  if (Array.isArray(booking.addons) && booking.addons.length > 0) {
+    return booking.addons;
+  }
+  const list = [];
+  const spec = `${booking.specialInstructions || ""} ${booking.notes || ""}`;
+
+  // 1. Language Chauffeur
+  if (/language chauffeur|language/i.test(spec)) {
+    const m = spec.match(/Language Chauffeur\s*\(([^)]+)\)(?:\s*\([?₹](\d+)\))?/i);
+    let lang = "English";
+    let fee = 199;
+    if (m) {
+      if (m[1]) lang = m[1].trim();
+      if (m[2]) fee = Number(m[2]);
+    }
+    list.push({
+      id: "language_chauffeur",
+      name: `Language Chauffeur (${lang})`,
+      description: `Dedicated ${lang}-fluent professional chauffeur`,
+      sacCode: "9966",
+      packageQty: "1 Duty",
+      price: fee,
+      emoji: "🗣️",
+    });
+  }
+
+  // 2. Luggage / Rooftop Carrier
+  if (/luggage carrier|roof top carrier|carrier added/i.test(spec)) {
+    const m = spec.match(/(?:Luggage Carrier Added|Roof top Carrier)\s*(?:\([?₹](\d+)\))?/i);
+    let fee = 249;
+    if (m && m[1]) fee = Number(m[1]);
+    list.push({
+      id: "luggage_carrier",
+      name: "Luggage / Roof Top Carrier",
+      description: "Secure rooftop luggage rack & weatherproof tarpaulin",
+      sacCode: "9966",
+      packageQty: "1 Vehicle",
+      price: fee,
+      emoji: "🧳",
+    });
+  }
+
+  // 3. Guaranteed Car < 3 Years
+  if (/car < 3 years|vehicle < 3 years|new car guarantee|less than 3 years/i.test(spec)) {
+    const m = spec.match(/(?:Car < 3 Years|Less than 3 years Old Vehicle)\s*(?:\([?₹](\d+)\))?/i);
+    let fee = 299;
+    if (m && m[1]) fee = Number(m[1]);
+    list.push({
+      id: "new_car_guarantee",
+      name: "Guaranteed Car < 3 Years Old",
+      description: "Pristine, late-model vehicle",
+      sacCode: "9966",
+      packageQty: "1 Vehicle",
+      price: fee,
+      emoji: "✨",
+    });
+  }
+
+  // 4. Expressway FASTag Pass
+  if (/fastag pass|expressway fastag/i.test(spec)) {
+    const m = spec.match(/Expressway FASTag (?:Pass|Included)\s*(?:\([?₹](\d+)\))?/i);
+    let fee = 350;
+    if (m && m[1]) fee = Number(m[1]);
+    list.push({
+      id: "fastag_pass",
+      name: "Expressway FASTag Included",
+      description: "Prepaid electronic highway toll plaza pass",
+      sacCode: "9966",
+      packageQty: "Unlimited",
+      price: fee,
+      emoji: "🛣️",
+    });
+  }
+
+  // 5. Pet Friendly Accommodation
+  const isPet = Boolean(booking.isPetFriendly) || /pet friendly cab|pet fee/i.test(spec);
+  if (isPet) {
+    const petFee = Number(booking.petCharge) || 500;
+    list.push({
+      id: "pet_friendly",
+      name: `Pet Friendly Cab (${booking.petType || "Pet"})`,
+      description: "Special vehicle sanitation & pet-safe cabin protection",
+      sacCode: "9966",
+      packageQty: "1 Vehicle",
+      price: petFee,
+      emoji: "🐾",
+    });
+  }
+
+  return list;
+}
+
 export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuccess }) {
   // Step State: 1 = Fleet & Odometer, 2 = Extra Charges, 3 = Payment & Invoice
   const [step, setStep] = useState(1);
@@ -46,6 +141,13 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
   const customerRouteKm = Number(trip?.customerRouteKm || trip?.distanceKm || trip?.actualKmShownInCustomer || 0);
   const includedKm = Number(trip?.packageKm || trip?.distanceKm || (customerRouteKm > 0 ? customerRouteKm : 250));
   const defaultRate = Number(trip?.extraKmRate || trip?.perKmRate || 14);
+
+  // Customer Pre-Booked Addons
+  const customerAddons = useMemo(() => extractBookingAddons(trip), [trip]);
+  const customerAddonsTotal = useMemo(
+    () => customerAddons.reduce((sum, a) => sum + Number(a.price || a.fee || 0), 0),
+    [customerAddons]
+  );
 
   // Initial Fleet State Detection
   const hasAssignedFleet = Boolean(trip?.vehicleNumber || trip?.assignedVehicleNumber || trip?.assignedVehicle);
@@ -627,8 +729,8 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
               }`}>
                 1
               </span>
-              <span className="hidden sm:inline">Fleet &amp; Odometer</span>
-              <span className="sm:hidden font-bold">1. Fleet/KM</span>
+              <span className="hidden sm:inline">Vehicle &amp; Odometer</span>
+              <span className="sm:hidden font-bold">1. Vehicle/KM</span>
             </button>
 
             <button
@@ -756,6 +858,25 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                   <span>•</span>
                   <span>Rate: <strong>₹{defaultRate}/KM</strong></span>
                 </div>
+                {customerAddons.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-amber-500/15">
+                    <span className="text-[10px] font-black text-amber-900 uppercase tracking-wider">
+                      Booked Addons:
+                    </span>
+                    {customerAddons.map((addon, aIdx) => (
+                      <span
+                        key={aIdx}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/90 border border-amber-200/80 text-amber-950 px-2 py-0.5 rounded-md shadow-2xs"
+                      >
+                        <span>{addon.emoji || "🎁"}</span>
+                        <span>{addon.name || addon.label}</span>
+                        {(addon.price || addon.fee) > 0 && (
+                          <span className="text-amber-700 font-black">({formatINR(addon.price || addon.fee)})</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Error Alert */}
@@ -776,7 +897,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                         <Car className="w-3.5 h-3.5 text-blue-600" />
-                        Commercial Fleet &amp; Chauffeur Details
+                        Vehicle &amp; Chauffeur Details
                       </h4>
                       {hasAssignedFleet && (
                         <button
@@ -813,7 +934,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] text-amber-800 font-medium bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/60 w-full flex items-center gap-1.5">
                             <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                            {!hasAssignedFleet ? "No fleet assigned yet. Enter details below to finalize tax invoice:" : "Edit fleet details for this trip closing:"}
+                            {!hasAssignedFleet ? "No vehicle assigned yet. Enter details below to finalize tax invoice:" : "Edit vehicle details for this trip closing:"}
                           </p>
                         </div>
 
@@ -828,7 +949,8 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                                 : "text-slate-500 hover:text-slate-900"
                             }`}
                           >
-                            ⚡ Ad-Hoc / External Fleet
+                            <span className="sm:hidden">✍️ Manual Entry</span>
+                            <span className="hidden sm:inline">✍️ Manual Entry (Type Details)</span>
                           </button>
                           <button
                             type="button"
@@ -839,7 +961,8 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                                 : "text-slate-500 hover:text-slate-900"
                             }`}
                           >
-                            🏢 System Inventory
+                            <span className="sm:hidden">🏢 Saved Vehicles</span>
+                            <span className="hidden sm:inline">🏢 Select from Saved Vehicles</span>
                           </button>
                         </div>
 
@@ -902,7 +1025,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
 
                             <div>
                               <label className="text-[10px] font-bold uppercase text-slate-700 block mb-0.5">
-                                Vendor / Fleet Operator Name
+                                Vendor / Cab Operator Name
                               </label>
                               <input
                                 type="text"
@@ -919,7 +1042,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                             {loadingFleetList ? (
                               <div className="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-1.5">
                                 <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                                Loading available fleet inventory...
+                                Loading available vehicles & drivers...
                               </div>
                             ) : (
                               <>
@@ -936,7 +1059,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                                         onClick={() => handleVendorSelect("")}
                                         className="text-[10px] font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer"
                                       >
-                                        Show All Fleet Partners
+                                        Show All Vendors
                                       </button>
                                     )}
                                   </div>
@@ -946,7 +1069,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                                     options={vendorSelectOptions}
                                     placeholder="-- Choose or Search Vendor Partner --"
                                     searchPlaceholder="Search vendor name, contact, or phone..."
-                                    allOptionLabel="-- All Vendors / In-House Fleet --"
+                                    allOptionLabel="-- All Vendors / In-House Vehicles --"
                                     allOptionBadge={`${availableVehicles.length} cars • ${availableDrivers.length} drivers`}
                                     onClear={() => handleVendorSelect("")}
                                     icon={Building2}
@@ -977,7 +1100,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                                     />
                                     {filteredVehicles.length === 0 && selectedSystemVendorId && (
                                       <p className="text-[10px] text-amber-700 font-medium mt-1">
-                                        ⚠️ This vendor has no available cars. Switch vendor or use Ad-Hoc.
+                                        ⚠️ This vendor has no available cars. Switch vendor or use Manual Entry.
                                       </p>
                                     )}
                                   </div>
@@ -1300,6 +1423,11 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                                 </div>
                               </div>
 
+                              {key === "TOLL" && customerAddons.some((a) => a.id === "fastag_pass" || /fastag/i.test(a.name || a.label || "")) && (
+                                <p className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200/60 rounded px-2 py-1">
+                                  ℹ️ Customer pre-paid Expressway FASTag Pass. Enter additional tolls only if exceeding covered plazas.
+                                </p>
+                              )}
                               {config?.hasNotes && (
                                 <input
                                   type="text"
@@ -1379,6 +1507,34 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                       <strong className="text-slate-900">{formatINR(initialBaseFare)}</strong>
                     </div>
 
+                    {customerAddons.length > 0 && (
+                      <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/70 space-y-1.5 my-1.5">
+                        <div className="flex items-center justify-between text-[11px] font-black text-amber-900 border-b border-amber-200/50 pb-1">
+                          <span className="flex items-center gap-1">
+                            <span>🎁</span>
+                            <span>Included Customer Addons:</span>
+                          </span>
+                          <span className="font-extrabold">{formatINR(customerAddonsTotal)}</span>
+                        </div>
+                        <div className="space-y-1">
+                          {customerAddons.map((add, aIdx) => (
+                            <div key={aIdx} className="flex justify-between items-center text-[11px] text-slate-700">
+                              <span className="flex items-center gap-1.5 truncate">
+                                <span>{add.emoji || "•"}</span>
+                                <span className="font-medium truncate">{add.name || add.label}</span>
+                              </span>
+                              <span className="font-bold text-slate-900 shrink-0">
+                                {formatINR(add.price || add.fee || 0)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-amber-800/80 italic pt-0.5 border-t border-amber-200/40">
+                          * Addons are pre-paid and included within the Contracted Base Fare.
+                        </p>
+                      </div>
+                    )}
+
                     {calculations.totalExtrasBeforeGst > 0 && (
                       <div className="flex justify-between text-slate-600">
                         <span>In-Trip Extras (KM + Tolls + Parking + Allowance):</span>
@@ -1414,7 +1570,7 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-700 flex items-center gap-1.5">
                         <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                        Vendor Net Payout (Payable to Fleet Partner)
+                        Vendor Net Payout (Payable to Vendor)
                       </label>
                       <span className="text-[10px] text-slate-400">Recorded on Ledger</span>
                     </div>
