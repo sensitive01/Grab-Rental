@@ -189,25 +189,35 @@ public class InvoicePdfGeneratorService {
                 tripCell.addElement(new Paragraph("Note: Fleet & chauffeur will be appointed upon confirmation.", metaFont));
             } else {
                 tripCell.addElement(new Paragraph("CONFIRMED FLEET & CHAUFFEUR (DUTY DISPATCH)", smallLabelFont));
-                boolean hasAssignedVehicle = booking.getAssignedVehicle() != null
+                boolean hasAssignedVehicle = (booking.getAssignedVehicle() != null
                         && booking.getAssignedVehicle().getVehicleNumber() != null
-                        && !booking.getAssignedVehicle().getVehicleNumber().isBlank();
-                boolean hasAssignedDriver = booking.getAssignedDriver() != null
+                        && !booking.getAssignedVehicle().getVehicleNumber().isBlank())
+                        || (booking.getManualVehicleNumber() != null && !booking.getManualVehicleNumber().isBlank());
+                boolean hasAssignedDriver = (booking.getAssignedDriver() != null
                         && booking.getAssignedDriver().getName() != null
-                        && !booking.getAssignedDriver().getName().isBlank();
+                        && !booking.getAssignedDriver().getName().isBlank())
+                        || (booking.getManualDriverName() != null && !booking.getManualDriverName().isBlank());
 
                 String vModel = (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getModel() != null)
                         ? booking.getAssignedVehicle().getModel()
-                        : (booking.getVehicleCategory() != null ? booking.getVehicleCategory() : "Commercial AC Fleet");
-                String vNum = hasAssignedVehicle
+                        : (booking.getManualVehicleModel() != null && !booking.getManualVehicleModel().isBlank()
+                            ? booking.getManualVehicleModel()
+                            : (booking.getVehicleCategory() != null ? booking.getVehicleCategory() : "Commercial AC Fleet"));
+                String vNum = (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getVehicleNumber() != null)
                         ? booking.getAssignedVehicle().getVehicleNumber()
-                        : "________________________ (To Be Filled)";
-                String dName = hasAssignedDriver
+                        : (booking.getManualVehicleNumber() != null && !booking.getManualVehicleNumber().isBlank()
+                            ? booking.getManualVehicleNumber()
+                            : "________________________ (To Be Filled)");
+                String dName = (booking.getAssignedDriver() != null && booking.getAssignedDriver().getName() != null)
                         ? booking.getAssignedDriver().getName()
-                        : "________________________ (To Be Filled)";
+                        : (booking.getManualDriverName() != null && !booking.getManualDriverName().isBlank()
+                            ? booking.getManualDriverName()
+                            : "________________________ (To Be Filled)");
                 String dPhone = (booking.getAssignedDriver() != null && booking.getAssignedDriver().getPhone() != null)
                         ? booking.getAssignedDriver().getPhone()
-                        : (hasAssignedDriver ? "+91 Contact on File" : "________________________");
+                        : (booking.getManualDriverPhone() != null && !booking.getManualDriverPhone().isBlank()
+                            ? booking.getManualDriverPhone()
+                            : (hasAssignedDriver ? "+91 Contact on File" : "________________________"));
 
                 tripCell.addElement(new Paragraph(vModel + (hasAssignedVehicle ? (" (" + vNum + ")") : ""), normalBoldFont));
                 if (!hasAssignedVehicle) {

@@ -249,6 +249,22 @@ public class Booking {
     @Column(name = "end_odometer_proof_url", columnDefinition = "TEXT")
     private String endOdometerProofUrl;
 
+    // Ad-Hoc / Manual Fleet & Vendor overrides (when not linked to registered entities)
+    @Column(name = "manual_vehicle_number", length = 50)
+    private String manualVehicleNumber;
+
+    @Column(name = "manual_vehicle_model", length = 100)
+    private String manualVehicleModel;
+
+    @Column(name = "manual_driver_name", length = 100)
+    private String manualDriverName;
+
+    @Column(name = "manual_driver_phone", length = 50)
+    private String manualDriverPhone;
+
+    @Column(name = "manual_vendor_name", length = 100)
+    private String manualVendorName;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

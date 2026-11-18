@@ -590,7 +590,7 @@ export default function AdminMasterBookingsPage() {
                 const booked = formatDateTime(b.createdAt);
                 const pickup = formatDateTime(b.pickupDateTime || b.pickupTime);
                 const isAllocated = Boolean(b.assignedVehicleNumber);
-                const isPendingVerification = b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW";
+                const isPendingVerification = (b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW") && b.status !== "COMPLETED" && b.status !== "CANCELLED";
 
                 return (
                   <TableRow key={b.id} onClick={() => router.push(`/admin/bookings/${b.id}`)}>
@@ -733,7 +733,7 @@ export default function AdminMasterBookingsPage() {
                     {/* Status */}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                        {b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW" ? (
+                        {isPendingVerification ? (
                           <button
                             type="button"
                             onClick={() => setVerifyModalBooking(b)}

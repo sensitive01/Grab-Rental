@@ -381,6 +381,19 @@ export const operationsApi = {
     return createApiResponse({ id: bookingId, status: newStatus }, `Trip status updated to ${newStatus}`);
   },
 
+  async completeTrip(bookingId, closingPayload) {
+    try {
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingId}/complete-trip`, closingPayload);
+      if (res.data && res.data.success) {
+        return createApiResponse(res.data.data, "Trip completed successfully");
+      }
+      return res.data;
+    } catch (err) {
+      console.error("Failed to complete trip via operations API:", err);
+      throw err;
+    }
+  },
+
   async getCustomerRequests() {
     await simulateLatency();
     return createApiResponse(requests);

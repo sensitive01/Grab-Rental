@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { ScenarioInvoiceModal } from "@/components/bookings/ScenarioInvoiceModal";
 import { PaymentVerificationModal } from "@/components/bookings/PaymentVerificationModal";
+import { TripClosingModal } from "@/components/bookings/TripClosingModal";
 import {
   ArrowLeft,
   Building2,
@@ -50,6 +51,7 @@ export default function BookingDetailPage({ params }) {
   const [previewProof, setPreviewProof] = useState(null);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isTripClosingModalOpen, setIsTripClosingModalOpen] = useState(false);
   const [verifyPaymentModalOpen, setVerifyPaymentModalOpen] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [printingDutySlip, setPrintingDutySlip] = useState(false);
@@ -93,6 +95,10 @@ export default function BookingDetailPage({ params }) {
   }, [id]);
 
   async function handleStatusChange(newStatus) {
+    if (newStatus === "COMPLETED") {
+      setIsTripClosingModalOpen(true);
+      return;
+    }
     try {
       const res = await operationsApi.updateTripStatus(id, newStatus);
       setBooking(res.data);
@@ -147,7 +153,7 @@ export default function BookingDetailPage({ params }) {
               </Button>
             </Link>
 
-            {(booking.status === "PENDING_PAYMENT_VERIFICATION" ||
+            {booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (booking.status === "PENDING_PAYMENT_VERIFICATION" ||
               booking.paymentStatus === "UNDER_REVIEW") ? (
               <Button
                 variant="amber"
@@ -793,8 +799,8 @@ export default function BookingDetailPage({ params }) {
                 <p className="text-xs text-slate-500 mt-1 mb-4">
                   This booking requires a {booking.vehicleCategory} ({booking.preferredVehicle}).
                 </p>
-                {booking.status === "PENDING_PAYMENT_VERIFICATION" ||
-                booking.paymentStatus === "UNDER_REVIEW" ? (
+                {booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (booking.status === "PENDING_PAYMENT_VERIFICATION" ||
+                booking.paymentStatus === "UNDER_REVIEW") ? (
                   <Button
                     variant="amber"
                     size="sm"
@@ -944,6 +950,25 @@ export default function BookingDetailPage({ params }) {
         booking={booking}
         onVerify={handleVerifyPayment}
         loading={verifyingPayment}
+      />
+
+      {/* Driver-Parity Trip Closing & Settlement Modal */}
+      <TripClosingModal
+        isOpen={isTripClosingModalOpen}
+        onClose={() => setIsTripClosingModalOpen(false)}
+        trip={booking}
+        onSuccess={async () => {
+          try {
+            const refreshed = await operationsApi.getBookingById(id);
+            setBooking(refreshed.data);
+          } catch (err) {
+            console.error("Failed to refresh booking after closing:", err);
+          }
+          setToast({
+            type: "success",
+            message: "Trip completed and settled successfully! Official tax invoice generated.",
+          });
+        }}
       />
     </div>
   );

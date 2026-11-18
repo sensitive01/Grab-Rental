@@ -6,6 +6,7 @@ import com.grabrentals.customer.dto.BookingAssignRequest;
 import com.grabrentals.customer.dto.BookingCreateRequest;
 import com.grabrentals.customer.dto.BookingResponse;
 import com.grabrentals.customer.dto.BookingStatusUpdateRequest;
+import com.grabrentals.customer.dto.TripClosingRequest;
 import com.grabrentals.customer.entity.BookingStatus;
 import com.grabrentals.customer.service.CustomerBookingService;
 import com.grabrentals.vendor.dto.DriverResponse;
@@ -98,6 +99,18 @@ public class OperationsBookingController {
 
         BookingResponse response = bookingService.updateTripStatus(idOrRef, request, operationsUser);
         return ResponseEntity.ok(ApiResponse.success("Trip status updated successfully to " + request.getStatus(), response));
+    }
+
+    @PostMapping("/bookings/{idOrRef}/complete-trip")
+    public ResponseEntity<ApiResponse<BookingResponse>> completeTrip(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @Valid @RequestBody TripClosingRequest request
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings/{}/complete-trip by operator '{}'", idOrRef, operator.getEmail());
+        BookingResponse response = bookingService.vendorCompleteTrip(idOrRef, request, operator);
+        return ResponseEntity.ok(ApiResponse.success("Trip finalized and completed successfully. GST invoice generated.", response));
     }
 
     @PostMapping("/bookings/{idOrRef}/verify-payment")

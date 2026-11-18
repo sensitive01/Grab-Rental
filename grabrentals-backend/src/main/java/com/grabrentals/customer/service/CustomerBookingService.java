@@ -880,8 +880,13 @@ public class CustomerBookingService {
             booking.setStartOdometerProofUrl(request.getStartOdometerProofUrl());
         }
 
-        // If completed, release vehicle and driver
+        // If completed, release vehicle and driver, and mark payment paid
         if (newStatus == BookingStatus.COMPLETED) {
+            booking.setPaymentStatus("PAID");
+            if (booking.getPaymentVerifiedAt() == null) {
+                booking.setPaymentVerifiedAt(Instant.now());
+                booking.setPaymentVerifiedBy(actor != null ? actor.getName() : "Operations Status Update");
+            }
             if (booking.getAssignedVehicle() != null) {
                 booking.getAssignedVehicle().setStatus(VehicleStatus.AVAILABLE);
                 vehicleRepository.save(booking.getAssignedVehicle());
@@ -979,15 +984,70 @@ public class CustomerBookingService {
             throw new BadRequestException("Cannot finalize a cancelled booking.");
         }
 
+        // Apply System Allocations if provided (e.g. Admin Fallback)
+        if (request.getAssignedVehicleId() != null) {
+            Vehicle v = vehicleRepository.findById(request.getAssignedVehicleId()).orElse(null);
+            if (v != null) {
+                booking.setAssignedVehicle(v);
+                if (v.getUser() != null && booking.getVendor() == null) {
+                    booking.setVendor(v.getUser());
+                }
+            }
+        }
+        if (request.getAssignedDriverId() != null) {
+            Driver d = driverRepository.findById(request.getAssignedDriverId()).orElse(null);
+            if (d != null) {
+                booking.setAssignedDriver(d);
+            }
+        }
+        if (request.getVendorId() != null) {
+            User u = userRepository.findById(request.getVendorId()).orElse(null);
+            if (u != null) {
+                booking.setVendor(u);
+            }
+        }
+        if (request.getVendorPayout() != null && request.getVendorPayout().compareTo(BigDecimal.ZERO) >= 0) {
+            booking.setVendorPayout(request.getVendorPayout());
+        }
+
+        // Apply Manual / Ad-hoc Overrides
+        if (request.getManualVehicleNumber() != null && !request.getManualVehicleNumber().isBlank()) {
+            booking.setManualVehicleNumber(request.getManualVehicleNumber().trim());
+        }
+        if (request.getManualVehicleModel() != null && !request.getManualVehicleModel().isBlank()) {
+            booking.setManualVehicleModel(request.getManualVehicleModel().trim());
+        }
+        if (request.getManualDriverName() != null && !request.getManualDriverName().isBlank()) {
+            booking.setManualDriverName(request.getManualDriverName().trim());
+        }
+        if (request.getManualDriverPhone() != null && !request.getManualDriverPhone().isBlank()) {
+            booking.setManualDriverPhone(request.getManualDriverPhone().trim());
+        }
+        if (request.getManualVendorName() != null && !request.getManualVendorName().isBlank()) {
+            booking.setManualVendorName(request.getManualVendorName().trim());
+        }
+
         // Set Odometer & KM Metrics
         booking.setStartKm(request.getStartKm());
         booking.setEndKm(request.getEndKm());
 
         Double actualKm = request.getActualKm();
-        if (actualKm == null && request.getStartKm() != null && request.getEndKm() != null) {
-            actualKm = Math.max(0, request.getEndKm() - request.getStartKm());
+        if (actualKm == null) {
+            if (request.getStartKm() != null && request.getEndKm() != null) {
+                actualKm = Math.max(0, request.getEndKm() - request.getStartKm());
+            } else if (booking.getActualKm() != null && booking.getActualKm() > 0) {
+                actualKm = booking.getActualKm();
+            } else {
+                actualKm = 0.0;
+            }
         }
         booking.setActualKm(actualKm);
+        if (booking.getStartKm() == null) {
+            booking.setStartKm(0.0);
+        }
+        if (booking.getEndKm() == null) {
+            booking.setEndKm(actualKm);
+        }
 
         Double extraKm = request.getExtraKm() != null ? Math.max(0, request.getExtraKm()) : 0.0;
         booking.setExtraKm(extraKm);
@@ -1059,8 +1119,13 @@ public class CustomerBookingService {
             booking.setStartOdometerProofUrl(request.getStartOdometerProofUrl());
         }
 
-        // Mark COMPLETED
+        // Mark COMPLETED & Payment PAID
         booking.setStatus(BookingStatus.COMPLETED);
+        booking.setPaymentStatus("PAID");
+        if (booking.getPaymentVerifiedAt() == null) {
+            booking.setPaymentVerifiedAt(Instant.now());
+            booking.setPaymentVerifiedBy(vendor != null ? vendor.getName() : "Trip Closing Settlement");
+        }
 
         // Release vehicle and driver to AVAILABLE
         if (booking.getAssignedVehicle() != null) {

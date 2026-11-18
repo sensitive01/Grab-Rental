@@ -43,6 +43,13 @@ public class BookingResponse {
     private String driverName;
     private String driverPhone;
 
+    // Manual / Ad-Hoc Overrides
+    private String manualVehicleNumber;
+    private String manualVehicleModel;
+    private String manualDriverName;
+    private String manualDriverPhone;
+    private String manualVendorName;
+
     // Trip details
     private String tripType;
     private String pickupCity;
@@ -149,6 +156,13 @@ public class BookingResponse {
             dist = (int) Math.round(b.getActualKm());
         }
 
+        String resolvedPaymentStatus = b.getPaymentStatus();
+        if (b.getStatus() == BookingStatus.COMPLETED) {
+            if ("UNDER_REVIEW".equalsIgnoreCase(resolvedPaymentStatus) || resolvedPaymentStatus == null || "PENDING".equalsIgnoreCase(resolvedPaymentStatus)) {
+                resolvedPaymentStatus = "PAID";
+            }
+        }
+
         BookingResponseBuilder builder = BookingResponse.builder()
                 .id(b.getId())
                 .distanceKm(dist)
@@ -181,7 +195,7 @@ public class BookingResponse {
                 .vendorPayout(b.getVendorPayout())
                 .advancePaid(b.getAdvancePaid())
                 .dueAmount(b.getDueAmount())
-                .paymentStatus(b.getPaymentStatus())
+                .paymentStatus(resolvedPaymentStatus)
                 .paymentMethod(b.getPaymentMethod())
                 .paymentProofUrl(b.getPaymentProofUrl())
                 .paymentUtrNumber(b.getPaymentUtrNumber())
@@ -235,6 +249,9 @@ public class BookingResponse {
                    .vendorBusinessName(vendor.getBusinessName() != null ? vendor.getBusinessName() : vendor.getName())
                    .vendorName(vendor.getName())
                    .vendorPhone(vPhone);
+        } else if (b.getManualVendorName() != null && !b.getManualVendorName().isBlank()) {
+            builder.vendorName(b.getManualVendorName())
+                   .vendorBusinessName(b.getManualVendorName());
         }
 
         // Vehicle
@@ -243,6 +260,10 @@ public class BookingResponse {
                    .vehicleModel(b.getAssignedVehicle().getModel())
                    .vehicleNumber(b.getAssignedVehicle().getVehicleNumber())
                    .vehicleType(b.getAssignedVehicle().getVehicleType());
+        } else if (b.getManualVehicleNumber() != null && !b.getManualVehicleNumber().isBlank()) {
+            builder.vehicleNumber(b.getManualVehicleNumber())
+                   .vehicleModel(b.getManualVehicleModel() != null ? b.getManualVehicleModel() : b.getVehicleCategory())
+                   .vehicleType(b.getVehicleCategory());
         }
 
         // Driver
@@ -250,7 +271,16 @@ public class BookingResponse {
             builder.driverId(b.getAssignedDriver().getId())
                    .driverName(b.getAssignedDriver().getName())
                    .driverPhone(b.getAssignedDriver().getPhone());
+        } else if (b.getManualDriverName() != null && !b.getManualDriverName().isBlank()) {
+            builder.driverName(b.getManualDriverName())
+                   .driverPhone(b.getManualDriverPhone());
         }
+
+        builder.manualVehicleNumber(b.getManualVehicleNumber())
+               .manualVehicleModel(b.getManualVehicleModel())
+               .manualDriverName(b.getManualDriverName())
+               .manualDriverPhone(b.getManualDriverPhone())
+               .manualVendorName(b.getManualVendorName());
 
         // Only reveal ride OTP if booking is confirmed or on the way
         if (b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.ON_THE_WAY || b.getStatus() == BookingStatus.IN_TRANSIT) {

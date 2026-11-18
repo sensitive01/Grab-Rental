@@ -6,12 +6,24 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TripClosingRequest {
+    // Fleet & Vendor Allocations / Overrides (when missing or updated)
+    private UUID assignedVehicleId;
+    private UUID assignedDriverId;
+    private UUID vendorId;
+    private String manualVehicleNumber;
+    private String manualVehicleModel;
+    private String manualDriverName;
+    private String manualDriverPhone;
+    private String manualVendorName;
+    private BigDecimal vendorPayout;
+
     private Double startKm;
     private Double endKm;
     private Double actualKm;

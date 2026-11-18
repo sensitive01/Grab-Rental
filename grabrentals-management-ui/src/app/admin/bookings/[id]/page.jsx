@@ -8,6 +8,7 @@ import { Card, Badge, NumberPlate } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ScenarioInvoiceModal } from "@/components/bookings/ScenarioInvoiceModal";
+import { TripClosingModal } from "@/components/bookings/TripClosingModal";
 import { Toast } from "@/components/ui/Toast";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { formatINR, getStatusStyle, printDocumentPdf } from "@/lib/utils";
@@ -181,6 +182,7 @@ export default function AdminBookingDetailPage({ params }) {
   const [printingDutySlip, setPrintingDutySlip] = useState(false);
   const [printingTaxInvoice, setPrintingTaxInvoice] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isTripClosingModalOpen, setIsTripClosingModalOpen] = useState(false);
   const [previewProof, setPreviewProof] = useState(null);
 
   // Allocation Modal States
@@ -269,6 +271,14 @@ export default function AdminBookingDetailPage({ params }) {
 
   const handleStatusChange = async (newStatus) => {
     if (!booking) return;
+    if (newStatus === "COMPLETED") {
+      setIsTripClosingModalOpen(true);
+      return;
+    }
+    if (newStatus === "ASSIGNED_TO_VENDOR") {
+      openAllocateModal();
+      return;
+    }
     setUpdatingStatus(true);
     try {
       const targetId = booking.rawId || booking.id;
@@ -477,7 +487,7 @@ export default function AdminBookingDetailPage({ params }) {
               </Button>
             </Link>
 
-            {booking.status === "PENDING_PAYMENT_VERIFICATION" || booking.paymentStatus === "UNDER_REVIEW" ? (
+            {booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (booking.status === "PENDING_PAYMENT_VERIFICATION" || booking.paymentStatus === "UNDER_REVIEW") ? (
               <Button
                 variant="secondary"
                 size="sm"
@@ -488,7 +498,7 @@ export default function AdminBookingDetailPage({ params }) {
               >
                 Verification Required
               </Button>
-            ) : booking.status === "PENDING_ALLOCATION" || booking.status === "REASSIGN_REQUIRED" ? (
+            ) : booking.status === "COMPLETED" || booking.status === "CANCELLED" ? null : booking.status === "PENDING_ALLOCATION" || booking.status === "REASSIGN_REQUIRED" ? (
               <Button
                 variant="primary"
                 size="sm"
@@ -1727,6 +1737,19 @@ export default function AdminBookingDetailPage({ params }) {
         onClose={() => setIsInvoiceModalOpen(false)}
         booking={booking}
         onToast={setToast}
+      />
+      {/* Driver-Parity Trip Closing & Settlement Modal */}
+      <TripClosingModal
+        isOpen={isTripClosingModalOpen}
+        onClose={() => setIsTripClosingModalOpen(false)}
+        trip={booking}
+        onSuccess={() => {
+          loadBooking();
+          setToast({
+            type: "success",
+            message: "Trip completed and settled successfully! Official tax invoice generated.",
+          });
+        }}
       />
     </div>
   );

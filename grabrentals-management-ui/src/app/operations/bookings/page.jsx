@@ -240,7 +240,7 @@ export default function OperationsBookingsPage() {
                             {b.assignedDriverName}
                           </div>
                         </div>
-                      ) : (b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW") ? (
+                      ) : b.status !== "COMPLETED" && b.status !== "CANCELLED" && (b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW") ? (
                         <span className="text-[11px] font-medium text-amber-600/80 italic">
                           Verify payment first
                         </span>
@@ -262,7 +262,7 @@ export default function OperationsBookingsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW" ? (
+                      {b.status !== "COMPLETED" && b.status !== "CANCELLED" && (b.status === "PENDING_PAYMENT_VERIFICATION" || b.paymentStatus === "UNDER_REVIEW") ? (
                         <button
                           onClick={() => setVerifyModalBooking(b)}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition-colors animate-pulse"

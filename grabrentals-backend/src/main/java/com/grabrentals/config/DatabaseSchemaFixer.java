@@ -136,6 +136,7 @@ public class DatabaseSchemaFixer implements CommandLineRunner {
         executeSafe("UPDATE coupons SET state = 'ALL' WHERE state IS NULL");
         executeSafe("UPDATE coupons SET city = 'ALL' WHERE city IS NULL");
         executeSafe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS invoice_pdf_url TEXT");
+        executeSafe("UPDATE bookings SET payment_status = 'PAID' WHERE status = 'COMPLETED' AND (payment_status = 'UNDER_REVIEW' OR payment_status IS NULL OR payment_status = 'PENDING')");
 
         log.info("DatabaseSchemaFixer column verification completed.");
     }
