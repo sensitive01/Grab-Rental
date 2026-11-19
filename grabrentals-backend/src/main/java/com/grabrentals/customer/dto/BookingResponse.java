@@ -96,6 +96,7 @@ public class BookingResponse {
     private String specialInstructions;
     private String vendorDeclineReason;
     private String rideOtp;
+    private String billingOtp;
 
     private Instant createdAt;
     private Instant updatedAt;
@@ -286,6 +287,7 @@ public class BookingResponse {
         if (b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.ON_THE_WAY || b.getStatus() == BookingStatus.IN_TRANSIT) {
             builder.rideOtp(b.getRideOtp());
         }
+        builder.billingOtp(b.getBillingOtp());
 
         builder.addons(extractAddons(b));
         return builder.build();

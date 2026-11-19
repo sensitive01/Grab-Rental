@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { X, MapPin, Calendar, Clock, ArrowRight, Plus, Minus, ChevronDown } from "lucide-react";
 import CityAutocompleteInput from "@/components/booking/CityAutocompleteInput";
 import TimeSelectDropdown from "@/components/booking/TimeSelectDropdown";
@@ -353,21 +354,30 @@ export default function ModifyBookingModal({ isOpen, onClose, currentTrip, onSav
             )}
           </div>
 
-          <div className="pt-3 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+          <div className="pt-3 flex flex-wrap items-center justify-between gap-2">
+            <Link
+              href="/"
+              onClick={() => onClose()}
+              className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 cursor-pointer"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2.5 rounded-xl font-black bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5 shadow-md shadow-amber-600/20 cursor-pointer"
-            >
-              <span>Update Cabs</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              ← Edit on Full Search Page
+            </Link>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-xl font-black bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5 shadow-md shadow-amber-600/20 cursor-pointer"
+              >
+                <span>Update Cabs</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
         </form>

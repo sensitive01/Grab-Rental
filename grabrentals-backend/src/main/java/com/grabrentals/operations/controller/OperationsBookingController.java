@@ -7,6 +7,9 @@ import com.grabrentals.customer.dto.BookingCreateRequest;
 import com.grabrentals.customer.dto.BookingResponse;
 import com.grabrentals.customer.dto.BookingStatusUpdateRequest;
 import com.grabrentals.customer.dto.TripClosingRequest;
+import com.grabrentals.customer.dto.StartOtpRequest;
+import com.grabrentals.customer.dto.VerifyOtpRequest;
+import com.grabrentals.customer.dto.BillingOtpRequest;
 import com.grabrentals.customer.entity.BookingStatus;
 import com.grabrentals.customer.service.CustomerBookingService;
 import com.grabrentals.vendor.dto.DriverResponse;
@@ -99,6 +102,62 @@ public class OperationsBookingController {
 
         BookingResponse response = bookingService.updateTripStatus(idOrRef, request, operationsUser);
         return ResponseEntity.ok(ApiResponse.success("Trip status updated successfully to " + request.getStatus(), response));
+    }
+
+    @PostMapping("/bookings/{idOrRef}/send-start-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> sendStartOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @RequestBody(required = false) StartOtpRequest request
+    ) {
+        User operator = getUser(userDetails);
+        Double startKm = request != null ? request.getStartKm() : null;
+        log.info("[HTTP API] POST /api/operations/bookings/{}/send-start-otp by operator '{}', startKm={}", idOrRef, operator.getEmail(), startKm);
+        BookingResponse response = bookingService.sendStartRideOtp(idOrRef, startKm, operator);
+        return ResponseEntity.ok(ApiResponse.success("Trip Start OTP dispatched to customer via SMS", response));
+    }
+
+    @PostMapping("/bookings/{idOrRef}/verify-start-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> verifyStartOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @Valid @RequestBody VerifyOtpRequest request
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings/{}/verify-start-otp by operator '{}'", idOrRef, operator.getEmail());
+        BookingResponse response = bookingService.verifyStartRideOtp(
+                idOrRef, 
+                request.getOtp(), 
+                request.getStartKm(), 
+                request.getStartOdometerProofUrl(), 
+                operator
+        );
+        return ResponseEntity.ok(ApiResponse.success("Trip Start OTP verified successfully. Ride commenced.", response));
+    }
+
+    @PostMapping("/bookings/{idOrRef}/send-billing-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> sendBillingOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @RequestBody(required = false) BillingOtpRequest request
+    ) {
+        User operator = getUser(userDetails);
+        Double endKm = request != null ? request.getEndKm() : null;
+        log.info("[HTTP API] POST /api/operations/bookings/{}/send-billing-otp by operator '{}', endKm={}", idOrRef, operator.getEmail(), endKm);
+        BookingResponse response = bookingService.sendBillingOtp(idOrRef, endKm, operator);
+        return ResponseEntity.ok(ApiResponse.success("Billing OTP dispatched to customer via SMS", response));
+    }
+
+    @PostMapping("/bookings/{idOrRef}/verify-billing-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> verifyBillingOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @Valid @RequestBody VerifyOtpRequest request
+    ) {
+        User operator = getUser(userDetails);
+        log.info("[HTTP API] POST /api/operations/bookings/{}/verify-billing-otp by operator '{}'", idOrRef, operator.getEmail());
+        BookingResponse response = bookingService.verifyBillingOtp(idOrRef, request.getOtp(), operator);
+        return ResponseEntity.ok(ApiResponse.success("Billing OTP verified successfully", response));
     }
 
     @PostMapping("/bookings/{idOrRef}/complete-trip")

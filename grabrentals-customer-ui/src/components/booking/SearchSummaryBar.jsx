@@ -173,7 +173,7 @@ function SearchSummaryContent({
               href={`/outstation/select-vehicle?from=${encodeURIComponent(displayFrom)}&to=${encodeURIComponent(displayTo)}${tripInfo.stops ? `&stops=${encodeURIComponent(tripInfo.stops)}` : ''}&tripType=${encodeURIComponent(tripInfo.tripType)}&serviceType=${encodeURIComponent(tripInfo.serviceType || 'OUTSTATION')}&pickupDate=${encodeURIComponent(tripInfo.date || '')}&pickupTime=${encodeURIComponent(tripInfo.time || '')}${tripInfo.dropDate ? `&dropDate=${encodeURIComponent(tripInfo.dropDate)}` : ''}`} 
               className="text-white hover:text-blue-100 hover:underline flex items-center gap-1 font-bold ml-2 bg-white/15 px-2 py-0.5 rounded border border-white/25 transition-colors"
             >
-              <Edit2 className="w-3.5 h-3.5" /> {t("modify_trip")}
+              <Edit2 className="w-3.5 h-3.5" /> {t("modify_search") || t("modify_trip") || "Modify Search"}
             </Link>
           </div>
         </div>

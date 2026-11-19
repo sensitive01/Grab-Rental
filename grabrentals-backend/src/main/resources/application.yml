@@ -69,5 +69,13 @@ app:
     api-key: ${SMS_API_KEY:}
     sender-id: ${SMS_SENDER_ID:}
     template-id: ${SMS_TEMPLATE_ID:}
-    campaign-name: ${SMS_CAMPAIGN_NAME:API TEST}
+    campaign-name: ${SMS_CAMPAIGN_NAME:}
+    template-trip-start-id: ${SMS_TEMPLATE_TRIP_START_ID:}
+    campaign-trip-start: ${SMS_CAMPAIGN_TRIP_START:}
+    template-billing-otp-id: ${SMS_TEMPLATE_BILLING_OTP_ID:}
+    campaign-billing-otp: ${SMS_CAMPAIGN_BILLING_OTP:}
+    template-completion-id: ${SMS_TEMPLATE_COMPLETION_ID:}
+    campaign-completion: ${SMS_CAMPAIGN_COMPLETION:}
+    template-confirmation-id: ${SMS_TEMPLATE_CONFIRMATION_ID:}
+    campaign-confirmation: ${SMS_CAMPAIGN_CONFIRMATION:}
 

@@ -256,7 +256,10 @@ export function normalizeBooking(b) {
 }
 
 function logApiError(msg, err) {
-  if (err?.response?.status !== 401) {
+  const status = err?.response?.status;
+  if (status === 400 || status === 401 || status === 403 || status === 404) {
+    console.warn(msg, err?.response?.data?.message || err?.message || err);
+  } else {
     console.error(msg, err);
   }
 }
@@ -509,6 +512,16 @@ export const vendorApi = {
       } catch (inner) {
         logApiError("Fallback lookup failed:", inner);
       }
+      throw err;
+    }
+  },
+
+  assignDriver: async (bookingIdOrRef, driverId) => {
+    try {
+      const res = await axiosClient.post(`/api/vendor/bookings/${bookingIdOrRef}/assign-driver`, { driverId });
+      return normalizeBooking(res.data?.data || res.data);
+    } catch (err) {
+      logApiError(`vendorApi.assignDriver(${bookingIdOrRef}) error:`, err);
       throw err;
     }
   },
@@ -786,6 +799,53 @@ export const driverApi = {
       return normalizeBooking(res.data?.data);
     } catch (err) {
       logApiError("driverApi.updateStatus error:", err);
+      throw err;
+    }
+  },
+
+  sendStartOtp: async (idOrRef, startKm) => {
+    try {
+      const res = await axiosClient.post(`/api/driver/trips/${idOrRef}/send-start-otp`, { startKm: Number(startKm) || 0 });
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError("driverApi.sendStartOtp error:", err);
+      throw err;
+    }
+  },
+
+  verifyStartOtp: async (idOrRef, otp, startKm, startOdometerProofUrl) => {
+    try {
+      const payload = { otp: String(otp).trim() };
+      if (startKm != null && !isNaN(Number(startKm))) {
+        payload.startKm = Number(startKm);
+      }
+      if (startOdometerProofUrl) {
+        payload.startOdometerProofUrl = startOdometerProofUrl;
+      }
+      const res = await axiosClient.post(`/api/driver/trips/${idOrRef}/verify-start-otp`, payload);
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError("driverApi.verifyStartOtp error:", err);
+      throw err;
+    }
+  },
+
+  sendBillingOtp: async (idOrRef, endKm) => {
+    try {
+      const res = await axiosClient.post(`/api/driver/trips/${idOrRef}/send-billing-otp`, { endKm: Number(endKm) || 0 });
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError("driverApi.sendBillingOtp error:", err);
+      throw err;
+    }
+  },
+
+  verifyBillingOtp: async (idOrRef, otp) => {
+    try {
+      const res = await axiosClient.post(`/api/driver/trips/${idOrRef}/verify-billing-otp`, { otp: String(otp).trim() });
+      return normalizeBooking(res.data?.data);
+    } catch (err) {
+      logApiError("driverApi.verifyBillingOtp error:", err);
       throw err;
     }
   },

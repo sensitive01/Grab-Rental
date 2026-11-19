@@ -77,7 +77,7 @@ export default function VehicleTripHeader({
                 className="lg:hidden px-2.5 py-1 rounded-xl bg-white hover:bg-blue-50 text-[#0082fe] font-extrabold text-[11px] sm:text-xs transition-all flex items-center gap-1 shrink-0 cursor-pointer shadow-xs active:scale-95"
               >
                 <Edit3 className="w-3 h-3 text-[#0082fe]" />
-                <span>{t("modify_trip")}</span>
+                <span>{t("modify_search") || t("modify_trip") || "Modify Search"}</span>
               </button>
             </div>
 
@@ -147,7 +147,7 @@ export default function VehicleTripHeader({
               onClick={onModifyClick}
               className="hidden lg:flex px-3.5 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#0082fe] font-extrabold text-xs transition-all items-center gap-1.5 cursor-pointer shadow-sm ml-2 xl:ml-3 shrink-0 active:scale-95"
             >
-              <Edit3 className="w-3.5 h-3.5 text-[#0082fe]" /> {t("modify_trip")}
+              <Edit3 className="w-3.5 h-3.5 text-[#0082fe]" /> {t("modify_search") || t("modify_trip") || "Modify Search"}
             </button>
           </div>
 

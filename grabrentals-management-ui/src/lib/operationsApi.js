@@ -394,6 +394,57 @@ export const operationsApi = {
     }
   },
 
+  async sendStartOtp(bookingId, startKm) {
+    try {
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingId}/send-start-otp`, { startKm: Number(startKm) || 0 });
+      return res.data?.data || res.data;
+    } catch (err) {
+      console.error("Failed to send start OTP via operations API:", err);
+      throw err;
+    }
+  },
+
+  async verifyStartOtp(bookingId, otp, startKm, startOdometerProofUrl) {
+    try {
+      const payload = { otp: String(otp).trim() };
+      if (startKm != null && !isNaN(Number(startKm))) {
+        payload.startKm = Number(startKm);
+      }
+      if (startOdometerProofUrl) {
+        payload.startOdometerProofUrl = startOdometerProofUrl;
+      }
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingId}/verify-start-otp`, payload);
+      return res.data?.data || res.data;
+    } catch (err) {
+      if (err?.response?.status && err.response.status >= 400 && err.response.status < 500) {
+        console.warn("Validation notice on verifyStartOtp:", err.response?.data?.message || err.message);
+      } else {
+        console.error("Failed to verify start OTP via operations API:", err);
+      }
+      throw err;
+    }
+  },
+
+  async sendBillingOtp(bookingId, endKm) {
+    try {
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingId}/send-billing-otp`, { endKm: Number(endKm) || 0 });
+      return res.data?.data || res.data;
+    } catch (err) {
+      console.warn("sendBillingOtp notice:", err?.response?.data?.message || err?.message || err);
+      throw err;
+    }
+  },
+
+  async verifyBillingOtp(bookingId, otp) {
+    try {
+      const res = await axiosClient.post(`/api/operations/bookings/${bookingId}/verify-billing-otp`, { otp: String(otp).trim() });
+      return res.data?.data || res.data;
+    } catch (err) {
+      console.warn("verifyBillingOtp notice:", err?.response?.data?.message || err?.message || err);
+      throw err;
+    }
+  },
+
   async getCustomerRequests() {
     await simulateLatency();
     return createApiResponse(requests);

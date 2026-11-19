@@ -24,6 +24,7 @@ public class InvoicePdfGeneratorService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
 
     /**
      * Generates an authentic A4 PDF document for the given booking and scenario.
@@ -124,7 +125,7 @@ public class InvoicePdfGeneratorService {
 
             String docTitle = switch (scenario) {
                 case 1 -> "PROVISIONAL BOOKING ESTIMATE";
-                case 2 -> "BOOKING CONFIRMATION & DUTY SLIP";
+                case 2 -> "BOOKING CONFIRMATION VOUCHER";
                 default -> "OFFICIAL TAX INVOICE (SAC: 9966)";
             };
 
@@ -184,11 +185,11 @@ public class InvoicePdfGeneratorService {
 
             if (scenario == 1) {
                 tripCell.addElement(new Paragraph("REQUESTED FLEET & ROUTE", smallLabelFont));
-                tripCell.addElement(new Paragraph(pickupCity + " ➔ " + dropCity + " (" + tripType + ")", normalBoldFont));
-                tripCell.addElement(new Paragraph("Vehicle Category: " + (booking.getVehicleCategory() != null ? booking.getVehicleCategory() : "AC Cab"), normalFont));
+                tripCell.addElement(new Paragraph(cleanCity(pickupCity) + " to " + cleanCity(dropCity) + " (" + tripType + ")", normalBoldFont));
+                tripCell.addElement(new Paragraph("Vehicle Category: " + formatCategoryName(booking.getVehicleCategory()), normalFont));
                 tripCell.addElement(new Paragraph("Note: Fleet & chauffeur will be appointed upon confirmation.", metaFont));
             } else {
-                tripCell.addElement(new Paragraph("CONFIRMED FLEET & CHAUFFEUR (DUTY DISPATCH)", smallLabelFont));
+                tripCell.addElement(new Paragraph("ASSIGNED VEHICLE & CHAUFFEUR (DUTY DISPATCH)", smallLabelFont));
                 boolean hasAssignedVehicle = (booking.getAssignedVehicle() != null
                         && booking.getAssignedVehicle().getVehicleNumber() != null
                         && !booking.getAssignedVehicle().getVehicleNumber().isBlank())
@@ -198,11 +199,7 @@ public class InvoicePdfGeneratorService {
                         && !booking.getAssignedDriver().getName().isBlank())
                         || (booking.getManualDriverName() != null && !booking.getManualDriverName().isBlank());
 
-                String vModel = (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getModel() != null)
-                        ? booking.getAssignedVehicle().getModel()
-                        : (booking.getManualVehicleModel() != null && !booking.getManualVehicleModel().isBlank()
-                            ? booking.getManualVehicleModel()
-                            : (booking.getVehicleCategory() != null ? booking.getVehicleCategory() : "Commercial AC Fleet"));
+                String vModel = resolveVehicleDisplayName(booking);
                 String vNum = (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getVehicleNumber() != null)
                         ? booking.getAssignedVehicle().getVehicleNumber()
                         : (booking.getManualVehicleNumber() != null && !booking.getManualVehicleNumber().isBlank()
@@ -227,29 +224,33 @@ public class InvoicePdfGeneratorService {
                 if (!hasAssignedDriver) {
                     tripCell.addElement(new Paragraph("Chauffeur Mobile: " + dPhone, normalFont));
                 }
-                tripCell.addElement(new Paragraph("Route: " + pickupCity + " ➔ " + dropCity, metaFont));
+                tripCell.addElement(new Paragraph("Route: " + cleanCity(pickupCity) + " to " + cleanCity(dropCity), metaFont));
             }
             infoTable.addCell(tripCell);
             document.add(infoTable);
             document.add(new Paragraph(" "));
 
-            // 3. Scenario 2 (Duty Slip Trip Sheet) & Scenario 3 (Final Odometer Telemetry)
+            // 3. Scenario 2 (Confirmed Specifications) & Scenario 3 (Final Odometer Telemetry)
             if (scenario == 2) {
-                PdfPTable odoTable = new PdfPTable(4);
-                odoTable.setWidthPercentage(100);
-                odoTable.setWidths(new float[]{25, 25, 25, 25});
+                PdfPTable specTable = new PdfPTable(4);
+                specTable.setWidthPercentage(100);
+                specTable.setWidths(new float[]{25, 25, 25, 25});
 
-                String startKmVal = booking.getStartKm() != null ? (booking.getStartKm() + " KM") : "___________ KM";
-                String endKmVal = booking.getEndKm() != null ? (booking.getEndKm() + " KM") : "___________ KM";
-                String startTimeVal = booking.getPickupDateTime() != null ? booking.getPickupDateTime().format(TIME_FORMATTER) : "____ : ____";
-                String endTimeVal = booking.getReturnDateTime() != null ? booking.getReturnDateTime().format(TIME_FORMATTER) : "____ : ____";
+                String tripTypeDisplay = (booking.getTripType() != null ? booking.getTripType() : "ONE_WAY").replace("_", " ");
+                Integer pkgKm = resolveBookedDistanceKm(booking);
+                String pkgVal = (pkgKm != null && pkgKm > 0) ? (pkgKm + " KM Included") : "Confirmed Route";
+                String pickupTimeVal = booking.getPickupDateTime() != null
+                        ? booking.getPickupDateTime().format(DATE_TIME_FORMATTER)
+                        : "Scheduled";
+                BigDecimal rate = resolveExtraKmRate(booking);
+                String extraRateVal = (rate != null) ? ("Rs " + rate.intValue() + "/KM") : "Standard Tariff";
 
-                addTelemetryCell(odoTable, "STARTING KM", startKmVal, borderColor, lightBg);
-                addTelemetryCell(odoTable, "CLOSING KM", endKmVal, borderColor, lightBg);
-                addTelemetryCell(odoTable, "STARTING TIME", startTimeVal, borderColor, lightBg);
-                addTelemetryCell(odoTable, "CLOSING TIME", endTimeVal, borderColor, lightBg);
+                addTelemetryCell(specTable, "SERVICE TYPE", tripTypeDisplay, borderColor, lightBg);
+                addTelemetryCell(specTable, "INCLUDED PACKAGE", pkgVal, borderColor, lightBg);
+                addTelemetryCell(specTable, "PICKUP SCHEDULE", pickupTimeVal, borderColor, lightBg);
+                addTelemetryCell(specTable, "EXTRA KM RATE", extraRateVal, borderColor, lightBg);
 
-                document.add(odoTable);
+                document.add(specTable);
                 document.add(new Paragraph(" "));
             } else if (scenario == 3) {
                 PdfPTable odoTable = new PdfPTable(4);
@@ -288,7 +289,7 @@ public class InvoicePdfGeneratorService {
             int sNo = 1;
 
             // Row 1: Base Rental Duty (Package minus customer addons)
-            addTableRow(itemsTable, String.valueOf(sNo++), "Intercity Chauffeur Passenger Rental (" + pickupCity + " to " + dropCity + ")", "9966", "1 Trip", "Rs " + formatCurrency(baseRentalFare), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
+            addTableRow(itemsTable, String.valueOf(sNo++), "Intercity Chauffeur Passenger Rental (" + cleanCity(pickupCity) + " to " + cleanCity(dropCity) + ")", "9966", "1 Trip", "Rs " + formatCurrency(baseRentalFare), normalFont, normalFont, metaFont, normalFont, normalBoldFont, borderColor);
 
             // Customer Selected Add-ons (Visible across ALL Scenarios 1, 2, 3)
             for (BookingAddonItem a : addons) {
@@ -503,5 +504,92 @@ public class InvoicePdfGeneratorService {
             return booking.getCustomer().getPhone();
         }
         return "+91 Contact on File";
+    }
+
+    private String cleanCity(String city) {
+        if (city == null || city.isBlank()) return "";
+        // Remove parenthesized notes like (City Center / Main Landmark)
+        String cleaned = city.replaceAll("\\s*\\([^)]*\\)", "");
+        // Split on comma or dash or slash
+        String[] parts = cleaned.split("[,\\-/]");
+        if (parts.length > 0 && !parts[0].trim().isBlank()) {
+            return parts[0].trim();
+        }
+        return city.trim();
+    }
+
+    private String resolveVehicleDisplayName(Booking booking) {
+        String rawModel = null;
+        if (booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getModel() != null) {
+            rawModel = booking.getAssignedVehicle().getModel().trim();
+        } else if (booking.getManualVehicleModel() != null && !booking.getManualVehicleModel().isBlank()) {
+            rawModel = booking.getManualVehicleModel().trim();
+        }
+
+        String category = booking.getVehicleCategory() != null ? booking.getVehicleCategory().trim() : null;
+        if (category == null && booking.getAssignedVehicle() != null && booking.getAssignedVehicle().getVehicleType() != null) {
+            category = booking.getAssignedVehicle().getVehicleType().trim();
+        }
+
+        boolean isGeneric = rawModel == null || rawModel.isBlank()
+                || rawModel.equalsIgnoreCase("Commercial Vehicle")
+                || rawModel.equalsIgnoreCase("Commercial Fleet")
+                || rawModel.equalsIgnoreCase("Commercial AC Fleet")
+                || rawModel.equalsIgnoreCase("Commercial")
+                || rawModel.equalsIgnoreCase("Fleet")
+                || rawModel.equalsIgnoreCase("Vehicle")
+                || rawModel.equalsIgnoreCase("Cab")
+                || rawModel.equalsIgnoreCase("Car");
+
+        if (!isGeneric) {
+            return rawModel;
+        }
+
+        return formatCategoryName(category);
+    }
+
+    private String formatCategoryName(String cat) {
+        if (cat == null || cat.isBlank()) return "AC Cab";
+        String upper = cat.toUpperCase();
+        if (upper.contains("SUV_6") || upper.equals("SUV-6") || upper.equals("SUV6")) return "SUV (6 Seater)";
+        if (upper.contains("SUV_7") || upper.equals("SUV-7") || upper.equals("SUV7")) return "SUV (7 Seater)";
+        if (upper.contains("SUV")) return "SUV (6 Seater)";
+        if (upper.contains("SEDAN")) return "Sedan (Dzire / Etios)";
+        if (upper.contains("INNOVA")) return "Innova Crysta";
+        if (upper.contains("HATCHBACK")) return "Hatchback (WagonR / Swift)";
+        if (upper.contains("TEMPO") || upper.contains("TRAVELLER")) return "Tempo Traveller";
+        return cat.replace("_", " ");
+    }
+
+    private Integer resolveBookedDistanceKm(Booking booking) {
+        if (booking.getActualKm() != null && booking.getActualKm() > 0) {
+            return (int) Math.round(booking.getActualKm());
+        }
+        if (booking.getSpecialInstructions() != null) {
+            java.util.regex.Matcher mDist = java.util.regex.Pattern.compile("Distance:\\s*(\\d+(\\.\\d+)?)\\s*km", java.util.regex.Pattern.CASE_INSENSITIVE)
+                    .matcher(booking.getSpecialInstructions());
+            if (mDist.find()) {
+                try {
+                    return (int) Math.round(Double.parseDouble(mDist.group(1)));
+                } catch (Exception ignored) {}
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal resolveExtraKmRate(Booking booking) {
+        if (booking.getExtraKmRate() != null && booking.getExtraKmRate().compareTo(BigDecimal.ZERO) > 0) {
+            return booking.getExtraKmRate();
+        }
+        if (booking.getSpecialInstructions() != null) {
+            java.util.regex.Matcher mRate = java.util.regex.Pattern.compile("Rate:\\s*₹?(\\d+(\\.\\d+)?)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                    .matcher(booking.getSpecialInstructions());
+            if (mRate.find()) {
+                try {
+                    return new BigDecimal(mRate.group(1));
+                } catch (Exception ignored) {}
+            }
+        }
+        return null;
     }
 }

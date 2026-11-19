@@ -32,6 +32,7 @@ import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import { vendorApi } from "@/lib/vendorApi";
+import AssignDriverModal from "@/components/trips/AssignDriverModal";
 import { formatINR } from "@/lib/utils";
 
 export default function BookingDetailsPage({ params }) {
@@ -42,6 +43,7 @@ export default function BookingDetailsPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [previewImage, setPreviewImage] = useState(null); // { url, title }
+  const [assigningDriver, setAssigningDriver] = useState(false);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -567,9 +569,20 @@ export default function BookingDetailsPage({ params }) {
               
               {/* Driver Box */}
               <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Assigned Chauffeur
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Assigned Chauffeur
+                  </span>
+                  {!isTripCompleted && (
+                    <button
+                      type="button"
+                      onClick={() => setAssigningDriver(true)}
+                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {booking.driverName ? "Change Driver" : "Assign Driver"}
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-slate-900 text-amber-400 font-black text-sm flex items-center justify-center shrink-0">
                     {booking.driverName ? booking.driverName.charAt(0) : "D"}
@@ -688,6 +701,26 @@ export default function BookingDetailsPage({ params }) {
         </div>
 
       </div>
+
+      {/* Assign Driver Modal */}
+      {assigningDriver && (
+        <AssignDriverModal
+          isOpen={assigningDriver}
+          onClose={() => setAssigningDriver(false)}
+          trip={booking}
+          onSuccess={(updated) => {
+            if (updated) {
+              setBooking((prev) => ({
+                ...prev,
+                ...updated,
+                driverName: updated.driverName || prev.driverName,
+                driverPhone: updated.driverPhone || prev.driverPhone,
+                status: updated.status || prev.status
+              }));
+            }
+          }}
+        />
+      )}
 
     </div>
   );

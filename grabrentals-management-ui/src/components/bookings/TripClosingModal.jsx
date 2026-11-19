@@ -21,7 +21,8 @@ import {
   Trash2,
   FileText,
   Building2,
-  User
+  User,
+  KeyRound
 } from "lucide-react";
 import { formatINR, printDocumentPdf } from "@/lib/utils";
 import { operationsApi } from "@/lib/operationsApi";
@@ -263,6 +264,55 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
   const [upiProofPreview, setUpiProofPreview] = useState(null);
   const [uploadingUpiProof, setUploadingUpiProof] = useState(false);
   const [closingNotes, setClosingNotes] = useState(trip?.tripClosingNotes || "");
+  const [billingOtp, setBillingOtp] = useState("");
+  const [billingOtpSent, setBillingOtpSent] = useState(false);
+  const [sendingBillingOtp, setSendingBillingOtp] = useState(false);
+  const [billingOtpSuccessMsg, setBillingOtpSuccessMsg] = useState("");
+  const [billingOtpVerified, setBillingOtpVerified] = useState(false);
+  const [verifyingBillingOtp, setVerifyingBillingOtp] = useState(false);
+  const [otpError, setOtpError] = useState("");
+
+  const canSendBillingOtp = useMemo(() => {
+    const e = Number(endKm);
+    const s = Number(startKm);
+    if (!endKm || isNaN(e) || e <= 0) return false;
+    if (!isNaN(s) && e < s) return false;
+    return true;
+  }, [endKm, startKm]);
+
+  const canProceedToStep2 = useMemo(() => {
+    return Boolean(
+      canSendBillingOtp &&
+      billingOtp &&
+      billingOtp.trim().length === 6 &&
+      !verifyingBillingOtp
+    );
+  }, [canSendBillingOtp, billingOtp, verifyingBillingOtp]);
+
+  const isOtpPhase = useMemo(() => {
+    return !billingOtpSent && (!billingOtp || billingOtp.trim().length !== 6);
+  }, [billingOtpSent, billingOtp]);
+
+  const handleSendBillingOtp = async () => {
+    const kmNum = Number(endKm);
+    if (!endKm || isNaN(kmNum) || kmNum <= 0) {
+      setErrorMessage("Please enter a valid closing odometer reading (KM) before requesting Billing OTP.");
+      return;
+    }
+    setSendingBillingOtp(true);
+    setErrorMessage("");
+    setBillingOtpSuccessMsg("");
+    try {
+      await operationsApi.sendBillingOtp(bookingIdentifier, kmNum);
+      setBillingOtpSent(true);
+      setBillingOtpSuccessMsg("Billing OTP sent to guest mobile number via SMS!");
+    } catch (err) {
+      console.warn("Failed to dispatch billing OTP:", err);
+      setErrorMessage(err?.response?.data?.message || err?.message || "Could not dispatch Billing OTP SMS. Please try again.");
+    } finally {
+      setSendingBillingOtp(false);
+    }
+  };
 
   const [submitting, setSubmitting] = useState(false);
   const [completedSuccess, setCompletedSuccess] = useState(null);
@@ -544,9 +594,10 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
   };
 
   // Step 1 Validation -> Proceed to Step 2
-  const handleProceedToStep2 = (e) => {
+  const handleProceedToStep2 = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setErrorMessage("");
+    setOtpError("");
 
     // Validate Fleet if unallocated or editing fleet
     if (!hasAssignedFleet || showFleetEdit) {
@@ -580,7 +631,34 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
       return;
     }
 
-    setStep(2);
+    const cleanOtp = billingOtp ? billingOtp.trim() : "";
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setOtpError("Please enter the 6-digit Customer Billing OTP shared by the guest.");
+      setErrorMessage("");
+      return;
+    }
+
+    if (billingOtpVerified) {
+      setStep(2);
+      return;
+    }
+
+    setVerifyingBillingOtp(true);
+    try {
+      await operationsApi.verifyBillingOtp(bookingIdentifier, cleanOtp);
+      setBillingOtpVerified(true);
+      setErrorMessage("");
+      setOtpError("");
+      setStep(2);
+    } catch (err) {
+      console.warn("Billing OTP verification failed via operations API:", err);
+      const msg = err?.response?.data?.message || err?.message || "Invalid Billing OTP. Please check the closing KM in the vehicle odometer and confirm the OTP with the guest.";
+      setOtpError(msg);
+      setErrorMessage("");
+      setBillingOtpVerified(false);
+    } finally {
+      setVerifyingBillingOtp(false);
+    }
   };
 
   // Step 2 -> Proceed to Step 3
@@ -594,7 +672,13 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
   const handleFormSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (step === 1) {
-      handleProceedToStep2(e);
+      if (isOtpPhase) {
+        if (canSendBillingOtp) {
+          handleSendBillingOtp();
+        }
+      } else {
+        handleProceedToStep2(e);
+      }
     } else if (step === 2) {
       handleProceedToStep3(e);
     } else if (step === 3) {
@@ -643,7 +727,8 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
         paymentMethod: paymentMethod || "CASH",
         paymentProofUrl: upiProofPreview || null,
         startOdometerProofUrl: trip?.startOdometerProofUrl || trip?.startOdometerProof || null,
-        endOdometerProofUrl: endOdometerPreview || null
+        endOdometerProofUrl: endOdometerPreview || null,
+        billingOtp: billingOtp.trim() || null
       };
 
       const bookingIdentifier = trip?.rawId || trip?.bookingReference || trip?.id;
@@ -1229,6 +1314,79 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                             KM
                           </span>
                         </div>
+                        {/* Customer Billing OTP Input in Step 1 (Revealed once OTP is requested or exists) */}
+                        {(billingOtpSent || (billingOtp && billingOtp.length > 0)) && (
+                          <div className="mt-2.5 pt-2 border-t border-amber-200/70 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[10px] sm:text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Guest Billing OTP</span>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={handleSendBillingOtp}
+                                disabled={sendingBillingOtp || !canSendBillingOtp}
+                                className="text-[10px] font-bold text-amber-700 hover:text-amber-900 underline cursor-pointer disabled:opacity-50"
+                              >
+                                {sendingBillingOtp ? "Sending..." : "Resend SMS"}
+                              </button>
+                            </div>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={6}
+                                autoFocus
+                                value={billingOtp}
+                                onChange={(e) => {
+                                  setBillingOtp(e.target.value.replace(/\D/g, ""));
+                                  setBillingOtpVerified(false);
+                                  setOtpError("");
+                                  setErrorMessage("");
+                                }}
+                                placeholder="Enter 6-digit OTP"
+                                className={`w-full px-3 py-2 text-sm font-mono tracking-widest text-slate-900 rounded-xl focus:outline-none focus:ring-2 font-bold placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 transition-colors ${
+                                  otpError
+                                    ? "bg-rose-50/50 border border-rose-300 focus:border-rose-500 focus:ring-rose-500/20"
+                                    : billingOtpVerified
+                                    ? "bg-emerald-50/50 border border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/20"
+                                    : "bg-amber-50/40 border border-amber-300 focus:border-amber-500 focus:ring-amber-500/20"
+                                }`}
+                              />
+                              {verifyingBillingOtp && (
+                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
+                                </div>
+                              )}
+                              {!verifyingBillingOtp && billingOtpVerified && (
+                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                </div>
+                              )}
+                              {!verifyingBillingOtp && otpError && (
+                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  <AlertCircle className="w-4 h-4 text-rose-500" />
+                                </div>
+                              )}
+                            </div>
+                            {otpError && (
+                              <p className="mt-1 text-[10px] font-bold text-rose-600 flex items-center gap-1 animate-in fade-in">
+                                <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                                <span>{otpError}</span>
+                              </p>
+                            )}
+                            {billingOtpSuccessMsg && !otpError && (
+                              <p className="mt-1 text-[10px] font-medium text-emerald-700 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                <span>{billingOtpSuccessMsg}</span>
+                              </p>
+                            )}
+                            <p className="mt-1 text-[10px] text-slate-500 leading-tight">
+                              Ask the guest to check the closing odometer ({endKm || 0} KM) on their SMS and share this OTP.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1721,16 +1879,77 @@ export function TripClosingModal({ isOpen, onClose, trip, onTripCompleted, onSuc
                 </button>
               )}
 
-              {step < 3 ? (
+              {step === 1 ? (
+                <div className="flex items-center gap-2">
+                  {isOtpPhase ? (
+                    <>
+                      {!canSendBillingOtp && (
+                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline-block">
+                          Enter closing KM to send OTP
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleSendBillingOtp}
+                        disabled={sendingBillingOtp || !canSendBillingOtp}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all ${
+                          canSendBillingOtp && !sendingBillingOtp
+                            ? "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md shadow-amber-500/20 cursor-pointer"
+                            : "bg-slate-200 text-slate-400 border border-slate-300/60 cursor-not-allowed opacity-75 shadow-none"
+                        }`}
+                      >
+                        {sendingBillingOtp ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-950" />
+                            <span>Sending Billing OTP SMS...</span>
+                          </>
+                        ) : (
+                          <>
+                            <KeyRound className="w-3.5 h-3.5" />
+                            <span>Send Billing OTP SMS</span>
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {!canProceedToStep2 && (
+                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline-block">
+                          Enter 6-digit OTP to proceed
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        disabled={verifyingBillingOtp || !canProceedToStep2}
+                        onClick={handleProceedToStep2}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all ${
+                          canProceedToStep2 && !verifyingBillingOtp
+                            ? "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md shadow-amber-500/20 cursor-pointer"
+                            : "bg-slate-200 text-slate-400 border border-slate-300/60 cursor-not-allowed opacity-75 shadow-none"
+                        }`}
+                      >
+                        {verifyingBillingOtp ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-950" />
+                            <span>Verifying OTP...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Proceed to Expenses</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : step === 2 ? (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    if (step === 1) handleProceedToStep2(e);
-                    else if (step === 2) handleProceedToStep3(e);
-                  }}
+                  onClick={handleProceedToStep3}
                   className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                 >
-                  <span>{step === 1 ? "Proceed to Expenses" : "Proceed to Settlement"}</span>
+                  <span>Proceed to Settlement</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               ) : (

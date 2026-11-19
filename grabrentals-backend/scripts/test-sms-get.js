@@ -9,7 +9,7 @@
 const https = require("https");
 
 const API_KEY = process.env.SMS_API_KEY || "sYAcUA9UFjzDFnm1qgEiD6uamY3XJf3mSSIzdPuU3_s";
-const SENDER_ID = process.env.SMS_SENDER_ID || "GBRNTL";
+const SENDER_ID = process.env.SMS_SENDER_ID || "GRABRE";
 const TEMPLATE_ID = process.env.SMS_TEMPLATE_ID || "1777179377548103665";
 const BASE_URL = "https://portal.weformsolution.com/sms/api/send-campaign";
 

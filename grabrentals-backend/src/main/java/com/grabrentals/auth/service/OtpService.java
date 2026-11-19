@@ -59,7 +59,7 @@ public class OtpService {
     @Value("${app.sms.template-id:}")
     private String smsTemplateId;
 
-    @Value("${app.sms.campaign-name:API TEST}")
+    @Value("${app.sms.campaign-name:}")
     private String smsCampaignName;
 
     @Value("${app.otp.expose-dev-otp:false}")

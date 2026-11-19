@@ -283,7 +283,14 @@ export default function DriverDashboardPage() {
       sortable: false,
       render: (t) => {
         const rawSt = String(t.rawStatus || t.status || "").toUpperCase();
-        const isReadyToStart = rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED";
+        const hasVehicle = Boolean(
+          t.vehicleNumber && 
+          t.vehicleNumber !== "Assigned by Fleet" && 
+          t.vehicleNumber !== "Unassigned" && 
+          t.vehicleNumber !== "Assigned" && 
+          t.vehicleNumber.trim().length > 0
+        );
+        const isReadyToStart = (rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED") && hasVehicle;
         const isActive = rawSt === "ON_THE_WAY" || rawSt === "IN_TRANSIT" || rawSt === "ACTIVE";
         const isCompleted = rawSt === "COMPLETED";
 

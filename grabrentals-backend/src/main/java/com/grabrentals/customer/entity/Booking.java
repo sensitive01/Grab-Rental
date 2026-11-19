@@ -185,6 +185,9 @@ public class Booking {
     @Column(name = "ride_otp", length = 10)
     private String rideOtp;
 
+    @Column(name = "billing_otp", length = 10)
+    private String billingOtp;
+
     // === Trip Closing & End-of-Trip Extras ===
     @Column(name = "start_km")
     private Double startKm;

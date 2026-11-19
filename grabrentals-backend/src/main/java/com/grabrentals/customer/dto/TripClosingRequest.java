@@ -40,5 +40,6 @@ public class TripClosingRequest {
     private String paymentProofUrl;
     private String endOdometerProofUrl;
     private String startOdometerProofUrl;
+    private String billingOtp;
 }
 

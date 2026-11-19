@@ -1031,8 +1031,10 @@ function SelectVehicleContent() {
     const isRound = (newTrip.tripType || "").toLowerCase().includes("round");
     const sanitizedTrip = {
       ...newTrip,
-      dropDate: isRound ? newTrip.dropDate : undefined,
-      returnDate: isRound ? newTrip.returnDate : undefined,
+      pickupDate: newTrip.date || newTrip.pickupDate,
+      pickupTime: newTrip.time || newTrip.pickupTime,
+      dropDate: isRound ? (newTrip.dropDate || newTrip.returnDate) : undefined,
+      returnDate: isRound ? (newTrip.dropDate || newTrip.returnDate) : undefined,
     };
     setBackendDistance(null);
     setGoogleRouteDetails(null);
@@ -1048,9 +1050,18 @@ function SelectVehicleContent() {
       if (sanitizedTrip.tripType) params.set("tripType", sanitizedTrip.tripType);
       if (sanitizedTrip.fromCity) params.set("fromCity", sanitizedTrip.fromCity);
       if (sanitizedTrip.toCity) params.set("toCity", sanitizedTrip.toCity);
-      if (sanitizedTrip.date) params.set("date", sanitizedTrip.date);
-      if (sanitizedTrip.time) params.set("time", sanitizedTrip.time);
-      if (isRound && sanitizedTrip.dropDate) params.set("dropDate", sanitizedTrip.dropDate);
+      if (sanitizedTrip.date || sanitizedTrip.pickupDate) {
+        params.set("pickupDate", sanitizedTrip.date || sanitizedTrip.pickupDate);
+        params.set("date", sanitizedTrip.date || sanitizedTrip.pickupDate);
+      }
+      if (sanitizedTrip.time || sanitizedTrip.pickupTime) {
+        params.set("pickupTime", sanitizedTrip.time || sanitizedTrip.pickupTime);
+        params.set("time", sanitizedTrip.time || sanitizedTrip.pickupTime);
+      }
+      if (isRound && (sanitizedTrip.dropDate || sanitizedTrip.returnDate)) {
+        params.set("dropDate", sanitizedTrip.dropDate || sanitizedTrip.returnDate);
+        params.set("returnDate", sanitizedTrip.dropDate || sanitizedTrip.returnDate);
+      }
       if (sanitizedTrip.stops) params.set("stops", sanitizedTrip.stops);
       router.replace(`/outstation/select-vehicle?${params.toString()}`, { scroll: false });
     } catch (e) {

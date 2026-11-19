@@ -150,4 +150,41 @@ class InvoicePdfGeneratorServiceTest {
             assertEquals("%PDF-", new String(pdfBytes, 0, 5));
         }
     }
+
+    @Test
+    @DisplayName("Scenario 2: Generate Confirmed Duty Voucher with Generic Vehicle and Noisy Cities (GR-2026-GRCGW)")
+    void testScenario2GenericVehicleAndNoisyCities() {
+        Vehicle genericVehicle = Vehicle.builder()
+                .model("Commercial Vehicle")
+                .vehicleNumber("MH89HY6543")
+                .build();
+
+        Driver driver = Driver.builder()
+                .name("Dhaveethu")
+                .phone("9994646822")
+                .build();
+
+        Booking booking = Booking.builder()
+                .bookingReference("GR-2026-GRCGW")
+                .passengerName("Bharath")
+                .passengerPhone("+919345004690")
+                .pickupCity("Chennai, Tamil Nadu, - 600026, Chennai")
+                .dropCity("Bengaluru, Bangalore, Karnataka (City Center / Main Landmark), Bengaluru, Bangalore, Karnataka")
+                .tripType("ONE_WAY")
+                .vehicleCategory("SUV_6")
+                .assignedVehicle(genericVehicle)
+                .assignedDriver(driver)
+                .pickupDateTime(LocalDateTime.of(2026, 11, 21, 13, 30))
+                .totalFare(new BigDecimal("8231.00"))
+                .advancePaid(BigDecimal.ZERO)
+                .dueAmount(new BigDecimal("8231.00"))
+                .specialInstructions("Distance: 343 km | Rate: 12")
+                .status(BookingStatus.CONFIRMED)
+                .build();
+
+        byte[] pdf = service.generatePdf(booking, 2);
+        assertNotNull(pdf);
+        assertTrue(pdf.length > 1000);
+        assertEquals("%PDF-", new String(pdf, 0, 5));
+    }
 }

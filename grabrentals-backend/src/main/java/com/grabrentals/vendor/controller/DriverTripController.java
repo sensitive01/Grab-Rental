@@ -5,6 +5,9 @@ import com.grabrentals.common.response.ApiResponse;
 import com.grabrentals.customer.dto.BookingResponse;
 import com.grabrentals.customer.dto.BookingStatusUpdateRequest;
 import com.grabrentals.customer.dto.TripClosingRequest;
+import com.grabrentals.customer.dto.StartOtpRequest;
+import com.grabrentals.customer.dto.VerifyOtpRequest;
+import com.grabrentals.customer.dto.BillingOtpRequest;
 import com.grabrentals.customer.entity.BookingStatus;
 import com.grabrentals.customer.service.CustomerBookingService;
 import com.grabrentals.security.CustomUserDetails;
@@ -67,6 +70,62 @@ public class DriverTripController {
         log.info("[DRIVER API] PATCH /api/driver/trips/{}/status to {} by chauffeur '{}'", idOrRef, request.getStatus(), driverUser.getPhone());
         BookingResponse response = bookingService.updateTripStatus(idOrRef, request, driverUser);
         return ResponseEntity.ok(ApiResponse.success("Trip status updated successfully to " + request.getStatus(), response));
+    }
+
+    @PostMapping("/{idOrRef}/send-start-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> sendStartOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @RequestBody(required = false) StartOtpRequest request
+    ) {
+        User driverUser = getUser(userDetails);
+        Double startKm = request != null ? request.getStartKm() : null;
+        log.info("[DRIVER API] POST /api/driver/trips/{}/send-start-otp by chauffeur '{}', startKm={}", idOrRef, driverUser.getPhone(), startKm);
+        BookingResponse response = bookingService.sendStartRideOtp(idOrRef, startKm, driverUser);
+        return ResponseEntity.ok(ApiResponse.success("Trip Start OTP dispatched to customer via SMS", response));
+    }
+
+    @PostMapping("/{idOrRef}/verify-start-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> verifyStartOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @Valid @RequestBody VerifyOtpRequest request
+    ) {
+        User driverUser = getUser(userDetails);
+        log.info("[DRIVER API] POST /api/driver/trips/{}/verify-start-otp by chauffeur '{}'", idOrRef, driverUser.getPhone());
+        BookingResponse response = bookingService.verifyStartRideOtp(
+                idOrRef, 
+                request.getOtp(), 
+                request.getStartKm(), 
+                request.getStartOdometerProofUrl(), 
+                driverUser
+        );
+        return ResponseEntity.ok(ApiResponse.success("Trip Start OTP verified successfully. Ride commenced.", response));
+    }
+
+    @PostMapping("/{idOrRef}/send-billing-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> sendBillingOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @RequestBody(required = false) BillingOtpRequest request
+    ) {
+        User driverUser = getUser(userDetails);
+        Double endKm = request != null ? request.getEndKm() : null;
+        log.info("[DRIVER API] POST /api/driver/trips/{}/send-billing-otp by chauffeur '{}', endKm={}", idOrRef, driverUser.getPhone(), endKm);
+        BookingResponse response = bookingService.sendBillingOtp(idOrRef, endKm, driverUser);
+        return ResponseEntity.ok(ApiResponse.success("Billing OTP dispatched to customer via SMS", response));
+    }
+
+    @PostMapping("/{idOrRef}/verify-billing-otp")
+    public ResponseEntity<ApiResponse<BookingResponse>> verifyBillingOtp(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String idOrRef,
+            @Valid @RequestBody VerifyOtpRequest request
+    ) {
+        User driverUser = getUser(userDetails);
+        log.info("[DRIVER API] POST /api/driver/trips/{}/verify-billing-otp by chauffeur '{}'", idOrRef, driverUser.getPhone());
+        BookingResponse response = bookingService.verifyBillingOtp(idOrRef, request.getOtp(), driverUser);
+        return ResponseEntity.ok(ApiResponse.success("Billing OTP verified successfully", response));
     }
 
     @PostMapping("/{idOrRef}/complete-trip")

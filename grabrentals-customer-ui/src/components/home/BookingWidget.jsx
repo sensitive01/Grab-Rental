@@ -191,18 +191,174 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
     };
   }, [t]);
 
+  // Restore and persist search state (from sessionStorage and URL searchParams)
+  const restoreSearchState = () => {
+    if (typeof window === "undefined") return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    try {
+      let data = null;
+      const stored = sessionStorage.getItem("grab_pending_trip");
+      if (stored) {
+        try {
+          data = JSON.parse(stored);
+        } catch {}
+      }
+
+      // Check URL parameters for explicit overrides
+      const urlFrom = searchParams?.get("from");
+      const urlTo = searchParams?.get("to");
+      const urlDate = searchParams?.get("pickupDate") || searchParams?.get("date");
+      const urlTime = searchParams?.get("pickupTime") || searchParams?.get("time");
+      const urlDropDate = searchParams?.get("dropDate") || searchParams?.get("returnDate");
+      const urlTripType = searchParams?.get("tripType");
+      const urlService = searchParams?.get("serviceType") || searchParams?.get("service");
+      const urlStops = searchParams?.get("stops");
+      const urlPackage = searchParams?.get("package");
+      const urlAirport = searchParams?.get("airport");
+      const urlAirportTripType = searchParams?.get("airportTripType");
+      const urlCab = searchParams?.get("cabType") || searchParams?.get("cab") || searchParams?.get("fleet");
+
+      if (!data && !urlFrom && !urlTo && !urlDate && !urlService && !urlTripType) {
+        return;
+      }
+
+      const merged = {
+        ...data,
+        from: urlFrom || data?.from,
+        to: urlTo || data?.to,
+        pickupDate: urlDate || data?.pickupDate || data?.date,
+        pickupTime: urlTime || data?.pickupTime || data?.time,
+        dropDate: urlDropDate || data?.dropDate || data?.returnDate,
+        tripType: urlTripType || data?.tripType,
+        serviceType: urlService || data?.serviceType,
+        stops: urlStops !== undefined && urlStops !== null ? urlStops : data?.stops,
+        package: urlPackage || data?.package,
+        airport: urlAirport || data?.airport,
+        airportTripType: urlAirportTripType || data?.airportTripType,
+        cabType: urlCab || data?.cabType,
+      };
+
+      // 1. Service Type / Tab
+      let resolvedTab = activeTab;
+      if (merged.serviceType) {
+        const s = merged.serviceType.toLowerCase();
+        if (s.includes("local")) resolvedTab = "local";
+        else if (s.includes("airport")) resolvedTab = "airport";
+        else if (s.includes("package")) resolvedTab = "package";
+        else if (!isEvCabsPage) resolvedTab = "outstation";
+        else resolvedTab = "local";
+      }
+      setActiveTab(resolvedTab);
+
+      // 2. Trip Type
+      if (merged.tripType) {
+        const t = merged.tripType.toLowerCase();
+        if (t.includes("one")) {
+          setTripType("one-way");
+        } else if (t.includes("multi")) {
+          setTripType("multi-city-tour");
+        } else {
+          setTripType("round-trip");
+        }
+      }
+
+      // 3. Airport specific settings
+      if (merged.airportTripType) {
+        setAirportTripType(merged.airportTripType);
+      } else if (merged.tripType && merged.tripType.toLowerCase().includes("pickup")) {
+        setAirportTripType("pickup");
+      } else if (merged.tripType && merged.tripType.toLowerCase().includes("drop")) {
+        setAirportTripType("drop");
+      }
+      if (merged.airport) {
+        setSelectedAirport(merged.airport);
+        const found = AIRPORT_LIST.find((a) => a.name === merged.airport || a.id === merged.airport);
+        if (found) {
+          setAirportCoords({ lat: found.lat, lng: found.lng });
+        }
+      }
+
+      // 4. Locations & Coordinates
+      if (merged.from) {
+        setPickupCity(merged.from);
+      }
+      if (merged.to && resolvedTab !== "local") {
+        setDropCity(merged.to);
+      }
+      if (merged.stops) {
+        const parsedStops = Array.isArray(merged.stops)
+          ? merged.stops
+          : typeof merged.stops === "string" && merged.stops.trim()
+            ? merged.stops.split("|").map((s) => s.trim()).filter(Boolean)
+            : [];
+        setStops(parsedStops);
+      }
+      if (merged.pickupCoords) setPickupCoords(merged.pickupCoords);
+      if (merged.dropCoords) setDropCoords(merged.dropCoords);
+      if (merged.stopsCoords) setStopsCoords(merged.stopsCoords);
+      if (merged.pickupDetails) setPickupDetails(merged.pickupDetails);
+      if (merged.dropDetails) setDropDetails(merged.dropDetails);
+
+      // 5. Dates & Times
+      if (merged.pickupDate) {
+        const sanitized = sanitizePickupDateTime(merged.pickupDate, merged.pickupTime || pickupTime);
+        setPickupDate(sanitized.date);
+        if (sanitized.time) setPickupTime(sanitized.time);
+      } else if (merged.pickupTime) {
+        setPickupTime(merged.pickupTime);
+      }
+
+      if (merged.dropDate) {
+        setDropDate(merged.dropDate);
+      }
+
+      // 6. Local Hourly Package
+      if (merged.package) {
+        setSelectedPackage(merged.package);
+      } else if (merged.to && merged.to.includes("hr")) {
+        setSelectedPackage(merged.to);
+      }
+
+      // 7. Cab class
+      if (merged.cabType) {
+        setSelectedCab(merged.cabType.toLowerCase().trim());
+      }
+    } catch (err) {
+      console.warn("Could not restore search state in BookingWidget:", err);
+    }
+  };
+
+  // Mount effect & popstate listener for state persistence on browser Back/Forward
+  useEffect(() => {
+    restoreSearchState();
+    const handlePopState = () => {
+      restoreSearchState();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   // Synchronize active tab with URL path changes (e.g. when user clicks a service in top navbar)
   useEffect(() => {
+    const isDedicatedRoute = pathname === "/local" || pathname?.startsWith("/local/") ||
+                             pathname === "/airport" || pathname?.startsWith("/airport/") ||
+                             pathname === "/packages" || pathname?.startsWith("/packages/") ||
+                             pathname === "/ev-cabs" || pathname?.startsWith("/ev-cabs/");
+
     let matchedTab = getTabFromPath(pathname, isEvCabsPage);
     if (isEvCabsPage && matchedTab === "outstation") {
       matchedTab = "local";
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActiveTab(matchedTab);
-    if (matchedTab === "package" || matchedTab === "outstation") {
-      setTripType("round-trip");
-    } else if (matchedTab === "local") {
-      setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : (localPackages[0]?.value || "4hr-40km")));
+
+    if (isDedicatedRoute) {
+      setActiveTab(matchedTab);
+      if (matchedTab === "package") {
+        setTripType("round-trip");
+      } else if (matchedTab === "local") {
+        setSelectedPackage((prev) => (prev && prev.includes("hr") ? prev : (localPackages[0]?.value || "4hr-40km")));
+      }
     }
 
     if (tabsRef.current) {
@@ -237,7 +393,7 @@ function BookingWidgetInner({ isDropdownMode = false, hideOutstationTab = false 
     } else if (pathname === "/ev-cabs" || pathname?.startsWith("/ev-cabs")) {
       setSelectedCab("ev");
     } else if (pathname === "/" || pathname === "/book") {
-      if (!paramCab) setSelectedCab("");
+      if (!paramCab && !sessionStorage.getItem("grab_pending_trip")) setSelectedCab("");
     }
     const urlService = searchParams?.get("service") || searchParams?.get("tripType");
     if (urlService) {

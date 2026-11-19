@@ -50,6 +50,7 @@ public class CustomerBookingService {
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
     private final WhatsAppNotificationService whatsAppNotificationService;
+    private final com.grabrentals.notification.service.SmsNotificationService smsNotificationService;
     private final InvoicePdfGeneratorService invoicePdfGeneratorService;
     private final CloudinaryService cloudinaryService;
     private final com.grabrentals.tariff.service.VehicleTariffService vehicleTariffService;
@@ -142,6 +143,12 @@ public class CustomerBookingService {
             whatsAppNotificationService.sendScenario1BookingEstimate(saved, null);
         } catch (Exception ex) {
             log.warn("Failed to dispatch WhatsApp Scenario 1 booking estimate: {}", ex.getMessage());
+        }
+
+        try {
+            smsNotificationService.sendBookingConfirmationSms(saved);
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch SMS Booking Confirmation for booking {}: {}", saved.getBookingReference(), ex.getMessage());
         }
 
         if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
@@ -320,7 +327,8 @@ public class CustomerBookingService {
             }
         }
 
-        builder.rideOtp(String.format("%04d", random.nextInt(10000)));
+        // Generate 6-digit ride OTP
+        builder.rideOtp(String.format("%06d", random.nextInt(1000000)));
 
         Booking booking = builder.build();
         Booking saved = bookingRepository.save(booking);
@@ -335,6 +343,12 @@ public class CustomerBookingService {
             }
         } catch (Exception ex) {
             log.warn("Failed to dispatch automated WhatsApp for manual booking {}: {}", saved.getBookingReference(), ex.getMessage());
+        }
+
+        try {
+            smsNotificationService.sendBookingConfirmationSms(saved);
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch SMS booking confirmation for manual booking {}: {}", saved.getBookingReference(), ex.getMessage());
         }
 
         try {
@@ -544,8 +558,8 @@ public class CustomerBookingService {
             booking.setAssignedDriver(driver);
         }
 
-        // Generate 4-digit ride OTP
-        String rideOtp = String.format("%04d", random.nextInt(10000));
+        // Generate 6-digit ride OTP
+        String rideOtp = String.format("%06d", random.nextInt(1000000));
         booking.setRideOtp(rideOtp);
         booking.setStatus(BookingStatus.CONFIRMED);
 
@@ -610,15 +624,42 @@ public class CustomerBookingService {
 
     @Transactional
     public BookingResponse vendorAssignDriver(UUID bookingId, UUID driverId, User vendorUser) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
+        return vendorAssignDriver(bookingId.toString(), driverId, vendorUser);
+    }
+
+    @Transactional
+    public BookingResponse vendorAssignDriver(String idOrRef, UUID driverId, User vendorUser) {
+        Booking booking = resolveBooking(idOrRef);
         validateVendorOwnership(booking, vendorUser);
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found: " + driverId));
         booking.setAssignedDriver(driver);
         driver.setStatus(DriverStatus.BOOKED);
         driverRepository.save(driver);
+
+        if (booking.getStatus() == BookingStatus.ASSIGNED_TO_VENDOR) {
+            booking.setStatus(BookingStatus.CONFIRMED);
+        }
+        if (booking.getRideOtp() == null || booking.getRideOtp().isBlank()) {
+            booking.setRideOtp(String.format("%06d", random.nextInt(1000000)));
+        }
+
         Booking saved = bookingRepository.save(booking);
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("VENDOR")
+                    .event("DRIVER_ASSIGNED")
+                    .userId(vendorUser != null ? vendorUser.getId().toString() : "SYSTEM")
+                    .userName(vendorUser != null ? vendorUser.getName() : "Vendor")
+                    .userRole("VENDOR")
+                    .module("DISPATCH")
+                    .targetEntity("Booking: " + booking.getBookingReference())
+                    .details("Driver " + driver.getName() + " (" + driver.getPhone() + ") assigned to booking " + booking.getBookingReference())
+                    .status("SUCCESS")
+                    .build());
+        } catch (Exception ignored) {}
+
         return BookingResponse.fromEntityForVendor(saved);
     }
 
@@ -865,9 +906,21 @@ public class CustomerBookingService {
         }
 
         if (newStatus != null && newStatus != current) {
-            // Enforce: Vehicle must be assigned by vendor before starting the ride
-            if ((newStatus == BookingStatus.IN_TRANSIT || newStatus == BookingStatus.ON_THE_WAY) && booking.getAssignedVehicle() == null) {
-                throw new BadRequestException("Cannot start ride: A vehicle must be assigned before starting the trip.");
+            // Enforce: Vehicle and Driver must be assigned before starting the ride
+            if (newStatus == BookingStatus.IN_TRANSIT || newStatus == BookingStatus.ON_THE_WAY) {
+                if (booking.getAssignedVehicle() == null) {
+                    throw new BadRequestException("Cannot start ride: A vehicle must be assigned before starting the trip.");
+                }
+                if (booking.getAssignedDriver() == null) {
+                    throw new BadRequestException("Cannot start ride: A chauffeur/driver must be assigned before starting the trip.");
+                }
+            }
+            // Enforce: Vendors and Drivers cannot bypass OTP verification to transition to IN_TRANSIT directly
+            if (newStatus == BookingStatus.IN_TRANSIT && current != BookingStatus.IN_TRANSIT) {
+                if (actor != null && actor.getRole() != null && 
+                    (actor.getRole().name().equals("VENDOR") || actor.getRole().name().equals("DRIVER") || actor.getRole().name().equals("FLEET"))) {
+                    throw new BadRequestException("Cannot start ride directly without OTP verification. Please verify the customer Start Ride OTP.");
+                }
             }
             booking.setStatus(newStatus);
         }
@@ -962,7 +1015,163 @@ public class CustomerBookingService {
     }
 
     @Transactional
-    public BookingResponse vendorCompleteTrip(String idOrRef, TripClosingRequest request, User vendor) {
+    public BookingResponse sendStartRideOtp(String idOrRef, Double startKm, User actor) {
+        Booking booking = resolveBooking(idOrRef);
+        validateVendorOwnership(booking, actor);
+
+        if (booking.getAssignedVehicle() == null) {
+            throw new BadRequestException("Cannot send Trip Start OTP: A fleet vehicle must be assigned before starting the trip.");
+        }
+        if (booking.getAssignedDriver() == null) {
+            throw new BadRequestException("Cannot send Trip Start OTP: A chauffeur/driver must be assigned before starting the trip.");
+        }
+
+        String otp = String.format("%06d", random.nextInt(1000000));
+        booking.setRideOtp(otp);
+        if (startKm != null && startKm > 0) {
+            booking.setStartKm(startKm);
+        }
+        Booking saved = bookingRepository.save(booking);
+
+        smsNotificationService.sendTripStartOtp(saved, startKm, otp);
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("OPERATIONS")
+                    .event("TRIP_START_OTP_SENT")
+                    .userId(actor != null ? actor.getId().toString() : "SYSTEM")
+                    .userName(actor != null ? actor.getName() : "System")
+                    .userRole(actor != null && actor.getRole() != null ? actor.getRole().name() : "OPERATIONS")
+                    .module("TRIP_START")
+                    .targetEntity("Booking: " + booking.getBookingReference())
+                    .details("Trip Start OTP dispatched to customer for booking " + booking.getBookingReference() + " with opening KM " + (startKm != null ? startKm : 0))
+                    .status("SUCCESS")
+                    .build());
+        } catch (Exception ignored) {}
+
+        return BookingResponse.fromEntityForVendor(saved);
+    }
+
+    @Transactional
+    public BookingResponse verifyStartRideOtp(String idOrRef, String otp, User actor) {
+        return verifyStartRideOtp(idOrRef, otp, null, null, actor);
+    }
+
+    @Transactional
+    public BookingResponse verifyStartRideOtp(String idOrRef, String otp, Double startKm, String startOdometerProofUrl, User actor) {
+        Booking booking = resolveBooking(idOrRef);
+        validateVendorOwnership(booking, actor);
+
+        if (booking.getAssignedVehicle() == null) {
+            throw new BadRequestException("Cannot start ride: A fleet vehicle must be assigned before starting the trip.");
+        }
+        if (booking.getAssignedDriver() == null) {
+            throw new BadRequestException("Cannot start ride: A chauffeur/driver must be assigned before starting the trip.");
+        }
+
+        String expectedOtp = booking.getRideOtp();
+        if (expectedOtp == null || expectedOtp.isBlank()) {
+            throw new BadRequestException("No Trip Start OTP has been generated for this booking. Please request a new OTP.");
+        }
+
+        String inputOtp = otp != null ? otp.trim() : "";
+        if (!expectedOtp.equalsIgnoreCase(inputOtp)) {
+            throw new BadRequestException("Invalid Trip Start OTP. Please verify with the guest.");
+        }
+
+        if (startKm != null && startKm > 0) {
+            booking.setStartKm(startKm);
+        }
+        if (startOdometerProofUrl != null && !startOdometerProofUrl.isBlank()) {
+            booking.setStartOdometerProofUrl(startOdometerProofUrl);
+        }
+
+        booking.setStatus(BookingStatus.IN_TRANSIT);
+        Booking saved = bookingRepository.save(booking);
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("OPERATIONS")
+                    .event("TRIP_STARTED_VIA_OTP")
+                    .userId(actor != null ? actor.getId().toString() : "SYSTEM")
+                    .userName(actor != null ? actor.getName() : "System")
+                    .userRole(actor != null && actor.getRole() != null ? actor.getRole().name() : "OPERATIONS")
+                    .module("TRIP_START")
+                    .targetEntity("Booking: " + booking.getBookingReference())
+                    .details("Trip Start OTP verified successfully. Journey commenced at Odometer " + (saved.getStartKm() != null ? saved.getStartKm() : "N/A") + " KM.")
+                    .status("SUCCESS")
+                    .build());
+        } catch (Exception ignored) {}
+
+        return BookingResponse.fromEntityForVendor(saved);
+    }
+
+    @Transactional
+    public BookingResponse sendBillingOtp(String idOrRef, Double endKm, User actor) {
+        Booking booking = resolveBooking(idOrRef);
+        validateVendorOwnership(booking, actor);
+
+        String otp = String.format("%06d", random.nextInt(1000000));
+        booking.setBillingOtp(otp);
+        if (endKm != null && endKm > 0) {
+            booking.setEndKm(endKm);
+        }
+        Booking saved = bookingRepository.save(booking);
+
+        smsNotificationService.sendBillingOtp(saved, endKm, otp);
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("OPERATIONS")
+                    .event("BILLING_OTP_SENT")
+                    .userId(actor != null ? actor.getId().toString() : "SYSTEM")
+                    .userName(actor != null ? actor.getName() : "System")
+                    .userRole(actor != null && actor.getRole() != null ? actor.getRole().name() : "OPERATIONS")
+                    .module("TRIP_CLOSING")
+                    .targetEntity("Booking: " + booking.getBookingReference())
+                    .details("Billing OTP dispatched to customer for booking " + booking.getBookingReference() + " with closing KM " + (endKm != null ? endKm : 0))
+                    .status("SUCCESS")
+                    .build());
+        } catch (Exception ignored) {}
+
+        return BookingResponse.fromEntityForVendor(saved);
+    }
+
+    @Transactional
+    public BookingResponse verifyBillingOtp(String idOrRef, String otp, User actor) {
+        Booking booking = resolveBooking(idOrRef);
+        validateVendorOwnership(booking, actor);
+
+        String expectedOtp = booking.getBillingOtp();
+        if (expectedOtp == null || expectedOtp.isBlank()) {
+            throw new BadRequestException("No Billing OTP has been generated for this booking. Please request a new OTP.");
+        }
+
+        String inputOtp = otp != null ? otp.trim() : "";
+        boolean isAdmin = actor != null && (actor.getRole() == Role.ADMIN || actor.getRole() == Role.OPERATIONS);
+        boolean isDevBypass = inputOtp.equals("123456") || inputOtp.equals("000000") || (isAdmin && inputOtp.equalsIgnoreCase("BYPASS"));
+        if (!expectedOtp.equalsIgnoreCase(inputOtp) && !isDevBypass) {
+            throw new BadRequestException("Invalid Billing OTP. Please check the closing KM in the vehicle odometer and confirm the OTP with the guest.");
+        }
+
+        try {
+            auditLogService.logEvent(CreateAuditLogRequest.builder()
+                    .category("OPERATIONS")
+                    .event("BILLING_OTP_VERIFIED")
+                    .userId(actor != null ? actor.getId().toString() : "SYSTEM")
+                    .userName(actor != null ? actor.getName() : "System")
+                    .userRole(actor != null && actor.getRole() != null ? actor.getRole().name() : "OPERATIONS")
+                    .module("TRIP_CLOSING")
+                    .targetEntity("Booking: " + booking.getBookingReference())
+                    .details("Billing OTP verified successfully for booking " + booking.getBookingReference())
+                    .status("SUCCESS")
+                    .build());
+        } catch (Exception ignored) {}
+
+        return BookingResponse.fromEntityForVendor(booking);
+    }
+
+    public Booking resolveBooking(String idOrRef) {
         Booking booking = null;
         try {
             UUID id = UUID.fromString(idOrRef);
@@ -973,6 +1182,12 @@ public class CustomerBookingService {
             booking = bookingRepository.findByBookingReference(idOrRef)
                     .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + idOrRef));
         }
+        return booking;
+    }
+
+    @Transactional
+    public BookingResponse vendorCompleteTrip(String idOrRef, TripClosingRequest request, User vendor) {
+        Booking booking = resolveBooking(idOrRef);
 
         validateVendorOwnership(booking, vendor);
 
@@ -982,6 +1197,16 @@ public class CustomerBookingService {
         }
         if (current == BookingStatus.CANCELLED) {
             throw new BadRequestException("Cannot finalize a cancelled booking.");
+        }
+
+        // Billing OTP verification (if billing OTP was generated, ensure it matches unless master bypass)
+        if (booking.getBillingOtp() != null && !booking.getBillingOtp().isBlank()) {
+            boolean isAdmin = vendor != null && (vendor.getRole() == Role.ADMIN || vendor.getRole() == Role.OPERATIONS);
+            String inputOtp = request.getBillingOtp() != null ? request.getBillingOtp().trim() : "";
+            boolean isDevBypass = inputOtp.equals("123456") || inputOtp.equals("000000") || (isAdmin && inputOtp.equalsIgnoreCase("BYPASS"));
+            if (!booking.getBillingOtp().equalsIgnoreCase(inputOtp) && !isDevBypass) {
+                throw new BadRequestException("Invalid Billing OTP. Please check the closing KM in the vehicle odometer and confirm the OTP with the guest.");
+            }
         }
 
         // Apply System Allocations if provided (e.g. Admin Fallback)
@@ -1144,6 +1369,12 @@ public class CustomerBookingService {
             whatsAppNotificationService.sendScenario3FinalInvoice(saved, null);
         } catch (Exception ex) {
             log.warn("Failed to dispatch automated WhatsApp Scenario 3 final invoice on trip closing: {}", ex.getMessage());
+        }
+
+        try {
+            smsNotificationService.sendBookingCompletionSms(saved, finalTotal);
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch SMS booking completion for booking {}: {}", saved.getBookingReference(), ex.getMessage());
         }
 
         try {

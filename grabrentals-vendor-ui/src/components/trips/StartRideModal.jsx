@@ -19,44 +19,51 @@ import {
   Check,
   Edit3
 } from "lucide-react";
-import { vendorApi } from "@/lib/vendorApi";
+import { vendorApi, driverApi } from "@/lib/vendorApi";
 
 export default function StartRideModal({ isOpen, onClose, trip, onRideStarted }) {
-  if (!isOpen || !trip) return null;
-
   // Step 1: Odometer & Proof | Step 2: Customer OTP Verification
   const [step, setStep] = useState(1);
-
-  // Derive or get the expected 4-digit OTP
-  const expectedOtp = (() => {
-    if (trip.rideOtp) return String(trip.rideOtp).trim();
-    const digits = (trip.bookingReference || trip.id || "").replace(/\D/g, "");
-    if (digits.length >= 4) return digits.slice(-4);
-    return "7429";
-  })();
-
-  const [startKm, setStartKm] = useState(trip.startKm != null ? String(trip.startKm) : "");
+  const [startKm, setStartKm] = useState(() => (trip?.startKm != null ? String(trip.startKm) : ""));
   const [odometerProof, setOdometerProof] = useState(null);
   const [odometerPreview, setOdometerPreview] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [otpInput, setOtpInput] = useState("");
   const [copiedOtp, setCopiedOtp] = useState(false);
-
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [serverOtp, setServerOtp] = useState(() => (trip?.rideOtp ? String(trip.rideOtp).trim() : ""));
+  const [resendingOtp, setResendingOtp] = useState(false);
+  const [otpResentSuccess, setOtpResentSuccess] = useState(false);
 
   const fileInputRef = useRef(null);
 
+  // Derive real 6-digit OTP for dev mode
+  const expectedOtp = serverOtp || (trip?.rideOtp ? String(trip.rideOtp).trim() : "");
+  const isDev = process.env.NODE_ENV !== "production" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
+
   // Check if a vehicle has been assigned by the vendor
   const hasVehicle = Boolean(
-    trip.vehicleNumber && 
+    trip?.vehicleNumber && 
     trip.vehicleNumber !== "Assigned by Fleet" && 
     trip.vehicleNumber !== "Unassigned" && 
-    trip.vehicleNumber !== "Pending Assignment" &&
-    trip.vehicleNumber !== "Assigned" &&
+    trip.vehicleNumber !== "Pending Assignment" && 
+    trip.vehicleNumber !== "Assigned" && 
     trip.vehicleNumber.trim().length > 0
   );
+
+  // Check if a driver has been assigned by the vendor
+  const hasDriver = Boolean(
+    trip?.driverName && 
+    trip.driverName !== "Pending Assignment" && 
+    trip.driverName !== "Unassigned" && 
+    trip.driverName !== "Assigned by Fleet" && 
+    trip.driverName.trim().length > 0
+  );
+
+  if (!isOpen || !trip) return null;
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -90,13 +97,18 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
     setErrorMessage("");
   };
 
-  // Step 1 -> Step 2 validation
-  const handleProceedToStep2 = (e) => {
+  // Step 1 -> Step 2 validation & SMS OTP dispatch
+  const handleProceedToStep2 = async (e) => {
     e.preventDefault();
     setErrorMessage("");
 
     if (!hasVehicle) {
       setErrorMessage("Cannot start ride: A fleet vehicle must be assigned by the vendor before starting the trip.");
+      return;
+    }
+
+    if (!hasDriver) {
+      setErrorMessage("Cannot start ride: A chauffeur/driver must be assigned by the vendor before starting the trip.");
       return;
     }
 
@@ -111,7 +123,42 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
       return;
     }
 
-    setStep(2);
+    setSendingOtp(true);
+    try {
+      const tripId = trip.bookingReference || trip.id;
+      const res = await driverApi.sendStartOtp(tripId, kmNum);
+      const generatedOtp = res?.rideOtp || res?.data?.rideOtp;
+      if (generatedOtp) {
+        setServerOtp(String(generatedOtp).trim());
+      }
+    } catch (err) {
+      console.warn("Notice: start OTP dispatch notice:", err);
+    } finally {
+      setSendingOtp(false);
+      setStep(2);
+    }
+  };
+
+  const handleResendStartOtp = async () => {
+    setResendingOtp(true);
+    setErrorMessage("");
+    setOtpResentSuccess(false);
+    try {
+      const tripId = trip.bookingReference || trip.id;
+      const kmNum = Number(startKm);
+      const res = await driverApi.sendStartOtp(tripId, kmNum);
+      const generatedOtp = res?.rideOtp || res?.data?.rideOtp;
+      if (generatedOtp) {
+        setServerOtp(String(generatedOtp).trim());
+      }
+      setOtpResentSuccess(true);
+      setTimeout(() => setOtpResentSuccess(false), 3500);
+    } catch (err) {
+      console.warn("Error resending start OTP:", err);
+      setErrorMessage(err.response?.data?.message || "Failed to resend SMS OTP. Please try again.");
+    } finally {
+      setResendingOtp(false);
+    }
   };
 
   // Step 2 Submission & Verification
@@ -121,12 +168,11 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
 
     const cleanInputOtp = otpInput.trim();
     if (!cleanInputOtp) {
-      setErrorMessage("Please enter the 4-digit Start Ride OTP.");
+      setErrorMessage("Please enter the 6-digit Start Ride OTP.");
       return;
     }
-
-    if (cleanInputOtp !== expectedOtp) {
-      setErrorMessage(`Invalid OTP entered. Please check the code (${expectedOtp}) and try again.`);
+    if (cleanInputOtp.length !== 6) {
+      setErrorMessage("Please enter a valid 6-digit Start Ride OTP.");
       return;
     }
 
@@ -134,11 +180,7 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
     try {
       const tripId = trip.bookingReference || trip.id;
       const kmNum = Number(startKm);
-      const updated = await vendorApi.startRide(tripId, {
-        startKm: kmNum,
-        odometerProof: odometerPreview,
-        otp: cleanInputOtp
-      });
+      const updated = await driverApi.verifyStartOtp(tripId, cleanInputOtp, kmNum, odometerPreview);
 
       setSuccess(true);
       setTimeout(() => {
@@ -146,8 +188,7 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
         onClose();
       }, 900);
     } catch (err) {
-      console.error("Failed to start ride:", err);
-      setErrorMessage(err.response?.data?.message || err.message || "Failed to start ride. Please try again.");
+      setErrorMessage(err.response?.data?.message || err.message || "Invalid Trip Start OTP. Please verify with the guest.");
     } finally {
       setSubmitting(false);
     }
@@ -298,6 +339,18 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
                       </div>
                     )}
 
+                    {!hasDriver && (
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-black block">Driver Not Assigned</span>
+                          <span className="text-[11px] text-amber-800">
+                            A chauffeur/driver must be assigned by the vendor before this ride can be started. Please assign a driver to proceed.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                         <Camera className="w-4 h-4 text-emerald-600" />
@@ -414,7 +467,7 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
 
                     <button
                       type="submit"
-                      disabled={uploadingPhoto || !hasVehicle}
+                      disabled={uploadingPhoto || !hasVehicle || !hasDriver}
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/25 transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {uploadingPhoto ? (
@@ -468,30 +521,57 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
                     </button>
                   </div>
 
-                  {/* Simple & Clean Dev OTP Strip */}
-                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs">
-                    <div className="flex items-center gap-2">
-                      <KeyRound className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                      <span className="text-slate-600 font-medium text-xs">Ride Start OTP:</span>
-                      <span className="font-mono font-black text-sm text-slate-900 bg-white px-2.5 py-0.5 rounded border border-amber-300 tracking-widest">
-                        {expectedOtp}
+                  {/* SMS Dispatch Info & Resend Action */}
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-slate-800 block">OTP Sent via SMS</span>
+                      <span className="text-[11px] text-slate-500 block">
+                        Sent to passenger {trip.customer?.phone ? `(${trip.customer.phone})` : "mobile"}.
                       </span>
                     </div>
 
                     <button
                       type="button"
-                      onClick={handleAutoFillOtp}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                      onClick={handleResendStartOtp}
+                      disabled={resendingOtp}
+                      className="text-amber-700 hover:text-amber-800 font-black text-xs underline cursor-pointer disabled:opacity-50"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      Auto-fill
+                      {resendingOtp ? "Sending..." : "Resend SMS"}
                     </button>
                   </div>
+
+                  {otpResentSuccess && (
+                    <div className="text-[11px] text-emerald-600 font-bold px-1 animate-in fade-in">
+                      ✓ New Start OTP has been dispatched to guest via SMS!
+                    </div>
+                  )}
+
+                  {/* Dev OTP Strip (Real Generated OTP in Dev Mode) */}
+                  {isDev && expectedOtp && (
+                    <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs">
+                      <div className="flex items-center gap-2">
+                        <KeyRound className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span className="text-slate-600 font-medium text-xs">Dev Real Start OTP:</span>
+                        <span className="font-mono font-black text-sm text-slate-900 bg-white px-2.5 py-0.5 rounded border border-amber-300 tracking-widest">
+                          {expectedOtp}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAutoFillOtp}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Auto-fill
+                      </button>
+                    </div>
+                  )}
 
                   {/* OTP Verification Input */}
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-slate-800 block">
-                      Enter 4-Digit Customer OTP <span className="text-rose-500">*</span>
+                      Enter 6-Digit Customer OTP <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -499,7 +579,7 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
                         maxLength={6}
                         required
                         autoFocus
-                        placeholder={`Enter ${expectedOtp}`}
+                        placeholder="e.g. 583921"
                         value={otpInput}
                         onChange={(e) => {
                           setOtpInput(e.target.value.replace(/\D/g, ""));
@@ -509,7 +589,7 @@ export default function StartRideModal({ isOpen, onClose, trip, onRideStarted })
                       />
                     </div>
                     <p className="text-[10px] text-slate-500 text-center">
-                      Ask customer for the 4-digit code to start ride
+                      Ask customer for the 6-digit code received via SMS to start ride
                     </p>
                   </div>
 

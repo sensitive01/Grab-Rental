@@ -1,5 +1,6 @@
 package com.grabrentals.vendor.controller;
 
+import com.grabrentals.common.exception.BadRequestException;
 import com.grabrentals.common.exception.UserNotFoundException;
 import com.grabrentals.common.response.ApiResponse;
 import com.grabrentals.customer.dto.BookingResponse;
@@ -80,10 +81,10 @@ public class VendorBookingController {
         return ResponseEntity.ok(ApiResponse.success("Booking accepted and confirmed successfully! Chauffeur assigned and dispatched.", response));
     }
 
-    @PostMapping("/{id}/assign-driver")
+    @PostMapping("/{idOrRef}/assign-driver")
     public ResponseEntity<ApiResponse<BookingResponse>> assignDriver(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable UUID id,
+            @PathVariable String idOrRef,
             @RequestBody java.util.Map<String, Object> body
     ) {
         User vendor = getUser(userDetails);
@@ -91,7 +92,10 @@ public class VendorBookingController {
         if (body != null && body.get("driverId") != null && !body.get("driverId").toString().isBlank()) {
             driverId = UUID.fromString(body.get("driverId").toString());
         }
-        BookingResponse response = bookingService.vendorAssignDriver(id, driverId, vendor);
+        if (driverId == null) {
+            throw new BadRequestException("Please select a chauffeur to assign.");
+        }
+        BookingResponse response = bookingService.vendorAssignDriver(idOrRef, driverId, vendor);
         return ResponseEntity.ok(ApiResponse.success("Chauffeur assigned successfully by fleet owner.", response));
     }
 

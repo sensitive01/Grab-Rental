@@ -6,6 +6,7 @@ import {
   Navigation, 
   MapPin, 
   Car, 
+  User,
   Phone, 
   Clock, 
   ShieldCheck, 
@@ -27,6 +28,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import NumberPlate from "@/components/ui/NumberPlate";
 import TripClosingModal from "@/components/trips/TripClosingModal";
 import StartRideModal from "@/components/trips/StartRideModal";
+import AssignDriverModal from "@/components/trips/AssignDriverModal";
 import { vendorApi } from "@/lib/vendorApi";
 import { formatINR } from "@/lib/utils";
 
@@ -44,6 +46,7 @@ export default function VendorTripsPage() {
   // Modal State
   const [closingTrip, setClosingTrip] = useState(null);
   const [startingTrip, setStartingTrip] = useState(null);
+  const [assigningDriverTrip, setAssigningDriverTrip] = useState(null);
 
   const fetchTripsData = async (isSilent = false) => {
     try {
@@ -315,9 +318,17 @@ export default function VendorTripsPage() {
               trip.vehicleNumber.trim().length > 0
             );
 
-            // Only allow starting the ride IF the trip is assigned AND vendor has actually assigned a vehicle
-            const isReadyToStart = (rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED") && hasVehicle;
-            const isPendingVehicle = (rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED" || rawSt === "PENDING_ALLOCATION") && !hasVehicle;
+            const hasDriver = Boolean(
+              trip.driverName &&
+              trip.driverName !== "Pending Assignment" &&
+              trip.driverName !== "Unassigned" &&
+              trip.driverName !== "Assigned by Fleet" &&
+              trip.driverName.trim().length > 0
+            );
+
+            // Only allow starting the ride IF the trip is assigned AND vendor has actually assigned BOTH vehicle and driver
+            const isReadyToStart = (rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED") && hasVehicle && hasDriver;
+            const isPendingAllocation = (rawSt === "ASSIGNED_TO_VENDOR" || rawSt === "CONFIRMED" || rawSt === "ASSIGNED" || rawSt === "PENDING_ALLOCATION") && (!hasVehicle || !hasDriver);
 
             return (
               <div
@@ -394,13 +405,26 @@ export default function VendorTripsPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
-                        <span className="text-slate-400 text-[10px] uppercase font-bold">Driver:</span>
-                        <strong className="text-slate-900">{trip.driverName || "Pending Assignment"}</strong>
-                        {trip.driverPhone && (
-                          <span className="text-slate-500 text-[11px]">({trip.driverPhone})</span>
-                        )}
-                      </div>
+                      {hasDriver ? (
+                        <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 text-[10px] uppercase font-bold">Driver:</span>
+                          <strong className="text-slate-900">{trip.driverName}</strong>
+                          {trip.driverPhone && (
+                            <span className="text-slate-500 text-[11px]">({trip.driverPhone})</span>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setAssigningDriverTrip(trip)}
+                          className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-[11px] font-bold transition-colors cursor-pointer"
+                          title="Click to assign a chauffeur"
+                        >
+                          <User className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>Driver Pending Assignment</span>
+                          <span className="text-[9px] underline ml-1 text-amber-700">Assign</span>
+                        </button>
+                      )}
 
                       <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
                         <span className="text-slate-400 text-[10px] uppercase font-bold">Passenger:</span>
@@ -430,7 +454,7 @@ export default function VendorTripsPage() {
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row lg:flex-col gap-2">
-                      {/* Assigned & Vehicle Allocated -> Show Start Ride */}
+                      {/* Assigned & Vehicle + Driver Allocated -> Show Start Ride */}
                       {isReadyToStart && (
                         <button
                           type="button"
@@ -442,18 +466,31 @@ export default function VendorTripsPage() {
                         </button>
                       )}
 
-                      {/* Assigned BUT Vehicle NOT Allocated -> Assign Vehicle First */}
-                      {isPendingVehicle && (
+                      {/* Assigned BUT Vehicle and/or Driver NOT Allocated -> Prompt Assignment First */}
+                      {isPendingAllocation && (
                         <div className="space-y-1">
-                          <Link
-                            href={`/vendor/bookings/${trip.id}`}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 transition-all text-center"
-                          >
-                            <Car className="w-4 h-4" />
-                            Assign Vehicle First
-                          </Link>
+                          {!hasDriver ? (
+                            <button
+                              type="button"
+                              onClick={() => setAssigningDriverTrip(trip)}
+                              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 transition-all text-center cursor-pointer"
+                            >
+                              <User className="w-4 h-4" />
+                              Assign Driver First
+                            </button>
+                          ) : (
+                            <Link
+                              href={`/vendor/bookings/${trip.id}`}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 transition-all text-center"
+                            >
+                              <Car className="w-4 h-4" />
+                              Assign Vehicle First
+                            </Link>
+                          )}
                           <span className="text-[10px] text-amber-700 font-semibold block text-center lg:text-right">
-                            Vehicle required to start ride
+                            {!hasDriver
+                              ? "Driver required to start ride"
+                              : "Vehicle required to start ride"}
                           </span>
                         </div>
                       )}
@@ -495,6 +532,18 @@ export default function VendorTripsPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Assign Driver Modal */}
+      {assigningDriverTrip && (
+        <AssignDriverModal
+          isOpen={Boolean(assigningDriverTrip)}
+          onClose={() => setAssigningDriverTrip(null)}
+          trip={assigningDriverTrip}
+          onSuccess={() => {
+            fetchTripsData(true);
+          }}
+        />
       )}
 
       {/* Start Ride Modal (Step 1) */}
